@@ -16,7 +16,7 @@ public sealed class ArchitectureTests
     private const string Kernel = "MicroEngine.Kernel", Platform = "MicroEngine.Platform", Graphics = "MicroEngine.Graphics",
         Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input", InputTouch = "MicroEngine.Input.Touch",
         Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
-        UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
+        TextShaping = "MicroEngine.Text.Shaping", UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
         Testing = "MicroEngine.Testing",
         // The transitional entity adapter of the demo migrations, deleted: no project may reference it again.
         Migration = "MicroEngine.Migration.Entities",
@@ -43,6 +43,9 @@ public sealed class ArchitectureTests
         [Physics] = [Scene, Kernel],
         [PhysicsTiles] = [Physics, Scene, Kernel],
         [Box2D] = [Physics, Scene, Kernel],
+        // Shaped text (an optional package): fonts drawn through the 2D layer. Its package depends on MicroEngine, which
+        // carries the text assembly, so the project references MicroEngine.
+        [TextShaping] = [.. Abstractions, Graphics2D, Text, Core],
         [UI] = [Graphics2D, Text, Input, Graphics, Content, Kernel, Platform],
         [Saves] = [Kernel, Platform],
         // Progress persists through the save store (ADR 0006).
@@ -291,6 +294,18 @@ public sealed class ArchitectureTests
         Assert.IsTrue(engine.All(Allowed[Graphics2D].Contains), string.Join(", ", engine));
         CollectionAssert.Contains(engine, Graphics, "the batcher is built on the device contract");
         CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Graphics2D, "the IRenderer façade is built on the batcher");
+    }
+
+    [TestMethod]
+    public void The_compiled_shaping_module_references_only_text_the_2D_layer_and_the_contracts_below_them()
+    {
+        var shaping = typeof(MicroEngine.Graphics.ShapedFont).Assembly;
+        Assert.AreEqual(TextShaping, shaping.GetName().Name);
+        var engine = shaping.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(new[] { Text, Graphics2D, Graphics, Content, Kernel, Platform }.Contains), string.Join(", ", engine));
+        Assert.IsTrue(shaping.GetReferencedAssemblies().Any(a => a.Name == "HarfBuzzSharp"), "HarfBuzz follows the shaping module");
+        Assert.IsFalse(typeof(Game).Assembly.GetReferencedAssemblies().Concat(typeof(MicroEngine.Graphics.BitmapFont).Assembly.GetReferencedAssemblies())
+            .Any(a => a.Name == "HarfBuzzSharp"), "games without shaping do not carry HarfBuzz");
     }
 
     [TestMethod]

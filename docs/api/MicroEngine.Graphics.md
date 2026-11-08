@@ -142,6 +142,17 @@ A TrueType or OpenType font (TTF, OTF with TrueType or CFF outlines) that draws 
 rasterized the first time they are drawn at a size and kept in shared glyph pages (textures), so later frames only
 draw quads; [Prepare](MicroEngine.Graphics.ScalableFont.md#MicroEngine_Graphics_ScalableFont_Prepare_System_String_System_Single___) rasterizes ahead, so the first frames of play do no font work.
 
+ [ShapedFontSize](MicroEngine.Graphics.ShapedFontSize.md)
+
+A [ShapedFont](MicroEngine.Graphics.ShapedFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
+
+ [ShapedFont](MicroEngine.Graphics.ShapedFont.md)
+
+A TrueType or OpenType font that shapes its text: letters take the forms their neighbours call for (Arabic's joined
+forms, Indic conjuncts, ligatures), marks sit where the font places them, and right-to-left scripts (Arabic, Hebrew)
+run right to left. HarfBuzz chooses the glyphs and their positions; each glyph is rasterized the first time it is
+drawn at a size and kept in glyph pages (textures), so later frames only draw quads.
+
  [SizedFont](MicroEngine.Graphics.SizedFont.md)
 
 A [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
@@ -197,6 +208,10 @@ The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.m
  [Renderer2DStatistics](MicroEngine.Graphics.Renderer2DStatistics.md)
 
 Deterministic counts of the last batch ([Statistics](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Statistics)), the same on every device and run.
+
+ [ShapedGlyph](MicroEngine.Graphics.ShapedGlyph.md)
+
+One glyph of a shaped line.
 
 ### Interfaces
 

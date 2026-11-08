@@ -11,7 +11,7 @@ document explains how the pieces fit and why.
 ```mermaid
 flowchart TB
   accTitle: Layers
-  accDescr: Games and samples start through the hosts, which choose the SDL or raylib backend and compose the game through hosting. The core builds on the engine modules; the modules build on the graphics, input, content and platform contracts; everything builds on the kernel. The tier-1 graphics device, the 3D path and the Box2D physics backend are optional assemblies beside them.
+  accDescr: Games and samples start through the hosts, which choose the SDL or raylib backend and compose the game through hosting. The core builds on the engine modules; the modules build on the graphics, input, content and platform contracts; everything builds on the kernel. The tier-1 graphics device, text shaping, the 3D path and the Box2D physics backend are optional assemblies beside them.
   games["Games and samples"]
   hosts["Desktop launcher,<br/>tool hosts"]
   sdl["Sdl<br/>(desktops, phones, browsers)"]
@@ -24,6 +24,7 @@ flowchart TB
   saves["Saves"]
   touch["Input.Touch"]
   text["Text"]
+  shaping["Text.Shaping<br/>(optional package)"]
   g2d["Graphics2D"]
   audio["Audio<br/>(and Audio.Retro)"]
   tiles["Physics.Tiles"]
@@ -56,6 +57,7 @@ flowchart TB
   touch --> g2d
   touch --> input
   text --> g2d
+  shaping --> text
   text --> content
   audio --> content
   tiles --> physics
@@ -78,7 +80,8 @@ flowchart TB
 Each box is an assembly, named without its `MicroEngine.` prefix; the table under [Core modules](#core-modules) says what each holds. Arrows read "references". The diagram leaves out arrows that follow from others: every assembly references the
 kernel, those that touch the host also the platform contracts, and the core references every engine module. The
 `MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
-package carries the tier-1 device. The 3D path (`MicroEngine.Graphics3D`) and the Box2D backend
+package carries the tier-1 device. Text shaping (`MicroEngine.Text.Shaping`) is an optional package of its own, with
+HarfBuzz. The 3D path (`MicroEngine.Graphics3D`) and the Box2D backend
 (`MicroEngine.Physics.Box2D`) are not in the SDK packages: both are in the repository only.
 
 The kernel is its own assembly,
@@ -122,7 +125,10 @@ of the `MicroEngine` package, which references only the 2D layer, the graphics c
 platform contracts. It holds the fonts with their `MicroEngine.Graphics` namespace (`IFont` and `FontExtensions`,
 `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`; `MicroEngine.dll` forwards each type), FontStashSharp, which
 rasterizes scalable fonts, and the font loader the asset store registers under the kind "font"
-([Text](manual/text.md)).
+([Text](manual/text.md)). Shaped text is `MicroEngine.Text.Shaping`, an optional package over text and the 2D layer:
+`ShapedFont` shapes with HarfBuzz (a native library for every runtime, linked into browser packages) and rasterizes
+each glyph by its index with StbTrueTypeSharp, the scalable fonts' rasterizer, into glyph pages of its own
+([Shaped text](manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts)).
 
 The UI is `MicroEngine.UI`, another assembly
 of the `MicroEngine` package, which references only the 2D layer, text, input, the graphics contract, content, the
@@ -259,6 +265,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Physics.Tiles` | `MicroEngine.Physics.Tiles`, (`MicroEngine.World`) | `TilePhysicsWorld2D` (tile grids as static geometry, the swept mover, one-way platforms, moving solids); `TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion` (whose `Move` returns a `TileMoveResult`; it was `MoveResult`, the physics contract's name) |
 | `MicroEngine.Graphics2D` | (`MicroEngine.Graphics`) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, and the 2D drawing model: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
 | `MicroEngine.Text` | (`MicroEngine.Graphics`) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`, the font loader |
+| `MicroEngine.Text.Shaping` | (`MicroEngine.Graphics`) | `ShapedFont`, `ShapedFontSize`, `ShapedGlyph`: HarfBuzz shaping, glyphs rasterized by index; an optional package of its own |
 | `MicroEngine.Input.Touch` | (`MicroEngine.Input`) | `ITouchScreen`, `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `TouchStyle`, `ITouchSkin` |
 | `MicroEngine.Audio` | `MicroEngine.Audio`, `MicroEngine.Audio.Retro` | `AudioEngine` (voices, buses, music streams, exact-frame scheduling), `AudioMixer`, `IAudioDevice`, `MixerAudioDevice`, `AudioClip` (incl. WAV and OGG decoding), `OfflineAudioSink`, `SilentAudioDevice`; in `MicroEngine.Audio.Retro`: `Synth`, `SfxParams`, `Wave` (retro sound effects), `Song`, `Instrument` (step sequencer) |
 | `MicroEngine.Saves` | `MicroEngine.Saves`, (`MicroEngine.Core`) | `SavesModule`; `SaveStore`, `ISaveStorage`, `FileSaveStorage` |

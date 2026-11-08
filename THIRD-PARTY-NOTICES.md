@@ -53,6 +53,17 @@ shaders, never the compilers.
 | Silk.NET.SPIRV.Cross 2.22.0, Silk.NET.SPIRV 2.22.0, Silk.NET.Core 2.22.0 | C# bindings for SPIRV-Cross | MIT | Copyright (c) 2021- .NET Foundation and Contributors |
 | SPIRV-Cross (native, Silk.NET.SPIRV.Cross.Native 2.22.0) | SPIR-V to MSL translation and resource reflection | Apache License 2.0 | Copyright 2015-2021 Arm Limited and contributors |
 
+## Optional text shaping
+
+Games that add the optional `MicroEngine.Text.Shaping` package also ship HarfBuzz, as a native library on desktops
+and phones and linked into the WebAssembly of browser packages. `microengine package` puts its licence file in the
+packages of those games.
+
+| Component | Use | Licence | Copyright |
+| --- | --- | --- | --- |
+| HarfBuzzSharp 14.4.0, HarfBuzzSharp.NativeAssets.* 14.4.0 | C# bindings for HarfBuzz and its native builds for every runtime | MIT | Copyright (c) 2015-2016 Xamarin, Inc.; Copyright (c) 2017-2018 Microsoft Corporation |
+| HarfBuzz (inside HarfBuzzSharp's native builds) | text shaping: glyph choice and positioning for complex and right-to-left scripts | Old MIT (below) | Copyright © 2010-2012 Google, Inc.; © 2012 Mozilla Foundation; © 2004-2010 Red Hat, Inc.; and the other holders listed below |
+
 ## Optional Box2D physics backend (not published yet)
 
 Games that add the optional `MicroEngine.Physics.Box2D` backend (not part of the SDK packages, and not published yet)
@@ -237,6 +248,47 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+### HarfBuzz licence (Old MIT)
+
+```text
+HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
+For parts of HarfBuzz that are licensed under different licenses see individual
+files names COPYING in subdirectories where applicable.
+
+Copyright © 2010,2011,2012  Google, Inc.
+Copyright © 2012  Mozilla Foundation
+Copyright © 2011  Codethink Limited
+Copyright © 2008,2010  Nokia Corporation and/or its subsidiary(-ies)
+Copyright © 2009  Keith Stribley
+Copyright © 2009  Martin Hosken and SIL International
+Copyright © 2007  Chris Wilson
+Copyright © 2006  Behdad Esfahbod
+Copyright © 2005  David Turner
+Copyright © 2004,2007,2008,2009,2010  Red Hat, Inc.
+Copyright © 1998-2004  David Turner and Werner Lemberg
+
+For full copyright notices consult the individual files in the package.
+
+
+Permission is hereby granted, without written agreement and without
+license or royalty fees, to use, copy, modify, and distribute this
+software and its documentation for any purpose, provided that the
+above copyright notice and the following two paragraphs appear in
+all copies of this software.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE TO ANY PARTY FOR
+DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN
+IF THE COPYRIGHT HOLDER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+THE COPYRIGHT HOLDER SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
+PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 ```
 
 ### Apache License 2.0

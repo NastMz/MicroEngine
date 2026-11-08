@@ -15,7 +15,7 @@
 //   node sdk/version.mjs release <version>            prepares a release: prepared = documented = <version>, every
 //                                                     "## Next release" section renamed to the version, and every
 //                                                     active reference rewritten (never an older release or migration note)
-//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all six packages
+//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all seven packages
 //   node sdk/version.mjs packages                     the package ids, in push order
 //   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
 //                                                     (nothing while .github/phase-freeze exists: publication freeze)
@@ -33,8 +33,8 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The six SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
-export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Cli', 'MicroEngine.Templates'];
+/** The seven SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
+export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Cli', 'MicroEngine.Templates'];
 
 const semver = '\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?';
 const isVersion = text => new RegExp(`^${semver}$`).test(text);

@@ -39,6 +39,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Title menu (widgets)", g => new MenuExample()),
         ("Achievements (widgets)", g => new AchievementsExample()),
         ("Text entry and clipboard", g => new TextEntryExample()),
+        ("Right-to-left text (shaping)", g => new ShapingExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

@@ -115,6 +115,73 @@ has the window's resolution ([The world view and the UI view](rendering.md#the-w
 `MeasureWidth`, `DrawCentered` and `DrawShadowed` for any `IFont`. The [UI widgets](ui.md) take any `IFont`
 (`Widgets.Font`) and scale their margins with its line height, so the same widget serves both styles.
 
+## Shaped text: Arabic, Hebrew and Indic scripts
+
+Some scripts cannot be drawn one character at a time. Arabic letters take a different form depending on their
+neighbours and join into words, Indic scripts merge consonants into conjuncts and place vowel signs around them, and
+Arabic and Hebrew run right to left. The optional `MicroEngine.Text.Shaping` package draws them: `ShapedFont` is a
+TTF/OTF font whose text is shaped by HarfBuzz, the shaping engine browsers and operating systems use. Add the package
+next to the engine:
+
+```xml
+<PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.1" />
+```
+
+It is a package of its own because HarfBuzz is a native library: games that only write Latin text do not carry it.
+It runs on every platform the engine does, browsers included, and `microengine package` adds HarfBuzz's licence to the
+packages of games that use it.
+
+`ShapedFont` opens like a scalable font (`FromBytes`, `Load`) and gives an `IFont` at a size with `At`, so widgets,
+`Wrap` and `Measure` work with it unchanged. Fallback faces fill in the letters the faces before them lack, a run of
+text at a time, and fallback letters are sized to the main face's em. This example draws English, Arabic and Hebrew from
+Inter with Noto Sans Arabic and Noto Sans Hebrew after it, aligns the right-to-left lines to the right, and gives the
+same font to a wrapping label:
+
+<!-- code: samples/Examples/Examples/ShapingExample.cs#shaping -->
+```csharp
+public override void Enter()
+{
+    // Latin from Inter; the letters it lacks from Noto Sans Arabic, then Noto Sans Hebrew.
+    _font = ShapedFont.FromBytes(Game.Graphics, Game.Assets.Bytes("fonts/Inter-Regular.ttf"), name: "Inter")
+        .AddFallback(Game.Assets.Bytes("fonts/NotoSansArabic-Regular.ttf"), "Noto Sans Arabic")
+        .AddFallback(Game.Assets.Bytes("fonts/NotoSansHebrew-Regular.ttf"), "Noto Sans Hebrew");
+    Text = _font.At(14);
+    // An IFont like any other: widgets measure, wrap and draw with it.
+    Widgets.Font = _font.At(12);
+    Widgets.Content = new Panel(new Label("مرحبا بك في المثال. هذه الجملة تلتف داخل اللوحة.") { Wrap = true, Width = 140 });
+}
+
+public override void DrawUi(IRenderer ui)
+{
+    // Inside the game's frame (the UI view also covers any letterbox around it).
+    var frame = Game.Views.CanvasToUi(Vector2.Zero);
+    var end = Game.Views.CanvasToUi(new Vector2(Game.Settings.VirtualWidth, Game.Settings.VirtualHeight));
+    float left = frame.X + 16, right = end.X - 16, y = frame.Y + 24, step = Text.LineHeight + 4;
+    Text.Draw(ui, "Hello, world", new Vector2(left, y), Color.White);
+    // Right-to-left lines start at the right edge.
+    DrawRight(ui, "مرحبا بالعالم", right, y + step, Color.Hex("ffcd75"));
+    DrawRight(ui, "שלום עולם", right, y + 2 * step, Color.Hex("73eff7"));
+}
+
+private void DrawRight(IRenderer ui, string line, float right, float y, Color color) =>
+    Text.Draw(ui, line, new Vector2(right - Text.MeasureWidth(line), y), color);
+```
+
+| Member | What it gives |
+| --- | --- |
+| `ShapedFont.FromBytes(device, bytes)`, `Load(device, path)` | a font from a TTF or OTF file, with optional `FontOptions` |
+| `AddFallback(bytes)` | another face for the letters the faces before it lack |
+| `At(size)` | a `ShapedFontSize`: `LineHeight`, `Baseline`, `Measure`, `Draw`, `Prepare` |
+| `ShapedFontSize.Shape(line)` | the glyphs of a line as drawn, left to right: face, glyph, the text index it shows (`Cluster`), position and advance, for effects of a game's own |
+| `Faces`, `Filter`, `Pages`, `TextureBytes`, `GlyphsRasterized`, `Reset()` | as for scalable fonts |
+
+Each line takes the direction of its first letter, so a line in one script draws correctly, and so does a line that
+switches script between words, each run in its own direction. A line does not reorder runs of the other direction
+around each other: a number or an English word inside an Arabic sentence keeps its place in the order the text is
+stored. Align right-to-left lines yourself (measure them and draw from the right edge), as the example does; labels
+and text fields align to the left. Glyphs are cached per size as for scalable fonts, and shaped lines are kept, so
+drawing the same text every frame costs no shaping work.
+
 ## Performance
 
 The font is one small texture created at start-up; each visible glyph is one `IRenderer.Draw` call, like a sprite.
@@ -132,8 +199,9 @@ small font (SDL's 8x8 debug font, raylib's default font).
 
 - The built-in font has one typeface; other typefaces come from [TTF/OTF files](#scalable-fonts-ttf-and-otf) (next
   SDK version). Bitmap font files (AngelCode BMFont) are not read.
-- No rich text (colour or style changes inside a string), no right-to-left or complex scripts (no shaping: Arabic,
-  Devanagari and ligatures need it), no colour emoji, no text input widget.
+- No rich text (colour or style changes inside a string) and no colour emoji. Right-to-left and complex scripts need
+  the optional shaping package ([Shaped text](#shaped-text-arabic-hebrew-and-indic-scripts)), which does not reorder
+  runs of both directions inside one line, and text fields move their caret left to right whatever the script.
 - Scalable text is rasterized at each size it is drawn: text drawn at many sizes (a zooming title) fills glyph pages;
   draw it at one size and scale the drawing, or `Reset` the font when a scene ends.
 - No signed-distance-field text: very large or freely zoomed text is rasterized per size, not scaled from one bitmap.

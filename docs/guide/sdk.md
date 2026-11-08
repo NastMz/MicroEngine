@@ -21,6 +21,7 @@ Alpha means two things:
 | `MicroEngine.Sdl` | the SDL 3 platform for desktops, phones and browsers (SDL 3 compiled to WebAssembly comes inside it), and the opt-in SDL_GPU graphics device for desktops ([the graphics device](../manual/rendering.md#the-graphics-device)) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` |
 | `MicroEngine.Raylib` | the raylib platform (desktops only) | `MicroEngine`, `Raylib-cs` |
 | `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
+| `MicroEngine.Text.Shaping` | optional: `ShapedFont`, text shaped by HarfBuzz for Arabic, Hebrew, Indic and other complex scripts ([Shaped text](../manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts)) | `MicroEngine`, `HarfBuzzSharp` and its native packages |
 | `MicroEngine.Cli` | the [`microengine` tool](cli.md), with [`microengine shaders`](cli.md#shaders), and the browser, Android and iOS hosts it builds with | — |
 | `MicroEngine.Templates` | `dotnet new microengine-game` | — |
 
@@ -37,7 +38,7 @@ Two parts of the engine stay out of every published package: the 3D path
 
 - SemVer with numbered pre-releases while in Alpha: `-alpha.1`, `-alpha.2`... A new minor (0.5) marks
   incompatible changes; numbered Alphas of one minor are for fixes and additions.
-- All six packages share one version, and the tool builds games with the hosts of its own version: use the same
+- All seven packages share one version, and the tool builds games with the hosts of its own version: use the same
   version for the tool and the engine packages (the template does).
 - A game's own version is its own (`<Version>` in its project), independent of the SDK's.
 - SDK releases are published on GitHub as `sdk-v<version>`; the demo games have releases of their own (`v0.1.0`,

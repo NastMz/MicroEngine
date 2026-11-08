@@ -160,7 +160,7 @@ test('public state: every package, case-insensitive; a missing package id is not
   await assert.rejects(publicState('0.4.0-alpha.2', { fetchJson: async () => { throw new Error('HTTP 503'); } }), /503/);
 });
 
-test('wait-public: polls until all six are served, survives a failed request, gives up at the deadline', async () => {
+test('wait-public: polls until all seven are served, survives a failed request, gives up at the deadline', async () => {
   let calls = 0;
   const fetchJson = async () => { calls++; if (calls === 2) throw new Error('HTTP 503'); return index(calls > 8 ? ['1.0.0'] : []); };
   const state = await waitPublic('1.0.0', { fetchJson, sleep: async () => {}, timeoutSeconds: 60 });
@@ -177,7 +177,7 @@ const state = over => ({ documented: '0.5.0-alpha.1', prepared: '0.5.0-alpha.1',
 test('release plan: a merge that documents a new version checks, drafts and publishes it', () => {
   const plan = releasePlan(state());
   assert.equal(plan.action, 'release');
-  assert.deepEqual(plan.lines, ['nuget.org has 0 of 6 packages; GitHub release sdk-v0.5.0-alpha.1: none', 'Checking and drafting this commit, then publishing after approval.']);
+  assert.deepEqual(plan.lines, ['nuget.org has 0 of 7 packages; GitHub release sdk-v0.5.0-alpha.1: none', 'Checking and drafting this commit, then publishing after approval.']);
 });
 
 test('release plan: any other merge after the release has nothing to do; by hand it verifies and deploys again', () => {
@@ -206,8 +206,8 @@ test('release plan: a publication that stopped part way finishes from its draft,
 });
 
 test('release plan: states no run can repair are refused with what to do', () => {
-  assert.throws(() => releasePlan(state({ packages: some(2) })), /2 of 6 packages of 0\.5\.0-alpha\.1 but there is no draft .* by hand/);
-  assert.throws(() => releasePlan(state({ packages: some(4), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
+  assert.throws(() => releasePlan(state({ packages: some(2) })), /2 of 7 packages of 0\.5\.0-alpha\.1 but there is no draft .* by hand/);
+  assert.throws(() => releasePlan(state({ packages: some(5), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
   assert.throws(() => releasePlan(state({ prepared: '0.5.0-alpha.2' })), /presents 0\.5\.0-alpha\.1, which nuget\.org does not serve, but this commit packs 0\.5\.0-alpha\.2/);
   assert.throws(() => releasePlan(state({ notes: false })), /no "## 0\.5\.0-alpha\.1" section/);
 });

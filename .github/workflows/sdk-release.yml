@@ -12,7 +12,7 @@
 #   publish    after the `nuget` environment's reviewers approve: a one-hour nuget.org key (Trusted Publishing, GitHub
 #              OIDC), the draft's files verified against SHA256SUMS and pushed (engine first, a package nuget.org
 #              already has is skipped), then the GitHub release is published. Never rebuilt: what was approved is pushed
-#   verify     waits until nuget.org serves all six packages, then builds, runs and packages a game and the documented
+#   verify     waits until nuget.org serves all seven packages, then builds, runs and packages a game and the documented
 #              samples from nuget.org alone
 #   site       production deploys main with the latest demo release (deploy-site.yml). Until now it was held: the
 #              documentation of main presents this version, and production deploys only a version nuget.org serves
@@ -162,7 +162,7 @@ jobs:
           status=$(node sdk/version.mjs status --public --json) || { echo "::error::nuget.org could not be asked; nothing was pushed or published. Run sdk-release again."; exit 1; }
           missing=$(jq -r '.packages | to_entries[] | select(.value | not) | .key' <<< "$status" | xargs)
           echo "packages=$missing" >> "$GITHUB_OUTPUT"
-          echo "To push: ${missing:-none (all six are on nuget.org)}" >> "$GITHUB_STEP_SUMMARY"
+          echo "To push: ${missing:-none (all seven are on nuget.org)}" >> "$GITHUB_STEP_SUMMARY"
       # Requested right before pushing: the key lives one hour and can push only what the policy allows.
       - name: NuGet login (Trusted Publishing)
         id: login
