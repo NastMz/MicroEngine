@@ -328,6 +328,9 @@ public sealed class ShapingExampleTests
         Assert.IsTrue(scene.Text.Shape("שלום עולם").Where(g => g.Cluster != 4).All(g => g.Face == 2 && g.Glyph != 0), "Hebrew from Noto Sans Hebrew");
         Assert.IsTrue(scene.Text.Shape("Hello").All(g => g.Face == 0), "Latin from Inter");
         Assert.IsInstanceOfType<MicroEngine.Graphics.ShapedFontSize>(scene.Widgets.Font, "the widgets use the shaped font");
+        CollectionAssert.AreEqual(new[] { false, true, true, true, false }, ShapingExample.Lines.Select(scene.Text.IsRightToLeft).ToArray(), "each line aligned to the side it starts from");
+        var mixed = scene.Text.Shape(ShapingExample.Lines[3]).Select(g => g.Cluster).Distinct().ToList();
+        Assert.IsTrue(mixed.IndexOf(6) < mixed.IndexOf(8), "Bob reads left to right inside the Arabic line");
         game.Scenes.Pop();
         SettingsExampleTests.Frame(game, platform);
         Assert.ThrowsExactly<ObjectDisposedException>(() => scene.Text.Shape("x"), "leaving the example releases its font");

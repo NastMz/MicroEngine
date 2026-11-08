@@ -46,7 +46,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T11 Remove the deprecated types, in the SDK release after T9's | S9 | inline | blocked: needs T9 released | Risk: item 3 |
 | T12 P7 selection in `TextField`, clipboard capability on SDL, raylib and browsers | S3 S8 | inline | done | `feat/ui-text-selection`; RED: selection members, `IClipboard` and `TextEntryExample` missing; GREEN: `WidgetTests` 38/38, `Samples.Tests` 49/49, clipboard conformance 3/3 (written after the code) |
 | T13 P8 optional shaping and right-to-left module; check HarfBuzz on every target, WebAssembly included, first | S3 S8 | inline | done | `feat/text-shaping`; check: Windows, Linux (Docker), browser-wasm; RED: `ShapedFont` missing; GREEN: `ShapedFontTests` 5/5, architecture 22/22, `Samples.Tests` 50/50; Risk: item 5 |
-| T14 Bidirectional lines (UAX #9, implicit levels): runs of both directions reordered inside one line | S1 S3 | inline | pending | follows T13 |
+| T14 Bidirectional lines (UAX #9, implicit levels): runs of both directions reordered inside one line | S1 S3 | inline | done | `feat/text-bidi` (stacked on `feat/text-shaping`); RED: `Bidi`, `BidiClass`, `IsRightToLeft` missing; GREEN: `ShapedFontTests` 8/8; Unicode `BidiTest.txt` 33346/33346 in scope (scratch, not committed) |
 
 Routes are inline: each task is one behaviour with its example, tests and docs, and the tasks run in order. A writer
 is delegated only if two of them run in parallel on disjoint files.
@@ -175,3 +175,12 @@ is delegated only if two of them run in parallel on disjoint files.
   Arabic/Hebrew (OFL, `samples/Examples/CREDITS.md`). New `ShapingExample` (tour capture 24). Verified in Chromium from a
   web package: joined Arabic, Hebrew, wrapping label, HarfBuzz licence in `licenses/`; a 4:3 window showed the example
   drawing above the game frame, fixed by placing it from `Views.CanvasToUi`. Mixed-direction lines are T14.
+- L18 (2026-11-07) User: "Yes, T14" (#143 still open: `feat/text-bidi` stacked on it). `Bidi`: UAX #9 for one line of
+  one paragraph without explicit embeddings (P2-P3, X9 by dropping BN and the explicit controls, W1-W7, N1-N2, I1-I2,
+  L1-L2 over runs); no N0 bracket pairs. Classes from Unicode 16.0 DerivedBidiClass.txt (@missing defaults, then the
+  entries) as 1239 ranges in `Bidi/BidiClasses.g.cs`, written by `Bidi/generate.mjs`; Unicode License v3 in
+  `THIRD-PARTY-NOTICES.md`. The shaper shapes each level run with its direction set before guessing the script.
+  `ShapedFontSize.IsRightToLeft`. Checked against Unicode's BidiTest.txt: every case with automatic paragraph direction
+  and no explicit formatting class, 33346 of 33346 levels equal (a scratch test reading the downloaded file, deleted).
+  BidiCharacterTest.txt is almost all bracket cases: 1 in scope, passed. Example: two mixed lines, each line aligned
+  by `IsRightToLeft`, the label moved to the bottom (`Layer`); capture 24 looked at.

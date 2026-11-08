@@ -41,9 +41,10 @@ Use it in place of a [ScalableFont](MicroEngine.Graphics.ScalableFont.md) for te
 Arabic and a Hebrew one after it draws all three. Letters no face has draw as the last face's missing-glyph box.
 </p>
 <p>
-Each line takes the direction of its first letter: a line in one script, or one that switches script between
-words, draws correctly. A run inside a line keeps its own direction, but a line does not reorder runs of the other
-direction around each other (a number or an English word inside an Arabic sentence).
+Lines that mix directions follow Unicode's bidirectional algorithm (UAX #9): a line reads in the direction of its
+first letter that has one ([IsRightToLeft](MicroEngine.Graphics.ShapedFontSize.md#MicroEngine_Graphics_ShapedFontSize_IsRightToLeft_System_String_)), and runs of the other direction inside it,
+a name or a number in an Arabic sentence, read in theirs. Explicit direction marks (embeddings, overrides, isolates)
+are ignored and brackets are not paired across directions.
 </p>
 
 ## Properties
