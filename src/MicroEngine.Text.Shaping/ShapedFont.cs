@@ -22,9 +22,10 @@ namespace MicroEngine.Graphics;
 /// Arabic and a Hebrew one after it draws all three. Letters no face has draw as the last face's missing-glyph box.
 /// </para>
 /// <para>
-/// Each line takes the direction of its first letter: a line in one script, or one that switches script between
-/// words, draws correctly. A run inside a line keeps its own direction, but a line does not reorder runs of the other
-/// direction around each other (a number or an English word inside an Arabic sentence).
+/// Lines that mix directions follow Unicode's bidirectional algorithm (UAX #9): a line reads in the direction of its
+/// first letter that has one (<see cref="ShapedFontSize.IsRightToLeft"/>), and runs of the other direction inside it,
+/// a name or a number in an Arabic sentence, read in theirs. Explicit direction marks (embeddings, overrides, isolates)
+/// are ignored and brackets are not paired across directions.
 /// </para>
 /// </remarks>
 /// <example>
@@ -175,6 +176,16 @@ public sealed class ShapedFontSize : IFont
         return _lines[line] = Shaper.Shape(Family.FaceList, line, ScaleOf, _ascent);
     }
 
+    /// <summary>
+    /// Whether <paramref name="line"/> reads right to left: its first letter with a direction is Hebrew, Arabic or
+    /// another right-to-left script. Align such lines to the right.
+    /// </summary>
+    public bool IsRightToLeft(string line)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        return Bidi.IsRightToLeft(line);
+    }
+
     /// <inheritdoc/>
     public Vector2 Measure(string text)
     {
@@ -308,7 +319,10 @@ internal static class Shaper
 
     public static ShapedGlyph[] Shape(IReadOnlyList<FontFace> faces, string line, Func<int, float> scaleOf, float baseline)
     {
-        var pieces = ShapeRange(faces, 0, line, 0, line.Length, scaleOf);
+        // Each run of one direction (Unicode's bidirectional algorithm), shaped in that direction, in drawing order.
+        var pieces = new List<Piece>();
+        foreach (var run in Bidi.VisualRuns(line))
+            pieces.AddRange(ShapeRange(faces, 0, line, run.Start, run.Length, scaleOf, run.RightToLeft ? Direction.RightToLeft : Direction.LeftToRight));
         var result = new ShapedGlyph[pieces.Count];
         float pen = 0;
         for (int i = 0; i < pieces.Count; i++)
@@ -320,13 +334,14 @@ internal static class Shaper
         return result;
     }
 
-    private static List<Piece> ShapeRange(IReadOnlyList<FontFace> faces, int faceIndex, string line, int start, int length, Func<int, float> scaleOf)
+    private static List<Piece> ShapeRange(IReadOnlyList<FontFace> faces, int faceIndex, string line, int start, int length, Func<int, float> scaleOf, Direction direction)
     {
         var face = faces[faceIndex];
         float scale = scaleOf(faceIndex);
         using var buffer = new HbBuffer();
         buffer.AddUtf16(line, start, length);
-        buffer.GuessSegmentProperties();
+        buffer.Direction = direction;
+        buffer.GuessSegmentProperties(); // the script and language; the direction stays the run's
         face.Shaper.Shape(buffer);
         var infos = buffer.GlyphInfos;
         var positions = buffer.GlyphPositions;
@@ -355,7 +370,7 @@ internal static class Shaper
                 from = Math.Min(from, pieces[i].Cluster);
                 to = Math.Max(to, End(pieces[i].Cluster));
             }
-            var again = ShapeRange(faces, faceIndex + 1, line, from, to - from, scaleOf);
+            var again = ShapeRange(faces, faceIndex + 1, line, from, to - from, scaleOf, direction);
             result.AddRange(again.Exists(p => p.Glyph != 0) ? again : pieces.GetRange(first, i - first));
         }
         return result;

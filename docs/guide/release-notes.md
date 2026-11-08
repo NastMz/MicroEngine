@@ -47,9 +47,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - [Shaped text](../manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts): the optional
   `MicroEngine.Text.Shaping` package draws Arabic, Hebrew, Indic and other scripts whose letters change shape with
   their neighbours or run right to left. `ShapedFont` shapes text with HarfBuzz on every platform, browsers included,
-  with fallback faces for the letters a face lacks, and `At(size)` is an `IFont` for widgets, wrapping and measuring.
+  with fallback faces for the letters a face lacks, and lays out lines that mix directions with Unicode's
+  bidirectional algorithm (an English name or a number inside an Arabic sentence). `At(size)` is an `IFont` for
+  widgets, wrapping and measuring, and `IsRightToLeft` says which lines to align to the right.
   `microengine package` adds HarfBuzz's licence to the packages of games that use it. The focused examples add
-  English, Arabic and Hebrew from one font.
+  English, Arabic, Hebrew and lines that mix them from one font.
 
 **Deprecated**
 

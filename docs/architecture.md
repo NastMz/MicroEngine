@@ -127,7 +127,9 @@ platform contracts. It holds the fonts with their `MicroEngine.Graphics` namespa
 rasterizes scalable fonts, and the font loader the asset store registers under the kind "font"
 ([Text](manual/text.md)). Shaped text is `MicroEngine.Text.Shaping`, an optional package over text and the 2D layer:
 `ShapedFont` shapes with HarfBuzz (a native library for every runtime, linked into browser packages) and rasterizes
-each glyph by its index with StbTrueTypeSharp, the scalable fonts' rasterizer, into glyph pages of its own
+each glyph by its index with StbTrueTypeSharp, the scalable fonts' rasterizer, into glyph pages of its own; lines
+that mix directions are split into runs by its own implementation of Unicode's bidirectional algorithm (implicit levels,
+with a class table generated from the Unicode Character Database by `Bidi/generate.mjs`)
 ([Shaped text](manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts)).
 
 The UI is `MicroEngine.UI`, another assembly

@@ -91,6 +91,23 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color)
 
 `color` [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_Graphics_ShapedFontSize_IsRightToLeft_System_String_"></a> IsRightToLeft\(string\)
+
+Whether <code class="paramref">line</code> reads right to left: its first letter with a direction is Hebrew, Arabic or
+another right-to-left script. Align such lines to the right.
+
+```csharp
+public bool IsRightToLeft(string line)
+```
+
+#### Parameters
+
+`line` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Graphics_ShapedFontSize_Measure_System_String_"></a> Measure\(string\)
 
 Size of <code class="paramref">text</code> in canvas pixels: the widest line by the height of its lines. '\n' starts a new line.

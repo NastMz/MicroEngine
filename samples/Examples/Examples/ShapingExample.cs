@@ -8,8 +8,8 @@ namespace Examples;
 
 /// <summary>
 /// Shaped text (the optional MicroEngine.Text.Shaping package): Arabic letters joined to their neighbours and Hebrew,
-/// both running right to left, next to English, from one font with two fallbacks. The right-to-left lines are aligned
-/// to the right, and a wrapping label shows the font serving widgets.
+/// both running right to left, next to English, from one font with two fallbacks; lines that mix both directions; each
+/// line aligned to the side it starts from; and a wrapping label showing the font serving widgets.
 /// </summary>
 public sealed class ShapingExample : Scene
 {
@@ -17,6 +17,16 @@ public sealed class ShapingExample : Scene
 
     /// <summary>The font at the size the lines use, for tests.</summary>
     public ShapedFontSize Text { get; private set; } = null!;
+
+    /// <summary>The lines shown, top to bottom: English, Arabic, Hebrew, then each direction with words of the other.</summary>
+    public static readonly string[] Lines =
+    [
+        "Hello, world",
+        "مرحبا بالعالم",
+        "שלום עולם",
+        "مرحبا Bob، لديك 3 رسائل",   // "Hello Bob, you have 3 messages"
+        "Level 2: שלב הבא",           // "next stage"
+    ];
 
     #region shaping
     public override void Enter()
@@ -28,7 +38,8 @@ public sealed class ShapingExample : Scene
         Text = _font.At(14);
         // An IFont like any other: widgets measure, wrap and draw with it.
         Widgets.Font = _font.At(12);
-        Widgets.Content = new Panel(new Label("مرحبا بك في المثال. هذه الجملة تلتف داخل اللوحة.") { Wrap = true, Width = 140 });
+        var label = new Label("مرحبا بك في المثال. هذه الجملة تلتف داخل اللوحة.") { Wrap = true, Width = 140 };
+        Widgets.Content = new Layer().Add(new Panel(label), Anchor.Bottom, new Vector2(0, -12));
     }
 
     public override void DrawUi(IRenderer ui)
@@ -36,15 +47,15 @@ public sealed class ShapingExample : Scene
         // Inside the game's frame (the UI view also covers any letterbox around it).
         var frame = Game.Views.CanvasToUi(Vector2.Zero);
         var end = Game.Views.CanvasToUi(new Vector2(Game.Settings.VirtualWidth, Game.Settings.VirtualHeight));
-        float left = frame.X + 16, right = end.X - 16, y = frame.Y + 24, step = Text.LineHeight + 4;
-        Text.Draw(ui, "Hello, world", new Vector2(left, y), Color.White);
-        // Right-to-left lines start at the right edge.
-        DrawRight(ui, "مرحبا بالعالم", right, y + step, Color.Hex("ffcd75"));
-        DrawRight(ui, "שלום עולם", right, y + 2 * step, Color.Hex("73eff7"));
+        float left = frame.X + 16, right = end.X - 16, y = frame.Y + 20;
+        foreach (var line in Lines)
+        {
+            // A line that starts with a right-to-left letter is aligned to the right edge.
+            float x = Text.IsRightToLeft(line) ? right - Text.MeasureWidth(line) : left;
+            Text.Draw(ui, line, new Vector2(x, y), Color.White);
+            y += Text.LineHeight + 2;
+        }
     }
-
-    private void DrawRight(IRenderer ui, string line, float right, float y, Color color) =>
-        Text.Draw(ui, line, new Vector2(right - Text.MeasureWidth(line), y), color);
     #endregion
 
     public override void Update(float dt)

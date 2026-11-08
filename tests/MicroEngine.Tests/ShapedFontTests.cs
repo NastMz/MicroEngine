@@ -80,6 +80,50 @@ public sealed class ShapedFontTests
         Assert.AreEqual(rasterized, font.GlyphsRasterized, "later frames only draw quads");
     }
 
+    /// <summary>The text indices a line shows, left to right, each once (a letter drawn as a base and a mark counts once).</summary>
+    private static int[] VisualOrder(ShapedFontSize size, string line) => [.. size.Shape(line).Select(g => g.Cluster).Distinct()];
+
+    [TestMethod]
+    public void Unicode_bidirectional_classes_come_from_the_character_database()
+    {
+        Assert.AreEqual(BidiClass.L, Bidi.ClassOf('A'));
+        Assert.AreEqual(BidiClass.R, Bidi.ClassOf('א'));
+        Assert.AreEqual(BidiClass.AL, Bidi.ClassOf('ب'));
+        Assert.AreEqual(BidiClass.EN, Bidi.ClassOf('5'));
+        Assert.AreEqual(BidiClass.AN, Bidi.ClassOf('٥'), "Arabic-Indic five");
+        Assert.AreEqual(BidiClass.WS, Bidi.ClassOf(' '));
+        Assert.AreEqual(BidiClass.ON, Bidi.ClassOf('!'));
+        Assert.AreEqual(BidiClass.NSM, Bidi.ClassOf('́'), "combining acute accent");
+        Assert.AreEqual(BidiClass.R, Bidi.ClassOf(0x10800), "Cypriot, outside the basic plane");
+        Assert.AreEqual(BidiClass.AL, Bidi.ClassOf(0x07BF), "U+07BF, unassigned, takes the AL default of its range");
+    }
+
+    [TestMethod]
+    public void A_left_to_right_line_reverses_its_right_to_left_run_and_keeps_numbers_in_reading_order()
+    {
+        using var font = Mixed(new HeadlessGraphicsDevice());
+        var size = font.At(24);
+        // a b c ␠ ש ל ו ם ␠ 1 2 3: the Hebrew word and the number after it read right to left as a group, the digits
+        // left to right inside it, as browsers show it.
+        CollectionAssert.AreEqual(new[] { 0, 1, 2, 3, 9, 10, 11, 8, 7, 6, 5, 4 }, VisualOrder(size, "abc שלום 123"));
+        Assert.IsFalse(size.IsRightToLeft("abc שלום 123"), "the first strong letter is Latin");
+        CollectionAssert.AreEqual(new[] { 0, 1, 2, 3, 4, 5 }, VisualOrder(size, "Hello!"), "plain Latin is unchanged");
+    }
+
+    [TestMethod]
+    public void A_right_to_left_line_keeps_English_words_and_numbers_left_to_right_in_their_place()
+    {
+        using var font = Mixed(new HeadlessGraphicsDevice());
+        var size = font.At(24);
+        Assert.IsTrue(size.IsRightToLeft("مرحبا Bob"));
+        CollectionAssert.AreEqual(new[] { 6, 7, 8, 5, 4, 3, 2, 1, 0 }, VisualOrder(size, "مرحبا Bob"), "Bob at the left end, after the Arabic in reading order");
+        CollectionAssert.AreEqual(new[] { 4, 5, 3, 2, 1, 0 }, VisualOrder(size, "عدد 25"), "\"number 25\": the digits keep their order");
+        CollectionAssert.AreEqual(new[] { 4, 3, 2, 1, 0 }, VisualOrder(size, "שלום!"), "the closing mark ends the line on the left");
+        Assert.IsFalse(size.IsRightToLeft("123 !"), "no strong letter: left to right");
+        var glyphs = size.Shape("مرحبا Bob");
+        for (int i = 1; i < glyphs.Count; i++) Assert.IsTrue(glyphs[i].Pen >= glyphs[i - 1].Pen, "pens grow left to right across runs");
+    }
+
     [TestMethod]
     public void A_shaped_font_serves_widgets_and_the_asset_cache_through_IFont()
     {
