@@ -1,0 +1,58 @@
+---
+// Hallmark · macrostructure: Catalogue (three entries and their notes) · nav: N1b · footer: Ft3 grouped
+// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: frames of the films themselves
+// pre-emit critique: P4 H4 E4 S5 R5 V4
+//
+// The films on a page of their own: the three of them, what each tells, and what is real in them. A film is never a
+// newer version of another: each tells a different thing. Data: src/data/films.ts (media/films.json).
+import SiteLayout from '../layouts/SiteLayout.astro';
+import Films from '../components/landing/Films.astro';
+import { films } from '../data/films.ts';
+---
+<SiteLayout title="Films" description="Three short films about MicroEngine: what a game is made from, how the engine is put together, and what its loop does with time." current="films">
+  <section class="section wrap" aria-labelledby="films-page-title">
+    <div class="section-head">
+      <p class="label">Films</p>
+      <h1 id="films-page-title">Three films, three stories</h1>
+      <p class="lede">Each film is under a minute and tells one thing about MicroEngine. None replaces another: watch them in any order.</p>
+    </div>
+    <Films heading="h2" />
+  </section>
+
+  <section class="section wrap" aria-labelledby="films-notes-title">
+    <div class="section-head">
+      <h2 id="films-notes-title">What each one tells</h2>
+    </div>
+    <dl class="tells">
+      {films.map(film => (
+        <div>
+          <dt><span class="label">{film.tells}</span>{film.title} <span class="mono length">{film.length}</span></dt>
+          <dd>{film.story}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <section class="section wrap" aria-labelledby="films-real-title">
+    <div class="section-head">
+      <h2 id="films-real-title">What is real in them</h2>
+      <p>The code on screen is a sample from the repository. The play is captured from the four demos as scripts drive them, frame by frame. The music and every sound are synthesized by MicroEngine’s own audio module, and the films’ type, colours and mark are this site’s.</p>
+      <p>The structure in Room for another and the tape in Every step are drawings of how the engine is built and how it runs, not tools the engine has. Nothing in the films shows 3D running: the published SDK is 2D.</p>
+      <p>The films are rendered from sources in the repository’s <a href="https://github.com/NastMz/MicroEngine/tree/main/media">media folder</a>. Like the demo games, they are all rights reserved; see <a href="/docs/licensing/">licensing</a>.</p>
+    </div>
+  </section>
+</SiteLayout>
+
+<script>
+  import { startScroll } from '../scripts/scroll.ts';
+  startScroll();
+</script>
+
+<style>
+  .tells { margin: 0; display: grid; gap: var(--space-lg); grid-template-columns: minmax(0, 1fr); }
+  .tells div { display: grid; gap: var(--space-2xs); padding-top: var(--space-sm); border-top: var(--rule-pixel) solid var(--color-ink); min-width: 0; }
+  .tells dt { display: grid; gap: var(--space-2xs); font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-lg); letter-spacing: var(--tracking-display); }
+  .tells dd { margin: 0; color: var(--color-ink-2); max-width: 40ch; }
+  .length { font-size: var(--text-xs); font-weight: 400; color: var(--color-ink-2); letter-spacing: var(--tracking-label); }
+  @media (min-width: 48rem) { .tells { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
