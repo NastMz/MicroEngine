@@ -4,7 +4,7 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
-## Next release
+## 0.5.0-alpha.2
 
 ### Deprecated UI components
 

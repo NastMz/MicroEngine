@@ -5,7 +5,7 @@ packages on [nuget.org](https://www.nuget.org/packages/MicroEngine): the engine,
 `microengine` command-line tool and a project template. This page installs them and checks that everything works; the next page,
 [Your first game](first-game.md), creates and runs a game.
 
-The current version is **0.5.0-alpha.1**, an Alpha pre-release ([Versions and compatibility](sdk.md)). Because it is a
+The current version is **0.5.0-alpha.2**, an Alpha pre-release ([Versions and compatibility](sdk.md)). Because it is a
 pre-release, NuGet commands need `--prerelease` or the exact version.
 
 Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads
@@ -30,12 +30,12 @@ dotnet tool install -g MicroEngine.Cli --prerelease
 microengine version
 ```
 
-`microengine version` prints `0.5.0-alpha.1`. The tool creates, runs, builds and packages games
+`microengine version` prints `0.5.0-alpha.2`. The tool creates, runs, builds and packages games
 ([The microengine tool](cli.md)).
 
 If the shell says `microengine` is not found, the folder of .NET global tools is not on your `PATH`: add
 `%USERPROFILE%\.dotnet\tools` (Windows) or `~/.dotnet/tools` (Linux, macOS) to it and open a new terminal. To install
-an exact version instead of the newest pre-release: `dotnet tool install -g MicroEngine.Cli --version 0.5.0-alpha.1`.
+an exact version instead of the newest pre-release: `dotnet tool install -g MicroEngine.Cli --version 0.5.0-alpha.2`.
 
 ## 3. The project template
 
@@ -43,7 +43,7 @@ an exact version instead of the newest pre-release: `dotnet tool install -g Micr
 there is nothing to do. To install it yourself, for example to use `dotnet new` or an IDE's "New project" dialog:
 
 ```bash
-dotnet new install MicroEngine.Templates::0.5.0-alpha.1
+dotnet new install MicroEngine.Templates::0.5.0-alpha.2
 dotnet new microengine-game -n StarCourier --app-id com.yourstudio.starcourier --title "Star Courier"
 ```
 

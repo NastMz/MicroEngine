@@ -1,6 +1,6 @@
 # Versions and compatibility
 
-**MicroEngine SDK 0.5.0-alpha.1 — Alpha.** It is on nuget.org: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)
+**MicroEngine SDK 0.5.0-alpha.2 — Alpha.** It is on nuget.org: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)
 and the five other packages below ([release notes](release-notes.md)). [Getting MicroEngine](getting-microengine.md)
 shows how to install it.
 
@@ -49,6 +49,6 @@ Two parts of the engine stay out of every published package: the 3D path
 
 ## Published version and development
 
-The documentation describes the published SDK, **0.5.0-alpha.1**, and every code sample on this site is built against
+The documentation describes the published SDK, **0.5.0-alpha.2**, and every code sample on this site is built against
 the packages on nuget.org. The documentation and the SDK are published together, so a page never describes an engine
 the packages do not have.

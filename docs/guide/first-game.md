@@ -72,7 +72,7 @@ template's files, with `MyGame` where your project's name goes.
 </Project>
 ```
 
-In your project `MICROENGINE_VERSION` is the tool's version (`0.5.0-alpha.1`). The second group is the game's
+In your project `MICROENGINE_VERSION` is the tool's version (`0.5.0-alpha.2`). The second group is the game's
 identity: every package `microengine package` builds takes its name, id, version, icon and orientation from there, and
 nowhere else. The browser, Android and iOS hosts call the game's `Configure` entry point (below), the same one
 `Program.cs` uses, so there is nothing to keep in step.

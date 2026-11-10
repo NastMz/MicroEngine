@@ -4,7 +4,10 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
-## Next release
+## 0.5.0-alpha.2
+
+UI primitives for any game's interface, and a seventh package: `MicroEngine.Text.Shaping`, optional, for Arabic,
+Hebrew and other complex scripts. Nothing breaks; the genre components are deprecated and keep working.
 
 **New**
 
@@ -58,7 +61,7 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
   `Game.UseAchievements` and `Game.AchievementToasts`: the engine ships primitives, and each of these is a few widgets
   of the game's own. They still work, with a warning that names the replacement, and are removed in a later release
-  ([migration notes](../migrations.md#next-release)). The tutorial, the focused examples and the demos no longer use
+  ([migration notes](../migrations.md#050-alpha2)). The tutorial, the focused examples and the demos no longer use
   them.
 
 **Fixed**

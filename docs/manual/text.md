@@ -124,7 +124,7 @@ TTF/OTF font whose text is shaped by HarfBuzz, the shaping engine browsers and o
 next to the engine:
 
 ```xml
-<PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.1" />
+<PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.2" />
 ```
 
 It is a package of its own because HarfBuzz is a native library: games that only write Latin text do not carry it.

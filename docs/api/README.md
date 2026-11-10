@@ -1,6 +1,6 @@
 # API reference
 
-The public types of the MicroEngine SDK 0.5.0-alpha.1, one page per namespace and per type: signatures, parameters, default
+The public types of the MicroEngine SDK 0.5.0-alpha.2, one page per namespace and per type: signatures, parameters, default
 values and the descriptions written in the engine's source. It covers the four engine packages (`MicroEngine`,
 `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Desktop`); the `microengine` tool is documented in
 [The microengine tool](../guide/cli.md).
