@@ -12,13 +12,13 @@
       "footage": ["meadow", "caves", "sky", "rift", "grotto", "warden", "duel", "screen"]
     },
     {
-      "slug": "room-for-another",
-      "title": "Room for another",
+      "slug": "assembly",
+      "title": "Assembly",
       "tells": "The architecture",
-      "story": "A kernel with sockets: modules that ship, others in their place, your own, and ones nobody has built.",
-      "seconds": 56,
-      "poster": 12,
-      "footage": ["screen", "sky", "warden", "duel"]
+      "story": "A kernel on a table, pieces that connect to it, and a different configuration for each game.",
+      "seconds": 54.4,
+      "poster": 14,
+      "footage": ["screen", "tour"]
     },
     {
       "slug": "every-step",

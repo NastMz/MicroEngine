@@ -2,14 +2,14 @@ MicroEngine films
 
 Copyright (c) 2026 Kevin Martinez. All rights reserved.
 
-This notice covers the films about MicroEngine and only them: "Seated", "Room
-for another" and "Every step". They are NOT covered by the MIT License in the
+This notice covers the films about MicroEngine and only them: "Seated", "Assembly"
+and "Every step". They are NOT covered by the MIT License in the
 root LICENSE file, which applies to the MicroEngine engine, its tools and
 samples.
 
 Covered (the "Films"):
 
-  - media/seated/, media/room-for-another/ and media/every-step/: the
+  - media/seated/, media/assembly/ and media/every-step/: the
     compositions, scores and sound effects written as code, scripts,
     storylines, specifications and reviews;
   - media/LANDING-MOTION.md;

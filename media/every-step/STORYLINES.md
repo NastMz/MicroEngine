@@ -1,7 +1,7 @@
 # Storylines, third film
 
-Two films exist. "Seated" tells the result: code becomes a game. "Room for another" tells the architecture: a
-kernel, sockets, modules chosen and added. Both are about space: what is on the screen, what is on the board.
+Two films exist. "Seated" tells the result: code becomes a game. "Assembly" tells the architecture: a
+kernel, pieces that connect to it, configurations. Both are about space: what is on the screen, what is on the board.
 
 What neither says is what the kernel does once everything is seated. The documentation says it in one sentence,
 three times: **"The loop owns time."** The engine's first decision is a clock: time cut into fixed steps, each run in

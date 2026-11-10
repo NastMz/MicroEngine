@@ -1,20 +1,20 @@
 # Review and delivery note, third film
 
 Film: `renders/every-step.mp4`, 1920 x 1080, 30 fps, 55.2 s, H.264 + AAC stereo.
-The other two films: `../seated` and `../room-for-another`.
+The other two films: `../seated` and `../assembly`.
 
 ## The three films
 
-| | Seated | Room for another | Every step |
+| | Seated | Assembly | Every step |
 | --- | --- | --- | --- |
 | Tells | the result | the architecture | the stance on time |
 | Subject | code, sprites, games | kernel, sockets, modules | the loop, the step, the order |
-| Picture | flat paper and graphite, real footage | a 3D structure in ink and family colours | a tape and a playhead, ink and amber only |
-| Form | scenes joined object to object | shots of one set, cut per configuration | one take, no cuts |
-| Tempo | 120 BPM | 120 BPM | 100 BPM |
-| Ground at the end | graphite | graphite | paper |
-| The mark | a module seats in the board | a structure flattens into the mark | the board closes over a step |
-| Last line | "There is always room for another module" | the same | "The loop owns time. The rest is yours." |
+| Picture | flat paper and graphite, real footage | an exploded drawing on a table, family colours | a tape and a playhead, ink and amber only |
+| Form | scenes joined object to object | one table, a cut per configuration | one take, no cuts |
+| Tempo | 120 BPM | 150 BPM | 100 BPM |
+| Ground at the end | graphite | paper | paper |
+| The mark | a module seats in the board | the board is assembled from parts | the board closes over a step |
+| Last line | "There is always room for another module" | "One kernel. Assembled your way." | "The loop owns time. The rest is yours." |
 
 ## What is true and what is a picture
 

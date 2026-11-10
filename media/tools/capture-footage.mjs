@@ -19,6 +19,8 @@ const clips = {
   grotto: { game: 'NeonRift', script: null, env: { RIFT_START: 'stage', RIFT_STAGE: '2', RIFT_AUTO: '1', RIFT_GOD: '1' }, from: 240, to: 720 },
   // The long take that keeps playing on a screen while modules seat beneath it.
   screen: { game: 'NeonRift', script: null, env: { RIFT_START: 'stage', RIFT_AUTO: '1', RIFT_GOD: '1' }, from: 300, to: 1290 },
+  // A long, bright take of Meadow Run's first level, for a screen that plays for several bars.
+  tour: { game: 'MeadowRun', script: 'tour.script', env: { MEADOW_START: 'level', MEADOW_FORM: 'bloom' }, from: 40, to: 560 },
   warden: { game: 'CourtyardKey', script: 'boss.script', env: { COURTYARD_START: 'boss' }, from: 40, to: 460 },
   duel: { game: 'TrailDuel', script: 'master-battle.script', env: { TRAIL_DEBUG: 'trainer' }, from: 560, to: 1000 },
 };

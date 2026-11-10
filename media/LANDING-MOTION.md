@@ -8,10 +8,10 @@ would survive being driven by scroll instead of by time.
 | Idea | See it in | On a page |
 | --- | --- | --- |
 | **The playhead is the scroll position.** A tape of steps moves under a fixed amber line; steps ahead are outlines, steps passed are solid | Every step, 4.8-9.6 s | The page's own progress indicator, or a section where scrolling plays a sequence. It is a pure function of one number, which is exactly what a scroll timeline gives |
-| **A module seats when its section arrives.** One block slides into its bay and lands | Room for another, 0-8 s; Seated, 26-31 s | Each capability section seats its module on the board as it enters the viewport; scrolling back unseats it. The site's `<Mark seat />` already does this once |
+| **A module seats when its section arrives.** One block slides into its bay and lands | Assembly, 10-11 s; Seated, 26-31 s | Each capability section seats its module on the board as it enters the viewport; scrolling back unseats it. The site's `<Mark seat />` already does this once |
 | **Map rows resolve into pixels.** A highlight runs down the code and each row becomes a row of the sprite | Seated, 4-6 s | The "code first" section: scroll scrubs the highlight line by line, with the real sample beside its real output |
 | **One step opens into its parts** | Every step, 9.6-16.8 s | An explanation that unfolds in place: a small element in a diagram expands into a labelled frame and closes again as the reader moves on |
-| **The structure flattens into the mark** | Room for another, 46-48 s | A hero that starts as the board in depth and presses flat into the logo over the first screen of scroll |
+| **The structure flattens into the mark** | Assembly, 46.4-48 s | A hero that starts as the board in depth and presses flat into the logo over the first screen of scroll |
 
 ## Transitions between sections
 
@@ -26,15 +26,15 @@ would survive being driven by scroll instead of by time.
 | Idea | See it in | On a page |
 | --- | --- | --- |
 | **A plane turning about a fixed line.** The tape rotates into depth around the playhead | Every step, 24-25.4 s | A flat strip (frames, a roadmap, a list of modules) turns into perspective as it leaves the reading area. Cheap: one rotation and a perspective |
-| **Flat-shaded blocks.** Three tones per colour (front, top, side), no gradients or shadows | Room for another, throughout | Depth for the board and sockets that stays inside the "Socket" rules |
-| **Slow drift inside a shot, hard cut between.** | Room for another, 16-32 s | Parallax of a few degrees on pinned figures, with section changes as clean steps |
+| **Flat-shaded blocks.** Three tones per colour (front, top, side), no gradients or shadows | Assembly, throughout | Depth for the board and sockets that stays inside the "Socket" rules |
+| **Slow drift inside a shot, hard cut between.** | Assembly, 20-40 s | Parallax of a few degrees on pinned figures, with section changes as clean steps |
 
 ## Colour, type and identity
 
 - **Amber is one thing per film:** the module, the underline, the playhead. On the page: the one live element of
   each section.
 - **Three states drawn without colour:** outline (not yet), amber (now), solid ink (done) in Every step; solid,
-  dashed and dotted sockets on the site; the dashed outline that never seats in Room for another. One system could
+  dashed and dotted sockets on the site; the dashed guides and the empty plane in Assembly. One system could
   serve both status and progress.
 - **One line of display type at a time, in a fixed place, that never moves after it lands.** All three films. On a
   page: a pinned headline whose words change with scroll while the figure beside it moves.

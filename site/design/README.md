@@ -327,7 +327,7 @@ reader moves by scrolling. This section replaces the earlier rule that nothing m
   asked for reduced motion. Without the script, or with reduced motion, every element is in its final state.
 - **Act one, code** (`CodeToSprite.astro`, from Seated): the sample's string map beside the sprite it draws; a reading
   line steps down the map and each row of the sprite appears with its row of code.
-- **Act two, the board** (`Colonnade.astro` in the opening, from Room for another; then the socket board): the mark's
+- **Act two, the board** (`Colonnade.astro` in the opening; then the socket board; the film Assembly tells the same thing its own way): the mark's
   construction as flat-shaded boxes, three tones a colour, no gradients or shadows. The camera comes round as the
   reader leaves the opening. Further down, each bay's modules seat as the bay arrives.
 - **Act three, the loop** (`FrameTape.astro`, from Every step): real frames move under a fixed amber playhead; frames

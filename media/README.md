@@ -6,7 +6,7 @@ none replaces another.
 | Film | Folder | Tells | Length |
 | --- | --- | --- | --- |
 | Seated | [`seated/`](seated/SPEC.md) | The result: code becomes a sprite, the sprite becomes games | 0:50 |
-| Room for another | [`room-for-another/`](room-for-another/SPEC.md) | The architecture: a kernel, sockets, modules chosen and added | 0:56 |
+| Assembly | [`assembly/`](assembly/SPEC.md) | The architecture: a kernel, pieces that connect to it, a configuration for each game | 0:54 |
 | Every step | [`every-step/`](every-step/SPEC.md) | The loop: equal steps in the same order, and what happens in them | 0:55 |
 
 The films are all rights reserved ([`LICENSE`](LICENSE)); the tools that build them are MIT, like the engine.

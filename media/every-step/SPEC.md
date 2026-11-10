@@ -1,7 +1,7 @@
 # Spec: "Every step"
 
-Third MicroEngine film. It stands beside "Seated" (`../seated`, the result) and "Room for another"
-(`../room-for-another`, the architecture); it replaces neither.
+Third MicroEngine film. It stands beside "Seated" (`../seated`, the result) and "Assembly"
+(`../assembly`, the architecture); it replaces neither.
 
 ```text
 GOAL:    The viewer leaves with the engine's stance on time: the loop keeps the beat and the order, the same
