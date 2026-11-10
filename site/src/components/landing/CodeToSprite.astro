@@ -1,0 +1,59 @@
+---
+// A real sample beside what it draws, tied to the scroll: a line runs down the string map and each row of the map
+// becomes a row of the sprite. The code is the repository file itself (lib/source.mjs) and the sprite is drawn from
+// that same file, so the two can never disagree. It is the opening of the film "Seated" (media/seated).
+// Progress comes from the nearest [data-scroll] ancestor as --step (scripts/scroll.ts): 0 before the first row,
+// one more per row, and one past the last. Without it every row is drawn.
+import { Code } from 'astro:components';
+import CodeLabel from '../brand/CodeLabel.astro';
+import { excerpt, pixelMap } from '../../lib/source.mjs';
+
+interface Props { file: string; from: RegExp; to: RegExp; note: string; label: string }
+const { file, from, to, note, label } = Astro.props;
+const code = excerpt(file, from, to);
+const sprite = pixelMap(file);
+// The first line of the excerpt that is a row of the map: a quoted string of palette keys.
+const firstRow = code.code.split('\n').findIndex(line => /^\s*"[.\w]+"[,);]*\s*$/.test(line));
+if (firstRow < 0) throw new Error(`CodeToSprite: no string map in the excerpt of ${file}`);
+---
+<figure class="code-to-sprite" style={`--rows:${sprite.height};--first:${firstRow}`}>
+  <div class="code-surface">
+    <CodeLabel file={file} lang="C#" family="graphics" note={note} />
+    <div class="lines">
+      <span class="reading" aria-hidden="true"></span>
+      <Code code={code.code} lang="csharp" theme="github-dark-dimmed" />
+    </div>
+  </div>
+  <div class="out">
+    <svg class="sprite" viewBox={`0 0 ${sprite.width} ${sprite.height}`} shape-rendering="crispEdges" role="img" aria-label={label}>
+      {sprite.pixels.map(p => <rect x={p.x} y={p.y} width="1" height="1" fill={p.color} style={`--row:${p.y}`} />)}
+    </svg>
+    <p class="label">= the sprite it draws</p>
+  </div>
+</figure>
+
+<style>
+  .code-to-sprite { margin: 0; display: grid; gap: var(--space-lg); min-width: 0; align-items: center; }
+  .code-surface { margin: 0; min-width: 0; border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); overflow: hidden; }
+  .lines { position: relative; font-size: var(--text-xs); line-height: 1.5; }
+  .lines :global(pre) { margin: 0; padding: var(--space-md); overflow-x: auto; font-size: inherit; line-height: inherit; background: var(--color-paper-2) !important; }
+  .lines :global(span[style*="#768390"]) { color: var(--color-ink-2) !important; }
+  /* The line being read: one row tall, moved a whole row at a time. */
+  .reading { display: none; position: absolute; inset-inline: 0; top: calc(var(--space-md) + var(--first) * 1.5em); height: 1.5em;
+    background: color-mix(in oklch, var(--color-accent-fill) 26%, transparent); border-inline-start: var(--rule-pixel) solid var(--color-accent-fill);
+    pointer-events: none; z-index: 1; }
+  .out { display: flex; align-items: center; gap: var(--space-md); min-width: 0; }
+  .sprite { display: block; width: min(100%, 11rem); height: auto; flex: none; }
+  .label { color: var(--color-ink-2); }
+
+  :global(html.scroll-live) .reading { display: block;
+    transform: translateY(calc(clamp(0, var(--step, 0) - 1, var(--rows) - 1) * 1.5em));
+    opacity: clamp(0, min(var(--step, 0), var(--rows) + 1 - var(--step, 0)), 1); }
+  :global(html.scroll-live) .sprite rect { opacity: clamp(0, var(--step, 99) - var(--row), 1); }
+
+  @media (min-width: 64rem) {
+    .code-to-sprite { grid-template-columns: minmax(0, 1fr) auto; }
+    .out { flex-direction: column; max-width: 12rem; text-align: center; }
+    .sprite { width: 11rem; }
+  }
+</style>

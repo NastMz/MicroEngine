@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
@@ -219,4 +220,60 @@ test('shell: no pixel grid background and no offset button shadows remain', () =
   assert.doesNotMatch(css, /--color-grid|background-size: 32px/);
   assert.doesNotMatch(css, /box-shadow: \d+px \d+px 0/);
   assert.doesNotMatch(fs.readFileSync(path.join(siteRoot, 'src/styles/brand.css'), 'utf8'), /sprite-code/);
+});
+
+test('films: three independent films, each with its sources and poster, published outside the engine and demo releases', () => {
+  const repo = path.resolve(siteRoot, '..');
+  const catalog = JSON.parse(fs.readFileSync(path.join(repo, 'media/films.json'), 'utf8'));
+  assert.equal(catalog.films.length, 3);
+  assert.equal(new Set(catalog.films.map(f => f.slug)).size, 3);
+  assert.equal(new Set(catalog.films.map(f => f.tells)).size, 3, 'each film tells a different thing');
+  // The films' release is a series of its own: never a demo release (v*) or an SDK release (sdk-v*).
+  assert.match(catalog.release, /^films-\d+$/);
+  assert.equal(catalog.repository, 'NastMz/MicroEngine');
+  for (const film of catalog.films) {
+    for (const file of ['index.html', 'SPEC.md', 'STORYLINES.md', 'REVIEW.md', 'audio/Program.cs'])
+      assert.ok(fs.existsSync(path.join(repo, 'media', film.slug, file)), `${film.slug}: ${file}`);
+    assert.ok(fs.existsSync(path.join(siteRoot, 'src/assets/films', `${film.slug}.png`)), `${film.slug}: poster`);
+    assert.ok(film.seconds > 0 && film.seconds < 90 && film.title && film.story);
+    // No film is described as a version of another.
+    assert.doesNotMatch(`${film.title} ${film.tells} ${film.story}`, /\b(version|v2|v3|replaces|remake|updated)\b/i);
+  }
+});
+
+test('films: nothing rendered or regenerable is kept in Git', () => {
+  const repo = path.resolve(siteRoot, '..');
+  const tracked = execFileSync('git', ['ls-files', 'media'], { cwd: repo, encoding: 'utf8' }).split('\n').filter(Boolean);
+  // Before the first commit of the folder there is nothing to list; the ignore rules are checked either way.
+  const binary = tracked.filter(file => /\.(mp4|mov|webm|wav|ogg|mp3|woff2?|ttf|otf)$/i.test(file));
+  assert.deepEqual(binary, [], 'videos, audio and fonts are regenerated, not committed');
+  const ignore = fs.readFileSync(path.join(repo, 'media/.gitignore'), 'utf8');
+  for (const rule of ['*/renders/', '*/assets/audio/', '*/assets/footage/', '*/assets/fonts/', '.cache/']) assert.ok(ignore.includes(rule), rule);
+});
+
+test('landing: no film is loaded with the page, and motion is off without the script or under reduced motion', () => {
+  const read = file => fs.readFileSync(path.join(siteRoot, file), 'utf8');
+  const filmsComponent = read('src/components/landing/Films.astro');
+  // The player has no source until a card is pressed, and never preloads.
+  assert.match(filmsComponent, /<video class="film-video" controls playsinline preload="none"><\/video>/);
+  assert.match(filmsComponent, /video\.removeAttribute\('src'\)/);
+  for (const page of ['src/pages/index.astro', 'src/pages/films.astro']) {
+    assert.doesNotMatch(read(page), /<video|<source|autoplay/i, `${page}: no video element of its own`);
+  }
+  // Every motion rule of the landing is scoped to html.scroll-live, which the script sets only without reduced motion.
+  const scroll = read('src/scripts/scroll.ts');
+  assert.match(scroll, /live = !reduced\.matches;\s*root\.classList\.toggle\('scroll-live', live\)/);
+  for (const file of ['src/pages/index.astro', 'src/components/landing/Colonnade.astro', 'src/components/landing/CodeToSprite.astro',
+    'src/components/landing/FrameTape.astro', 'src/components/landing/SocketBoard.astro', 'src/styles/site.css']) {
+    // Rule by rule: whatever reads the scroll's progress or a reveal's state is selected through html.scroll-live.
+    const css = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const rule of css.split('}')) {
+      const [selector, body = ''] = rule.split('{').slice(-2);
+      const linked = /var\(--(p|step)[,)]/.test(body) || /\[data-reveal\]|\[data-seen\]/.test(selector ?? '');
+      if (linked) assert.match(selector, /scroll-live/, `${file}: a scroll-linked rule outside html.scroll-live: ${selector.trim().slice(0, 90)}`);
+    }
+  }
+  // No animation library came with it.
+  const dependencies = Object.keys(JSON.parse(read('package.json')).dependencies);
+  assert.deepEqual(dependencies.filter(name => /gsap|scrolltrigger|lenis|framer|motion|aos|locomotive/i.test(name)), []);
 });

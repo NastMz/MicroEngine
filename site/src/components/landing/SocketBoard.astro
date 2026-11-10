@@ -25,8 +25,8 @@ const bays = families.filter(f => f !== 'kernel').map(family => ({ family, modul
     </ul>
   </div>
   <ul class="bays">
-    {bays.map(({ family, modules }) => (
-      <li class="bay" data-family={family}>
+    {bays.map(({ family, modules }, i) => (
+      <li class="bay" data-family={family} data-reveal style={`--i:${i % 3}`}>
         <p class="bay-head">
           <FamilyIcon family={family} size={16} />
           <span class="bay-name">{familyLabels[family]}</span>
@@ -90,6 +90,14 @@ const bays = families.filter(f => f !== 'kernel').map(family => ({ family, modul
   .slots :global(.slot[data-state='open'] .module-name) { color: var(--color-ink-2); }
   .slots :global(.slot-status) { display: flex; align-items: center; gap: var(--space-xs); color: var(--status-color, var(--color-ink-3));
     font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+  /* As a bay arrives its modules seat: they come up from below their sockets, one after another, and go back when
+     the reader scrolls up past the board (scripts/scroll.ts sets data-seen). */
+  :global(html.scroll-live) .bay .slots :global(.slot .module) { transition: transform 360ms var(--ease-seat) calc(160ms + var(--n, 0) * 80ms), opacity var(--dur-mid) var(--ease-out) calc(160ms + var(--n, 0) * 80ms); }
+  :global(html.scroll-live) .bay:not([data-seen]) .slots :global(.slot .module) { transform: translateY(var(--space-sm)); opacity: 0; }
+  .slots :global(.slot:nth-child(2)) { --n: 1; }
+  .slots :global(.slot:nth-child(3)) { --n: 2; }
+  .slots :global(.slot:nth-child(4)) { --n: 3; }
+  .slots :global(.slot:nth-child(n + 5)) { --n: 4; }
   @media (prefers-reduced-motion: reduce) {
     .slots :global(.module) { transition: none; }
     .slots :global(.slot[data-state='seated']:hover .module) { transform: none; }

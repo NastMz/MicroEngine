@@ -259,7 +259,8 @@ shows four seated families that ship today and one empty dashed socket, unlabell
   overshoot, so a module "clicks" into place.
 - The signature motion is the module sliding into its socket (`<Mark seat />`, once, on load). A socket's module lifts
   2 px on hover, as if about to be swapped.
-- Nothing loops, nothing moves on scroll, no parallax.
+- Nothing loops. On the landing, motion is tied to the scroll position ([Landing in motion](#landing-in-motion)):
+  a reader who does not scroll sees a still page, and every other page stays still.
 - Under `prefers-reduced-motion: reduce` every animation and transition is removed (components check it; `site.css`
   also shortens all transitions globally).
 
@@ -310,6 +311,35 @@ colour, light and dark, rasterised at real size and enlarged) and the brand kit 
 - **Docs:** Starlight's variables already map onto the tokens for both schemes (`starlight.css`); code blocks are
   Expressive Code, not `.astro-code`, so give them the `CodeLabel` treatment there.
 - **Content:** anything not in the published SDK is an empty dashed socket with its status written out.
+
+## Landing in motion
+
+The landing tells MicroEngine in three acts, each taken from one of the films (`media/`), and each a picture the
+reader moves by scrolling. This section replaces the earlier rule that nothing moves on scroll; every other rule holds.
+
+- **One mechanism.** `src/scripts/scroll.ts` gives each `[data-scroll]` element its progress through the window as
+  `--p` (and `--step`, the same in whole steps), and marks `[data-reveal]` elements with `data-seen`. CSS does
+  everything else. No animation library; no scroll timeline API, which not every supported browser has.
+- **A function of position, never of time.** Scrolling back plays everything backwards. Nothing takes the scroll over:
+  the one held section (`.act-pin`) is a tall section with a sticky child, only on screens at least 64 rem wide and
+  44 rem tall.
+- **Finished by default.** Motion styles apply only under `html.scroll-live`, which the script sets unless the reader
+  asked for reduced motion. Without the script, or with reduced motion, every element is in its final state.
+- **Act one, code** (`CodeToSprite.astro`, from Seated): the sample's string map beside the sprite it draws; a reading
+  line steps down the map and each row of the sprite appears with its row of code.
+- **Act two, the board** (`Colonnade.astro` in the opening, from Room for another; then the socket board): the mark's
+  construction as flat-shaded boxes, three tones a colour, no gradients or shadows. The camera comes round as the
+  reader leaves the opening. Further down, each bay's modules seat as the bay arrives.
+- **Act three, the loop** (`FrameTape.astro`, from Every step): real frames move under a fixed amber playhead; frames
+  passed are full, frames to come are faint. `.page-tape`, the ruler at the top of the window, is the same picture for
+  the page itself: a tick per section and the playhead at the scroll position.
+- **The inverted ground** (`.ground.flip`): a section in the other theme's colours (`color-scheme` flipped, so every
+  token resolves the other way in both themes). It never fades in: its edge crosses the page as it arrives.
+- **Amber stays one thing per picture:** the reading line, the playhead, the play control.
+- **The films** (`Films.astro`, `/films/`): three cards with a frame of each film; a film's file is requested only
+  when its card is pressed, and released when the player closes. Never describe one film as a version of another.
+- Checks: `tests/site.test.mjs` (the films' data, no video in the built landing) and `tests/browser.mjs` (no film
+  requested before a card is pressed; the layout checks at four widths).
 
 ## Landing and shell
 

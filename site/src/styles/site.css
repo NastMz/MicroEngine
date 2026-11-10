@@ -130,6 +130,13 @@ table.plain th { font-family: var(--font-mono); font-weight: 500; font-size: var
 .shot { margin: 0; border: var(--rule-thin) solid var(--color-rule); background: var(--color-paper-2); }
 .shot img { width: 100%; image-rendering: pixelated; aspect-ratio: 16 / 9; object-fit: cover; }
 
+/* Things that arrive as the reader scrolls (scripts/scroll.ts): a short rise into place, staggered by --i, undone when
+   they go back below the window. Only under html.scroll-live, which is never set under reduced motion or without
+   JavaScript, so the default is the finished state. */
+html.scroll-live [data-reveal] { opacity: 0; transform: translateY(var(--space-md));
+  transition: opacity var(--dur-mid) var(--ease-out) calc(var(--i, 0) * 70ms), transform 380ms var(--ease-seat) calc(var(--i, 0) * 70ms); }
+html.scroll-live [data-reveal][data-seen] { opacity: 1; transform: none; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
 }
