@@ -54,7 +54,7 @@ GemGarden/
   <ItemGroup>
     <!-- The engine with the desktop platforms (SDL 3 by default, raylib). A game that ships SDL only can reference
          MicroEngine.Sdl instead. -->
-    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -86,10 +86,27 @@ public static class Hosts
     private static string WebTools => Environment.GetEnvironmentVariable("MICROENGINE_WEB_TOOLS") is { Length: > 0 } w
         ? w : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microengine", "web-tools");
 
+    /// <summary>
+    /// The folder of the workload pack <paramref name="pack"/> under <paramref name="dotnetRoot"/>: the SDK's own runtime
+    /// version (<paramref name="version"/>) when it is installed, otherwise the newest version installed. An SDK released
+    /// before its workload set bundles a newer runtime than the packs the workload installs (SDK 10.0.404 with runtime
+    /// 10.0.15 installs the 10.0.14 packs of workload set 10.403), and the build uses the installed ones. With no pack at
+    /// all, the expected path, for the error message.
+    /// </summary>
+    public static string WorkloadPack(string dotnetRoot, string pack, string version)
+    {
+        string folder = Path.Combine(dotnetRoot, "packs", pack), preferred = Path.Combine(folder, version);
+        if (File.Exists(Path.Combine(preferred, "LICENSE.TXT")) || !Directory.Exists(folder)) return preferred;
+        return Directory.GetDirectories(folder)
+            .Where(d => File.Exists(Path.Combine(d, "LICENSE.TXT")))
+            .Select(d => (Dir: d, Version: Version.TryParse(Path.GetFileName(d).Split('-')[0], out var v) ? v : new Version(0, 0)))
+            .OrderByDescending(p => p.Version).Select(p => p.Dir).FirstOrDefault() ?? preferred;
+    }
+
     private static void WebNotices(string top, GameProject game)
     {
         string dotnetRoot = game.NetCoreRoot;
-        string runtime = Path.Combine(dotnetRoot, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", game.DotnetVersion);
+        string runtime = WorkloadPack(dotnetRoot, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", game.DotnetVersion);
         string? emscripten = Directory.Exists(Path.Combine(dotnetRoot, "packs"))
             ? Directory.GetDirectories(Path.Combine(dotnetRoot, "packs"), "Microsoft.NET.Runtime.Emscripten.*.Sdk.*")
                 .SelectMany(d => Directory.GetFiles(d, "LICENSE", SearchOption.AllDirectories)).FirstOrDefault(f => f.Replace('\\', '/').EndsWith("tools/emscripten/LICENSE", StringComparison.Ordinal))
@@ -122,6 +139,8 @@ public static class Hosts
         string host = Stage("android", game, new()
         {
             ["GameAndroidMinApi"] = game.AndroidMinApi,
+            // The runtime pack the Android workload installed, whose licence and notices the APK carries.
+            ["GameAndroidRuntimePack"] = WorkloadPack(game.NetCoreRoot, "Microsoft.NETCore.App.Runtime.Mono.android-arm64", game.DotnetVersion) + Path.DirectorySeparatorChar,
             ["GameVersionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
         }, $"    public const global::Android.Content.PM.ScreenOrientation ScreenOrientation = global::Android.Content.PM.ScreenOrientation.{game.Orientation switch { "portrait" => "SensorPortrait", "any" => "FullSensor", _ => "SensorLandscape" }};");
         string res = Path.Combine(host, "Resources");

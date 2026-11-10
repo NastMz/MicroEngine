@@ -17,9 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.2" />
     <!-- Shaped text for the right-to-left example: optional, with HarfBuzz. -->
-    <PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.2" />
   </ItemGroup>
 
   <ItemGroup>

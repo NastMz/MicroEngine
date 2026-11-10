@@ -41,6 +41,27 @@ public sealed class NoticesTests
     }
 
     [TestMethod]
+    public void The_runtime_licences_come_from_the_workload_pack_that_is_installed_even_when_the_SDK_is_newer()
+    {
+        // An SDK newer than the latest workload set (10.0.404 with the 10.403 set) bundles runtime 10.0.15, but the
+        // workload installs its runtime packs at 10.0.14.
+        string root = Directory.CreateTempSubdirectory("dotnet-root-").FullName;
+        try
+        {
+            string packs = Path.Combine(root, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm");
+            foreach (var version in new[] { "10.0.9", "10.0.14" })
+            {
+                Directory.CreateDirectory(Path.Combine(packs, version));
+                File.WriteAllText(Path.Combine(packs, version, "LICENSE.TXT"), version);
+            }
+            Assert.AreEqual(Path.Combine(packs, "10.0.14"), Hosts.WorkloadPack(root, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", "10.0.15"), "the newest pack installed");
+            Assert.AreEqual(Path.Combine(packs, "10.0.9"), Hosts.WorkloadPack(root, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", "10.0.9"), "the SDK's own runtime version when it is installed");
+            Assert.AreEqual(Path.Combine(root, "packs", "Missing", "10.0.15"), Hosts.WorkloadPack(root, "Missing", "10.0.15"), "no pack at all: the expected path, for the error message");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [TestMethod]
     public void The_licence_files_ship_with_the_tool()
     {
         foreach (var name in new[] { "SDL-LICENSE.txt", "raylib-LICENSE.txt" })
