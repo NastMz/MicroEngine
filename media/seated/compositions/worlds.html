@@ -1,0 +1,46 @@
+<template>
+  <style>
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+    /* The ground is the yellow of the pixel the camera just dived into. */
+    #root { position: absolute; inset: 0; overflow: hidden; background: #ffec27; }
+    #worlds-iris { position: absolute; inset: 0; background: #0d0b1a; }
+    .worlds-shot { position: absolute; inset: 0; }
+    .worlds-shot video { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; image-rendering: pixelated; }
+    #worlds-caption { position: absolute; left: 96px; bottom: 96px; padding: 20px 30px; background: var(--graphite); z-index: 20;
+      font: 500 32px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--ink); }
+  </style>
+
+  <div id="root" data-composition-id="worlds" data-width="1920" data-height="1080">
+    <div id="worlds-iris">
+      <!-- Real play, captured by tools/capture-footage.mjs. Bars first, then one cut per beat. -->
+      <div class="worlds-shot" id="worlds-shot-1"><video id="worlds-meadow" class="clip" src="assets/footage/meadow.mp4" muted playsinline data-start="0" data-duration="2" data-media-start="1" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-2"><video id="worlds-rift" class="clip" src="assets/footage/rift.mp4" muted playsinline data-start="2" data-duration="2" data-media-start="4" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-3"><video id="worlds-warden" class="clip" src="assets/footage/warden.mp4" muted playsinline data-start="4" data-duration="2" data-media-start="4.6" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-4"><video id="worlds-caves" class="clip" src="assets/footage/caves.mp4" muted playsinline data-start="6" data-duration="1" data-media-start="0.3" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-5"><video id="worlds-duel" class="clip" src="assets/footage/duel.mp4" muted playsinline data-start="7" data-duration="1" data-media-start="2.3" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-6"><video id="worlds-grotto" class="clip" src="assets/footage/grotto.mp4" muted playsinline data-start="8" data-duration="1" data-media-start="5" data-track-index="1"></video></div>
+      <div class="worlds-shot" id="worlds-shot-7"><video id="worlds-sky" class="clip" src="assets/footage/sky.mp4" muted playsinline data-start="9" data-duration="1" data-media-start="1.6" data-track-index="1"></video></div>
+    </div>
+    <div id="worlds-caption">Real games, captured as they run</div>
+  </div>
+
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+
+      // The pixel opens onto the first world.
+      tl.fromTo("#worlds-iris", { clipPath: "circle(0% at 50% 50%)" }, { clipPath: "circle(75% at 50% 50%)", duration: 0.35, ease: "power3.out" }, 0);
+
+      // Each cut comes in slightly large and settles within the beat.
+      [0, 2, 4, 6, 7, 8, 9].forEach((at, i) => {
+        tl.fromTo("#worlds-shot-" + (i + 1), { scale: 1.07 }, { scale: 1, duration: 0.4, ease: "expo.out" }, at);
+      });
+
+      tl.fromTo("#worlds-caption", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.3, ease: "power3.out" }, 2.4);
+      tl.to("#worlds-caption", { clipPath: "inset(0% 0% 0% 100%)", duration: 0.2, ease: "power3.in" }, 5.75);
+
+      window.__timelines["worlds"] = tl;
+    })();
+  </script>
+</template>

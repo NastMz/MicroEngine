@@ -100,6 +100,8 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — |
 | Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — |
 | Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — |
+| Films' sources (`media/`, rendered and published by hand: [`media/README.md`](../media/README.md)) | — | — | — | — | — | — | — |
+| Films' catalog and notice (`media/films.json`, `media/LICENSE`) | — | — | — | layout | — | — | preview, production |
 | A path no rule knows | everything | everything | everything | yes | all | all games | preview, production |
 
 No change builds a release web package here: the browser engine column is where a game's code is compiled to

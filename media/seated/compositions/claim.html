@@ -1,0 +1,42 @@
+<template>
+  <style>
+    @font-face { font-family: 'Bricolage Grotesque'; font-weight: 600; src: url('assets/fonts/bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
+
+    #root { position: absolute; inset: 0; overflow: hidden; background: #f8f6f2; }
+    #claim-copy { position: absolute; left: 160px; top: 252px; }
+    .claim-line { display: block; height: 192px; font: 600 168px/192px var(--font-display); letter-spacing: -0.02em; color: var(--paper-ink); white-space: nowrap; }
+    .claim-word { display: inline-block; margin-right: 0.22em; }
+    #claim-key { position: relative; }
+    /* The one accent of the scene: an amber bar seated under the word that carries the stance. */
+    #claim-seat { position: absolute; left: 0; right: 0; bottom: 8px; height: 16px; background: var(--amber-on-paper); transform-origin: 0 50%; }
+    #claim-rise { position: absolute; inset: 0; background: var(--graphite); transform-origin: 50% 100%; z-index: 10; }
+  </style>
+
+  <div id="root" data-composition-id="claim" data-width="1920" data-height="1080">
+    <!-- The site's opening line, as written. -->
+    <h2 id="claim-copy">
+      <span class="claim-line" id="claim-line-1"><span class="claim-word">A</span><span class="claim-word">game</span><span class="claim-word">engine</span></span>
+      <span class="claim-line" id="claim-line-2"><span class="claim-word">that</span><span class="claim-word" id="claim-key">orchestrates,<span id="claim-seat"></span></span></span>
+      <span class="claim-line" id="claim-line-3"><span class="claim-word">not</span><span class="claim-word">reinvents.</span></span>
+    </h2>
+    <div id="claim-rise"></div>
+  </div>
+
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+
+      // One line per bar (bars 18, 19 and 20), each word sharpening in place: no travel.
+      [0.02, 2, 4].forEach((at, i) => {
+        tl.fromTo("#claim-line-" + (i + 1) + " .claim-word", { opacity: 0, filter: "blur(10px)" },
+          { opacity: 1, filter: "blur(0px)", duration: 0.16, ease: "power4.out", stagger: 0.08 }, at);
+      });
+      tl.fromTo("#claim-seat", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.out" }, 2.3);
+
+      // 5.4-6 s: graphite rises from the baseline and becomes the last scene's ground.
+      tl.fromTo("#claim-rise", { scaleY: 0 }, { scaleY: 1, duration: 0.58, ease: "power2.inOut" }, 5.4);
+
+      window.__timelines["claim"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,10 @@
+{
+  "name": "microengine-film-room-for-another",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.9.30 preview",
+    "check": "npx --yes hyperframes@0.9.30 check",
+    "build": "node ../tools/films.mjs build room-for-another"
+  }
+}

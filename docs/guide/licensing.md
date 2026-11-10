@@ -2,6 +2,7 @@
 
 MicroEngine is open source under the [MIT License](../../LICENSE). The four demo games built with it are not:
 they are published to play and to learn from, with all rights reserved ([demo games notice](../../games/LICENSE)).
+The same holds for the films about it ([films notice](../../media/LICENSE)).
 
 ## What is under which licence
 
@@ -11,6 +12,7 @@ they are published to play and to learn from, with all rights reserved ([demo ga
 | The Hello Engine sample | MIT | copy it into your own games |
 | This documentation and website code | MIT | the same |
 | Meadow Run, Courtyard Key, Trail Duel, Neon Rift: code, levels, characters, names, art and music made for them, and their browser builds and downloads | all rights reserved | play them, keep the copy you downloaded; read and build them to learn MicroEngine; reuse ideas, techniques and mechanics in original games. Not redistribute, sell, or republish them under another name |
+| The films about MicroEngine: their sources and the rendered videos | all rights reserved ([films notice](../../media/LICENSE)) | watch them, link to them, read their sources |
 | Third-party art and audio in the demos | CC0 1.0, credited on each game's credits page | what CC0 allows (anything) |
 | Third-party libraries: SDL 3, ppy.SDL3-CS, NVorbis, raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
 

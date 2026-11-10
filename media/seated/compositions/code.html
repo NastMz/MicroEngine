@@ -1,0 +1,97 @@
+<template>
+  <style>
+    @font-face { font-family: 'Bricolage Grotesque'; font-weight: 600; src: url('assets/fonts/bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--paper); }
+    #code-cam { position: absolute; inset: 0; transform-origin: 1454px 596px; }
+    #code-head { position: absolute; left: 160px; top: 96px; font: 600 132px/1 var(--font-display); letter-spacing: -0.02em; color: var(--paper-ink); }
+
+    #code-panel { position: absolute; left: 160px; top: 290px; width: 880px; height: 660px; background: var(--graphite-2); border-radius: 6px; overflow: hidden; }
+    #code-label { height: 64px; padding: 0 40px; display: flex; align-items: center; background: var(--graphite-3); border-bottom: 2px solid var(--rule);
+      font: 500 28px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--ink-2); }
+    #code-lines { padding: 30px 40px; font: 400 34px/48px var(--font-mono); color: var(--ink); white-space: pre; }
+    .code-ln { height: 48px; margin: 0 -40px; padding: 0 40px; }
+    .code-ln .kw { color: var(--ink-3); }
+    .code-ln .ch { color: var(--ink-2); }
+
+    #code-stage { position: absolute; left: 1148px; top: 290px; width: 612px; height: 612px; background: #1d2b53; }
+    #code-grid { position: absolute; left: 36px; top: 36px; width: 540px; height: 540px; }
+    .code-px { position: absolute; width: 60px; height: 60px; }
+    #code-equals { position: absolute; left: 1148px; top: 920px; width: 612px; font: 500 30px/1 var(--font-mono); letter-spacing: 0.04em; color: var(--paper-ink-2); }
+  </style>
+
+  <div id="root" data-composition-id="code" data-width="1920" data-height="1080">
+    <div id="code-cam" data-layout-allow-overflow>
+      <h1 id="code-head">Code first.</h1>
+
+      <div id="code-panel">
+        <div id="code-label">a sprite is a palette and a map</div>
+        <!-- Lines 20 to 30 of samples/HelloEngine/Program.cs, as they are. -->
+        <div id="code-lines"><div class="code-ln" id="code-ln-0"><span class="kw">var</span> star = PixelImage.FromMap(palette,</div><div class="code-ln code-map" id="code-ln-1">    "....o....",</div><div class="code-ln code-map" id="code-ln-2">    "...oyo...",</div><div class="code-ln code-map" id="code-ln-3">    "ooooyoooo",</div><div class="code-ln code-map" id="code-ln-4">    "oyyywyyyo",</div><div class="code-ln code-map" id="code-ln-5">    ".oyyyyyo.",</div><div class="code-ln code-map" id="code-ln-6">    "..oyyyo..",</div><div class="code-ln code-map" id="code-ln-7">    ".oyyoyyo.",</div><div class="code-ln code-map" id="code-ln-8">    "oyyo.oyyo",</div><div class="code-ln code-map" id="code-ln-9">    "ooo...ooo");</div></div>
+      </div>
+
+      <div id="code-stage"><div id="code-grid"></div></div>
+      <div id="code-equals">= the sprite it draws</div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // The sample's palette: Art.Palette("o=#000000", "y=#ffec27", "w=#fff1e8").
+      const palette = { o: "#000000", y: "#ffec27", w: "#fff1e8" };
+      const ink = { o: "#8d93a3", y: "#ffec27", w: "#fff1e8", ".": "#4b5060" };
+      const grid = document.querySelector("#code-grid");
+      const rows = [...document.querySelectorAll("#code-lines .code-map")];
+
+      // Split each map row into one span per character, and build the row's pixels beside it.
+      rows.forEach((line, r) => {
+        const text = line.textContent;
+        const open = text.indexOf('"');
+        const map = text.slice(open + 1, open + 10);
+        line.textContent = "";
+        line.append(text.slice(0, open + 1));
+        [...map].forEach((ch, c) => {
+          const span = document.createElement("span");
+          span.className = "ch code-ch-" + r;
+          span.dataset.ink = ink[ch];
+          span.textContent = ch;
+          line.append(span);
+          if (ch === ".") return;
+          const px = document.createElement("div");
+          px.className = "code-px code-px-" + r;
+          px.style.left = c * 60 + "px";
+          px.style.top = r * 60 + "px";
+          px.style.background = palette[ch];
+          grid.append(px);
+        });
+        line.append(text.slice(open + 10));
+      });
+
+      const tl = gsap.timeline({ paused: true });
+
+      // 0-3.4 s: the map arrives, one line every 0.3 s (a tick each). The first line is on screen at frame 0.
+      gsap.set("#code-equals", { opacity: 0 });
+      gsap.set(".code-px", { scale: 0 });
+      for (let i = 1; i <= 9; i++) {
+        tl.fromTo("#code-ln-" + i, { opacity: 0 }, { opacity: 1, duration: 0.07, ease: "none" }, 0.3 + i * 0.3);
+      }
+
+      // 4-5.8 s: each row of the map resolves into a row of pixels.
+      rows.forEach((line, r) => {
+        const at = 4 + r * 0.2;
+        tl.fromTo(line, { backgroundColor: "rgba(72, 78, 94, 0)" }, { backgroundColor: "rgba(72, 78, 94, 1)", duration: 0.08, ease: "none" }, at);
+        tl.to(line, { backgroundColor: "rgba(72, 78, 94, 0)", duration: 0.3, ease: "power1.in" }, at + 0.25);
+        tl.to(".code-ch-" + r, { color: (i, el) => el.dataset.ink, duration: 0.1, ease: "none" }, at);
+        tl.fromTo(".code-px-" + r, { scale: 0 }, { scale: 1, duration: 0.16, ease: "back.out(1.6)", stagger: 0.015 }, at + 0.04);
+      });
+      tl.fromTo("#code-equals", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, 6.1);
+
+      // 7.4-10 s: the camera dives into one yellow pixel of the star (row 4, column 4) until it fills the frame.
+      tl.fromTo("#code-cam", { scale: 1 }, { scale: 38, duration: 2.6, ease: "expo.in" }, 7.4);
+
+      window.__timelines["code"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* MicroEngine's "Socket" tokens (site/src/styles/tokens.css), fixed to the values each world uses. */
+      :root {
+        --paper: oklch(97.5% 0.006 85);
+        --paper-ink: oklch(22% 0.012 260);
+        --paper-ink-2: oklch(40% 0.014 260);
+        --graphite: oklch(18% 0.01 260);
+        --graphite-2: oklch(21.5% 0.012 260);
+        --graphite-3: oklch(26% 0.014 260);
+        --rule: oklch(34% 0.014 260);
+        --ink: #f1eee9;
+        --ink-2: oklch(80% 0.012 260);
+        --ink-3: oklch(72% 0.012 260);
+        --amber: #fbc044;
+        --amber-on-paper: oklch(80% 0.15 78);
+        --module-ink: oklch(21% 0.03 85);
+        --family-graphics: oklch(78% 0.12 295);
+        --family-physics: oklch(79% 0.12 50);
+        --family-audio: oklch(78% 0.12 355);
+        --family-input: oklch(79% 0.11 245);
+        --family-platform: oklch(80% 0.1 195);
+        --family-tools: oklch(82% 0.13 125);
+        --font-display: 'Bricolage Grotesque', sans-serif;
+        --font-body: 'IBM Plex Sans', sans-serif;
+        --font-mono: 'IBM Plex Mono', monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="55.2" data-width="1920" data-height="1080">
+      <!-- One scene, one take. Bar N of the score starts at 2.4 N seconds (SPEC.md). -->
+      <div id="film" class="clip" data-composition-id="film" data-composition-src="compositions/film.html" data-start="0" data-duration="55.2" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index: 1"></div>
+
+      <!-- Score: a MicroEngine Song rendered by audio/Program.cs. The film draws its steps. -->
+      <audio id="score" class="clip" src="assets/audio/score.wav" data-start="0" data-duration="55.2" data-track-index="2" data-volume="1"></audio>
+
+      <!-- Effects: MicroEngine Synth sounds. Each lands one frame after its picture. -->
+      <audio id="sfx-01-open" class="clip" src="assets/audio/open.wav" data-start="9.63" data-duration="0.3" data-track-index="3" data-volume="0.8"></audio>
+      <audio id="sfx-02-close" class="clip" src="assets/audio/close.wav" data-start="16.23" data-duration="0.26" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-03-split" class="clip" src="assets/audio/split.wav" data-start="16.83" data-duration="0.53" data-track-index="5" data-volume="0.8"></audio>
+      <audio id="sfx-04-turn" class="clip" src="assets/audio/turn.wav" data-start="24.03" data-duration="1.2" data-track-index="6" data-volume="0.8"></audio>
+      <audio id="sfx-05-split" class="clip" src="assets/audio/split.wav" data-start="38.43" data-duration="0.53" data-track-index="7" data-volume="0.7"></audio>
+      <audio id="sfx-06-riser" class="clip" src="assets/audio/riser.wav" data-start="43.25" data-duration="2.35" data-track-index="8" data-volume="0.7"></audio>
+      <audio id="sfx-07-impact" class="clip" src="assets/audio/impact.wav" data-start="45.63" data-duration="1.03" data-track-index="9" data-volume="1"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

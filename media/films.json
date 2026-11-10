@@ -1,0 +1,33 @@
+{
+  "repository": "NastMz/MicroEngine",
+  "release": "films-1",
+  "films": [
+    {
+      "slug": "seated",
+      "title": "Seated",
+      "tells": "The result",
+      "story": "Code becomes a sprite, the sprite becomes games, and the games stand on a small kernel.",
+      "seconds": 50,
+      "poster": 6.5,
+      "footage": ["meadow", "caves", "sky", "rift", "grotto", "warden", "duel", "screen"]
+    },
+    {
+      "slug": "room-for-another",
+      "title": "Room for another",
+      "tells": "The architecture",
+      "story": "A kernel with sockets: modules that ship, others in their place, your own, and ones nobody has built.",
+      "seconds": 56,
+      "poster": 12,
+      "footage": ["screen", "sky", "warden", "duel"]
+    },
+    {
+      "slug": "every-step",
+      "title": "Every step",
+      "tells": "The loop",
+      "story": "The loop owns time: equal steps, always in the same order. What happens in each one is yours.",
+      "seconds": 55.2,
+      "poster": 29.5,
+      "footage": []
+    }
+  ]
+}

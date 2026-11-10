@@ -1,0 +1,274 @@
+<template>
+  <style>
+    @font-face { font-family: 'Bricolage Grotesque'; font-weight: 600; src: url('assets/fonts/bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+
+    #root { position: absolute; inset: 0; overflow: hidden; background: var(--graphite); }
+
+    /* The set: MicroEngine's board built as an object in space. A lintel (the kernel) on walls, bays between them
+       (the sockets), blocks that slide into the bays (the modules) and screens standing on the lintel (what runs).
+       The camera is five nested groups: dolly > tilt > yaw > pivot > shake. */
+    #b-stage { position: absolute; inset: 0; perspective: 2600px; perspective-origin: 50% 50%; }
+    #b-dolly, #b-tilt, #b-yaw, #b-pivot, #b-shake, .b-box { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+    #b-dolly { left: 960px; top: 540px; }
+    .b-face { position: absolute; backface-visibility: hidden; }
+    .b-wire .b-face { backface-visibility: visible; border: 5px dashed var(--ink-3); }
+    #b-floor { position: absolute; left: -9000px; top: -6000px; width: 18000px; height: 12000px; background: var(--graphite-2); }
+
+    /* A module's face: its family's icon (site/src/components/brand/geometry.mjs) and name. */
+    .b-front { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+    .b-front svg { width: 104px; height: 104px; fill: var(--module-ink); }
+    .b-front svg .seat { opacity: 0.55; }
+    .b-front span { font: 500 28px/1 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--module-ink); }
+    .b-inset { width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; background: var(--module-ink); }
+    .b-inset svg { width: 96px; height: 96px; }
+    .b-band { width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; }
+
+    /* What stands on the lintel. Each screen's face is laid out flat here and placed in space by the script. */
+    .b-screen { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--graphite-3); backface-visibility: hidden; }
+    .b-screen video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+    .b-off { position: absolute; inset: 0; background: var(--graphite-3); z-index: 5; }
+    #b-term { position: absolute; inset: 0; padding: 34px 26px; background: var(--graphite-2); font: 400 26px/50px var(--font-mono); color: var(--ink-2); white-space: nowrap; }
+    #b-term b { font-weight: 500; color: oklch(82% 0.14 150); }
+    #b-plan { position: absolute; inset: 0; background: var(--graphite-2); perspective: 900px; }
+    #b-plan-tag { position: absolute; left: 30px; bottom: 26px; font: 500 28px/1 var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); }
+    #b-solid, .b-solid-face { position: absolute; transform-style: preserve-3d; }
+    #b-solid { left: 400px; top: 200px; width: 0; height: 0; }
+    .b-solid-face { left: -120px; top: -120px; width: 240px; height: 240px; border: 5px dashed var(--ink-2); }
+
+    .b-line { position: absolute; left: 120px; bottom: 96px; font: 600 88px/1.05 var(--font-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+    #b-flood { position: absolute; inset: 0; background: #f8f6f2; transform-origin: 50% 100%; z-index: 40; }
+  </style>
+
+  <div id="root" data-composition-id="board" data-width="1920" data-height="1080">
+    <div id="b-stage" data-layout-allow-overflow>
+      <div id="b-dolly"><div id="b-tilt"><div id="b-yaw"><div id="b-pivot">
+        <div id="b-floor"></div>
+        <div id="b-shake">
+          <!-- The centre screen: real play, real test output, and one drawing of something that does not exist. -->
+          <div class="b-screen" id="b-screen-main" style="width: 800px; height: 450px">
+            <video id="b-play-1" class="clip" src="assets/footage/screen.mp4" muted playsinline data-start="8" data-duration="8" data-media-start="0.2" data-track-index="1"></video>
+            <video id="b-play-2" class="clip" src="assets/footage/screen.mp4" muted playsinline data-start="17" data-duration="3" data-media-start="9" data-track-index="1"></video>
+            <video id="b-play-3" class="clip" src="assets/footage/sky.mp4" muted playsinline data-start="25.5" data-duration="2.5" data-media-start="1.2" data-track-index="1"></video>
+            <video id="b-play-4" class="clip" src="assets/footage/screen.mp4" muted playsinline data-start="32" data-duration="8" data-media-start="2" data-track-index="1"></video>
+            <!-- Real output of a demo's test suite, run with no window: dotnet test tests/MeadowRun.Tests. -->
+            <div id="b-term"><div class="b-term-ln">$ dotnet test</div><div class="b-term-ln"><b>Passed</b> HoldingJumpJumpsHigherThanTapping</div><div class="b-term-ln"><b>Passed</b> RunningJumpIsHigherThanStandingJump</div><div class="b-term-ln"><b>Passed</b> EveryPlatformingLevelIsTraversable</div><div class="b-term-ln"><b>Passed</b> AutopilotBeatsTheFirstLevelUnderFullRules</div><div class="b-term-ln"><b>Passed</b> TerminalVelocityCapsFalls</div></div>
+            <div id="b-plan"><div id="b-solid"></div><div id="b-plan-tag">NOT BUILT YET</div></div>
+            <div class="b-off" id="b-off-main"></div>
+          </div>
+          <div class="b-screen" id="b-screen-left" style="width: 640px; height: 360px">
+            <video id="b-play-left" class="clip" src="assets/footage/warden.mp4" muted playsinline data-start="36" data-duration="4" data-media-start="2.2" data-track-index="2"></video>
+            <div class="b-off" id="b-off-left"></div>
+          </div>
+          <div class="b-screen" id="b-screen-right" style="width: 640px; height: 360px">
+            <video id="b-play-right" class="clip" src="assets/footage/duel.mp4" muted playsinline data-start="37" data-duration="3" data-media-start="1.5" data-track-index="3"></video>
+            <div class="b-off" id="b-off-right"></div>
+          </div>
+        </div>
+      </div></div></div></div>
+    </div>
+
+    <h2 class="b-line" id="b-line-1">Every subsystem is a socket</h2>
+    <h2 class="b-line" id="b-line-2">Use what ships</h2>
+    <h2 class="b-line" id="b-line-3">Or choose another</h2>
+    <h2 class="b-line" id="b-line-4">Even one with no window</h2>
+    <h2 class="b-line" id="b-line-5">Seat your own</h2>
+    <h2 class="b-line" id="b-line-6">Or one that doesn't exist yet</h2>
+    <div id="b-flood"></div>
+  </div>
+
+  <script>
+    (() => {
+      const rig = document.querySelector("#b-shake");
+      const INK = { front: "#f1eee9", top: "#fbfaf7", side: "#cfcbc3", back: "#b9b5ad" };
+      const shade = c => ({ front: c, top: `color-mix(in oklab, ${c} 82%, white)`, side: `color-mix(in oklab, ${c} 78%, black)`, back: `color-mix(in oklab, ${c} 62%, black)` });
+
+      // A box of six flat faces, centred on its own origin; placed with gsap so transforms never conflict.
+      const box = (id, w, h, d, at, colors, frontHtml, wire) => {
+        const el = document.createElement("div");
+        el.className = "b-box" + (wire ? " b-wire" : "");
+        el.id = id;
+        const face = (fw, fh, transform, color, html) => {
+          const f = document.createElement("div");
+          f.className = "b-face" + (html ? " b-front" : "");
+          f.style.cssText = `width:${fw}px;height:${fh}px;left:${-fw / 2}px;top:${-fh / 2}px;transform:${transform};` + (wire ? "" : `background:${color};`);
+          if (html) f.innerHTML = html;
+          el.append(f);
+        };
+        face(w, h, `translateZ(${d / 2}px)`, colors.front, frontHtml);
+        face(w, h, `rotateY(180deg) translateZ(${d / 2}px)`, colors.back);
+        face(d, h, `rotateY(90deg) translateZ(${w / 2}px)`, colors.side);
+        face(d, h, `rotateY(-90deg) translateZ(${w / 2}px)`, colors.side);
+        face(w, d, `rotateX(90deg) translateZ(${h / 2}px)`, colors.top);
+        face(w, d, `rotateX(-90deg) translateZ(${h / 2}px)`, colors.back);
+        rig.append(el);
+        gsap.set(el, { x: at[0], y: at[1], z: at[2] });
+        return el;
+      };
+
+      gsap.set("#b-floor", { rotationX: 90, z: 0 });
+
+      // The board. Bay i is centred at bayX(i); the first six bays are the subsystem families.
+      const bayX = i => -650 + i * 260;
+      const DEPTH = 220;
+      box("b-lintel", 1600, 60, DEPTH, [0, -310, 0], INK);
+      for (let i = 0; i <= 6; i++) box("b-wall-" + i, 40, 280, DEPTH, [-780 + i * 260, -140, 0], INK);
+      // The extension: three more bays on each side, drawn late in the film.
+      box("b-lintel-l", 780, 60, DEPTH, [-1190, -310, 0], INK);
+      box("b-lintel-r", 780, 60, DEPTH, [1190, -310, 0], INK);
+      const extWalls = [-1040, 1040, -1300, 1300, -1560, 1560].map((x, i) => box("b-xwall-" + i, 40, 280, DEPTH, [x, -140, 0], INK));
+
+      // Screens: a slab standing on the lintel, with its flat face (declared in the markup) placed on the front.
+      const screen = (name, w, h, x) => {
+        box("b-slab-" + name, w + 28, h + 28, 28, [x, -340 - (h + 28) / 2, 0], { front: "#f1eee9", top: "#fbfaf7", side: "#cfcbc3", back: "#b9b5ad" });
+        gsap.set("#b-screen-" + name, { x: x - w / 2, y: -340 - 14 - h, z: 15 });
+      };
+      screen("main", 800, 450, 0);
+      screen("left", 640, 360, -1190);
+      screen("right", 640, 360, 1190);
+
+      // Modules. Icons are the brand's family icons, board and module paths as they are.
+      const icons = {
+        graphics: '<path fill-rule="evenodd" d="M0 2H16V14H0Z M2 4V12H14V4Z"/><path class="seat" d="M3 11V9H6V6H9V8H13V11Z"/>',
+        physics: '<path d="M0 3H2V13H16V15H0Z"/><path class="seat" d="M6 4H12V10H6Z"/>',
+        audio: '<path d="M0 8H4V14H0Z M12 6H16V14H12Z"/><path class="seat" d="M6 2H10V14H6Z"/>',
+        input: '<path d="M6 1H10V15H6V10H1V6H6Z"/><path class="seat" d="M11 6H15V10H11Z"/>',
+        platform: '<path d="M0 11H5V13H11V11H16V15H0Z"/><path class="seat" d="M6 3H10V12H6Z"/>',
+        tools: '<path d="M0 1H5V3H2V13H5V15H0Z M16 1H11V3H14V13H11V15H16Z"/><path class="seat" d="M4 5H12V11H4Z"/>',
+      };
+      const families = ["graphics", "physics", "audio", "input", "platform", "tools"];
+      const hue = f => `var(--family-${f})`;
+      const svg = (f, fill) => `<svg viewBox="0 0 16 16"${fill ? ` style="fill:${fill}"` : ""}>${icons[f]}</svg>`;
+      const module = (id, bay, colors, html, wire) => box(id, 180, 260, 180, [bayX(bay), -130, 0], colors, html || "<i></i>", wire);
+
+      // What ships: the family's colour, solid.
+      families.forEach((f, i) => module("b-m-" + i, i, shade(hue(f)), svg(f) + `<span>${f}</span>`));
+      // Another implementation of the same family: same colour, a different face.
+      module("b-m-other", 4, shade(hue("platform")), `<div class="b-inset">${svg("platform", hue("platform"))}</div><span>platform</span>`);
+      // The implementation with no window at all.
+      module("b-m-blind", 4, shade(hue("platform")), `<div class="b-inset" style="height:20px"></div><div class="b-inset" style="height:20px"></div><div class="b-inset" style="height:20px"></div><span>platform</span>`);
+      // Your own: drawn in the board's ink, wearing the family's colour as a band.
+      const yours = f => `<div class="b-band" style="background:${hue(f)}">${svg(f)}</div><span>${f}</span>`;
+      module("b-m-own-input", 3, INK, yours("input"));
+      module("b-m-own-audio", 2, INK, yours("audio"));
+      // Not built: an outline that never seats.
+      module("b-m-next", 0, INK, null, true);
+      // The extension's modules: kinds of subsystem that have no name yet, so no family colour.
+      const NEUTRAL = shade("oklch(58% 0.016 260)");
+      module("b-x-0", -1, NEUTRAL); module("b-x-1", 6, INK, `<div class="b-band" style="background:oklch(58% 0.016 260)"></div>`);
+      module("b-x-2", -2, INK, `<div class="b-band" style="background:oklch(58% 0.016 260)"></div>`); module("b-x-3", 7, NEUTRAL);
+      module("b-x-4", -3, INK, null, true); module("b-x-5", 8, INK, null, true);
+
+      // The drawing on the screen for what is not built: a dashed solid, turning.
+      const solid = document.querySelector("#b-solid");
+      ["translateZ(120px)", "rotateY(180deg) translateZ(120px)", "rotateY(90deg) translateZ(120px)", "rotateY(-90deg) translateZ(120px)", "rotateX(90deg) translateZ(120px)", "rotateX(-90deg) translateZ(120px)"]
+        .forEach(t => { const f = document.createElement("div"); f.className = "b-solid-face"; f.style.transform = t; solid.append(f); });
+
+      const tl = gsap.timeline({ paused: true });
+      const show = (sel, at) => tl.set(sel, { visibility: "visible" }, at);
+      const hide = (sel, at) => tl.set(sel, { visibility: "hidden" }, at);
+
+      // A module slides into its bay along the floor and lands exactly at `at`; the board takes a 6 px hit.
+      const seat = (sel, at) => {
+        show(sel, at - 0.36);
+        tl.fromTo(sel, { z: 950 }, { z: 0, duration: 0.34, ease: "power2.in", immediateRender: false }, at - 0.34);
+        tl.fromTo("#b-shake", { y: -6 }, { y: 0, duration: 0.26, ease: "power3.out", immediateRender: false }, at);
+      };
+      // The outline drifts toward its bay and stops outside it.
+      const drift = (sel, at, duration) => {
+        show(sel, at);
+        tl.fromTo(sel, { z: 1300 }, { z: 330, duration, ease: "power2.out", immediateRender: false }, at);
+      };
+      // One camera shot. Cuts are jumps between shots; inside a shot the camera only drifts.
+      const shot = (from, to, target, a, b, ease) => {
+        const d = to - from, o = { duration: d, ease: ease || "none", immediateRender: false };
+        tl.fromTo("#b-pivot", { x: -target[0], y: -target[1], z: 0 }, { x: -target[0], y: -target[1], z: 0, ...o }, from);
+        tl.fromTo("#b-dolly", { z: a.dolly }, { z: b.dolly, ...o }, from);
+        tl.fromTo("#b-tilt", { rotationX: a.tilt }, { rotationX: b.tilt, ...o }, from);
+        tl.fromTo("#b-yaw", { rotationY: a.yaw }, { rotationY: b.yaw, ...o }, from);
+      };
+      const line = (n, from, to) => {
+        tl.fromTo("#b-line-" + n, { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, from);
+        tl.to("#b-line-" + n, { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power2.in" }, to);
+      };
+      const screenOn = (name, at) => tl.set("#b-off-" + name, { opacity: 0 }, at);
+      const screenOff = (name, at) => tl.set("#b-off-" + name, { opacity: 1 }, at);
+
+      // Start: an empty board, dark screens, nothing seated.
+      gsap.set(".b-line", { opacity: 0 });
+      gsap.set("[id^='b-m-'], [id^='b-x-'], .b-term-ln", { visibility: "hidden" });
+      gsap.set("#b-term, #b-plan", { opacity: 0 });
+      gsap.set("#b-lintel-l, #b-lintel-r, [id^='b-xwall-'], #b-slab-left, #b-slab-right, #b-screen-left, #b-screen-right", { visibility: "hidden" });
+      gsap.set("#b-flood", { scaleY: 0 });
+      gsap.set("#b-m-next, #b-x-4, #b-x-5", { z: 1300 });
+
+      // 0-8 s. Three close shots, one module each, then the whole board as the other three seat.
+      shot(0, 2, [390, -150], { dolly: 1100, tilt: -10, yaw: -30 }, { dolly: 1100, tilt: -10, yaw: -22 });
+      seat("#b-m-4", 1);
+      shot(2, 4, [-650, -150], { dolly: 1000, tilt: -24, yaw: 34 }, { dolly: 1000, tilt: -24, yaw: 26 });
+      seat("#b-m-0", 3);
+      shot(4, 6, [-130, -150], { dolly: 1150, tilt: -5, yaw: -6 }, { dolly: 1150, tilt: -5, yaw: 8 });
+      seat("#b-m-2", 5);
+      shot(6, 8, [0, -250], { dolly: 300, tilt: -14, yaw: 22 }, { dolly: -350, tilt: -12, yaw: 12 }, "power2.inOut");
+      seat("#b-m-1", 6.5); seat("#b-m-3", 7); seat("#b-m-5", 7.5);
+
+      // 8-16 s. The screen comes on: a game runs on what is seated. The camera travels round the board.
+      shot(8, 16, [0, -250], { dolly: -350, tilt: -12, yaw: 12 }, { dolly: -350, tilt: -12, yaw: -12 });
+      screenOn("main", 8);
+      line(1, 8.4, 11.7);
+      line(2, 12.2, 15.76);
+
+      // 16-20 s. Another configuration, shown as a new shot: a different platform module, the same game.
+      shot(16, 20, [120, -270], { dolly: -520, tilt: -10, yaw: -28 }, { dolly: -520, tilt: -10, yaw: -20 });
+      screenOff("main", 16); hide("#b-m-4", 16);
+      seat("#b-m-other", 16.5);
+      screenOn("main", 17);
+      line(3, 17, 19.76);
+
+      // 20-24 s. A platform with no window: the game is played by its tests.
+      shot(20, 24, [80, -250], { dolly: -600, tilt: -16, yaw: 26 }, { dolly: -600, tilt: -16, yaw: 18 });
+      screenOff("main", 20); hide("#b-m-other", 20);
+      seat("#b-m-blind", 20.5);
+      tl.set("#b-term", { opacity: 1 }, 21); screenOn("main", 21);
+      document.querySelectorAll(".b-term-ln").forEach((ln, i) => show(ln, 21 + i * 0.4));
+      line(4, 21, 23.76);
+
+      // 24-28 s. Modules of your own in two sockets.
+      shot(24, 28, [-60, -260], { dolly: -560, tilt: -20, yaw: -16 }, { dolly: -560, tilt: -20, yaw: -6 });
+      screenOff("main", 24); tl.set("#b-term", { opacity: 0 }, 24); hide("#b-m-blind", 24); show("#b-m-4", 24); hide("#b-m-3, #b-m-2", 24);
+      seat("#b-m-own-input", 24.5); seat("#b-m-own-audio", 25);
+      screenOn("main", 25.5);
+      line(5, 25.5, 27.76);
+
+      // 28-32 s. A module that is not built: an outline that stops outside its socket, and a drawing on the screen.
+      shot(28, 32, [-160, -240], { dolly: -640, tilt: -9, yaw: 30 }, { dolly: -640, tilt: -9, yaw: 18 });
+      screenOff("main", 28); hide("#b-m-own-input, #b-m-own-audio", 28); show("#b-m-3, #b-m-2", 28); hide("#b-m-0", 28);
+      drift("#b-m-next", 28.3, 1.5);
+      tl.set("#b-plan", { opacity: 1 }, 29); screenOn("main", 29);
+      tl.fromTo("#b-solid", { rotationX: -22, rotationY: 20 }, { rotationX: -22, rotationY: 150, duration: 3, ease: "none", immediateRender: false }, 29);
+      line(6, 29, 31.76);
+
+      // 32-40 s. The board extends: more bays, modules nobody has named, more screens, outlines at both ends.
+      shot(32, 40, [0, -250], { dolly: -350, tilt: -12, yaw: 6 }, { dolly: -2000, tilt: -20, yaw: -8 }, "power2.out");
+      tl.set("#b-plan", { opacity: 0 }, 32); hide("#b-m-next", 32); show("#b-m-0", 32);
+      show("#b-lintel-l, #b-lintel-r", 32.3);
+      tl.fromTo("#b-lintel-l", { scaleX: 0.001, x: -800 }, { scaleX: 1, x: -1190, duration: 1, ease: "power3.inOut", immediateRender: false }, 32.3);
+      tl.fromTo("#b-lintel-r", { scaleX: 0.001, x: 800 }, { scaleX: 1, x: 1190, duration: 1, ease: "power3.inOut", immediateRender: false }, 32.3);
+      extWalls.forEach((wall, i) => {
+        const at = 32.75 + Math.floor(i / 2) * 0.25;
+        show(wall, at);
+        tl.fromTo(wall, { scaleY: 0.001, y: -280 }, { scaleY: 1, y: -140, duration: 0.3, ease: "power3.out", immediateRender: false }, at);
+      });
+      seat("#b-x-0", 34); seat("#b-x-1", 34.5); seat("#b-x-2", 35); seat("#b-x-3", 35.5);
+      show("#b-slab-left, #b-screen-left", 35.5); show("#b-slab-right, #b-screen-right", 36.5);
+      screenOn("left", 36); screenOn("right", 37);
+      drift("#b-x-4", 36, 1.4); drift("#b-x-5", 36.5, 1.4);
+
+      // 39.4-40 s: paper rises and becomes the next scene's ground.
+      tl.fromTo("#b-flood", { scaleY: 0 }, { scaleY: 1, duration: 0.58, ease: "power2.inOut" }, 39.4);
+
+      window.__timelines["board"] = tl;
+    })();
+  </script>
+</template>

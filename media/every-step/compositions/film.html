@@ -1,0 +1,269 @@
+<template>
+  <style>
+    @font-face { font-family: 'Bricolage Grotesque'; font-weight: 600; src: url('assets/fonts/bricolage-grotesque-latin-600-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Mono'; font-weight: 500; src: url('assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'IBM Plex Sans'; font-weight: 400; src: url('assets/fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
+
+    #root { position: absolute; inset: 0; overflow: hidden; background: #f8f6f2; }
+    #film-canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    .film-line { position: absolute; left: 120px; top: 92px; font: 600 96px/1.05 var(--font-display); letter-spacing: -0.02em; color: #171b20; white-space: nowrap; }
+    .film-line.on-graphite { color: #f1eee9; }
+    .film-part { position: absolute; top: 664px; width: 340px; text-align: center; font: 500 34px/1 var(--font-mono); letter-spacing: 0.08em; color: #171b20; }
+    #film-word { position: absolute; left: 588.89px; top: 430px; width: 921.11px; height: 147.5px; }
+    #film-word img { display: block; width: 100%; height: 100%; }
+    #film-last { position: absolute; left: 0; right: 0; top: 660px; text-align: center; font: 400 44px/1.2 var(--font-body); color: oklch(40% 0.014 260); }
+    .film-w { display: inline-block; margin: 0 0.13em; }
+  </style>
+
+  <div id="root" data-composition-id="film" data-width="1920" data-height="1080">
+    <canvas id="film-canvas" width="1920" height="1080" data-layout-ignore></canvas>
+
+    <h2 class="film-line" id="film-line-1">A game is made of time</h2>
+    <h2 class="film-line" id="film-line-2">Cut into equal steps</h2>
+    <h2 class="film-line" id="film-line-3">Each one in the same order</h2>
+    <h2 class="film-line" id="film-line-4">Play the same steps again</h2>
+    <h2 class="film-line" id="film-line-5">Get the same game</h2>
+    <!-- "The loop owns time" is the engine's own sentence (docs/manual/lifecycle.md, docs/architecture.md). -->
+    <h2 class="film-line on-graphite" id="film-line-6">The loop owns time</h2>
+    <h2 class="film-line on-graphite" id="film-line-7">What happens in it is yours</h2>
+
+    <div class="film-part" id="film-part-1" style="left: 530px">INPUT</div>
+    <div class="film-part" id="film-part-2" style="left: 890px">UPDATE</div>
+    <div class="film-part" id="film-part-3" style="left: 1250px">DRAW</div>
+
+    <div id="film-word"><img src="assets/brand/wordmark-light.svg" alt="MicroEngine" /></div>
+    <p id="film-last"><span class="film-w">The</span><span class="film-w">loop</span><span class="film-w">owns</span><span class="film-w">time.</span><span class="film-w">The</span><span class="film-w">rest</span><span class="film-w">is</span><span class="film-w">yours.</span></p>
+  </div>
+
+  <script>
+    (() => {
+      // The steps of every voice of the score, written by audio/Program.cs and embedded by tools/embed-score.mjs.
+      const SCORE = /*score:start*/{"bpm":100,"stepsPerBeat":2,"stepsPerBar":8,"bars":23,"voices":[{"Name":"kick","Steps":[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"snare","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"hat","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"bass","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"arp","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"pad","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"lead","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,1,1,2,2,1,1,1,2,2,1,1,2,1,2,1,2,1,2,1,1,1,2,1,2,2,1,1,2,1,2,1,2,1,2,1,2,1,1,1,2,1,2,1,2,1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"Name":"bell","Steps":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]}/*score:end*/;
+      const STEP = 60 / SCORE.bpm / SCORE.stepsPerBeat;   // 0.3 s
+      const BAR = STEP * SCORE.stepsPerBar;                // 2.4 s
+      const voice = name => SCORE.voices.find(v => v.Name === name).Steps;
+      // Rows top to bottom, with the bar in which each row joins and leaves the tape.
+      const rows = [
+        { steps: voice("lead"), enter: 24, leave: 38.8 }, { steps: voice("bell"), enter: 24, leave: 38.8 },
+        { steps: voice("arp"), enter: 16.8, leave: 39 }, { steps: voice("pad"), enter: 24, leave: 38.8 },
+        { steps: voice("bass"), enter: 7.2, leave: 39.2 }, { steps: voice("hat"), enter: 4.8, leave: 39.2 },
+        { steps: voice("snare"), enter: 16.8, leave: 39 }, { steps: voice("kick"), enter: -1, leave: 999 },
+      ];
+      const kick = voice("kick");
+
+      const ctx = document.querySelector("#film-canvas").getContext("2d");
+      const W = 1920, H = 1080;
+
+      const ease = { io: x => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2), out: x => 1 - Math.pow(1 - x, 3), in: x => x * x * x };
+      const ramp = (t, a, b, e) => (t <= a ? 0 : t >= b ? 1 : (e || ease.io)((t - a) / (b - a)));
+      const mix = (a, b, k) => a + (b - a) * k;
+      const rgb = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a === undefined ? 1 : a})`;
+      const mix3 = (a, b, k) => [mix(a[0], b[0], k), mix(a[1], b[1], k), mix(a[2], b[2], k)];
+
+      // The brand's two grounds (site/src/styles/tokens.css) and the mark's colours on each (assets/brand).
+      const PAPER = [248, 246, 242], GRAPHITE = [17, 20, 24];
+      const INK_ON_PAPER = [23, 27, 32], INK_ON_GRAPHITE = [241, 238, 233];
+      const AMBER_ON_PAPER = [221, 147, 20], AMBER_ON_GRAPHITE = [251, 192, 68];
+
+      const CX_TAPE = 560, CY = 580, CELL = 150, BAND = 520, DEPTH = 1600;
+      // The mark (site/src/components/brand/geometry.mjs), in its 16-unit grid.
+      const BOARD = [[0, 2], [16, 2], [16, 14], [14, 14], [14, 5], [9, 5], [9, 14], [7, 14], [7, 5], [2, 5], [2, 14], [0, 14]];
+
+      // The film has two grounds, paper and graphite (bars 10 to 15). One never fades into the other: graphite opens
+      // from the playhead outwards as a hard edge and closes back to it, so both worlds keep their full contrast.
+      function draw(t) {
+        const open = ramp(t, 24, 24.7) * (1 - ramp(t, 38.4, 39.1));
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        if (open < 1) scene(t, 0);
+        if (open > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(CX_TAPE - open * CX_TAPE, 0, open * W, H);
+          ctx.clip();
+          scene(t, 1);
+          ctx.restore();
+        }
+      }
+
+      function scene(t, inv) {
+        const s = t / STEP, cur = Math.floor(s), frac = s - cur;
+
+        const ground = mix3(PAPER, GRAPHITE, inv), ink = mix3(INK_ON_PAPER, INK_ON_GRAPHITE, inv), amber = mix3(AMBER_ON_PAPER, AMBER_ON_GRAPHITE, inv);
+        ctx.fillStyle = rgb(ground);
+        ctx.fillRect(0, 0, W, H);
+
+        // The plane of the tape turns about the playhead: the steps to come recede, the steps played come past.
+        const theta = (50 * Math.PI / 180) * ramp(t, 24, 25.4) * (1 - ramp(t, 38.4, 39.8));
+        const cos = Math.cos(theta), sin = Math.sin(theta);
+        const project = (X, Y, cy, scale) => {
+          const k = DEPTH / (DEPTH + X * sin);
+          return [CX_TAPE + X * cos * k, cy + Y * scale * k];
+        };
+        const quad = (X0, Y0, X1, Y1, cy, scale) => {
+          const p = [project(X0, Y0, cy, scale), project(X1, Y0, cy, scale), project(X1, Y1, cy, scale), project(X0, Y1, cy, scale)];
+          ctx.beginPath();
+          ctx.moveTo(p[0][0], p[0][1]); ctx.lineTo(p[1][0], p[1][1]); ctx.lineTo(p[2][0], p[2][1]); ctx.lineTo(p[3][0], p[3][1]);
+          ctx.closePath();
+        };
+
+        // One step, opened (bars 4 to 6), dims the tape behind it.
+        const card = ramp(t, 9.6, 10.1) * (1 - ramp(t, 16.2, 16.8));
+        const tapeAlpha = ramp(t, 4.8, 5.6) * (1 - 0.8 * card) * (1 - ramp(t, 42.4, 43.8));
+
+        // Rows grow into the tape as their voices join the score and fold away as they leave.
+        const weights = rows.map(r => ramp(t, r.enter, r.enter + 0.7) * (1 - ramp(t, r.leave, r.leave + 1.4)));
+        const total = weights.reduce((a, b) => a + b, 0);
+        const rowH = Math.min(110, (BAND - 14 * Math.max(0, total - 1)) / Math.max(total, 1));
+        const stack = total * rowH + 14 * Math.max(0, total - 1);
+
+        // The same steps twice (bars 7 to 9): the tape splits into two lanes.
+        const lanes = ramp(t, 16.8, 17.5) * (1 - ramp(t, 23.5, 24.1));
+        const laneScale = 1 - 0.5 * lanes;
+        const laneOffset = (stack * laneScale / 2 + 44) * lanes;
+
+        const far = theta > 0.01 ? 44 : Math.ceil((W - CX_TAPE) / CELL) + 1;
+        const near = Math.ceil((CX_TAPE + 300) / CELL) + 1;
+
+        const drawTape = cy => {
+          let y = -stack / 2;
+          rows.forEach((row, i) => {
+            const w = weights[i];
+            if (w < 0.01) return;
+            const h = rowH * w;
+            for (let n = Math.max(0, cur - near); n <= cur + far && n < row.steps.length; n++) {
+              const X0 = (n - s) * CELL, X1 = X0 + CELL;
+              if (DEPTH + X0 * sin < 260) continue;
+              const v = row.steps[n], next = row.steps[n + 1];
+              const left = v === 2 ? 0 : 7, right = next === 2 ? 0 : 7;
+              const fade = tapeAlpha * w;
+              if (v === 0) {
+                // An empty step: a faint slot.
+                quad(X0 + 7, y, X1 - 7, y + h, cy, laneScale);
+                ctx.fillStyle = rgb(ink, 0.07 * fade);
+                ctx.fill();
+              } else if (n > cur) {
+                // A step not played yet: an outline.
+                quad(X0 + left, y, X1 - right, y + h, cy, laneScale);
+                ctx.fillStyle = rgb(ink, 0.07 * fade);
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = rgb(ink, 0.6 * fade);
+                ctx.stroke();
+              } else {
+                // Playing now: amber. Played: solid ink.
+                quad(X0 + left, y, X1 - right, y + h, cy, laneScale);
+                ctx.fillStyle = n === cur ? rgb(amber, fade) : rgb(ink, fade);
+                ctx.fill();
+              }
+            }
+            y += h + 14 * w;
+          });
+          // The ruler: one tick per step, taller on the beat and on the bar. Equal steps, whatever plays.
+          for (let n = Math.max(0, cur - near); n <= cur + far + 1; n++) {
+            const X = (n - s) * CELL;
+            if (DEPTH + X * sin < 260) continue;
+            const tall = n % SCORE.stepsPerBar === 0 ? 40 : n % SCORE.stepsPerBeat === 0 ? 24 : 12;
+            quad(X - 2, stack / 2 + 22, X + 2, stack / 2 + 22 + tall, cy, laneScale);
+            ctx.fillStyle = rgb(ink, 0.45 * tapeAlpha);
+            ctx.fill();
+          }
+        };
+
+        if (tapeAlpha > 0.005) {
+          if (lanes > 0.01) { drawTape(CY - laneOffset); drawTape(CY + laneOffset); }
+          else drawTape(CY);
+          // Two lanes, one result: an equals sign between them, in amber, at the right edge.
+          if (lanes > 0.01) {
+            ctx.fillStyle = rgb(amber, lanes * tapeAlpha);
+            ctx.fillRect(1700, CY - 30, 100, 18);
+            ctx.fillRect(1700, CY + 12, 100, 18);
+          }
+        }
+
+        // The mark's geometry at the end: big and centred, then in its place in the lockup.
+        const lock = ramp(t, 46.6, 47.5);
+        const unit = mix(40, 138.09 / 16, lock), ox = mix(640, 410, lock), oy = mix(280, 444.12, lock);
+        const hit = t >= 45.6 ? 14 * Math.exp(-(t - 45.6) * 9) * Math.cos((t - 45.6) * 28) : 0;
+
+        // The playhead. It opens the film as one block the size of the mark's module, thins into the line the tape
+        // runs under, and returns to the block at the end, where the board closes over it.
+        const kStart = 1 - ramp(t, 4.8, 6), kEnd = ramp(t, 42, 44.4), kTape = 1 - kStart - kEnd;
+        const tapeSpan = (lanes > 0.01 ? stack * laneScale + 2 * laneOffset : stack) + 120;
+        let bw = 120 * kStart + 10 * kTape + 120 * kEnd, bh = 320 * kStart + tapeSpan * kTape + 320 * kEnd;
+        let bx = 1400 * kStart + CX_TAPE * kTape + 1100 * kEnd, by = 540 * kStart + (CY + 14) * kTape + 600 * kEnd;
+        // It beats with the kick while it is a block.
+        const beat = kick[cur] === 1 && t < 45.6 ? Math.pow(1 - frac, 2) * (kStart + kEnd) : 0;
+        bh *= 1 + 0.14 * beat; bw *= 1 + 0.06 * beat;
+        if (t >= 45.6) {
+          bw = 3 * unit; bh = 8 * unit; bx = ox + 11.5 * unit; by = oy + 8 * unit + hit;
+        }
+        ctx.fillStyle = rgb(amber);
+        ctx.fillRect(bx - bw / 2, by - bh / 2, bw, bh);
+
+        // One step, opened: a frame with three parts that always run in the same order.
+        if (card > 0.005) {
+          const x = mix(CX_TAPE - 5, 490, card), y = mix(CY - 55, 380, card), w = mix(10, 1140, card), h = mix(110, 360, card);
+          ctx.fillStyle = rgb(ground);
+          ctx.fillRect(x, y, w, h);
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = rgb(ink);
+          ctx.strokeRect(x, y, w, h);
+          const inside = ramp(card, 0.7, 1);
+          if (inside > 0) {
+            // Each cycle lights the three parts at the times the bell plays its three notes.
+            const cycles = [[9.6, 9.75, 10.2, 10.8, 12], [12, 12, 12.6, 13.2, 14.4], [14.4, 14.4, 14.7, 15, 15.6], [15.6, 15.6, 15.9, 16.2, 16.8]];
+            const c = cycles.find(k => t >= k[0] && t < k[4]) || cycles[0];
+            for (let j = 0; j < 3; j++) {
+              const sx = 530 + j * 360, sy = 420;
+              const from = c[1 + j], to = j < 2 ? c[2 + j] : c[3] + (c[3] - c[2]);
+              ctx.lineWidth = 4;
+              if (t >= from && t < to) { ctx.fillStyle = rgb(amber, inside); ctx.fillRect(sx, sy, 340, 210); }
+              else if (t >= to) { ctx.fillStyle = rgb(ink, inside); ctx.fillRect(sx, sy, 340, 210); }
+              else { ctx.strokeStyle = rgb(ink, 0.6 * inside); ctx.strokeRect(sx + 2, sy + 2, 336, 206); }
+            }
+          }
+        }
+
+        // The board comes down over the waiting step and lands on bar 19: the step was the mark's module.
+        if (t >= 45.26) {
+          const drop = -1100 * (1 - ramp(t, 45.26, 45.6, ease.in)) + hit;
+          ctx.beginPath();
+          BOARD.forEach(([x, y], i) => {
+            const px = ox + x * unit, py = oy + (y - 2) * unit + drop;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          });
+          ctx.closePath();
+          ctx.fillStyle = rgb(INK_ON_PAPER);
+          ctx.fill();
+        }
+      }
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      // The whole picture is a function of the film's time: one linear tween carries it.
+      tl.fromTo(clock, { t: 0 }, { t: 55.2, duration: 55.2, ease: "none", onUpdate: () => draw(clock.t) }, 0);
+
+      const line = (n, from, to) => {
+        tl.fromTo("#film-line-" + n, { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, from);
+        tl.to("#film-line-" + n, { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power2.in" }, to);
+      };
+      gsap.set(".film-line, .film-part, .film-w", { opacity: 0 });
+      gsap.set("#film-line-1", { opacity: 1 });
+      gsap.set("#film-word", { clipPath: "inset(0% 100% 0% 0%)" });
+      tl.to("#film-line-1", { opacity: 0, filter: "blur(8px)", duration: 0.16, ease: "power2.in" }, 4.5);
+      line(2, 5.1, 9.3);
+      line(3, 10.0, 16.3);
+      line(4, 17.4, 20.2);
+      line(5, 20.4, 23.6);
+      line(6, 24.9, 28.6);
+      line(7, 29.0, 33.4);
+      tl.fromTo(".film-part", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 10.0);
+      tl.to(".film-part", { opacity: 0, duration: 0.15, ease: "power2.in" }, 16.15);
+      tl.to("#film-word", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.7, ease: "power3.out" }, 47.05);
+      tl.fromTo(".film-w", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power4.out", stagger: 0.07 }, 48.2);
+
+      draw(0);
+      window.__timelines["film"] = tl;
+    })();
+  </script>
+</template>
