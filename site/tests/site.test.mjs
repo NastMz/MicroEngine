@@ -263,8 +263,7 @@ test('landing: no film is loaded with the page, and motion is off without the sc
   // Every motion rule of the landing is scoped to html.scroll-live, which the script sets only without reduced motion.
   const scroll = read('src/scripts/scroll.ts');
   assert.match(scroll, /live = !reduced\.matches;\s*root\.classList\.toggle\('scroll-live', live\)/);
-  for (const file of ['src/pages/index.astro', 'src/components/landing/Colonnade.astro', 'src/components/landing/CodeToSprite.astro',
-    'src/components/landing/FrameTape.astro', 'src/components/landing/SocketBoard.astro', 'src/styles/site.css']) {
+  for (const file of ['src/pages/index.astro', 'src/components/landing/CodeToSprite.astro', 'src/components/landing/SocketBoard.astro', 'src/styles/site.css']) {
     // Rule by rule: whatever reads the scroll's progress or a reveal's state is selected through html.scroll-live.
     const css = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
     for (const rule of css.split('}')) {
@@ -273,7 +272,37 @@ test('landing: no film is loaded with the page, and motion is off without the sc
       if (linked) assert.match(selector, /scroll-live/, `${file}: a scroll-linked rule outside html.scroll-live: ${selector.trim().slice(0, 90)}`);
     }
   }
-  // No animation library came with it.
+  // The scroll is the only timeline: no animation library came with it. (The journey's 3D is another matter.)
   const dependencies = Object.keys(JSON.parse(read('package.json')).dependencies);
   assert.deepEqual(dependencies.filter(name => /gsap|scrolltrigger|lenis|framer|motion|aos|locomotive/i.test(name)), []);
+});
+
+test('journey: plain chapters by default, and the 3D only where it can run and was not declined', () => {
+  const read = file => fs.readFileSync(path.join(siteRoot, file), 'utf8');
+  const controller = read('src/scripts/journey.ts');
+  // Reduced motion, data saving, little memory or no WebGL leave the page as plain chapters.
+  for (const guard of ["matchMedia('(prefers-reduced-motion: reduce)').matches", 'saveData', 'deviceMemory', "getContext('webgl2')"]) assert.ok(controller.includes(guard), guard);
+  // The 3D library is requested only then: imported in one module, which is loaded on demand.
+  assert.match(controller, /await import\('\.\/journey\/scene\.ts'\)/);
+  assert.doesNotMatch(controller, /from 'three'/);
+  for (const file of ['src/pages/index.astro', 'src/components/landing/Journey.astro', 'src/scripts/scroll.ts']) assert.doesNotMatch(read(file), /from 'three'/, file);
+  // Every chapter is real markup with its words, has a still for both themes, and says when it is on stage.
+  const journey = read('src/components/landing/Journey.astro');
+  const chapters = [...journey.matchAll(/\{ id: '(\w+)', from: ([\d.]+), to: ([\d.]+)/g)].map(m => ({ id: m[1], from: Number(m[2]), to: Number(m[3]) }));
+  assert.equal(chapters.length, 6);
+  chapters.forEach((chapter, i) => {
+    assert.ok(chapter.from < chapter.to && (i === 0 || chapter.from > chapters[i - 1].to), `${chapter.id}: chapters follow one another`);
+    for (const theme of ['light', 'dark']) assert.ok(fs.existsSync(path.join(siteRoot, 'src/assets/journey', `${chapter.id}-${theme}.png`)), `${chapter.id}-${theme}.png`);
+  });
+  assert.equal(chapters[0].from, 0);
+  assert.equal(chapters.at(-1).to, 1);
+  // The live layout exists only under html.journey-live, which the controller sets after the scene was created.
+  const css = journey.slice(journey.indexOf('<style>')).replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const rule of css.split('}')) {
+    const [selector, body = ''] = rule.split('{').slice(-2);
+    if (/position: (sticky|absolute)|1000s?vh/.test(body) && !/\.words > |\.chapter\.flip/.test(selector)) assert.match(selector, /journey-live/, `a live-only rule outside html.journey-live: ${selector.trim().slice(0, 80)}`);
+  }
+  // The opening claim is the page's one h1 and the way past the journey is in its first chapter.
+  assert.equal((journey.match(/<h1/g) || []).length, 1);
+  assert.match(journey, /href="#develop">Skip the tour</);
 });

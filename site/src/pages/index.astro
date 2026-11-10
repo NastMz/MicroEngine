@@ -1,26 +1,24 @@
 ---
-// Hallmark · macrostructure: Long Document in three acts (code, board, loop), each tied to the scroll, then the
-// product's own pages · nav: N1b · footer: Ft3 grouped · tone: technical, precise, warm
-// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: the board built in space (Colonnade), real
-// code beside what it draws (CodeToSprite), real frames under a playhead (FrameTape), the films (Films)
+// Hallmark · macrostructure: a pinned journey (one 3D world, six chapters, driven by the scroll), then the product's
+// own sections · nav: N1b · footer: Ft3 grouped · tone: technical, precise, warm
+// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: the journey (Journey.astro), real code
+// beside what it draws (CodeToSprite), the socket board, the films (Films)
 // pre-emit critique: P5 H4 E4 S5 R4 V5
 //
-// Narrative: what MicroEngine is (the opening, the board as an object), how a game is written (code becomes a
-// sprite as the reader scrolls), how the engine is built (the stance, then the board, its modules seating as they
-// arrive), how it runs (the loop: real frames under a playhead, on the inverted ground), the three films that tell
-// those same three things, and then the product: what it draws, where it runs, the demos, where it stands, first
-// steps and where it is going. Motion is a function of the scroll position (scripts/scroll.ts): it plays backwards,
-// never holds the scroll, and is absent under reduced motion. Status words follow the design's rules: only what the
-// published SDK carries is "Available".
+// Narrative: the page opens on a flight through MicroEngine told as one continuous scene: the kernel, the pieces that
+// dock around it, a game that plays above the assembly, the finished games in depth, the loop as a tape of steps, and
+// the mark. The scroll is its timeline. After it the page is a product page again: how a game is written (code
+// becomes a sprite), the stance, every module on the board, the films, what it draws, where it runs, the demos, where
+// it stands, first steps and where it is going. Status words follow the design's rules: only what the published SDK
+// carries is "Available".
 import { Code } from 'astro:components';
 import { getImage } from 'astro:assets';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import Platforms from '../components/Platforms.astro';
 import DemoCard from '../components/DemoCard.astro';
 import BoardDrawing from '../components/landing/BoardDrawing.astro';
-import Colonnade from '../components/landing/Colonnade.astro';
+import Journey from '../components/landing/Journey.astro';
 import CodeToSprite from '../components/landing/CodeToSprite.astro';
-import FrameTape from '../components/landing/FrameTape.astro';
 import Films from '../components/landing/Films.astro';
 import SocketBoard from '../components/landing/SocketBoard.astro';
 import CodeLabel from '../components/brand/CodeLabel.astro';
@@ -50,38 +48,13 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   const image = await getImage({ src: shot.src, width: 640, format: 'png' });
   return { src: image.src, alt: shot.alt, width: 640, height: Math.round((640 * shot.src.height) / shot.src.width) };
 }));
-// Neon Rift's own captures, in the order a player meets them, for the tape under the playhead.
-const neon = demoGames.find(g => g.id === 'NeonRift')!;
-const tape = await Promise.all(neon.shots.map(async shot => {
-  const image = await getImage({ src: shot.src, width: 640, format: 'png' });
-  return { src: image.src, alt: shot.alt, width: 640, height: Math.round((640 * shot.src.height) / shot.src.width) };
-}));
 ---
 <SiteLayout title="MicroEngine" description="MicroEngine is a code-first game engine for C# and .NET: a small kernel with swappable modules, built on SDL 3, raylib and .NET. Games built with it run on Windows, Linux, macOS, Android, iOS and in browsers." current="home">
   <div class="page-tape" data-page-tape aria-hidden="true"><span class="playhead"></span></div>
 
-  <section class="opening wrap" id="opening" aria-labelledby="opening-title" data-scroll="leave">
-    <div class="opening-copy">
-      <p class="sdk-line" data-status="available">
-        <span class="status-mark" aria-hidden="true"></span>
-        <span>SDK {sdk.stage} <span class="mono">{sdk.version}</span> on nuget.org</span>
-        <a href="/docs/sdk/">What Alpha means</a>
-      </p>
-      <h1 id="opening-title">A game engine that orchestrates, not reinvents.</h1>
-      <p class="lede">
-        MicroEngine is a code-first game engine for C# and .NET developers. Today it makes 2D games that run on
-        Windows, Linux, macOS, Android, iOS and in browsers. Inside, a small kernel holds graphics, physics, audio,
-        input and platforms as modules that can be swapped, so the engine grows without rewriting what works.
-      </p>
-      <div class="actions">
-        <a class="button" href={distribution.startHref}>Get started</a>
-        <a class="button secondary" href="/demos/">Play the demos</a>
-        <a class="quiet-link" href="#films">Watch the films</a>
-      </div>
-    </div>
-    <figure class="opening-figure">
-      <Colonnade />
-    </figure>
+  <Journey />
+
+  <section class="wrap facts-strip" aria-label="MicroEngine at a glance">
     <dl class="facts">
       {facts.map(fact => <div><dt>{fact.term}</dt><dd>{fact.value}</dd></div>)}
     </dl>
@@ -153,18 +126,6 @@ const tape = await Promise.all(neon.shots.map(async shot => {
         <CodeLabel file={catalogFile} lang="C#" family="platform" note="the official desktop platforms" />
         <Code code={catalog.code} lang="csharp" theme="github-dark-dimmed" />
       </figure>
-    </div>
-  </section>
-
-  <section class="ground flip" id="loop" aria-labelledby="loop-title" data-scroll="enter">
-    <div class="wrap ground-pad">
-      <div class="section-head">
-        <p class="label">The loop</p>
-        <h2 id="loop-title">The loop owns time</h2>
-        <p>A game runs in fixed steps of the same length, and every frame does the same things in the same order: read the input, run the steps, draw once. The rules of a game never depend on how fast a machine draws. Scripted input replays a game step for step, which is how the four demos are played from start to finish by tests, with no window.</p>
-        <p><a href="/docs/manual/lifecycle/">The lifecycle in the manual</a> · <a href="/docs/architecture/">The architecture</a></p>
-      </div>
-      <FrameTape frames={tape} caption="Neon Rift, from its title screen to the Leviathan: frames captured from the game as it ran." />
     </div>
   </section>
 
@@ -270,18 +231,12 @@ const tape = await Promise.all(neon.shots.map(async shot => {
 
 <script>
   import { startScroll } from '../scripts/scroll.ts';
+  import { startJourney } from '../scripts/journey.ts';
   startScroll();
+  startJourney();
 </script>
 
 <style>
-  /* Opening: the claim and the drawing side by side on wide screens, then a line of facts across the page. */
-  .opening { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl) var(--space-3xl); padding-block: var(--space-2xl) 0; align-items: center; }
-  .opening-copy { display: grid; gap: var(--space-lg); min-width: 0; }
-  /* The longest word ("orchestrates,") must fit a 320 px screen whole: a smaller ceiling than --text-display. */
-  .opening-copy h1 { font-size: var(--text-hero); overflow-wrap: normal; }
-  .sdk-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-sm); font-size: var(--text-sm); color: var(--color-ink-2); }
-  .opening-figure { margin: 0; min-width: 0; max-width: 40rem; justify-self: center; width: 100%; }
-  .quiet-link { display: inline-flex; align-items: center; min-height: var(--tap); padding-inline: var(--space-xs); font-family: var(--font-mono); font-size: var(--text-sm); }
   .parts-figure { margin: 0; min-width: 0; max-width: 30rem; width: 100%; justify-self: center; }
   .modules-intro { margin-bottom: var(--space-xl); align-items: center; }
 
@@ -301,18 +256,8 @@ const tape = await Promise.all(neon.shots.map(async shot => {
     :global(html.scroll-live) .pin-inner { position: sticky; top: 0; min-height: 100vh; display: grid; align-content: center; padding-block: var(--space-2xl); }
   }
 
-  /* The inverted ground: a section drawn in the other theme's colours. It never fades in: its edge travels across
-     the page as the section arrives, and travels back when the reader scrolls up. */
-  .ground { margin-top: var(--space-3xl); background: var(--color-paper); color: var(--color-ink); }
-  .ground-pad { padding-block: var(--space-3xl); }
-  .flip { color-scheme: dark; }
-  :global(:root[data-theme='dark']) .flip { color-scheme: light; }
-  @media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .flip { color-scheme: light; } }
-  :global(html.scroll-live) .ground { clip-path: inset(0 calc((1 - var(--p, 1)) * 100%) 0 0); }
-
-  /* The opening's copy stays; the figure drifts up a little slower than the page as the reader leaves. */
-  :global(html.scroll-live) .opening-figure { transform: translateY(calc(var(--p, 0) * var(--space-2xl))); }
-  .facts { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr); margin: 0;
+  .facts-strip { padding-top: var(--space-2xl); }
+  .facts { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0;
     border-top: var(--rule-pixel) solid var(--color-ink); }
   .facts div { display: grid; gap: var(--space-2xs); padding: var(--space-sm) 0; border-bottom: var(--rule-thin) solid var(--color-rule); min-width: 0; }
   .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: var(--tracking-label); }
@@ -389,7 +334,6 @@ const tape = await Promise.all(neon.shots.map(async shot => {
     .ledger, .graphics-sockets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (min-width: 64rem) {
-    .opening { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); padding-top: var(--space-3xl); }
     .facts, .ledger, .graphics-sockets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .split { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
   }
