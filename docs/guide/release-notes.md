@@ -67,6 +67,9 @@ Hebrew and other complex scripts. Nothing breaks; the genre components are depre
 **Fixed**
 
 - A `TextField` inside a container that clips no longer removes that container's clip after drawing.
+- `microengine package web` and `package android` work with a .NET SDK released before its workload set (10.0.404
+  with workload set 10.403): they took the .NET licence files from the runtime pack of the SDK's own runtime version,
+  which the workload had not installed, and now take them from the pack it installed.
 
 ## 0.5.0-alpha.1
 
