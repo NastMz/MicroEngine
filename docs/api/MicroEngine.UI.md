@@ -8,28 +8,10 @@ Guide: [UI widgets](../manual/ui.md)
 
 ### Classes
 
- [AchievementToasts](MicroEngine.UI.AchievementToasts.md)
-
-Queued "achievement unlocked" banners that slide in at the top of the screen, one at a time: the UI's
-[Toasts](MicroEngine.UI.Toasts.md) showing achievements. Purely visual: they never read input, so play continues underneath.
-[Game](MicroEngine.Core.Game.md) owns one when achievements are enabled and draws it above every scene.
-
- [AchievementsScene](MicroEngine.UI.AchievementsScene.md)
-
-Overlay listing a game's achievements: unlocked ones highlighted, pending ones dimmed, progress bars
-for progressive goals. Up/down moves the cursor (the list scrolls); any of [CloseActions](MicroEngine.UI.AchievementsScene.md#MicroEngine_UI_AchievementsScene_CloseActions) closes it.
-
  [Button](MicroEngine.UI.Button.md)
 
 A button: confirm while it has the focus, or a click (a press and release of the pointer on it), raises
 [Clicked](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Clicked). It takes the focus.
-
- [DialogueBox](MicroEngine.UI.DialogueBox.md)
-
-A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag. A page longer than
-[Lines](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Lines) wrapped lines continues on the next confirm, so no text is ever cut. With [Prompts](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Prompts)
-set, <code>{action}</code> in a page names the control that presses it on the player's device, and follows a device change
-while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_MicroEngine_RectF_) from their own scene.
 
  [Grid](MicroEngine.UI.Grid.md)
 
@@ -72,10 +54,6 @@ horizontal); its content keeps the size it measures and is cut at the view's edg
 inside it when that widget takes the focus, with the wheel over it, and with a drag, also one that starts on a button
 inside it (a finger on a phone). A thin bar on its edge shows where the window is.
 
- [SelectionList](MicroEngine.UI.SelectionList.md)
-
-A vertical list of options navigated with up/down and chosen with confirm.
-
  [Stack](MicroEngine.UI.Stack.md)
 
 Children placed one after another, top to bottom or left to right, with a space between them: menus, rows of buttons, forms.
@@ -89,20 +67,6 @@ Delete, the arrows, Home and End edit, Enter submits, Escape leaves the field, T
 focus. Shift with the arrows, Home or End selects, as does dragging the pointer across the text; Ctrl (Command on
 macOS) with A selects everything, and with C, X and V copies, cuts and pastes through the root's
 [Clipboard](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Clipboard). A gamepad edits nothing but moves the caret with left and right and submits with confirm.
-
- [Toast](MicroEngine.UI.Toast.md)
-
-One banner of [Toasts](MicroEngine.UI.Toasts.md): a heading, a title, an optional description and an optional icon.
-
- [Toasts](MicroEngine.UI.Toasts.md)
-
-Queued banners that slide in at the top of the screen (or the bottom), one at a time: unlocked achievements, saves,
-notifications. Purely visual: they never read input, so play continues underneath. Call [Update](MicroEngine.UI.Toasts.md#MicroEngine_UI_Toasts_Update_System_Single_) every
-update and [Draw](MicroEngine.UI.Toasts.md#MicroEngine_UI_Toasts_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_) after the scenes.
-
- [Typewriter](MicroEngine.UI.Typewriter.md)
-
-Reveals text character by character. Confirm skips to the end; a second confirm advances.
 
  [UiActions](MicroEngine.UI.UiActions.md)
 

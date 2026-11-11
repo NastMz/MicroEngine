@@ -70,8 +70,6 @@ const typeGuides = {
   'MicroEngine.Graphics.AspectMode': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Sdl.SdlRendererDevice': ['The graphics device', '../manual/rendering.md#the-graphics-device'],
   'MicroEngine.Raylib.RaylibDevice': ['The graphics device', '../manual/rendering.md#the-graphics-device'],
-  'MicroEngine.UI.AchievementToasts': ['Achievements', '../manual/achievements.md'],
-  'MicroEngine.UI.AchievementsScene': ['Achievements', '../manual/achievements.md'],
 };
 const namespaceSummaries = {
   'MicroEngine': 'Basic value types: colours, rectangles, maths and easing helpers.',

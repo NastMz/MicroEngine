@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // Toasts, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
@@ -850,23 +849,5 @@ public sealed class WidgetTests
         }
         Assert.AreNotEqual(Typed("a"), Typed("b"));
         Assert.AreEqual(Typed("a"), Typed("a"));
-    }
-
-    [TestMethod]
-    public void Toasts_show_one_banner_at_a_time_for_its_time()
-    {
-        var toasts = new Toasts();
-        toasts.Show(new Toast("SAVED", "SLOT 1"));
-        toasts.Show(new Toast("SAVED", "SLOT 2", "Autosave"));
-        Assert.AreEqual("SLOT 1", toasts.Current!.Title);
-        Assert.AreEqual(1, toasts.Pending);
-        toasts.Update(Toasts.ShowTime);
-        Assert.AreEqual("SLOT 2", toasts.Current!.Title);
-        var renderer = new HeadlessRenderer(320, 180);
-        var device = new HeadlessGraphicsDevice();
-        toasts.Draw(renderer, BitmapFont.CreateDefault(device));
-        Assert.IsTrue(renderer.DrawCalls > 0);
-        toasts.Update(Toasts.ShowTime);
-        Assert.IsNull(toasts.Current);
     }
 }

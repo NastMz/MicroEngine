@@ -4,6 +4,16 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next release
+
+### Removed UI components
+
+`DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+`Game.UseAchievements` and `Game.AchievementToasts`, deprecated in 0.5.0-alpha.2, are removed: a game that still uses
+them no longer builds. **Migration:** follow [Deprecated UI components](#deprecated-ui-components) below, which gives
+the widgets that replace each one; a game that keeps one unchanged copies its source from the repository at tag
+`sdk-v0.5.0-alpha.2` into the game.
+
 ## 0.5.0-alpha.2
 
 ### Deprecated UI components

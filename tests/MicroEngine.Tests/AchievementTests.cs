@@ -27,7 +27,7 @@ public sealed class AchievementTests
     /// <summary>Declares its achievements when it is created, before the engine is composed.</summary>
     private sealed class TestGame : Game
     {
-        public TestGame(SaveStore store, Achievement[] catalog) => UseAchievements(catalog, store);
+        public TestGame(SaveStore store, Achievement[] catalog) => TrackAchievements(catalog, store);
         public override GameSettings Settings { get; } = new("achievements");
         protected override void Load() => Scenes.Push(new Idle());
     }
@@ -36,7 +36,7 @@ public sealed class AchievementTests
     private sealed class ConfiguredGame(SaveStore store) : Game
     {
         public override GameSettings Settings { get; } = new("achievements");
-        public override void Configure(MicroEngine.Kernel.EngineBuilder builder) => UseAchievements(Catalog, store);
+        public override void Configure(MicroEngine.Kernel.EngineBuilder builder) => TrackAchievements(Catalog, store);
         protected override void Load() => Scenes.Push(new Idle());
     }
 
@@ -44,7 +44,7 @@ public sealed class AchievementTests
     private sealed class LateGame(SaveStore store) : Game
     {
         public override GameSettings Settings { get; } = new("achievements");
-        protected override void Load() => UseAchievements(Catalog, store);
+        protected override void Load() => TrackAchievements(Catalog, store);
     }
 
     private sealed class PlainGame : Game
@@ -63,7 +63,6 @@ public sealed class AchievementTests
             Assert.IsTrue(game.Services.Contains<SaveStore>(), "the store achievements persist in is a service too");
             CollectionAssert.AreEqual(new[] { "engine.audio", "engine.achievements", "engine.input.end", "engine.assets.playing" },
                 game.Schedule.Order(MicroEngine.Kernel.FramePhase.PostFixed).ToArray(), "the system keeps its place in the step");
-            Assert.IsNotNull(game.AchievementToasts);
         }
     }
 
@@ -93,17 +92,16 @@ public sealed class AchievementTests
     }
 
     [TestMethod]
-    public void A_game_that_only_tracks_achievements_keeps_their_progress_and_shows_no_banner_of_the_engine()
+    public void A_game_that_tracks_achievements_keeps_their_progress()
     {
         var store = Store();
         var game = new TrackingGame(store);
         game.InitializeForTest(new HeadlessPlatform());
         Assert.IsTrue(game.HasAchievements);
         Assert.AreSame(game.Achievements, game.Services.Get<AchievementTracker>());
-        Assert.IsTrue(game.Schedule.Contains("engine.achievements"), "progress is written as with UseAchievements");
+        Assert.IsTrue(game.Schedule.Contains("engine.achievements"), "progress is written by the engine.achievements system");
         game.Achievements.Unlock(First.Id);
         Assert.IsTrue(store.Exists(AchievementTracker.SaveSlot), "the unlock is saved");
-        Assert.IsNull(game.AchievementToasts, "no banner of the engine");
     }
 
     [TestMethod]
@@ -128,7 +126,6 @@ public sealed class AchievementTests
         var game = new PlainGame();
         game.InitializeForTest(new HeadlessPlatform());
         Assert.IsFalse(game.HasAchievements);
-        Assert.IsNull(game.AchievementToasts);
         Assert.IsFalse(game.Services.Contains<AchievementTracker>());
         Assert.IsFalse(game.Services.Contains<SaveStore>());
         Assert.IsFalse(game.Schedule.Contains("engine.achievements"), "no flush system");
@@ -372,66 +369,18 @@ public sealed class AchievementTests
     }
 
     [TestMethod]
-    public void Game_shows_one_toast_per_unlock_and_flushes_progress_while_running()
+    public void Game_reports_each_unlock_once_and_flushes_progress_while_running()
     {
         var game = new TestGame(Store(), Catalog);
-        var platform = new HeadlessPlatform();
-        game.InitializeForTest(platform);
+        var unlocked = new List<Achievement>();
+        game.InitializeForTest(new HeadlessPlatform());
+        game.Achievements.Unlocked += unlocked.Add;
         game.Achievements.Unlock("first");
         game.Achievements.Unlock("first");
         game.Achievements.AddProgress("ten", 3);
-        Assert.AreEqual(First, game.AchievementToasts!.Current);
-        Assert.AreEqual(0, game.AchievementToasts.Pending, "A repeated unlock must not queue a second toast.");
-
-        int before = platform.Renderer.DrawCalls;
-        game.AchievementToasts.Draw(platform.Renderer, game.Font);
-        Assert.IsGreaterThan(before, platform.Renderer.DrawCalls);
+        CollectionAssert.AreEqual(new[] { First }, unlocked, "A repeated unlock is not reported again.");
 
         for (int i = 0; i < 70; i++) game.StepForTest();
         Assert.AreEqual(3, new AchievementTracker(Catalog, Store()).Progress("ten"), "The loop flushes progress about once a second.");
-        for (int i = 0; i < (int)(AchievementToasts.ShowTime * 60); i++) game.StepForTest();
-        Assert.IsNull(game.AchievementToasts.Current, "The toast goes away on its own.");
-    }
-
-    [TestMethod]
-    public void Toasts_queue_and_play_one_after_another()
-    {
-        var toasts = new AchievementToasts();
-        toasts.Show(First);
-        toasts.Show(Ten);
-        Assert.AreEqual(First, toasts.Current);
-        Assert.AreEqual(1, toasts.Pending);
-        toasts.Update(AchievementToasts.ShowTime);
-        Assert.AreEqual(Ten, toasts.Current);
-        toasts.Update(AchievementToasts.ShowTime);
-        Assert.IsNull(toasts.Current);
-    }
-
-    [TestMethod]
-    public void List_scene_moves_within_bounds_draws_every_state_and_closes_on_cancel()
-    {
-        var game = new TestGame(Store(), [First, Ten, new Achievement("c", "Third", "A long description that will not fit the row and must be shortened with an ellipsis.", 3)]);
-        var platform = new HeadlessPlatform();
-        game.InitializeForTest(platform);
-        game.Achievements.Unlock("first");
-        game.Achievements.AddProgress("ten", 4);
-        var list = new AchievementsScene(game.Achievements, UiTheme.Default);
-        int moves = 0, closes = 0;
-        list.Moved += () => moves++;
-        list.Closed += () => closes++;
-        game.Scenes.Push(list);
-        game.StepForTest();
-
-        void Tap(Key key) { platform.Keys.Set(key, true); game.StepForTest(); platform.Keys.Set(key, false); game.StepForTest(); }
-        Tap(Key.Up);
-        Assert.AreEqual(0, list.Selected);
-        for (int i = 0; i < 5; i++) Tap(Key.Down);
-        Assert.AreEqual(2, list.Selected);
-        Assert.AreEqual(2, moves);
-        list.Draw(platform.Renderer);
-
-        Tap(Key.Escape);
-        Assert.AreEqual(1, closes);
-        Assert.IsInstanceOfType<Idle>(game.Scenes.Current);
     }
 }

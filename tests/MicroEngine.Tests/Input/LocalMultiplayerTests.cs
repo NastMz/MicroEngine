@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // SelectionList and DialogueBox, deprecated, are tested until they are removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Input;
@@ -181,34 +180,5 @@ public sealed class ScriptedDeviceTests
             var e = Assert.ThrowsExactly<FormatException>(() => InputScript.Parse("1 press confirm\n" + line), line);
             StringAssert.Contains(e.Message, "line 2", line);
         }
-    }
-}
-
-/// <summary>Engine widgets take the presses they act on, so the scene below an overlay does not act on them too.</summary>
-[TestClass]
-public sealed class WidgetConsumptionTests
-{
-    [TestMethod]
-    public void A_menu_that_chooses_and_a_dialogue_that_advances_consume_their_confirm()
-    {
-        var map = InputMap.CreateDefault();
-        var keys = new HeadlessInput();
-        keys.Set(Key.Z, true);
-        map.Sample(keys);
-        var menu = new UI.SelectionList("a", "b");
-        Assert.AreEqual(0, menu.Update(map));
-        Assert.IsFalse(map.Pressed("confirm"), "the scene under the menu does not also confirm");
-
-        var map2 = InputMap.CreateDefault();
-        map2.Sample(keys);
-        var box = new UI.DialogueBox();
-        box.Show(null, "hello", "world");
-        Assert.IsTrue(box.Update(0.01f, map2));
-        Assert.IsFalse(map2.Pressed("confirm"));
-
-        var map3 = InputMap.CreateDefault();
-        map3.Sample(keys);
-        new UI.DialogueBox().Update(0.01f, map3);
-        Assert.IsTrue(map3.Pressed("confirm"), "a closed box takes nothing");
     }
 }
