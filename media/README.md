@@ -49,7 +49,9 @@ in the repository never renders video.
 ## Publishing
 
 The web files are assets of one GitHub release, `films-1`, which is neither a demo release (`v*`) nor an SDK release
-(`sdk-v*`) and is never marked as the latest. The site plays them from there, and only when a visitor presses play.
+(`sdk-v*`) and is never marked as the latest. The same files are uploaded by hand to MicroEngine's YouTube channel,
+and the site plays them from there: each film's video id is `youtube` in `films.json`, and the site's player embeds
+it only when a visitor presses play.
 
 ```bash
 node media/tools/films.mjs publish
@@ -59,4 +61,8 @@ uploads `<film>/renders/<film>.mp4` for the three films, replacing the assets of
 (`https://github.com/NastMz/MicroEngine/releases/download/films-1/<film>.mp4`) does not change when it is replaced.
 When a film changes its poster, copy `<film>/renders/<film>.png` to `site/src/assets/films/`.
 
-A fourth film is a new folder, an entry in `films.json`, a poster in the site's assets, and `publish`.
+A replaced file on the release does not change the video on YouTube: a new cut of a film is a new upload there, and its
+new id goes in `films.json`.
+
+A fourth film is a new folder, an entry in `films.json` (with its YouTube id), a poster in the site's assets, and
+`publish`.

@@ -72,8 +72,12 @@ async function openPage(browser, label, url, viewport) {
   const page = await context.newPage();
   // Firefox (WebDriver BiDi) has no touch or mobile emulation: it gets the size only.
   await page.setViewport(label === 'chrome' ? viewport : { width: viewport.width, height: viewport.height });
+  // Same-origin requests by path; anything asked of YouTube by its full address.
   const requests = [];
-  page.on('request', request => requests.push(new URL(request.url()).pathname));
+  page.on('request', request => {
+    const url = new URL(request.url());
+    requests.push(/(^|\.)(youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com)$/.test(url.hostname) ? url.href : url.pathname);
+  });
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   const response = await page.goto(url, { waitUntil: 'load' });
@@ -102,23 +106,25 @@ async function layout(browser, label, base) {
   for (const item of items.filter(([size, route]) => usesKeyboard(size, route))) await layoutPage(browser, label, base, ...item);
 }
 
-// The films' player: a card opens it and gives the video its source; closing it takes the source away again, so a
-// film that is not being watched is never downloaded. The film itself is not fetched here: its requests are refused.
+// The films' player: a card opens it with that film's YouTube embed; closing it removes the embed again, so nothing of
+// YouTube loads with the page or stays after the film. YouTube itself is not contacted here: its requests are refused.
 async function filmPlayer(page, where) {
   await page.setRequestInterception(true);
-  page.on('request', request => (/\.mp4(\?|$)/.test(request.url()) ? request.abort() : request.continue()));
-  const before = await page.$eval('.film-video', video => video.getAttribute('src'));
+  const youtube = /^https:\/\/([\w-]+\.)?(youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com)\//;
+  page.on('request', request => (youtube.test(request.url()) ? request.abort() : request.continue()));
+  const before = await page.evaluate(() => ({ frames: document.querySelectorAll('iframe').length, asked: performance.getEntriesByType('resource').filter(r => /youtube|ytimg/.test(r.name)).length }));
   await page.click('a[data-film]');
   const open = await page.evaluate(() => {
-    const dialog = document.querySelector('.film-dialog'), video = dialog.querySelector('video');
-    return { open: dialog.open, src: video.getAttribute('src'), controls: video.controls, title: dialog.querySelector('.film-now').textContent };
+    const dialog = document.querySelector('.film-dialog'), player = dialog.querySelector('.film-frame iframe');
+    return { open: dialog.open, src: player?.getAttribute('src'), title: dialog.querySelector('.film-now').textContent };
   });
-  check(`${where}: a film card opens the player with that film`, before === null && open.open && /\/films-\d+\/seated\.mp4$/.test(open.src) && open.controls && open.title === 'Seated', JSON.stringify(open));
+  check(`${where}: nothing of YouTube loads with the page`, before.frames === 0 && before.asked === 0, JSON.stringify(before));
+  check(`${where}: a film card opens the player with that film`, open.open && /^https:\/\/www\.youtube-nocookie\.com\/embed\/EKAca3G_bzk\?/.test(open.src ?? '') && open.title === 'Seated', JSON.stringify(open));
   await page.keyboard.press('Escape');
   // The dialog's close event arrives after the key press returns.
-  await page.waitForFunction(() => !document.querySelector('.film-dialog').open && !document.querySelector('.film-video').hasAttribute('src'), { timeout: 3_000 }).catch(() => {});
-  const closed = await page.evaluate(() => ({ open: document.querySelector('.film-dialog').open, src: document.querySelector('.film-video').getAttribute('src') }));
-  check(`${where}: closing the player releases the film`, !closed.open && closed.src === null, JSON.stringify(closed));
+  await page.waitForFunction(() => !document.querySelector('.film-dialog').open && !document.querySelector('.film-frame iframe'), { timeout: 3_000 }).catch(() => {});
+  const closed = await page.evaluate(() => ({ open: document.querySelector('.film-dialog').open, frames: document.querySelectorAll('.film-frame iframe').length }));
+  check(`${where}: closing the player releases the film`, !closed.open && closed.frames === 0, JSON.stringify(closed));
 }
 
 async function layoutPage(browser, label, base, size, route) {
@@ -183,7 +189,8 @@ async function layoutPage(browser, label, base, size, route) {
   check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
   check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));
   check(`${where}: no demo package requested`, !requests.some(p => p.startsWith('/play/')), requests.filter(p => p.startsWith('/play/')).slice(0, 3).join(', '));
-  check(`${where}: no film requested`, !requests.some(p => /\.(mp4|webm)$/.test(p)), requests.filter(p => /\.(mp4|webm)$/.test(p)).join(', '));
+  const film = p => /\.(mp4|webm)$/.test(p) || p.startsWith('https://');
+  check(`${where}: no film requested`, !requests.some(film), requests.filter(film).slice(0, 3).join(', '));
   check(`${where}: no script errors`, errors.length === 0, errors.join(' | '));
   if (label === 'chrome' && size === 'desktop' && route === '/films/') await filmPlayer(page, where);
   if (usesKeyboard(size, route)) {
