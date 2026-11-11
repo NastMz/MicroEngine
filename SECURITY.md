@@ -20,5 +20,5 @@ version; the report is credited unless you ask otherwise. There is no bug bounty
 
 ## Supported versions
 
-MicroEngine has no versioned engine releases yet. Only the latest commit of `main` and the latest demo release receive
-security fixes.
+MicroEngine is in Alpha. Security fixes go into the latest SDK version on nuget.org (`sdk-v*` releases), the latest
+demo release (`v*`) and the published website; older versions are not patched, so update to the latest one.
