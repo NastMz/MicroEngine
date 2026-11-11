@@ -1,8 +1,8 @@
 ---
 // The films: three short pieces about MicroEngine, each telling a different thing. A card shows a frame of the film,
-// its name, what it tells and its length; pressing it opens a player over the page. Nothing of a film is requested
-// before that: the cards are images, the player has no source until it opens, and it gives the source back when it
-// closes. Without JavaScript a card is a plain link to the film's file.
+// its name, what it tells and its length; pressing it opens a player over the page. Nothing of a film, and nothing of
+// YouTube, is requested before that: the cards are images, the player's YouTube frame is created when it opens and
+// removed when it closes. Without JavaScript a card is a plain link to the film's page on YouTube.
 // Data: src/data/films.ts (media/films.json). `heading` sets the level of the films' own headings.
 import { getImage } from 'astro:assets';
 import { films } from '../../data/films.ts';
@@ -17,7 +17,7 @@ const cards = await Promise.all(films.map(async film => {
 <ul class="films">
   {cards.map((film, i) => (
     <li class="film" id={`film-${film.slug}`} data-reveal style={`--i:${i}`}>
-      <a class="film-open" href={film.src} data-film={film.slug} data-title={film.title} data-poster={film.image}
+      <a class="film-open" href={film.watch} data-film={film.slug} data-title={film.title} data-embed={film.embed}
         aria-label={`Play ${film.title}: ${film.length}, with sound`}>
         <span class="media-surface poster">
           <img src={film.image} alt={`A frame of the film ${film.title}`} width="960" height={film.height} loading="lazy" decoding="async" />
@@ -32,14 +32,14 @@ const cards = await Promise.all(films.map(async film => {
     </li>
   ))}
 </ul>
-<p class="films-note">Music and sound effects, no speech. Each film is under a minute and plays from GitHub when you press it.</p>
+<p class="films-note">Music and sound effects, no speech. Each film is under a minute and plays from YouTube when you press it.</p>
 
 <dialog class="film-dialog media-surface" aria-labelledby="film-dialog-title">
   <div class="film-bar">
     <p class="film-now" id="film-dialog-title"></p>
     <form method="dialog"><button class="button small secondary" type="submit">Close</button></form>
   </div>
-  <video class="film-video" controls playsinline preload="none"></video>
+  <div class="film-frame"></div>
 </dialog>
 
 <style>
@@ -71,37 +71,38 @@ const cards = await Promise.all(films.map(async film => {
   .film-dialog::backdrop { background: var(--color-scrim); }
   .film-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md); }
   .film-now { font: 500 var(--text-sm)/1.2 var(--font-mono); letter-spacing: var(--tracking-label); text-transform: uppercase; }
-  .film-video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; max-height: calc(100vh - 8rem); background: var(--color-paper-2); }
+  /* The frame keeps 16:9 and fits the window's height: as wide as the dialog unless that would be too tall. */
+  .film-frame { display: block; width: min(100%, (100vh - 8rem) * 16 / 9); aspect-ratio: 16 / 9; margin-inline: auto; background: var(--color-paper-2); }
+  .film-frame :global(iframe) { display: block; width: 100%; height: 100%; border: 0; }
 
   @media (min-width: 48rem) { .films { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 </style>
 
 <script>
-  // Opens a film in the player. The video gets its source here and loses it on close, so a film that is not being
-  // watched costs nothing.
+  // Opens a film in the player. The YouTube frame is created here and removed on close, so a film that is not being
+  // watched costs nothing and nothing of YouTube loads with the page.
   const dialog = document.querySelector<HTMLDialogElement>('.film-dialog');
-  const video = dialog?.querySelector<HTMLVideoElement>('.film-video');
+  const frame = dialog?.querySelector<HTMLElement>('.film-frame');
   const now = dialog?.querySelector<HTMLElement>('.film-now');
-  if (dialog && video && now && typeof dialog.showModal === 'function') {
+  if (dialog && frame && now && typeof dialog.showModal === 'function') {
     for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-film]')) {
       link.addEventListener('click', event => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !link.dataset.embed) return;
         event.preventDefault();
-        now.textContent = link.dataset.title ?? '';
-        video.poster = link.dataset.poster ?? '';
-        video.src = link.href;
+        const title = link.dataset.title ?? '';
+        now.textContent = title;
+        const player = document.createElement('iframe');
+        player.title = `${title}, a MicroEngine film`;
+        // Playback starts from the press that opened the player; a browser that refuses leaves YouTube's controls ready.
+        player.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+        player.referrerPolicy = 'strict-origin-when-cross-origin';
+        player.src = link.dataset.embed;
+        frame.replaceChildren(player);
+        // Focus stays on the dialog's Close button: inside YouTube's frame, Escape would no longer reach the dialog.
         dialog.showModal();
-        video.focus();
-        // Playback starts from the press that opened the player; a browser that refuses leaves the controls ready.
-        video.play().catch(() => {});
       });
     }
-    dialog.addEventListener('close', () => {
-      video.pause();
-      video.removeAttribute('src');
-      video.removeAttribute('poster');
-      video.load();
-    });
+    dialog.addEventListener('close', () => frame.replaceChildren());
     // A press on the backdrop closes the player, like the Close button and Escape.
     dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
   }

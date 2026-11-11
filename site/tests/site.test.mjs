@@ -228,6 +228,7 @@ test('films: three independent films, each with its sources and poster, publishe
   assert.equal(catalog.films.length, 3);
   assert.equal(new Set(catalog.films.map(f => f.slug)).size, 3);
   assert.equal(new Set(catalog.films.map(f => f.tells)).size, 3, 'each film tells a different thing');
+  assert.equal(new Set(catalog.films.map(f => f.youtube)).size, 3, 'each film is its own video');
   // The films' release is a series of its own: never a demo release (v*) or an SDK release (sdk-v*).
   assert.match(catalog.release, /^films-\d+$/);
   assert.equal(catalog.repository, 'NastMz/MicroEngine');
@@ -236,6 +237,8 @@ test('films: three independent films, each with its sources and poster, publishe
       assert.ok(fs.existsSync(path.join(repo, 'media', film.slug, file)), `${film.slug}: ${file}`);
     assert.ok(fs.existsSync(path.join(siteRoot, 'src/assets/films', `${film.slug}.png`)), `${film.slug}: poster`);
     assert.ok(film.seconds > 0 && film.seconds < 90 && film.title && film.story);
+    // The site plays each film from its YouTube video.
+    assert.match(film.youtube ?? '', /^[\w-]{11}$/, `${film.slug}: a YouTube video id`);
     // No film is described as a version of another.
     assert.doesNotMatch(`${film.title} ${film.tells} ${film.story}`, /\b(version|v2|v3|replaces|remake|updated)\b/i);
   }
@@ -254,9 +257,11 @@ test('films: nothing rendered or regenerable is kept in Git', () => {
 test('landing: no film is loaded with the page, and motion is off without the script or under reduced motion', () => {
   const read = file => fs.readFileSync(path.join(siteRoot, file), 'utf8');
   const filmsComponent = read('src/components/landing/Films.astro');
-  // The player has no source until a card is pressed, and never preloads.
-  assert.match(filmsComponent, /<video class="film-video" controls playsinline preload="none"><\/video>/);
-  assert.match(filmsComponent, /video\.removeAttribute\('src'\)/);
+  // The player is an empty frame until a card is pressed: the YouTube embed is created then and removed on close.
+  assert.match(filmsComponent, /<div class="film-frame"><\/div>/);
+  assert.doesNotMatch(filmsComponent.replace(/<script>[\s\S]*<\/script>/, ''), /<iframe/i, 'no embed in the markup');
+  assert.match(filmsComponent, /addEventListener\('close', \(\) => frame\.replaceChildren\(\)\)/);
+  assert.match(fs.readFileSync(path.join(siteRoot, 'src/data/films.ts'), 'utf8'), /https:\/\/www\.youtube-nocookie\.com\/embed\//);
   for (const page of ['src/pages/index.astro', 'src/pages/films.astro']) {
     assert.doesNotMatch(read(page), /<video|<source|autoplay/i, `${page}: no video element of its own`);
   }
