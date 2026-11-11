@@ -116,8 +116,7 @@ package. What a package exposes to the page that serves or embeds it:
 
 The browser, Android and iOS hosts call the game's `Configure` entry point, the same
 method its desktop `Program.cs` passes to `DesktopLauncher.Run`, so they run exactly what the desktop build runs
-([One composition for every platform](../manual/backends.md#one-composition-for-every-platform));
-`MicroEngineGameFactory` is deprecated and used only by a game without one. A scripted run in a development package
+([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). A scripted run in a development package
 follows the desktop rules: deterministic time, seed 1, no sound device. The browser build uses invariant globalization,
 partial trimming and reflection-based JSON for `SaveStore`.
 

@@ -13,7 +13,7 @@ public sealed partial class GameProject
     private static readonly string[] Names =
     [
         "AssemblyName", "ApplicationTitle", "ApplicationId", "Version", "Description", "MicroEngineIcon", "MicroEngineOrientation",
-        "MicroEngineGameFactory", "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
+        "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
         "MicroEngineVersion", "MicroEngineAppTargets", "MicroEngineAndroidMinApi", "OutputType", "TargetFramework", "TargetDir",
         "BundledNETCoreAppPackageVersion", "MicroEngineWebSdlFromPackage", "NetCoreRoot",
         "MicroEngineTextShaping", "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
@@ -38,7 +38,6 @@ public sealed partial class GameProject
     public bool ShapesText => string.Equals(this["MicroEngineTextShaping"], "true", StringComparison.OrdinalIgnoreCase);
     public string Description => this["Description"];
     public string Orientation => this["MicroEngineOrientation"].Length > 0 ? this["MicroEngineOrientation"] : "landscape";
-    public string GameFactory => this["MicroEngineGameFactory"];
     public string EngineVersion => this["MicroEngineVersion"].Length > 0 ? this["MicroEngineVersion"] : "unknown";
     public string DotnetVersion => this["BundledNETCoreAppPackageVersion"];
     public string NetCoreRoot => this["NetCoreRoot"];
@@ -156,15 +155,14 @@ public sealed partial class GameProject
     }
 
     /// <summary>
-    /// The game's <c>Configure</c> entry point as found in its last build (<see cref="global::MicroEngine.Cli.EntryPoint"/>), the deprecated
-    /// factory expression it declares instead, or why neither is known yet.
+    /// The game's <c>Configure</c> entry point as found in its last build (<see cref="global::MicroEngine.Cli.EntryPoint"/>), or why
+    /// it is not known.
     /// </summary>
     public string DescribeEntryPoint()
     {
         string assembly = System.IO.Path.Combine(TargetDir, Id + ".dll");
         var found = TargetDir.Length > 0 && File.Exists(assembly) ? global::MicroEngine.Cli.EntryPoint.Find(assembly) : [];
         if (found.Count > 0) return string.Join(", ", found.Select(f => f.Replace("global::", "") + "(HostBuilder)"));
-        if (GameFactory.Length > 0) return $"MicroEngineGameFactory {GameFactory} (deprecated: add a Configure(HostBuilder) entry point)";
         return File.Exists(assembly) ? "(none: add a public static Configure(HostBuilder) method)" : "(build the game to find its Configure entry point)";
     }
 }

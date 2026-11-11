@@ -7,9 +7,6 @@
          <Description>        one sentence, used in package metadata
          <MicroEngineIcon>    a square PNG of 256, 512 or 1024 pixels, relative to the project
          <MicroEngineOrientation>  landscape (default), portrait or any: phones only
-         <MicroEngineGameFactory>  deprecated: a C# expression that creates the game, used by the browser, Android
-                                   and iOS hosts only when the game has no Configure(HostBuilder) entry point (the
-                                   tool finds that method in the built game and every host calls it); no default
          <MicroEngineSplash>       true (default) or false: the start screen (launch screen, loading page, the engine's
                                    screen while the game loads)
          <MicroEngineSplashColor>  its background, #RRGGBB; default: the colour along the edge of its image

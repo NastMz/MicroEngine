@@ -46,10 +46,9 @@ public static class EntryPoint
     }
 
     /// <summary>
-    /// The body of the generated host's <c>GameEntry.Configure(host)</c>: a call to the game's entry point, else (for games
-    /// that still declare it) the deprecated <c>MicroEngineGameFactory</c> expression wrapped in <c>UseGame</c>.
+    /// The body of the generated host's <c>GameEntry.Configure(host)</c>: a call to the game's entry point.
     /// </summary>
-    /// <exception cref="CliException">The game has no entry point and no factory, or more than one entry point.</exception>
+    /// <exception cref="CliException">The game has no entry point, or more than one.</exception>
     public static string Call(GameProject game, string target)
     {
         string assembly = Path.Combine(game.TargetDir, game.Id + ".dll");
@@ -57,11 +56,6 @@ public static class EntryPoint
         if (found.Count == 1) return $"{found[0]}(host)";
         if (found.Count > 1)
             throw new CliException($"{game.Id} has {found.Count} Configure(HostBuilder) entry points ({string.Join(", ", found.Select(f => f.Replace("global::", "")))}); keep one, the method its Program.cs passes to DesktopLauncher.Run.");
-        if (game.GameFactory.Length > 0)
-        {
-            Packaging.Warn($"MicroEngineGameFactory is deprecated: {target} packages call the game's Configure entry point. Add `public static void Configure(HostBuilder host) => host.UseGame(() => {game.GameFactory});` to the game and pass it to DesktopLauncher.Run in Program.cs (docs/migrations.md).");
-            return $"global::MicroEngine.Core.HostBuilderExtensions.UseGame(host, () => {game.GameFactory})";
-        }
         throw new CliException($"{target} packages compose the game with its Configure entry point, and {game.Id} has none. Add one to the game class, and pass it to DesktopLauncher.Run in Program.cs:\n  public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());\n  return DesktopLauncher.Run(MainGame.Configure, args);");
     }
 

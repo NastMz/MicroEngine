@@ -49,7 +49,7 @@ function fixtureRepo() {
   write(root, 'games/LICENSE', 'all rights reserved');
   write(root, 'THIRD-PARTY-NOTICES.md', '# notices');
   for (const id of ['Alpha', 'Beta']) {
-    write(root, `games/${id}/${id}.csproj`, `<Project><PropertyGroup><ApplicationTitle>${id}</ApplicationTitle><MicroEngineGameFactory>new ${id}.Game()</MicroEngineGameFactory></PropertyGroup><ItemGroup><ProjectReference Include="../../src/Desktop/Desktop.csproj" /></ItemGroup></Project>`);
+    write(root, `games/${id}/${id}.csproj`, `<Project><PropertyGroup><ApplicationTitle>${id}</ApplicationTitle></PropertyGroup><ItemGroup><ProjectReference Include="../../src/Desktop/Desktop.csproj" /></ItemGroup></Project>`);
     write(root, `games/${id}/Game.cs`, `class ${id} {}`);
     write(root, `games/${id}/README.md`, `# ${id}`);
     write(root, `games/${id}/screenshots/01.png`, 'png');
@@ -111,8 +111,8 @@ test('keys: stable, per game, and only changed by what a web package is built fr
   assert.equal(key('Alpha'), alpha, 'another game does not change this key');
   assert.notEqual(key('Beta'), beta);
 
-  change(root, 'games/Alpha/Alpha.csproj', fs.readFileSync(path.join(root, 'games/Alpha/Alpha.csproj'), 'utf8').replace('new Alpha.Game()', 'new Alpha.Game(1)'));
-  assert.notEqual(key('Alpha'), alpha, "the game's project (its identity and factory) is an input");
+  change(root, 'games/Alpha/Alpha.csproj', fs.readFileSync(path.join(root, 'games/Alpha/Alpha.csproj'), 'utf8').replace('<ApplicationTitle>Alpha</ApplicationTitle>', '<ApplicationTitle>Alpha</ApplicationTitle><Version>2.0.0</Version>'));
+  assert.notEqual(key('Alpha'), alpha, "the game's project (its identity) is an input");
   const afterEntry = key('Alpha');
   change(root, 'src/Engine/Engine.cs', 'class Engine { int y; }');
   assert.notEqual(key('Alpha'), afterEntry, 'the engine is an input of every game');

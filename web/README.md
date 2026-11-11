@@ -103,8 +103,8 @@ The page posts its state to the parent: `{ source: 'microengine', game, state, d
 ## How the host works
 
 - `microengine package web` copies the host template into the game's `obj/microengine/web` folder and writes what is
-  the game's, from its project's [identity](../docs/guide/app-identity.md): `GameEntry` (the entry point, from
-  `MicroEngineGameFactory`, the same expression the desktop `Program.cs` passes to `DesktopLauncher`), `content.txt`,
+  the game's, from its project's [identity](../docs/guide/app-identity.md): `GameEntry` (a call to the game's
+  `Configure` entry point, the same method the desktop `Program.cs` passes to `DesktopLauncher.Run`), `content.txt`,
   `game.json`, the page title and the favicon (`MicroEngineIcon`).
 - `Program.cs` (`WebHost`) is the page's bridge: `Start`, `Frame` (one frame per `requestAnimationFrame`),
   `Outcome`, `Stop` and diagnostics. It drives a `GameSession` from `BrowserLauncher.CreateSession`, which picks
@@ -198,15 +198,14 @@ to `dist/web-mobile`.
 ## Adding a fifth game
 
 1. Make sure the game reads files through `ContentFolder` and saves through `SaveStore` (no direct file IO), and
-   keeps its desktop `Program.cs` minimal: build the game, call `DesktopLauncher.Run`.
+   keeps its desktop `Program.cs` minimal: pass the game's `Configure` entry point to `DesktopLauncher.Run`.
 2. Give its project (`games/MyGame/MyGame.csproj`) its [identity](../docs/guide/app-identity.md): `ApplicationTitle`,
-   `ApplicationId`, `MicroEngineIcon` and `MicroEngineGameFactory`:
+   `ApplicationId` and `MicroEngineIcon`:
 
    ```xml
    <ApplicationTitle>My Game</ApplicationTitle>
    <ApplicationId>dev.microengine.mygame</ApplicationId>
    <MicroEngineIcon>icon.png</MicroEngineIcon>
-   <MicroEngineGameFactory>new MyGame.MyGameClass()</MicroEngineGameFactory>
    ```
 
 3. `web/build.sh MyGame`, then `node web/serve.mjs dist/web` and play it.

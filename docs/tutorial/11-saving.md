@@ -66,8 +66,8 @@ protected override void Unload() => Sprites.Dispose();
 - `Saves.Load<SaveData>("progress")` returns the saved object, or `null` when there is no save yet. `?.BestScore ?? 0`
   turns "no save" into a best score of 0.
 
-Because `MainGame` now has a constructor with an optional parameter, `Program.cs` and the project's
-`MicroEngineGameFactory` (`new GemGarden.MainGame()`) still work unchanged.
+Because `MainGame` now has a constructor with an optional parameter, `Configure` (`new MainGame()`) and `Program.cs`
+still work unchanged.
 
 ## Saving
 

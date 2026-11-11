@@ -11,6 +11,9 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
   `Game.UseAchievements` and `Game.AchievementToasts`, deprecated in 0.5.0-alpha.2. Build them from widgets and call
   `TrackAchievements` ([migration notes](../migrations.md#next-release)).
+- The `MicroEngineGameFactory` project property, deprecated in 0.5.0-alpha.1. `microengine package` builds browser,
+  Android and iOS packages from the game's `Configure(HostBuilder)` entry point only, and stops with the method to add
+  when a game has none. The tutorial's Gem Garden declares the entry point from its first step.
 
 ## 0.5.0-alpha.2
 

@@ -14,6 +14,21 @@ them no longer builds. **Migration:** follow [Deprecated UI components](#depreca
 the widgets that replace each one; a game that keeps one unchanged copies its source from the repository at tag
 `sdk-v0.5.0-alpha.2` into the game.
 
+### `MicroEngineGameFactory` removed
+
+The `MicroEngineGameFactory` project property, deprecated in 0.5.0-alpha.1, is no longer read: `microengine package web`,
+`android` and `ios` stop on a game without a `Configure(HostBuilder)` entry point and show the method to add.
+**Migration:** add the entry point to the game class, pass it to the launcher in `Program.cs`, and delete the property
+from the project file:
+
+```csharp
+public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+```
+
+```csharp
+return DesktopLauncher.Run(MainGame.Configure, args);
+```
+
 ## 0.5.0-alpha.2
 
 ### Deprecated UI components
