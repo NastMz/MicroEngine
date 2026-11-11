@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // DialogueBox, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
@@ -174,65 +173,6 @@ public sealed class ActionPromptTests
     }
 
     [TestMethod]
-    public void ALongPageContinuesInsteadOfBeingCut()
-    {
-        var font = Font();
-        var map = new InputMap().Bind("confirm", Key.Z);
-        var box = new DialogueBox { Lines = 2 };
-        string page = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen";
-        int total = font.Wrap(page, 100 - 16).Count;
-        Assert.IsTrue(total > 2, "the page needs more than two lines at this width");
-        box.Show("Elder", page);
-        var parts = new List<string>();
-        for (int i = 0; i < 20 && box.Active; i++)
-        {
-            Draw(box, font, 100);
-            Assert.IsTrue(box.VisibleLines.Count <= 2);
-            parts.Add(string.Join(" ", box.VisibleLines));
-            Confirm(box, map);  // reveal the rest of the part
-            Confirm(box, map);  // continue
-        }
-        Assert.IsFalse(box.Active, "the box closes after the last part");
-        Assert.AreEqual((total + 1) / 2, parts.Count, "one confirm per two lines");
-        Assert.AreEqual(page, string.Join(" ", parts), "every word shown exactly once: " + string.Join("|", parts));
-    }
-
-    [TestMethod]
-    public void DialoguePagesShowEveryLineOnceAndResolvePrompts()
-    {
-        var rig = new Rig();
-        var font = Font();
-        var box = new DialogueBox { Lines = 1, Prompts = rig.Prompts };
-        box.Show(null, "Press {attack} to swing it at bushes and pots");
-        var seen = new List<string>();
-        for (int i = 0; i < 20 && box.Active; i++)
-        {
-            Draw(box, font, 80);
-            Assert.IsTrue(font.MeasureWidth(box.VisibleLines.Single()) <= 80 - 16, "no line is wider than the box");
-            seen.Add(box.VisibleLines.Single());
-            Confirm(box, rig.Map);
-            Confirm(box, rig.Map);
-        }
-        Assert.IsFalse(box.Active);
-        Assert.AreEqual("Press Z to swing it at bushes and pots", string.Join(" ", seen));
-    }
-
-    [TestMethod]
-    public void ADeviceChangeMidPageUpdatesThePrompt()
-    {
-        var rig = new Rig();
-        var font = Font();
-        var box = new DialogueBox { Prompts = rig.Prompts };
-        box.Show(null, "Press {attack} to swing.");
-        Draw(box, font);
-        Assert.AreEqual("Press Z to swing.", box.Text);
-        rig.PressPad(PadButton.A);
-        Draw(box, font);
-        Assert.AreEqual("Press A to swing.", box.Text);
-        Assert.AreEqual("Press A to swing.", string.Join(" ", box.VisibleLines));
-    }
-
-    [TestMethod]
     public void AWordWiderThanTheLineIsBroken()
     {
         var font = Font();
@@ -243,12 +183,4 @@ public sealed class ActionPromptTests
     }
 
     private static BitmapFont Font() => BitmapFont.CreateDefault(new HeadlessGraphicsDevice());
-
-    private static void Draw(DialogueBox box, BitmapFont font, int width = 300) => box.Draw(new HeadlessRenderer(320, 180), font, new RectF(0, 0, width, 40));
-
-    private static void Confirm(DialogueBox box, InputMap map)
-    {
-        map.SetForced("confirm", true); map.Sample(new HeadlessInput()); box.Update(0, map); map.EndUpdate();
-        map.SetForced("confirm", false); map.Sample(new HeadlessInput()); map.EndUpdate();
-    }
 }

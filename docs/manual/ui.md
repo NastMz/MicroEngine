@@ -44,20 +44,6 @@ blue, Y yellow), the shape on PlayStation pads, a ring with the button's label o
 (`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); text that
 keeps words goes through `ActionPrompts.Format`. See [Showing controls to the player](input.md#showing-controls-to-the-player).
 
-## Deprecated components
-
-These types still work but are deprecated (a warning names the replacement) and are removed in a later SDK release.
-Each one is a few widgets of your own; the [migration notes](../migrations.md) say how to move.
-
-| Deprecated | Build it from |
-| --- | --- |
-| `DialogueBox` | A `Panel` holding a `Label` with `Wrap` and `VisibleCharacters` ([Dialogue](../examples/focused.md#dialogue)) |
-| `Typewriter` | `Label.VisibleCharacters`, raised a little every update ([Text that wraps and reveals](#text-that-wraps-and-reveals)) |
-| `SelectionList` | `Button`s, or widgets of your own, in a `Stack`; `UiRoot.FocusChanged` for the cursor sound ([Menus](#menus)) |
-| `Toasts`, `Toast` | A `Panel` in a `Layer`, slid in with `Offset` and `Opacity`, or your own drawing from `Game.DrawAboveScenes` |
-| `AchievementToasts`, `UseAchievements` | `TrackAchievements`, then your own banner on `AchievementTracker.Unlocked` ([Achievements](achievements.md)) |
-| `AchievementsScene` | Rows in a `ScrollView` over `AchievementTracker.All` ([Achievements](achievements.md#showing-achievements)) |
-
 ## Widgets in the UI view
 
 A scene's `Widgets` is a widget tree the engine lays out, draws,

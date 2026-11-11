@@ -4,6 +4,17 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
+## Next release
+
+**Removed**
+
+- `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+  `Game.UseAchievements` and `Game.AchievementToasts`, deprecated in 0.5.0-alpha.2. Build them from widgets and call
+  `TrackAchievements` ([migration notes](../migrations.md#next-release)).
+- The `MicroEngineGameFactory` project property, deprecated in 0.5.0-alpha.1. `microengine package` builds browser,
+  Android and iOS packages from the game's `Configure(HostBuilder)` entry point only, and stops with the method to add
+  when a game has none. The tutorial's Gem Garden declares the entry point from its first step.
+
 ## 0.5.0-alpha.2
 
 UI primitives for any game's interface, and a seventh package: `MicroEngine.Text.Shaping`, optional, for Arabic,

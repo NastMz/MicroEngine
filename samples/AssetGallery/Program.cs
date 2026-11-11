@@ -1,4 +1,4 @@
 using AssetGallery;
 using MicroEngine.Desktop;
 
-return DesktopLauncher.Run(new GalleryGame(), args);
+return DesktopLauncher.Run(GalleryGame.Configure, args);

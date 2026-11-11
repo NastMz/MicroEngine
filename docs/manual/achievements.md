@@ -70,8 +70,6 @@ file, and calling it from `Load` or later throws an `InvalidOperationException` 
 A composition of your own (without the `Game` façade) adds the same module itself:
 `builder.Add(new AchievementsModule(tracker))` (namespace `MicroEngine.Achievements`).
 
-`UseAchievements(catalog, store, theme?)` does the same and also shows the engine's own unlock banners
-(`AchievementToasts`); both are deprecated and leave in a later SDK release ([migration notes](../migrations.md)).
 
 ## Reporting progress
 

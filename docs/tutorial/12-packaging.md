@@ -29,7 +29,6 @@ it by) comes from the second group of the project file. For the release, set the
     <Description>Collect the gems of a walled garden before the sun sets.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineOrientation>landscape</MicroEngineOrientation>
-    <MicroEngineGameFactory>new GemGarden.MainGame()</MicroEngineGameFactory>
   </PropertyGroup>
 
   <ItemGroup>

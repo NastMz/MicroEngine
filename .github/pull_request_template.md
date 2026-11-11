@@ -9,5 +9,5 @@
 ## Licence
 
 - [ ] I wrote this change or have the right to submit it, and I license it under the MIT License
-      ([CONTRIBUTING.md](../CONTRIBUTING.md#how-contributions-work))
+      ([CONTRIBUTING.md](../CONTRIBUTING.md#before-you-start))
 - [ ] It adds no code or assets under incompatible terms; new third-party assets are listed in the game's `CREDITS.md`

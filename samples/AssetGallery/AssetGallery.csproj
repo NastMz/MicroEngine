@@ -14,7 +14,6 @@
     <ApplicationId>com.example.assetgallery</ApplicationId>
     <Version>1.0.0</Version>
     <Description>The MicroEngine asset pipeline in one HD screen: external images, atlases, fonts and filtering.</Description>
-    <MicroEngineGameFactory>new AssetGallery.GalleryGame()</MicroEngineGameFactory>
   </PropertyGroup>
 
   <ItemGroup>

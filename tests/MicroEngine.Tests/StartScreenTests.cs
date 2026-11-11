@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // the engine's banners, deprecated, are tested until they are removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
@@ -81,47 +80,5 @@ public sealed class StartScreenTests
         Assert.AreEqual(Color.White, big[15, 15], "whole-number enlargements repeat pixels");
         var half = new PixelImage(2, 2).FillRect(0, 0, 1, 2, Color.Hex("ff0000")).FillRect(1, 0, 1, 2, Color.Hex("0000ff")).Resized(1, 1)[0, 0];
         Assert.AreEqual(new Color(127, 0, 127), half, "reductions average the area");
-    }
-}
-
-/// <summary>Where achievement banners appear.</summary>
-[TestClass]
-public sealed class AchievementToastPlacementTests
-{
-    /// <summary>Records the rectangles filled, to find a panel's place.</summary>
-    private sealed class RectRecorder(int width, int height) : IRenderer
-    {
-        public List<RectF> Rects { get; } = [];
-        public int Width { get; } = width;
-        public int Height { get; } = height;
-        public void Clear(Color color) { }
-        public void Draw(Texture texture, RectF source, System.Numerics.Vector2 position, Color tint, in DrawOptions options = default) { }
-        public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint) { }
-        public void FillRect(RectF rect, Color color) => Rects.Add(rect);
-        public void FillCircle(System.Numerics.Vector2 center, float radius, Color color) { }
-        public void FillTriangle(System.Numerics.Vector2 a, System.Numerics.Vector2 b, System.Numerics.Vector2 c, Color color) { }
-        public void DrawLine(System.Numerics.Vector2 from, System.Numerics.Vector2 to, float thickness, Color color) { }
-        public void PushCamera(Camera2D camera) { }
-        public void PopCamera() { }
-        public void SetBlendMode(BlendMode mode) { }
-        public void SetClip(RectF? screenRect) { }
-    }
-
-    private static RectF Shown(MicroEngine.UI.AchievementToasts toasts)
-    {
-        toasts.Show(new Achievement("first", "First steps", "Walk a little."));
-        toasts.Update(1f); // fully slid in
-        var r = new RectRecorder(320, 180);
-        toasts.Draw(r, BitmapFont.CreateDefault(new HeadlessGraphicsDevice()));
-        return r.Rects[1]; // the panel's border (the first rectangle is its drop shadow)
-    }
-
-    [TestMethod]
-    public void BannersSitAtTheTopByDefaultOrAtTheBottom()
-    {
-        var top = Shown(new MicroEngine.UI.AchievementToasts { Top = 23 });
-        Assert.AreEqual(23, top.Y, 0.5f);
-        var bottom = Shown(new MicroEngine.UI.AchievementToasts { Bottom = 4 });
-        Assert.AreEqual(180 - 4, bottom.Bottom, 0.5f, "fully shown, its bottom edge is 4 pixels above the screen's");
     }
 }

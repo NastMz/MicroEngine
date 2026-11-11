@@ -21,7 +21,6 @@ public abstract class Scene : IStateHashed
 
 #### Derived
 
-[AchievementsScene](MicroEngine.UI.AchievementsScene.md), 
 [Scene<TResult\>](MicroEngine.Scenes.Scene\-1.md)
 
 #### Implements

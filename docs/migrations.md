@@ -4,6 +4,31 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next release
+
+### Removed UI components
+
+`DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+`Game.UseAchievements` and `Game.AchievementToasts`, deprecated in 0.5.0-alpha.2, are removed: a game that still uses
+them no longer builds. **Migration:** follow [Deprecated UI components](#deprecated-ui-components) below, which gives
+the widgets that replace each one; a game that keeps one unchanged copies its source from the repository at tag
+`sdk-v0.5.0-alpha.2` into the game.
+
+### `MicroEngineGameFactory` removed
+
+The `MicroEngineGameFactory` project property, deprecated in 0.5.0-alpha.1, is no longer read: `microengine package web`,
+`android` and `ios` stop on a game without a `Configure(HostBuilder)` entry point and show the method to add.
+**Migration:** add the entry point to the game class, pass it to the launcher in `Program.cs`, and delete the property
+from the project file:
+
+```csharp
+public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+```
+
+```csharp
+return DesktopLauncher.Run(MainGame.Configure, args);
+```
+
 ## 0.5.0-alpha.2
 
 ### Deprecated UI components

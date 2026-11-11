@@ -24,8 +24,7 @@ The package runs the game's `Configure`
 entry point, the same composition its desktop `Program.cs` hands to `DesktopLauncher.Run`, so platforms, request
 changes and engine services the game composes there reach the browser too
 ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). `microengine` finds
-the method in the built game; a game without one fails with a message showing the method to add (or, while it still
-declares the deprecated `MicroEngineGameFactory`, packages with a warning). A development package's scripted run
+the method in the built game; a game without one fails with a message showing the method to add. A development package's scripted run
 (`script=<name>`) follows the desktop rules: one fixed step per frame, seed 1 and no sound device, so two runs of the
 same package and script write byte-identical captures.
 

@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // the deprecated UI types keep their place in the module map until they are removed
 using System.Xml.Linq;
 using MicroEngine.Core;
 using MicroEngine.Kernel;
@@ -331,9 +330,9 @@ public sealed class ArchitectureTests
     {
         var ui = typeof(MicroEngine.UI.UiRoot).Assembly;
         Assert.AreEqual(UI, ui.GetName().Name);
-        var moved = new[] { typeof(MicroEngine.UI.Typewriter), typeof(MicroEngine.UI.SelectionList), typeof(MicroEngine.UI.UiTheme) };
+        var moved = new[] { typeof(MicroEngine.UI.UiTheme) };
         var widgets = new[] { typeof(MicroEngine.UI.Widget), typeof(MicroEngine.UI.Button), typeof(MicroEngine.UI.Label), typeof(MicroEngine.UI.Panel),
-            typeof(MicroEngine.UI.Stack), typeof(MicroEngine.UI.TextField), typeof(MicroEngine.UI.Toasts), typeof(MicroEngine.UI.UiActions) };
+            typeof(MicroEngine.UI.Stack), typeof(MicroEngine.UI.TextField), typeof(MicroEngine.UI.UiActions) };
         foreach (var type in moved.Concat(widgets)) Assert.AreEqual(UI, type.Assembly.GetName().Name, $"{type.Name} is the UI's");
         var engine = ui.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
         Assert.IsTrue(engine.All(Allowed[UI].Contains), string.Join(", ", engine));

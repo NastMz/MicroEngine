@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // SelectionList, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Input;
@@ -643,22 +642,10 @@ public sealed class InputMapFeatureTests
     }
 
     [TestMethod]
-    public void Engine_widgets_controls_and_prompts_follow_renamed_actions()
+    public void Engine_controls_and_prompts_follow_renamed_actions()
     {
         var names = ActionNames.Default with { Confirm = "accept", Up = "north", Down = "south" };
         var map = InputMap.CreateDefault(names);
-        var keys = new HeadlessInput();
-        var list = new UI.SelectionList("a", "b");
-        keys.Set(Key.S, true);
-        map.Sample(keys);
-        Assert.IsNull(list.Update(map));
-        Assert.AreEqual(1, list.Index, "the renamed down action moves the cursor");
-        keys.Set(Key.S, false);
-        keys.Set(Key.Z, true);
-        map.EndUpdate();
-        map.Sample(keys);
-        Assert.AreEqual(1, list.Update(map), "the renamed confirm action chooses");
-
         var layout = TouchLayout.CreateDefault(names);
         CollectionAssert.Contains(layout.Controls.OfType<TouchButton>().Select(b => b.Action).ToArray(), "accept");
         Assert.AreEqual("north", layout.Controls.OfType<TouchDPad>().Single().Up);

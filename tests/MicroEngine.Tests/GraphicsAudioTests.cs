@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // Typewriter, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Audio;
 using MicroEngine.Audio.Retro;
@@ -254,20 +253,6 @@ public sealed class GraphicsTests
         Assert.AreEqual(110, X(1), 1);
         Assert.AreEqual(105, X(0.5f), 1, "halfway between the last two updates");
         Assert.AreEqual(100, X(0), 1);
-    }
-
-    [TestMethod]
-    public void Typewriter_reveals_progressively_and_reports_characters()
-    {
-        var typewriter = new Typewriter { CharactersPerSecond = 10 };
-        var revealed = new List<char>();
-        typewriter.Revealed += revealed.Add;
-        typewriter.Start("hi you");
-        typewriter.Update(0.25f);
-        Assert.AreEqual("hi", typewriter.Visible);
-        typewriter.Finish();
-        Assert.IsTrue(typewriter.Complete);
-        CollectionAssert.AreEqual(new[] { 'h', 'i' }, revealed);
     }
 }
 

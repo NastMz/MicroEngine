@@ -56,22 +56,9 @@ protected Game()
 
 ## Properties
 
-### <a id="MicroEngine_Core_Game_AchievementToasts"></a> AchievementToasts
-
-Unlock banners drawn above every scene (null without achievements).
-
-```csharp
-[Obsolete("Banners of the engine leave: call TrackAchievements and draw your own from DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
-public AchievementToasts? AchievementToasts { get; }
-```
-
-#### Property Value
-
- [AchievementToasts](MicroEngine.UI.AchievementToasts.md)?
-
 ### <a id="MicroEngine_Core_Game_Achievements"></a> Achievements
 
-The game's achievements; available after [UseAchievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_UseAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_MicroEngine_UI_UiTheme_).
+The game's achievements; available after [TrackAchievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_).
 
 ```csharp
 public AchievementTracker Achievements { get; }
@@ -178,7 +165,7 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Core_Game_HasAchievements"></a> HasAchievements
 
-Whether [UseAchievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_UseAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_MicroEngine_UI_UiTheme_) was called, so [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements) can be read without throwing.
+Whether [TrackAchievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_) was called, so [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements) can be read without throwing.
 
 ```csharp
 public bool HasAchievements { get; }
@@ -631,11 +618,13 @@ Runs the phases that come before drawing for one fixed step, with a frame that s
 
 ### <a id="MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_"></a> TrackAchievements\(IEnumerable<Achievement\>, SaveStore\)
 
-Turns achievements on, without banners of the engine: adds the achievements module (an
-[AchievementTracker](MicroEngine.Core.AchievementTracker.md) service over <code class="paramref">catalog</code> and the <code>engine.achievements</code> system
-that writes progress) and the saves module when the game has none. Progress persists in the "achievements" slot of
-<code class="paramref">store</code>. The game shows unlocks its own way: subscribe to [Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked)
-on [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements), and draw a banner above every scene from [DrawAboveScenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_).
+Turns achievements on: call it from the game's constructor or from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), before the engine is
+composed. It adds the achievements module (an [AchievementTracker](MicroEngine.Core.AchievementTracker.md) service over
+<code class="paramref">catalog</code> and the <code>engine.achievements</code> system that writes progress) and the saves module
+when the game has none. Progress persists in the "achievements" slot of <code class="paramref">store</code>. Report progress
+through [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements). The game shows unlocks its own way: subscribe to
+[Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked) on [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements), and draw a banner above every scene from
+[DrawAboveScenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_). A game that never calls it has no achievement service, system or file.
 
 ```csharp
 protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
@@ -686,37 +675,5 @@ Called once before the platform is disposed.
 ```csharp
 protected virtual void Unload()
 ```
-
-### <a id="MicroEngine_Core_Game_UseAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_MicroEngine_UI_UiTheme_"></a> UseAchievements\(IEnumerable<Achievement\>, SaveStore, UiTheme?\)
-
-Declares the game's achievements: call it from the game's constructor or from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), before
-the engine is composed, so the engine adds the achievements module (the tracker and <code class="paramref">store</code> as
-services, and the <code>engine.achievements</code> system that writes progress). Progress persists in the
-"achievements" slot of <code class="paramref">store</code> (the game's own save folder) and every unlock shows a banner
-styled with <code class="paramref">theme</code>. Report progress through [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements). A game that never calls
-it has no achievement service, system or file.
-
-```csharp
-[Obsolete("Call TrackAchievements, which keeps progress the same way without the engine's banners, and show unlocks your own way from AchievementTracker.Unlocked and DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
-protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
-```
-
-#### Parameters
-
-`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
-
-`store` [SaveStore](MicroEngine.Core.SaveStore.md)
-
-`theme` [UiTheme](MicroEngine.UI.UiTheme.md)?
-
-#### Returns
-
- [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
-
-#### Exceptions
-
- [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
-
-The engine was already composed (called from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later).
 
 </div>

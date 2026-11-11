@@ -137,9 +137,8 @@ of the `MicroEngine` package, which references only the 2D layer, text, input, t
 kernel and the platform contracts. It holds the widget tree (`Widget`, `Label`, `Button`, `Panel`, `Stack`,
 `ScrollView`, `Grid`, `Layer`, `TextField`), `UiTheme` and `UiRoot`, which lays a tree out in UI units in the UI view, keeps the focus, moves it with
 the engine's actions under the input map's names and, as the highest input layer, takes the pointer presses and keys
-it handles from gameplay. Scenes stay in the core, which hosts one root per scene (`Scene.Widgets`), and so do the
-`PromptText`, which reads the action prompts ([UI widgets](manual/ui.md)). The deprecated components (`Typewriter`,
-`SelectionList`, `Toasts`, `DialogueBox` and the achievement views) stay in the same assemblies until they are removed.
+it handles from gameplay. Scenes stay in the core, which hosts one root per scene (`Scene.Widgets`), and so does
+`PromptText`, which reads the action prompts ([UI widgets](manual/ui.md)).
 
 Hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
@@ -272,8 +271,8 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Audio` | `MicroEngine.Audio`, `MicroEngine.Audio.Retro` | `AudioEngine` (voices, buses, music streams, exact-frame scheduling), `AudioMixer`, `IAudioDevice`, `MixerAudioDevice`, `AudioClip` (incl. WAV and OGG decoding), `OfflineAudioSink`, `SilentAudioDevice`; in `MicroEngine.Audio.Retro`: `Synth`, `SfxParams`, `Wave` (retro sound effects), `Song`, `Instrument` (step sequencer) |
 | `MicroEngine.Saves` | `MicroEngine.Saves`, (`MicroEngine.Core`) | `SavesModule`; `SaveStore`, `ISaveStorage`, `FileSaveStorage` |
 | `MicroEngine.Achievements` | `MicroEngine.Achievements`, (`MicroEngine.Core`) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData`, `AchievementRecord` |
-| `MicroEngine.UI` | `MicroEngine.UI` | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `ScrollView`, `Grid`, `Layer`, `TextField`, `UiTheme`; deprecated: `Toasts`, `Toast`, `Typewriter`, `SelectionList` |
-| `MicroEngine` (core) | `MicroEngine.Core`, `MicroEngine.Scenes`, `MicroEngine.Graphics`, `MicroEngine.UI`, `MicroEngine.World` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `GameHost`, `GameLauncher`, `PlatformCatalog`, `PlatformProfile`, `ContentFolder`, `AssetCache`; `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener`; `DeviceCanvas`; `DialogueBox`, `PromptText` and the achievement views (`AchievementToasts`, `AchievementsScene`); `TileRenderer`; forwards for every moved type |
+| `MicroEngine.UI` | `MicroEngine.UI` | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `ScrollView`, `Grid`, `Layer`, `TextField`, `UiTheme` |
+| `MicroEngine` (core) | `MicroEngine.Core`, `MicroEngine.Scenes`, `MicroEngine.Graphics`, `MicroEngine.UI`, `MicroEngine.World` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `GameHost`, `GameLauncher`, `PlatformCatalog`, `PlatformProfile`, `ContentFolder`, `AssetCache`; `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener`; `DeviceCanvas`; `PromptText`; `TileRenderer`; forwards for every moved type |
 | `MicroEngine` (core): testing support | `MicroEngine.Core` | `HeadlessPlatform` (no window, no sound, deterministic time), `InputScript` (scripted input for playthroughs), captures; with the kernel's state hash (`StateHasher`, `StateTrace`), the reference device (`ReferenceGraphicsDevice`) and offline audio (`OfflineAudioSink`) ([Testing your game](examples/testing.md)) |
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |

@@ -3,6 +3,7 @@ using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Audio.Retro;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
 using GemGarden.Scenes;
@@ -12,6 +13,11 @@ namespace GemGarden;
 /// <summary>Gem Garden: its settings, the art and sounds every scene shares, the save file and the first scene.</summary>
 public sealed class MainGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+
     #region save-store
     private const string SaveSlot = "progress";
 

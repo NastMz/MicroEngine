@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // SelectionList, deprecated, is tested until it is removed
 using System.Collections;
 using MicroEngine.Audio;
 using MicroEngine.Audio.Retro;
@@ -206,19 +205,5 @@ public sealed class BehaviourFixTests
         map.EndUpdate();
         map.Sample(keys);
         Assert.IsFalse(map.Released("jump"));
-    }
-
-    [TestMethod]
-    public void SelectionList_keeps_its_index_valid()
-    {
-        var list = new SelectionList("a", "b", "c");
-        Assert.ThrowsExactly<ArgumentException>(() => list.SetOptions([]));
-        Assert.HasCount(3, list.Options, "a refused replacement keeps the options");
-        list.Index = 7;
-        Assert.AreEqual(2, list.Index);
-        list.Index = -3;
-        Assert.AreEqual(0, list.Index);
-        list.SetOptions(["only"]);
-        Assert.AreEqual(0, list.Index);
     }
 }

@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Graphics;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
@@ -13,6 +14,12 @@ namespace Examples;
 /// </summary>
 public sealed class ExamplesGame(string? saveDirectory = null) : Game
 {
+    /// <summary>
+    /// The game's composition for browser, Android and iOS builds; the desktop Program.cs runs the game with a platform
+    /// catalog of its own.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new ExamplesGame());
+
     /// <summary>Name and factory of every example, in the order of the list.</summary>
     public static readonly (string Name, Func<ExamplesGame, Scene> Create)[] All =
     [

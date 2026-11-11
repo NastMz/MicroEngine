@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 
@@ -12,6 +13,11 @@ namespace AssetGallery;
 /// </summary>
 public sealed class GalleryGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new GalleryGame());
+
     private readonly string? _contentRoot;
 
     /// <summary>Creates the gallery; tests pass the content folder of the sources.</summary>

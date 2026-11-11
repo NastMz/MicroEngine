@@ -11,6 +11,7 @@ Replace `MainGame.cs` with this:
 ```csharp title="MainGame.cs"
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using GemGarden.Scenes;
 
 namespace GemGarden;
@@ -18,6 +19,11 @@ namespace GemGarden;
 /// <summary>Gem Garden: its settings and the first scene.</summary>
 public sealed class MainGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+
     /// <summary>A 320x180 virtual screen, scaled to the window without blurring the pixels.</summary>
     public override GameSettings Settings { get; } = new("Gem Garden") { Background = Color.Hex("1a1c2c") };
 
@@ -27,6 +33,9 @@ public sealed class MainGame : Game
     }
 }
 ```
+
+`Configure` is the game's composition, as the template wrote it: `Program.cs` passes it to the desktop launcher, and the
+browser and phone packages of [step 13](13-other-targets.md) call the same method.
 
 `GameSettings` holds what the engine needs before the game starts:
 

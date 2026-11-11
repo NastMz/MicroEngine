@@ -1,5 +1,6 @@
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using GemGarden.Scenes;
 
 namespace GemGarden;
@@ -7,6 +8,11 @@ namespace GemGarden;
 /// <summary>Gem Garden: its settings and the first scene.</summary>
 public sealed class MainGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+
     #region settings
     /// <summary>A 320x180 virtual screen, scaled to the window without blurring the pixels.</summary>
     public override GameSettings Settings { get; } = new("Gem Garden") { Background = Color.Hex("1a1c2c") };
