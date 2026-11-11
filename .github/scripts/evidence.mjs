@@ -23,7 +23,9 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const always = file => /^(odd|experiments)\//.test(file);
+// The films' sources (media/README.md) are rendered by hand and are no check's input; the site shows their catalog and
+// notice, which stay inputs.
+const always = file => /^(odd|experiments)\//.test(file) || (/^media\//.test(file) && !/^media\/(films\.json|LICENSE)$/.test(file));
 // Markdown is documentation unless a game ships it as content.
 const docs = file => /^docs\//.test(file) || (/\.md$/i.test(file) && !/\/Content\//.test(file));
 // Host templates of the microengine tool are compiled only into packages, never by the .NET tests.

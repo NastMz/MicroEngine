@@ -1,21 +1,25 @@
 ---
-// Hallmark · macrostructure: Spec sheet (opening drawing + facts line), then the board, the code, the output and the
-// proof, in that order · nav: N1b · footer: Ft3 grouped · tone: technical, precise, warm
-// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: the socket board and the board drawing,
-// built from the brand's components; real code (lib/source.mjs) and real captures (games/*/screenshots)
+// Hallmark · macrostructure: a pinned journey (one 3D world, six chapters, driven by the scroll), then the product's
+// own sections · nav: N1b · footer: Ft3 grouped · tone: technical, precise, warm
+// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: the journey (Journey.astro), real code
+// beside what it draws (CodeToSprite), the socket board, the films (Films)
 // pre-emit critique: P5 H4 E4 S5 R4 V5
 //
-// Narrative: what MicroEngine is and who it is for (the opening), its stance (built on SDL, raylib and .NET), its
-// modularity (the board), the developer experience (code), what it draws (frames), where it runs, the demos as proof,
-// where it stands, first steps, and where it is going. Status words follow the design's rules: only what the
-// published SDK carries is "Available".
+// Narrative: the page opens on a flight through MicroEngine told as one continuous scene: the kernel, the pieces that
+// dock around it, a game that plays above the assembly, the finished games in depth, the loop as a tape of steps, and
+// the mark. The scroll is its timeline. After it the page is a product page again: how a game is written (code
+// becomes a sprite), the stance, every module on the board, the films, what it draws, where it runs, the demos, where
+// it stands, first steps and where it is going. Status words follow the design's rules: only what the published SDK
+// carries is "Available".
 import { Code } from 'astro:components';
 import { getImage } from 'astro:assets';
 import SiteLayout from '../layouts/SiteLayout.astro';
-import PixelSprite from '../components/PixelSprite.astro';
 import Platforms from '../components/Platforms.astro';
 import DemoCard from '../components/DemoCard.astro';
 import BoardDrawing from '../components/landing/BoardDrawing.astro';
+import Journey from '../components/landing/Journey.astro';
+import CodeToSprite from '../components/landing/CodeToSprite.astro';
+import Films from '../components/landing/Films.astro';
 import SocketBoard from '../components/landing/SocketBoard.astro';
 import CodeLabel from '../components/brand/CodeLabel.astro';
 import FrameStrip from '../components/brand/FrameStrip.astro';
@@ -24,10 +28,11 @@ import { demoGames } from '../data/games';
 import { distribution, sdk } from '../data/distribution';
 import { facts, graphicsIds, upstream } from '../data/landing/content.ts';
 import { availabilityLabels, byStatus, capabilities, socketStatus, type Availability } from '../data/capabilities.ts';
-import { excerpt } from '../lib/source.mjs';
+import { excerpt, pixelMap } from '../lib/source.mjs';
 
 const sample = 'samples/HelloEngine/Program.cs';
-const star = excerpt(sample, /var palette = Art\.Palette/, /Atlas = new SpriteAtlasBuilder/);
+// One step before the first row of the sample's sprite, one per row, one after the last (CodeToSprite).
+const spriteSteps = pixelMap(sample).height + 1;
 // The desktop catalog only: from its declaration to the blank line that ends it.
 const catalogFile = 'src/MicroEngine.Desktop/DesktopLauncher.cs';
 const catalog = excerpt(catalogFile, /public static PlatformCatalog CreateCatalog/, /^\s*$/);
@@ -45,30 +50,33 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
 }));
 ---
 <SiteLayout title="MicroEngine" description="MicroEngine is a code-first game engine for C# and .NET: a small kernel with swappable modules, built on SDL 3, raylib and .NET. Games built with it run on Windows, Linux, macOS, Android, iOS and in browsers." current="home">
-  <section class="opening wrap" aria-labelledby="opening-title">
-    <div class="opening-copy">
-      <p class="sdk-line" data-status="available">
-        <span class="status-mark" aria-hidden="true"></span>
-        <span>SDK {sdk.stage} <span class="mono">{sdk.version}</span> on nuget.org</span>
-        <a href="/docs/sdk/">What Alpha means</a>
-      </p>
-      <h1 id="opening-title">A game engine that orchestrates, not reinvents.</h1>
-      <p class="lede">
-        MicroEngine is a code-first game engine for C# and .NET developers. Today it makes 2D games that run on
-        Windows, Linux, macOS, Android, iOS and in browsers. Inside, a small kernel holds graphics, physics, audio,
-        input and platforms as modules that can be swapped, so the engine grows without rewriting what works.
-      </p>
-      <div class="actions">
-        <a class="button" href={distribution.startHref}>Get started</a>
-        <a class="button secondary" href="/demos/">Play the demos</a>
-      </div>
-    </div>
-    <figure class="opening-figure">
-      <BoardDrawing />
-    </figure>
+  <div class="page-tape" data-page-tape aria-hidden="true"><span class="playhead"></span></div>
+
+  <Journey />
+
+  <section class="wrap facts-strip" aria-label="MicroEngine at a glance">
     <dl class="facts">
       {facts.map(fact => <div><dt>{fact.term}</dt><dd>{fact.value}</dd></div>)}
     </dl>
+  </section>
+
+  <section class="act-pin" id="develop" aria-labelledby="develop-title" data-scroll="pin" data-scroll-steps={spriteSteps}>
+    <div class="pin-inner wrap">
+      <div class="split">
+        <div class="section-head">
+          <p class="label">Developer experience</p>
+          <h2 id="develop-title">Code first, from the template to every target</h2>
+          <ol class="workflow">
+            <li><code>dotnet new microengine-game</code> or <code>microengine new</code> makes a game project that runs as it is.</li>
+            <li>Scenes, rules and art are plain C#. A sprite can be a palette and a string map, like the one beside this; content files are there when you want them.</li>
+            <li><code>microengine run</code> plays it; <code>microengine package</code> builds the same project for each platform.</li>
+          </ol>
+          <p><a href="/docs/examples/hello-engine/">Walk through the Hello Engine sample</a> · <a href="/docs/cli/">The microengine tool</a></p>
+        </div>
+        <CodeToSprite file={sample} from={/var palette = Art\.Palette/} to={/Atlas = new SpriteAtlasBuilder/}
+          note="a sprite is a palette and a map" label="The star sprite, drawn from the map in the code beside it" />
+      </div>
+    </div>
   </section>
 
   <section class="section wrap" id="stance" aria-labelledby="stance-title">
@@ -80,8 +88,8 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
         <p><a href="/docs/third-party-notices/">Third-party notices</a></p>
       </div>
       <ul class="credits" aria-label="Technologies MicroEngine builds on">
-        {upstream.map(tech => (
-          <li>
+        {upstream.map((tech, i) => (
+          <li data-reveal style={`--i:${i}`}>
             <span class="credit-socket"><span class="credit-module">{tech.name}</span></span>
             <span class="credit-role">{tech.role}</span>
           </li>
@@ -91,10 +99,15 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   </section>
 
   <section class="section wrap" id="modules" aria-labelledby="modules-title">
-    <div class="section-head">
+    <div class="split modules-intro">
+      <div class="section-head">
       <p class="label">Modularity</p>
       <h2 id="modules-title">One kernel, modules that swap</h2>
       <p>Every subsystem is a socket with a contract; a module is one implementation seated in it. A game talks to the contracts, so the same game assembly runs on every platform, and a host can seat another module without touching game code. The board shows each module as it really is today.</p>
+      </div>
+      <figure class="parts-figure">
+        <BoardDrawing />
+      </figure>
     </div>
     <SocketBoard labelledby="modules-title" />
     <dl class="status-key">
@@ -116,29 +129,14 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     </div>
   </section>
 
-  <section class="section wrap" id="develop" aria-labelledby="develop-title">
-    <div class="split">
-      <div class="section-head">
-        <p class="label">Developer experience</p>
-        <h2 id="develop-title">Code first, from the template to every target</h2>
-        <ol class="workflow">
-          <li><code>dotnet new microengine-game</code> or <code>microengine new</code> makes a game project that runs as it is.</li>
-          <li>Scenes, rules and art are plain C#. A sprite can be a palette and a string map, like the one on the right; content files are there when you want them.</li>
-          <li><code>microengine run</code> plays it; <code>microengine package</code> builds the same project for each platform.</li>
-        </ol>
-        <p><a href="/docs/examples/hello-engine/">Walk through the Hello Engine sample</a> · <a href="/docs/cli/">The microengine tool</a></p>
-      </div>
-      <figure class="sprite-figure">
-        <div class="code-surface">
-          <CodeLabel file={sample} lang="C#" family="graphics" note="a sprite is a palette and a map" />
-          <Code code={star.code} lang="csharp" theme="github-dark-dimmed" />
-        </div>
-        <div class="sprite-out">
-          <PixelSprite file={sample} scale={12} label="The star sprite, drawn from the map in the code beside it" />
-          <p class="label">= the sprite it draws</p>
-        </div>
-      </figure>
+  <section class="section wrap" id="films" aria-labelledby="films-title">
+    <div class="section-head">
+      <p class="label">Films</p>
+      <h2 id="films-title">Three films, three stories</h2>
+      <p>MicroEngine in under a minute, three times over. Every frame is code, the soundtrack comes from the engine’s own synthesizer, and the games on screen are really running.</p>
     </div>
+    <Films />
+    <p class="more"><a href="/films/">How they were made</a></p>
   </section>
 
   <section class="section wrap" id="graphics" aria-labelledby="graphics-title">
@@ -176,7 +174,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
       <p>The demos are how MicroEngine checks itself: complete games with a title screen, an ending, saves and achievements, from fully procedural to built from asset files. Each one runs on its page in desktop and mobile browsers, with a keyboard, a gamepad or on-screen touch controls.</p>
     </div>
     <ul class="demo-grid">
-      {demoGames.map((game, i) => <li><DemoCard game={game} loading={i < 2 ? 'eager' : 'lazy'} /></li>)}
+      {demoGames.map((game, i) => <li data-reveal style={`--i:${i % 2}`}><DemoCard game={game} loading={i < 2 ? 'eager' : 'lazy'} /></li>)}
     </ul>
     <p class="more"><a href="/demos/">All demos</a></p>
   </section>
@@ -215,7 +213,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
           <a class="button secondary" href="/docs/tutorial/">Build your first game</a>
         </div>
       </div>
-      <ol class="steps">{distribution.install.map(step => <li><span class="label">{step.label}</span><code>{step.command}</code></li>)}</ol>
+      <ol class="steps">{distribution.install.map((step, i) => <li data-reveal style={`--i:${i}`}><span class="label">{step.label}</span><code>{step.command}</code></li>)}</ol>
     </div>
   </section>
 
@@ -231,15 +229,35 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   </section>
 </SiteLayout>
 
+<script>
+  import { startScroll } from '../scripts/scroll.ts';
+  import { startJourney } from '../scripts/journey.ts';
+  startScroll();
+  startJourney();
+</script>
+
 <style>
-  /* Opening: the claim and the drawing side by side on wide screens, then a line of facts across the page. */
-  .opening { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl) var(--space-3xl); padding-block: var(--space-2xl) 0; align-items: center; }
-  .opening-copy { display: grid; gap: var(--space-lg); min-width: 0; }
-  /* The longest word ("orchestrates,") must fit a 320 px screen whole: a smaller ceiling than --text-display. */
-  .opening-copy h1 { font-size: var(--text-hero); overflow-wrap: normal; }
-  .sdk-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-sm); font-size: var(--text-sm); color: var(--color-ink-2); }
-  .opening-figure { margin: 0; min-width: 0; max-width: 34rem; justify-self: center; width: 100%; }
-  .facts { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr); margin: 0;
+  .parts-figure { margin: 0; min-width: 0; max-width: 30rem; width: 100%; justify-self: center; }
+  .modules-intro { margin-bottom: var(--space-xl); align-items: center; }
+
+  /* The page tape: the page's own progress drawn as the tape of "Every step". A tick where each section starts,
+     solid once passed; the amber playhead is the scroll position. It carries no information a reader needs. */
+  .page-tape { position: fixed; z-index: 5; inset: 0 0 auto 0; height: var(--space-xs); pointer-events: none; }
+  .page-tape :global(.tick) { position: absolute; top: 0; width: var(--rule-pixel); height: var(--space-xs); background: var(--color-ink-4); }
+  .page-tape :global(.tick[data-passed]) { background: var(--color-ink); }
+  .page-tape .playhead { position: absolute; top: 0; left: calc(var(--at, 0) * 100%); width: calc(var(--rule-pixel) * 3); height: var(--space-sm);
+    margin-left: calc(var(--rule-pixel) * -1); background: var(--color-accent-fill); }
+
+  /* Act one is held in place on large screens while the map resolves: the section is taller than the window and its
+     content sticks. Nothing takes the scroll over; a reader who keeps scrolling simply leaves. */
+  .act-pin { padding-block: var(--space-3xl) 0; }
+  @media (min-width: 64rem) and (min-height: 44rem) {
+    :global(html.scroll-live) .act-pin { height: 210vh; padding-block: 0; }
+    :global(html.scroll-live) .pin-inner { position: sticky; top: 0; min-height: 100vh; display: grid; align-content: center; padding-block: var(--space-2xl); }
+  }
+
+  .facts-strip { padding-top: var(--space-2xl); }
+  .facts { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0;
     border-top: var(--rule-pixel) solid var(--color-ink); }
   .facts div { display: grid; gap: var(--space-2xs); padding: var(--space-sm) 0; border-bottom: var(--rule-thin) solid var(--color-rule); min-width: 0; }
   .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: var(--tracking-label); }
@@ -280,8 +298,6 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   .workflow li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 0.1em;
     font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink); padding-top: 2px; border-top: var(--rule-pixel) solid var(--color-ink); }
   .workflow code, .section-head code { font-size: 0.9em; color: var(--color-ink); overflow-wrap: anywhere; }
-  .sprite-figure { margin: 0; display: grid; gap: var(--space-md); min-width: 0; }
-  .sprite-out { display: flex; align-items: center; gap: var(--space-md); }
 
   .graphics-sockets { list-style: none; margin: var(--space-xl) 0 0; padding: 0; display: grid; gap: var(--space-lg); grid-template-columns: minmax(0, 1fr); }
 
@@ -318,10 +334,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     .ledger, .graphics-sockets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (min-width: 64rem) {
-    .opening { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); padding-top: var(--space-3xl); }
     .facts, .ledger, .graphics-sockets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .split { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
-    .sprite-figure { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
-    .sprite-out { flex-direction: column; max-width: 9rem; text-align: center; }
   }
 </style>

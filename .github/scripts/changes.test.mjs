@@ -145,6 +145,12 @@ test('an unknown path runs everything rather than skip a check', () => {
   assert.deepEqual(plan(['newfolder/thing.txt']), everything);
 });
 
+test('films never render in CI: their sources run nothing, their catalog and notice check the site', () => {
+  assert.deepEqual(plan(['media/seated/compositions/code.html', 'media/every-step/audio/Program.cs', 'media/tools/films.mjs', 'media/README.md']), none);
+  assert.equal(plan(['media/films.json']).browser, 'layout');
+  assert.equal(plan(['media/LICENSE']).browser, 'layout');
+});
+
 test('task records and experiments run nothing', () => {
   assert.deepEqual(plan(['odd/tasks/platform-ci.md', 'experiments/notes.txt']), none);
 });

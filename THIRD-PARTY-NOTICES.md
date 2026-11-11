@@ -111,6 +111,7 @@ game's credits list every file, its author and its licence. Meadow Run uses no t
 | Astro | MIT | Copyright (c) 2021 Fred K. Schott |
 | Starlight | MIT | Copyright (c) 2023 Astro contributors |
 | Pagefind (search) | MIT | Copyright (c) Pagefind |
+| three.js (the 3D scene of the landing) | MIT | Copyright (c) 2010-2025 three.js authors |
 
 ## Licence texts
 

@@ -259,7 +259,8 @@ shows four seated families that ship today and one empty dashed socket, unlabell
   overshoot, so a module "clicks" into place.
 - The signature motion is the module sliding into its socket (`<Mark seat />`, once, on load). A socket's module lifts
   2 px on hover, as if about to be swapped.
-- Nothing loops, nothing moves on scroll, no parallax.
+- Nothing loops. On the landing, motion is tied to the scroll position ([Landing in motion](#landing-in-motion)):
+  a reader who does not scroll sees a still page, and every other page stays still.
 - Under `prefers-reduced-motion: reduce` every animation and transition is removed (components check it; `site.css`
   also shortens all transitions globally).
 
@@ -310,6 +311,41 @@ colour, light and dark, rasterised at real size and enlarged) and the brand kit 
 - **Docs:** Starlight's variables already map onto the tokens for both schemes (`starlight.css`); code blocks are
   Expressive Code, not `.astro-code`, so give them the `CodeLabel` treatment there.
 - **Content:** anything not in the published SDK is an empty dashed socket with its status written out.
+
+## Landing in motion
+
+The landing opens on a journey: one 3D world that the reader travels through by scrolling. This section replaces the
+earlier rule that nothing moves on scroll; every other rule holds.
+
+- **The scroll is a timeline.** `Journey.astro` is a section ten windows tall whose stage sticks to the window.
+  `src/scripts/journey/scene.ts` draws the world as a pure function of one number, the progress from 0 to 1, so it
+  plays forwards and backwards and never holds the scroll. `src/scripts/journey.ts` binds it to the scroll with a
+  short lag, so a wheel's steps become one movement.
+- **One world, one flight.** The camera follows a spline through: the kernel on its table with six pieces floating on
+  dashed guides; the pieces docking; a plane rising above the assembly with a real game on it; a dive into that plane
+  until the game fills the window; three more real games hanging in depth; the tape of steps under an amber playhead
+  (the score of the film Every step, step for step); the mark assembled from its parts, the amber module last.
+- **The films' look.** Flat shading, three tones a colour, no lights, shadows or gradients. Fog fades distance into
+  the ground, which is the page's paper. Colours are read from the tokens when the scene starts, so it follows the theme.
+- **The ground never fades.** For the tape the ground is the other theme's; it crosses the frame as a hard edge (two
+  passes split by a scissor) and goes back the way it came.
+- **Words over the picture.** Six chapters, each real markup with a heading and copy, shown while the camera is in
+  their part of the world (`data-from`, `data-to`). The picture moves aside for them on a wide window and above
+  them on a tall one. A chapter that is not on stage is `inert`.
+- **Three.js, loaded on demand.** The scene needs a real 3D renderer; it is one chunk, requested only when the journey
+  will run. No animation library: the timeline is the scroll.
+- **Plain chapters by default.** Without JavaScript, with reduced motion, when saving data, on little memory or
+  without WebGL, the journey is six ordinary sections, each with a still of its scene in the current theme
+  (`src/assets/journey`, taken by `node scripts/journey-stills.mjs` after a build; retake them when the scene changes).
+- **After the journey** the page is a product page: the sample beside its sprite (`CodeToSprite.astro`, the one
+  section held with `position: sticky`), the stance, the socket board whose modules seat as each bay arrives, the
+  films. Those use `src/scripts/scroll.ts` (`--p`, `--step`, `data-reveal`) under `html.scroll-live`.
+- **`.page-tape`**, the ruler at the top of the window: a tick per section and the amber playhead at the scroll
+  position.
+- **The films** (`Films.astro`, `/films/`): three cards with a frame of each film; a film's file is requested only
+  when its card is pressed, and released when the player closes. Never describe one film as a version of another.
+- Checks: `tests/site.test.mjs` (the journey's guards, chapters and stills; the films' data; no video in the built
+  landing) and `tests/browser.mjs` (the layout checks at four widths, with the journey running in Chrome).
 
 ## Landing and shell
 

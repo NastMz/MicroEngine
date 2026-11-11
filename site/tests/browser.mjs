@@ -32,7 +32,7 @@ const executables = {
 const games = [
   ['meadow-run', 'MeadowRun'], ['courtyard-key', 'CourtyardKey'], ['trail-duel', 'TrailDuel'], ['neon-rift', 'NeonRift'],
 ];
-const pages = ['/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/platforms/', '/docs/', '/docs/downloads/', '/docs/sdk/', '/docs/getting-started/', '/docs/architecture/', '/docs/manual/scenes/', '/docs/reference/components/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
+const pages = ['/', '/films/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/platforms/', '/docs/', '/docs/downloads/', '/docs/sdk/', '/docs/getting-started/', '/docs/architecture/', '/docs/manual/scenes/', '/docs/reference/components/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
 const viewports = {
   desktop: { width: 1280, height: 800 },
   tablet: { width: 768, height: 1024, isMobile: true, hasTouch: true },
@@ -102,6 +102,25 @@ async function layout(browser, label, base) {
   for (const item of items.filter(([size, route]) => usesKeyboard(size, route))) await layoutPage(browser, label, base, ...item);
 }
 
+// The films' player: a card opens it and gives the video its source; closing it takes the source away again, so a
+// film that is not being watched is never downloaded. The film itself is not fetched here: its requests are refused.
+async function filmPlayer(page, where) {
+  await page.setRequestInterception(true);
+  page.on('request', request => (/\.mp4(\?|$)/.test(request.url()) ? request.abort() : request.continue()));
+  const before = await page.$eval('.film-video', video => video.getAttribute('src'));
+  await page.click('a[data-film]');
+  const open = await page.evaluate(() => {
+    const dialog = document.querySelector('.film-dialog'), video = dialog.querySelector('video');
+    return { open: dialog.open, src: video.getAttribute('src'), controls: video.controls, title: dialog.querySelector('.film-now').textContent };
+  });
+  check(`${where}: a film card opens the player with that film`, before === null && open.open && /\/films-\d+\/seated\.mp4$/.test(open.src) && open.controls && open.title === 'Seated', JSON.stringify(open));
+  await page.keyboard.press('Escape');
+  // The dialog's close event arrives after the key press returns.
+  await page.waitForFunction(() => !document.querySelector('.film-dialog').open && !document.querySelector('.film-video').hasAttribute('src'), { timeout: 3_000 }).catch(() => {});
+  const closed = await page.evaluate(() => ({ open: document.querySelector('.film-dialog').open, src: document.querySelector('.film-video').getAttribute('src') }));
+  check(`${where}: closing the player releases the film`, !closed.open && closed.src === null, JSON.stringify(closed));
+}
+
 async function layoutPage(browser, label, base, size, route) {
   const { page, context, requests, errors, response } = await openPage(browser, label, base + route, viewports[size]);
   const where = `${label} ${size} ${route}`;
@@ -164,7 +183,9 @@ async function layoutPage(browser, label, base, size, route) {
   check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
   check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));
   check(`${where}: no demo package requested`, !requests.some(p => p.startsWith('/play/')), requests.filter(p => p.startsWith('/play/')).slice(0, 3).join(', '));
+  check(`${where}: no film requested`, !requests.some(p => /\.(mp4|webm)$/.test(p)), requests.filter(p => /\.(mp4|webm)$/.test(p)).join(', '));
   check(`${where}: no script errors`, errors.length === 0, errors.join(' | '));
+  if (label === 'chrome' && size === 'desktop' && route === '/films/') await filmPlayer(page, where);
   if (usesKeyboard(size, route)) {
     await page.keyboard.press('Tab');
     const skip = await page.evaluate(() => {

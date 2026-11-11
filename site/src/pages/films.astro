@@ -1,0 +1,74 @@
+---
+// Hallmark · macrostructure: Catalogue (the three films, then what they are made of) · nav: N1b · footer: Ft3 grouped
+// theme: custom "Socket" (site/design/README.md, tokens.css) · enrichment: frames of the films themselves
+// pre-emit critique: P4 H4 E4 S5 R5 V4
+//
+// The films on a page of their own. The page sells, it does not explain: the films speak for themselves, and what
+// follows them says what they are made of (code, the engine's own sound, real games) and hands the reader the tools.
+// A film is never a newer version of another. Data: src/data/films.ts (media/films.json).
+import SiteLayout from '../layouts/SiteLayout.astro';
+import Films from '../components/landing/Films.astro';
+import { distribution } from '../data/distribution';
+
+// Each claim is true of the films as they are built (media/README.md): compositions in source files, sound rendered
+// by MicroEngine.Audio, play captured from the demos' scripted runs.
+const made = [
+  { label: 'Written', title: 'Every frame is code', text: 'No editing suite and no timeline to drag. Scenes, timing and motion are source files: change a line, render again.' },
+  { label: 'Scored', title: 'The soundtrack is the engine’s', text: 'The music is a MicroEngine song and every sound comes from its synthesizer, the same tools a game uses for its own.' },
+  { label: 'Played', title: 'The games are really running', text: 'What plays on screen is play: finished games built with MicroEngine, captured frame by frame as they run.' },
+];
+---
+<SiteLayout title="Films" description="Three short films about MicroEngine, written as code, scored by the engine's own synthesizer, with real games on screen." current="films">
+  <section class="section wrap" aria-labelledby="films-page-title">
+    <div class="section-head">
+      <p class="label">Films</p>
+      <h1 id="films-page-title">Three films, three stories</h1>
+      <p class="lede">MicroEngine in under a minute, three times over. Press play.</p>
+    </div>
+    <Films heading="h2" />
+  </section>
+
+  <section class="section wrap" aria-labelledby="films-made-title">
+    <div class="section-head">
+      <p class="label">How they were made</p>
+      <h2 id="films-made-title">Made the way you make a game</h2>
+    </div>
+    <ul class="made">
+      {made.map((item, i) => (
+        <li data-reveal style={`--i:${i}`}>
+          <p class="label">{item.label}</p>
+          <h3>{item.title}</h3>
+          <p>{item.text}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="section wrap" aria-labelledby="films-yours-title">
+    <div class="yours">
+      <h2 id="films-yours-title">What you make with it is yours</h2>
+      <p class="lede">The same kernel, the same tools, your game. Start from the template and have something running in minutes.</p>
+      <div class="actions">
+        <a class="button" href={distribution.startHref}>Get started</a>
+        <a class="button secondary" href="/demos/">Play the demos</a>
+      </div>
+      <p class="small">The films’ sources are in the repository’s <a href="https://github.com/NastMz/MicroEngine/tree/main/media">media folder</a>. The films themselves are all rights reserved (<a href="/docs/licensing/">licensing</a>).</p>
+    </div>
+  </section>
+</SiteLayout>
+
+<script>
+  import { startScroll } from '../scripts/scroll.ts';
+  startScroll();
+</script>
+
+<style>
+  .made { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xl) var(--space-lg); grid-template-columns: minmax(0, 1fr); }
+  .made li { display: grid; gap: var(--space-xs); align-content: start; padding-top: var(--space-sm); border-top: var(--rule-pixel) solid var(--color-ink); min-width: 0; }
+  .made h3 { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-xl); letter-spacing: var(--tracking-display); line-height: 1.15; }
+  .made li > p:last-child { color: var(--color-ink-2); max-width: 36ch; }
+  .yours { display: grid; gap: var(--space-md); justify-items: start; padding-top: var(--space-xl); border-top: var(--rule-thin) solid var(--color-rule); }
+  .yours h2 { font-size: var(--text-display); line-height: var(--leading-tight); max-width: 14ch; }
+  .small { margin-top: var(--space-md); font-size: var(--text-sm); color: var(--color-ink-2); max-width: var(--measure); }
+  @media (min-width: 48rem) { .made { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>

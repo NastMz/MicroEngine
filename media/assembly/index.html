@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* MicroEngine's "Socket" tokens (site/src/styles/tokens.css), fixed to the values each world uses. */
+      :root {
+        --paper: oklch(97.5% 0.006 85);
+        --paper-ink: oklch(22% 0.012 260);
+        --paper-ink-2: oklch(40% 0.014 260);
+        --graphite: oklch(18% 0.01 260);
+        --graphite-2: oklch(21.5% 0.012 260);
+        --graphite-3: oklch(26% 0.014 260);
+        --rule: oklch(34% 0.014 260);
+        --ink: #f1eee9;
+        --ink-2: oklch(80% 0.012 260);
+        --ink-3: oklch(72% 0.012 260);
+        --amber: #fbc044;
+        --amber-on-paper: oklch(80% 0.15 78);
+        --module-ink: oklch(21% 0.03 85);
+        --family-graphics: oklch(78% 0.12 295);
+        --family-physics: oklch(79% 0.12 50);
+        --family-audio: oklch(78% 0.12 355);
+        --family-input: oklch(79% 0.11 245);
+        --family-platform: oklch(80% 0.1 195);
+        --family-tools: oklch(82% 0.13 125);
+        --font-display: 'Bricolage Grotesque', sans-serif;
+        --font-body: 'IBM Plex Sans', sans-serif;
+        --font-mono: 'IBM Plex Mono', monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="54.4" data-width="1920" data-height="1080">
+      <!-- Scenes. Bar N of the score starts at 1.6 N seconds (SPEC.md). -->
+      <div id="table" class="clip" data-composition-id="table" data-composition-src="compositions/table.html" data-start="0" data-duration="46.4" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index: 1"></div>
+      <div id="mark" class="clip" data-composition-id="mark" data-composition-src="compositions/mark.html" data-start="46.4" data-duration="8" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index: 2"></div>
+
+      <!-- Score: a MicroEngine Song rendered by audio/Program.cs. -->
+      <audio id="score" class="clip" src="assets/audio/score.wav" data-start="0" data-duration="54.4" data-track-index="2" data-volume="0.85"></audio>
+
+      <!-- Effects: MicroEngine Synth sounds. Each lands one frame after its picture. -->
+      <audio id="sfx-01-land" class="clip" src="assets/audio/land.wav" data-start="0.83" data-duration="0.46" data-track-index="3" data-volume="0.9"></audio>
+      <audio id="sfx-02-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="10.03" data-duration="0.15" data-track-index="4" data-volume="1"></audio>
+      <audio id="sfx-03-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="10.23" data-duration="0.15" data-track-index="5" data-volume="1"></audio>
+      <audio id="sfx-04-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="10.43" data-duration="0.15" data-track-index="6" data-volume="1"></audio>
+      <audio id="sfx-05-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="10.63" data-duration="0.15" data-track-index="7" data-volume="1"></audio>
+      <audio id="sfx-06-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="10.83" data-duration="0.15" data-track-index="8" data-volume="1"></audio>
+      <audio id="sfx-07-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="11.03" data-duration="0.15" data-track-index="9" data-volume="1"></audio>
+      <audio id="sfx-08-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="24.43" data-duration="0.15" data-track-index="10" data-volume="1"></audio>
+      <audio id="sfx-09-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="24.63" data-duration="0.15" data-track-index="11" data-volume="1"></audio>
+      <audio id="sfx-10-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="24.83" data-duration="0.15" data-track-index="12" data-volume="1"></audio>
+      <audio id="sfx-11-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="25.03" data-duration="0.15" data-track-index="13" data-volume="1"></audio>
+      <audio id="sfx-12-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="25.23" data-duration="0.15" data-track-index="14" data-volume="1"></audio>
+      <audio id="sfx-13-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="25.43" data-duration="0.15" data-track-index="15" data-volume="1"></audio>
+      <audio id="sfx-14-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="38.63" data-duration="0.15" data-track-index="16" data-volume="1"></audio>
+      <audio id="sfx-15-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="38.83" data-duration="0.15" data-track-index="17" data-volume="1"></audio>
+      <audio id="sfx-16-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="39.03" data-duration="0.15" data-track-index="18" data-volume="1"></audio>
+      <audio id="sfx-17-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="39.23" data-duration="0.15" data-track-index="19" data-volume="1"></audio>
+      <audio id="sfx-18-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="39.43" data-duration="0.15" data-track-index="20" data-volume="1"></audio>
+      <audio id="sfx-19-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="39.63" data-duration="0.15" data-track-index="21" data-volume="1"></audio>
+      <audio id="sfx-20-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="39.83" data-duration="0.15" data-track-index="22" data-volume="1"></audio>
+      <audio id="sfx-21-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="46.93" data-duration="0.15" data-track-index="23" data-volume="1"></audio>
+      <audio id="sfx-22-dock-c" class="clip" src="assets/audio/dock-c.wav" data-start="47.13" data-duration="0.15" data-track-index="24" data-volume="1"></audio>
+      <audio id="sfx-23-dock-a" class="clip" src="assets/audio/dock-a.wav" data-start="47.33" data-duration="0.15" data-track-index="25" data-volume="1"></audio>
+      <audio id="sfx-24-dock-b" class="clip" src="assets/audio/dock-b.wav" data-start="47.53" data-duration="0.15" data-track-index="26" data-volume="1"></audio>
+      <audio id="sfx-25-emerge" class="clip" src="assets/audio/emerge.wav" data-start="11.23" data-duration="0.24" data-track-index="27" data-volume="0.8"></audio>
+      <audio id="sfx-26-emerge" class="clip" src="assets/audio/emerge.wav" data-start="25.63" data-duration="0.24" data-track-index="28" data-volume="0.8"></audio>
+      <audio id="sfx-27-emerge" class="clip" src="assets/audio/emerge.wav" data-start="40.03" data-duration="0.24" data-track-index="29" data-volume="0.8"></audio>
+      <audio id="sfx-28-apart" class="clip" src="assets/audio/apart.wav" data-start="20.03" data-duration="0.3" data-track-index="30" data-volume="0.8"></audio>
+      <audio id="sfx-29-apart" class="clip" src="assets/audio/apart.wav" data-start="34.43" data-duration="0.3" data-track-index="31" data-volume="0.8"></audio>
+      <audio id="sfx-30-apart" class="clip" src="assets/audio/apart.wav" data-start="45.23" data-duration="0.3" data-track-index="32" data-volume="0.8"></audio>
+      <audio id="sfx-31-riser" class="clip" src="assets/audio/riser.wav" data-start="46.4" data-duration="1.6" data-track-index="33" data-volume="0.7"></audio>
+      <audio id="sfx-32-impact" class="clip" src="assets/audio/impact.wav" data-start="48.03" data-duration="1.03" data-track-index="34" data-volume="1"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

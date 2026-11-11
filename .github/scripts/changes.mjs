@@ -94,6 +94,9 @@ export const rules = [
   { pattern: /^web\//, checks: ['full', 'web'], why: 'web build' },
   { pattern: /^site\//, checks: ['full'], why: 'site' },
   { pattern: /^(odd|experiments)\//, checks: [], why: 'task records and experiments' },
+  // Films (media/README.md) are rendered and published by hand, never in CI; the site reads their catalog and notice.
+  { pattern: /^media\/(films\.json|LICENSE)$/, checks: ['layout'], why: 'films catalog and notice (shown on the site)' },
+  { pattern: /^media\//, checks: [], why: 'films: sources rendered on request' },
   { pattern: /^THIRD-PARTY-NOTICES\.md$/, checks: ['layout', 'sdk'], why: 'third-party notices (shipped in the packages)' },
   { pattern: /\.md$/i, checks: ['layout'], why: 'documentation' },
   { pattern: /^LICENSE$/, checks: ['layout', 'sdk'], why: 'licence (shipped in the packages)' },

@@ -1,0 +1,48 @@
+MicroEngine films
+
+Copyright (c) 2026 Kevin Martinez. All rights reserved.
+
+This notice covers the films about MicroEngine and only them: "Seated", "Assembly"
+and "Every step". They are NOT covered by the MIT License in the
+root LICENSE file, which applies to the MicroEngine engine, its tools and
+samples.
+
+Covered (the "Films"):
+
+  - media/seated/, media/assembly/ and media/every-step/: the
+    compositions, scores and sound effects written as code, scripts,
+    storylines, specifications and reviews;
+  - media/LANDING-MOTION.md;
+  - the rendered video files, wherever they are published, and the frames of
+    them used as images on the MicroEngine website (site/src/assets/films/).
+
+Not covered:
+
+  - media/tools/ and media/films.json: the programs that build and publish the
+    Films are part of the MicroEngine tools, under the MIT License.
+  - The play shown in the Films, which belongs to the demo games and is
+    covered by games/LICENSE, with the third-party files each game lists in
+    its CREDITS.md under their own licences.
+  - The typefaces (Bricolage Grotesque, IBM Plex Sans and IBM Plex Mono, SIL
+    Open Font License 1.1), which are not kept in this folder: the build takes
+    them from the website's packages. See THIRD-PARTY-NOTICES.md.
+
+What you may do:
+
+  - Watch the Films and link to them or embed them from where they are
+    published.
+  - Read and study their sources to learn how they were made, and view them
+    and fork them on GitHub as GitHub's Terms of Service allow.
+  - Build and render them on your own computer to learn.
+  - Use the techniques and general ideas they show in your own, original work.
+
+What you may not do without written permission from the copyright holder:
+
+  - Redistribute the Films or their sources, whole or in substantial part,
+    outside GitHub's fork feature.
+  - Sell or otherwise commercialise them, or publish them, edited or not, as
+    your own or as an endorsement of another product.
+
+THE FILMS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
+ARISING FROM THEM OR THEIR USE.

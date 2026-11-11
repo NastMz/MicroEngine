@@ -8,10 +8,10 @@ import '../styles/site.css';
 import Lockup from '../components/brand/Lockup.astro';
 import { fixed } from '../components/brand/geometry.mjs';
 
-interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'platforms' | 'roadmap' }
+interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'platforms' | 'roadmap' | 'films' }
 const { title, description, image = '/og.png', noindex = false, current } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const fullTitle = title === 'MicroEngine' ? 'MicroEngine — a code-first 2D game engine for C#' : `${title} · MicroEngine`;
+const fullTitle = title === 'MicroEngine' ? 'MicroEngine — a code-first game engine for C#' : `${title} · MicroEngine`;
 const nav = [
   { href: '/demos/', label: 'Demos', key: 'demos' },
   { href: '/docs/', label: 'Docs', key: 'docs' },
@@ -24,6 +24,7 @@ const footer = [
     { href: '/demos/', label: 'Play the demos' },
     { href: '/platforms/', label: 'Platforms' },
     { href: '/roadmap/', label: 'Roadmap' },
+    { href: '/films/', label: 'Films' },
     { href: '/docs/status/', label: 'What it offers' },
   ] },
   { title: 'Documentation', links: [
@@ -102,7 +103,7 @@ const footer = [
           </div>
         ))}
       </nav>
-      <p class="footer-meta">MicroEngine is open source under the MIT License. The four demo games are not: they are all rights reserved. Third-party components and their licences, including the CC0 and CC BY art and the music of the demos and this site’s fonts, are listed in the third-party notices.</p>
+      <p class="footer-meta">MicroEngine is open source under the MIT License. The four demo games and the films are not: they are all rights reserved. Third-party components and their licences, including the CC0 and CC BY art and the music of the demos and this site’s fonts, are listed in the third-party notices.</p>
     </div>
   </footer>
 </body>

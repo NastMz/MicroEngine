@@ -40,6 +40,9 @@ test('inputs: each check reads its own part of the tree, conservatively', () => 
   assert.equal(isInput('site', 'src/Engine.cs'), false);
   assert.equal(isInput('site', 'docs/guide.md'), true);
   for (const check of ['dotnet', 'windows', 'native', 'site', 'macos']) assert.equal(isInput(check, 'odd/tasks/x.md'), false);
+  // Films are rendered by hand: their sources are no check's input, but the site shows their catalog.
+  for (const check of ['dotnet', 'windows', 'native', 'site', 'macos']) assert.equal(isInput(check, 'media/seated/audio/Program.cs'), false);
+  assert.equal(isInput('site', 'media/films.json'), true);
 });
 
 test('inputs: the informative macOS tests read exactly what the .NET tests read', () => {
