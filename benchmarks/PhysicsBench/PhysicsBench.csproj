@@ -2,10 +2,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>PhysicsBench</RootNamespace>
-    <Description>Times the tile physics backend: kinematic moves through a tile level, sensors and the step.</Description>
+    <Description>Times a 2D physics backend (tiles or Box2D): kinematic moves through a tile level, sensors and the step.</Description>
     <MicroEngineContentItems>false</MicroEngineContentItems>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine/MicroEngine.csproj" />
+    <!-- The optional Box2D backend, for the box2d backend option (repository only: needs the native library built). -->
+    <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
   </ItemGroup>
 </Project>
