@@ -6,6 +6,15 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
+
+**New**
+
+- [The Box2D backend](../manual/world.md#the-box2d-backend) is published: `MicroEngine.Physics.Box2D` runs Box2D 3.2
+  behind `IPhysicsWorld2D` (dynamic bodies, rotation, circles, capsules, polygons, continuous collision, friction and
+  mass) and carries Box2D's native library for Windows, Linux, macOS, Android, iOS and browsers. The tile backend
+  stays in `MicroEngine` and needs no extra package.
+
 **Removed**
 
 - `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,

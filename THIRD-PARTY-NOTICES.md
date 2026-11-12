@@ -65,10 +65,9 @@ packages of those games.
 | Unicode Character Database 16.0 (the bidirectional classes, as a table generated into `MicroEngine.Text.Shaping`) | right-to-left and left-to-right runs inside a line | Unicode License v3 (below) | Copyright © 1991-2026 Unicode, Inc. |
 | HarfBuzz (inside HarfBuzzSharp's native builds) | text shaping: glyph choice and positioning for complex and right-to-left scripts | Old MIT (below) | Copyright © 2010-2012 Google, Inc.; © 2012 Mozilla Foundation; © 2004-2010 Red Hat, Inc.; and the other holders listed below |
 
-## Optional Box2D physics backend (not published yet)
+## Optional Box2D physics backend
 
-Games that add the optional `MicroEngine.Physics.Box2D` backend (not part of the SDK packages, and not published yet)
-also ship Box2D, compiled into that backend's native library. Its licence file is shipped inside the package.
+Games that add the optional `MicroEngine.Physics.Box2D` package also ship Box2D, compiled into that backend's native library. Its licence file is shipped inside the package.
 
 | Component | Use | Licence | Copyright |
 | --- | --- | --- | --- |

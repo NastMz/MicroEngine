@@ -15,6 +15,10 @@
     <_MicroEngineShaping Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Text.Shaping'))" />
     <PackageReference Remove="MicroEngine.Text.Shaping" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj" Condition="'@(_MicroEngineShaping)' != ''" />
+    <!-- The optional Box2D physics package, the same way. -->
+    <_MicroEngineBox2D Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Physics.Box2D'))" />
+    <PackageReference Remove="MicroEngine.Physics.Box2D" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" Condition="'@(_MicroEngineBox2D)' != ''" />
   </ItemGroup>
   <!-- The samples use the same application-identity targets as any game built on the SDK packages
        (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project

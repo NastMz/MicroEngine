@@ -28,7 +28,6 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | Limitation | More |
 | --- | --- |
 | 2D only in the SDK packages. A minimal 3D path (glTF meshes, a perspective camera, depth) is in the engine's repository only, in no package; there is no 3D renderer | [The 3D path](../manual/rendering.md#the-3d-path) |
-| No rigid-body physics in the SDK packages: physics worlds use the engine's tile backend (kinematic bodies, sensors, layers, ray casts; no forces or rotation). A Box2D backend with dynamic bodies is in the engine's repository only, not part of the SDK packages | [Physics worlds](../manual/world.md#physics-worlds) |
 | No networking or scripting language | [Architecture](../architecture.md) |
 | No visual editor, level editor or asset tool: content is code, or files loaded through `Game.Assets` | [Assets](../manual/assets.md) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |

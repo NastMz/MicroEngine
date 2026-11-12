@@ -40,7 +40,7 @@ hosts run the same composition in browsers and on phones. Which namespace and ty
 | Kernel and contracts | `MicroEngine.Kernel`, `MicroEngine.Platform`, `MicroEngine.Graphics` (the device contract), `MicroEngine.Input`, `MicroEngine.Audio`, `MicroEngine.Content` |
 | Composition | `MicroEngine.Hosting`, `MicroEngine` (the core: `Game`, launchers, the headless platform, scenes, the asset cache) |
 | Modules | `MicroEngine.Graphics2D`, `MicroEngine.Text`, `MicroEngine.UI`, `MicroEngine.Input.Touch`, `MicroEngine.Scene`, `MicroEngine.Physics`, `MicroEngine.Physics.Tiles`, `MicroEngine.Saves`, `MicroEngine.Achievements` |
-| Backends and optional modules | `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Graphics.SdlGpu` (the tier-1 device), `MicroEngine.Graphics3D` (the minimal 3D path), `MicroEngine.Text.Shaping` (HarfBuzz text shaping, an optional package), `MicroEngine.Physics.Box2D` (native Box2D, an optional package that is not published) |
+| Backends and optional modules | `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Graphics.SdlGpu` (the tier-1 device), `MicroEngine.Graphics3D` (the minimal 3D path), `MicroEngine.Text.Shaping` (HarfBuzz text shaping, an optional package), `MicroEngine.Physics.Box2D` (native Box2D, an optional package) |
 | Hosts and tools | `MicroEngine.Desktop`, `MicroEngine.Cli` |
 
 There is no `MicroEngine.Migration.Entities` any more: the transitional copy of the old `Entity` API was removed once no
