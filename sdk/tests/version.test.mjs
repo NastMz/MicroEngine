@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { check, release, pendingChanges, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
+import { check, release, pendingChanges, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, packagesAt, releasePlan } from '../version.mjs';
 import { reportOnlyVersion, publishedBuildRequired } from './docs.mjs';
 
 function fixture(files = {}) {
@@ -53,6 +53,11 @@ test('references: each pattern captures the version alone, never a trailing full
   assert.deepEqual(refs.map(r => [r.name, r.version]), [['SDK title', '0.4.0-alpha.2'], ['package reference', '1.2.3']]);
   const tool = findReferences("the tool's version (`0.4.0-alpha.2`). Engine       MicroEngine 0.4.0-alpha.2, .NET 10.0.14\nReplace `0.4.0-alpha.2` with");
   assert.deepEqual(tool.map(r => r.name), ['tool output', 'tool output', 'update instruction']);
+});
+
+test('references: package ids with digits (MicroEngine.Physics.Box2D) are package references and install commands', () => {
+  const refs = findReferences('Include="MicroEngine.Physics.Box2D" Version="1.2.3" dotnet add package MicroEngine.Physics.Box2D --version 1.2.3');
+  assert.deepEqual(refs.map(r => [r.name, r.version]), [['package reference', '1.2.3'], ['install command', '1.2.3']]);
 });
 
 test('check: a consistent tree passes', () => {
@@ -152,7 +157,7 @@ test('public state: every package, case-insensitive; a missing package id is not
   const served = { microengine: ['0.4.0-alpha.1', '0.4.0-alpha.2'], 'microengine.templates': ['0.4.0-alpha.1'] };
   const fetchJson = async url => { const id = url.split('/').at(-2); return id in served ? index(served[id]) : (id.startsWith('microengine') ? index(['0.4.0-alpha.2']) : null); };
   const state = await publicState('0.4.0-ALPHA.2', { fetchJson });
-  assert.deepEqual(Object.keys(state), packageIds);
+  assert.deepEqual(Object.keys(state), packagesAt('0.4.0-alpha.2'));
   assert.equal(state['MicroEngine.Templates'], false);
   assert.equal(isPublic(state), false);
   assert.equal(isPublic(await publicState('0.4.0-alpha.2', { fetchJson: async () => index(['0.4.0-alpha.2']) })), true);
@@ -160,7 +165,7 @@ test('public state: every package, case-insensitive; a missing package id is not
   await assert.rejects(publicState('0.4.0-alpha.2', { fetchJson: async () => { throw new Error('HTTP 503'); } }), /503/);
 });
 
-test('wait-public: polls until all seven are served, survives a failed request, gives up at the deadline', async () => {
+test('wait-public: polls until all eight are served, survives a failed request, gives up at the deadline', async () => {
   let calls = 0;
   const fetchJson = async () => { calls++; if (calls === 2) throw new Error('HTTP 503'); return index(calls > 8 ? ['1.0.0'] : []); };
   const state = await waitPublic('1.0.0', { fetchJson, sleep: async () => {}, timeoutSeconds: 60 });
@@ -171,13 +176,13 @@ test('wait-public: polls until all seven are served, survives a failed request, 
 // sdk-release.yml's preflight: one test per state a release can be found in.
 const all = value => Object.fromEntries(packageIds.map(id => [id, value]));
 const some = n => Object.fromEntries(packageIds.map((id, i) => [id, i < n]));
-const state = over => ({ documented: '0.5.0-alpha.1', prepared: '0.5.0-alpha.1', packages: all(false), release: null, notes: true,
+const state = over => ({ documented: '0.6.0-alpha.1', prepared: '0.6.0-alpha.1', packages: all(false), release: null, notes: true,
   event: 'workflow_run', sha: 'b'.repeat(40), isAncestor: () => true, ...over });
 
 test('release plan: a merge that documents a new version checks, drafts and publishes it', () => {
   const plan = releasePlan(state());
   assert.equal(plan.action, 'release');
-  assert.deepEqual(plan.lines, ['nuget.org has 0 of 7 packages; GitHub release sdk-v0.5.0-alpha.1: none', 'Checking and drafting this commit, then publishing after approval.']);
+  assert.deepEqual(plan.lines, ['nuget.org has 0 of 8 packages; GitHub release sdk-v0.6.0-alpha.1: none', 'Checking and drafting this commit, then publishing after approval.']);
 });
 
 test('release plan: any other merge after the release has nothing to do; by hand it verifies and deploys again', () => {
@@ -185,7 +190,7 @@ test('release plan: any other merge after the release has nothing to do; by hand
   assert.equal(releasePlan(state(published)).action, 'none');
   assert.equal(releasePlan(state({ ...published, event: 'workflow_dispatch' })).action, 'finish');
   // MicroEngineVersion raised for the next cycle, documentation still on the published version: nothing to do.
-  assert.equal(releasePlan(state({ prepared: '0.5.0-alpha.2', packages: all(true), release: { draft: false, target: 'a' } })).action, 'none');
+  assert.equal(releasePlan(state({ prepared: '0.6.0-alpha.2', packages: all(true), release: { draft: false, target: 'a' } })).action, 'none');
 });
 
 test('release plan: a draft of this very commit is published, never rebuilt (rejected approval, run again)', () => {
@@ -206,10 +211,10 @@ test('release plan: a publication that stopped part way finishes from its draft,
 });
 
 test('release plan: states no run can repair are refused with what to do', () => {
-  assert.throws(() => releasePlan(state({ packages: some(2) })), /2 of 7 packages of 0\.5\.0-alpha\.1 but there is no draft .* by hand/);
-  assert.throws(() => releasePlan(state({ packages: some(5), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
-  assert.throws(() => releasePlan(state({ prepared: '0.5.0-alpha.2' })), /presents 0\.5\.0-alpha\.1, which nuget\.org does not serve, but this commit packs 0\.5\.0-alpha\.2/);
-  assert.throws(() => releasePlan(state({ notes: false })), /no "## 0\.5\.0-alpha\.1" section/);
+  assert.throws(() => releasePlan(state({ packages: some(2) })), /2 of 8 packages of 0\.6\.0-alpha\.1 but there is no draft .* by hand/);
+  assert.throws(() => releasePlan(state({ packages: some(6), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
+  assert.throws(() => releasePlan(state({ prepared: '0.6.0-alpha.2' })), /presents 0\.6\.0-alpha\.1, which nuget\.org does not serve, but this commit packs 0\.6\.0-alpha\.2/);
+  assert.throws(() => releasePlan(state({ notes: false })), /no "## 0\.6\.0-alpha\.1" section/);
 });
 
 // Publication freeze (docs/releasing.md, "Publication freeze"): every state stops in preflight.
@@ -219,10 +224,20 @@ test('release plan: frozen, no state releases, publishes or deploys anything, by
   for (const s of states) {
     const plan = releasePlan({ ...s, frozen: 'Phase two in progress' });
     assert.equal(plan.action, 'frozen');
-    assert.deepEqual(plan.lines, ['Frozen: publication is frozen (.github/phase-freeze: Phase two in progress). Nothing is checked, drafted, pushed to nuget.org or deployed, whatever the state of 0.5.0-alpha.1. To release, delete .github/phase-freeze in a pull request (docs/releasing.md, "Publication freeze").']);
+    assert.deepEqual(plan.lines, ['Frozen: publication is frozen (.github/phase-freeze: Phase two in progress). Nothing is checked, drafted, pushed to nuget.org or deployed, whatever the state of 0.6.0-alpha.1. To release, delete .github/phase-freeze in a pull request (docs/releasing.md, "Publication freeze").']);
   }
   // Not frozen (null, as freezeReason returns without the file): the plans above are unchanged.
   assert.equal(releasePlan(state({ frozen: null })).action, 'release');
+});
+
+test('packages: a package a published SDK version did not have is never required of that version', () => {
+  assert.deepEqual(packagesAt('0.6.0-alpha.1'), packageIds);
+  assert.deepEqual(packagesAt('0.5.0-alpha.2'), packageIds.filter(id => id !== 'MicroEngine.Physics.Box2D'));
+  const withoutBox2D = Object.fromEntries(packageIds.map(id => [id, id !== 'MicroEngine.Physics.Box2D']));
+  const published = { documented: '0.5.0-alpha.2', prepared: '0.5.0-alpha.2', packages: withoutBox2D, release: { draft: false, target: 'a'.repeat(40) } };
+  const plan = releasePlan(state(published));
+  assert.equal(plan.action, 'none');
+  assert.equal(plan.lines[0], 'nuget.org has 7 of 7 packages; GitHub release sdk-v0.5.0-alpha.2: published');
 });
 
 test('release-plan: a frozen tree answers frozen without asking nuget.org or GitHub', () => {

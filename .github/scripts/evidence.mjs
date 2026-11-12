@@ -34,7 +34,7 @@ const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web)
   || (/^sdk\//.test(file) && !/^sdk\/(version\.|tests\/(docs|version)\.)/.test(file));
 
 // The samples the external project test (sdk/tests/external.mjs) copies and builds from the packages, every file of them.
-const sdkSamples = /^samples\/AssetGallery\//;
+const sdkSamples = /^samples\/(AssetGallery|PhysicsSubstitution)\//;
 
 /** Which files can affect each check. */
 export const scopes = {

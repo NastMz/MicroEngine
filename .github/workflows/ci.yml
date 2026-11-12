@@ -197,7 +197,7 @@ jobs:
       evidence: ${{ needs.plan.outputs.fork != 'true' }}
       key: ${{ fromJSON(needs.plan.outputs.keys).sdk }}
 
-  # The Box2D natives for every runtime identifier (an optional package outside the SDK; nothing is published).
+  # The Box2D natives for every runtime identifier, tested and compared (sdk.yml packs the optional SDK package).
   box2d:
     name: Box2D
     needs: plan

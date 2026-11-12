@@ -15,8 +15,8 @@
 //   node sdk/version.mjs release <version>            prepares a release: prepared = documented = <version>, every
 //                                                     "## Next release" section renamed to the version, and every
 //                                                     active reference rewritten (never an older release or migration note)
-//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all seven packages
-//   node sdk/version.mjs packages                     the package ids, in push order
+//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all eight packages
+//   node sdk/version.mjs packages [<version>]         the package ids of a version (the documented one), in push order
 //   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
 //                                                     (nothing while .github/phase-freeze exists: publication freeze)
 //
@@ -33,8 +33,15 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The seven SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
-export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Cli', 'MicroEngine.Templates'];
+/** The eight SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
+export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Physics.Box2D', 'MicroEngine.Cli', 'MicroEngine.Templates'];
+/** Published SDK versions that shipped without a package (it was added later): never required of those versions. */
+const shippedWithout = {
+  'MicroEngine.Text.Shaping': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1'],
+  'MicroEngine.Physics.Box2D': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2'],
+};
+/** The packages SDK `version` is made of, in push order. */
+export const packagesAt = version => packageIds.filter(id => !shippedWithout[id]?.includes(version.toLowerCase()));
 
 const semver = '\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?';
 const isVersion = text => new RegExp(`^${semver}$`).test(text);
@@ -42,8 +49,8 @@ const isVersion = text => new RegExp(`^${semver}$`).test(text);
 // Each pattern captures the version in one or more groups; `{V}` stands for a version.
 const pattern = text => new RegExp(text.replaceAll('{V}', `(${semver})`), 'gd');
 export const references = [
-  { name: 'package reference', regex: pattern('Include="MicroEngine(?:\\.[A-Za-z]+)*" Version="{V}"') },
-  { name: 'install command', regex: pattern('MicroEngine\\.[A-Za-z]+(?:::| --version ){V}') },
+  { name: 'package reference', regex: pattern('Include="MicroEngine(?:\\.[A-Za-z][A-Za-z0-9]*)*" Version="{V}"') },
+  { name: 'install command', regex: pattern('MicroEngine(?:\\.[A-Za-z][A-Za-z0-9]*)+(?:::| --version ){V}') },
   { name: 'current version', regex: pattern('(?:current version is|the published SDK,) \\*\\*{V}\\*\\*') },
   { name: 'SDK title', regex: pattern('MicroEngine SDK {V}') },
   { name: 'tool output', regex: pattern("(?:prints |the tool's version \\()`{V}`|Engine +MicroEngine {V},") },
@@ -229,7 +236,7 @@ export function release(version, root = repoRoot) {
 /** Which packages nuget.org serves at `version`: { [id]: boolean }. Throws when nuget.org cannot be asked. */
 export async function publicState(version, { fetchJson = defaultFetchJson } = {}) {
   const state = {};
-  for (const id of packageIds) {
+  for (const id of packagesAt(version)) {
     const index = await fetchJson(`https://api.nuget.org/v3-flatcontainer/${id.toLowerCase()}/index.json`);
     state[id] = Boolean(index?.versions?.includes(version.toLowerCase()));
   }
@@ -251,8 +258,8 @@ export async function waitPublic(version, { timeoutSeconds = 1800, intervalSecon
   for (;;) {
     const state = await publicState(version, { fetchJson }).catch(error => { log(`nuget.org: ${error.message}`); return null; });
     if (state && isPublic(state)) return state;
-    if (Date.now() >= deadline) fail(`nuget.org does not serve ${state ? packageIds.filter(id => !state[id]).join(', ') : 'the packages'} at ${version} after ${timeoutSeconds} s.`);
-    if (state) log(`waiting for ${packageIds.filter(id => !state[id]).join(', ')} ${version}`);
+    if (Date.now() >= deadline) fail(`nuget.org does not serve ${state ? Object.keys(state).filter(id => !state[id]).join(', ') : 'the packages'} at ${version} after ${timeoutSeconds} s.`);
+    if (state) log(`waiting for ${Object.keys(state).filter(id => !state[id]).join(', ')} ${version}`);
     await sleep(intervalSeconds);
   }
 }
@@ -274,9 +281,10 @@ export function releasePlan({ documented, prepared, packages, release, notes, ev
   if (frozen) {
     return { action: 'frozen', lines: [`Frozen: publication is frozen (${freezeFile}: ${frozen}). Nothing is checked, drafted, pushed to nuget.org or deployed, whatever the state of ${documented}. To release, delete ${freezeFile} in a pull request (docs/releasing.md, "Publication freeze").`] };
   }
-  const onNuget = packageIds.filter(id => packages[id]).length, all = onNuget === packageIds.length;
+  const ids = packagesAt(documented);
+  const onNuget = ids.filter(id => packages[id]).length, all = onNuget === ids.length;
   const shown = !release ? 'none' : release.draft ? `draft of ${release.target.slice(0, 12)}` : 'published';
-  const lines = [`nuget.org has ${onNuget} of ${packageIds.length} packages; GitHub release sdk-v${documented}: ${shown}`];
+  const lines = [`nuget.org has ${onNuget} of ${ids.length} packages; GitHub release sdk-v${documented}: ${shown}`];
   const done = (action, line) => ({ action, lines: [...lines, line] });
   if (documented !== prepared) {
     // MicroEngineVersion moved on for the next release while the documentation still presents a published one.
@@ -285,13 +293,13 @@ export function releasePlan({ documented, prepared, packages, release, notes, ev
   }
   if (!notes) fail(`docs/guide/release-notes.md has no "## ${documented}" section.`);
   if (release && !release.draft) {
-    if (!all) fail(`sdk-v${documented} is published on GitHub but nuget.org lacks ${packageIds.filter(id => !packages[id]).join(', ')}: push them by hand from the release's files (docs/releasing.md, "Recovering").`);
+    if (!all) fail(`sdk-v${documented} is published on GitHub but nuget.org lacks ${ids.filter(id => !packages[id]).join(', ')}: push them by hand from the release's files (docs/releasing.md, "Recovering").`);
     return event === 'workflow_run' ? done('none', `Nothing to release: ${documented} is published.`)
       : done('finish', 'Published: verifying nuget.org and deploying the site again.');
   }
   if (onNuget > 0 || (release?.draft && release.target === sha)) {
     // Publishing started, or this very commit is drafted: finish that draft. Its files were checked; never rebuilt.
-    if (!release) fail(`nuget.org has ${onNuget} of ${packageIds.length} packages of ${documented} but there is no draft sdk-v${documented} to finish from: push the rest by hand (docs/releasing.md, "Recovering").`);
+    if (!release) fail(`nuget.org has ${onNuget} of ${ids.length} packages of ${documented} but there is no draft sdk-v${documented} to finish from: push the rest by hand (docs/releasing.md, "Recovering").`);
     if (!isAncestor(release.target)) fail(`The draft sdk-v${documented} was made from ${release.target}, which is not in the history of ${sha}.`);
     return done('publish', "Publishing the draft (the `nuget` environment's reviewers approve).");
   }
@@ -367,9 +375,10 @@ async function main([command, ...args]) {
     }
     output(plan);
   } else if (command === 'packages') {
-    console.log(packageIds.join(' '));
+    // The packages of a version (by default the documented one), in push order.
+    console.log(packagesAt(args[0] ?? documentedVersion()).join(' '));
   } else {
-    console.log('usage: version.mjs status [--public] [--json] | check | release <version> | wait-public <version> [--timeout s] | packages');
+    console.log('usage: version.mjs status [--public] [--json] | check | release <version> | wait-public <version> [--timeout s] | packages [<version>]');
     process.exitCode = command ? 1 : 0;
   }
 }

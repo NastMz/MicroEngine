@@ -50,6 +50,9 @@ const expected = {
   'MicroEngine.Desktop': { deps: ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib'], files: ['lib/net10.0/MicroEngine.Desktop.dll'] },
   // Shaped text: optional, with HarfBuzz for every runtime (Linux and browsers through their asset packages).
   'MicroEngine.Text.Shaping': { deps: ['MicroEngine', 'HarfBuzzSharp', 'HarfBuzzSharp.NativeAssets.Linux', 'HarfBuzzSharp.NativeAssets.WebAssembly'], files: ['lib/net10.0/MicroEngine.Text.Shaping.dll', 'lib/net10.0/MicroEngine.Text.Shaping.xml', 'build/MicroEngine.Text.Shaping.props', 'buildTransitive/MicroEngine.Text.Shaping.props'] },
+  // Box2D physics: optional, its native library for each runtime (macOS and iOS too in a release pack, which the pack
+  // itself requires: -p:MicroEngineBox2DRequireNatives) and the browser archives its buildTransitive targets link.
+  'MicroEngine.Physics.Box2D': { deps: ['MicroEngine'], files: ['lib/net10.0/MicroEngine.Physics.Box2D.dll', 'lib/net10.0/MicroEngine.Physics.Box2D.xml', 'buildTransitive/MicroEngine.Physics.Box2D.targets', 'LICENSE-box2d.txt', 'runtimes/win-x64/native/me_box2d.dll', 'runtimes/linux-x64/native/libme_box2d.so', 'runtimes/android-arm64/native/libme_box2d.so', 'runtimes/android-x64/native/libme_box2d.so', 'runtimes/browser-wasm/native/me_box2d.a', 'runtimes/browser-wasm/native/box2d.a'] },
   'MicroEngine.Cli': { deps: [], files: ['tools/net10.0/any/MicroEngine.Cli.dll', 'tools/net10.0/any/Hosts/android/Host.csproj', 'tools/net10.0/any/Hosts/ios/Host.csproj', 'tools/net10.0/any/Hosts/web/Host.csproj', 'tools/net10.0/any/Notices/THIRD-PARTY-NOTICES.txt', 'tools/net10.0/any/Notices/microengine-LICENSE.txt', 'tools/net10.0/any/Notices/HarfBuzz-LICENSE.txt', 'tools/net10.0/any/Notices/raylib-LICENSE.txt', 'tools/net10.0/any/Notices/SDL-LICENSE.txt'] },
   'MicroEngine.Templates': { deps: [], files: ['content/MicroEngineGame/.template.config/template.json', 'content/MicroEngineGame/MyGame.csproj', 'content/MicroEngineGame/Content/hero.png'] },
 };
@@ -78,7 +81,11 @@ for (const [id, want] of Object.entries(expected)) {
   // the same only with -p:MicroEngineRelease=true, as the SDK workflow packs.
   check(`${id}: no build-machine path`, leaks.length === 0,
     leaks.length ? `${leaks.slice(0, 4).join(', ')} (a local pack needs -p:MicroEngineRelease=true, as in CI)` : '');
-  if (id !== 'MicroEngine.Cli' && id !== 'MicroEngine.Templates') check(`${id}: symbols package`, fs.existsSync(path.join(feed, `${id}.${version}.snupkg`)));
+  // Box2D packs from a nuspec of its own: its symbols are embedded in the assembly instead of a .snupkg.
+  if (id === 'MicroEngine.Physics.Box2D') {
+    const dll = entries.find(e => e.name === 'lib/net10.0/MicroEngine.Physics.Box2D.dll')?.data ?? Buffer.alloc(0);
+    check(`${id}: symbols embedded in the assembly`, dll.includes(Buffer.from('MPDB')) && !fs.existsSync(path.join(feed, `${id}.${version}.snupkg`)));
+  } else if (id !== 'MicroEngine.Cli' && id !== 'MicroEngine.Templates') check(`${id}: symbols package`, fs.existsSync(path.join(feed, `${id}.${version}.snupkg`)));
   if (id === 'MicroEngine') {
     const symbols = path.join(feed, `${id}.${version}.snupkg`);
     const pdbs = fs.existsSync(symbols) ? unzip(symbols).map(e => e.name) : [];

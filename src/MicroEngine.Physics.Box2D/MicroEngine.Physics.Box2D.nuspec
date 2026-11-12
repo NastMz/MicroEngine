@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The template of the optional MicroEngine.Physics.Box2D package (packed only with -p:MicroEngineBox2DPackage=true;
-     never published by this repository's workflows). A nuspec of its own, because the package depends on the MicroEngine
+     sdk.yml packs it and the SDK release publishes it with the other packages). A nuspec of its own, because the package depends on the MicroEngine
      package, which carries the contract assemblies this project references directly (the architecture allows it no
      other reference). At pack time the project writes a copy into obj/ with one <file> per native library found in
      place of the natives comment, and with the $tokens$ of NuspecProperties. -->
@@ -13,7 +13,7 @@
     <readme>README.md</readme>
     <projectUrl>https://github.com/NastMz/MicroEngine</projectUrl>
     <repository type="git" url="https://github.com/NastMz/MicroEngine" commit="$commit$" />
-    <description>MicroEngine Box2D v3 physics backend: dynamic bodies, rotation, round and polygon shapes, continuous collision and one-way platforms behind the engine's 2D physics contract. Optional, not one of the SDK packages.</description>
+    <description>MicroEngine Box2D v3 physics backend: dynamic bodies, rotation, round and polygon shapes, continuous collision and one-way platforms behind the engine's 2D physics contract. Optional: the tile backend in MicroEngine needs no extra package.</description>
     <copyright>Copyright (c) MicroEngine contributors</copyright>
     <tags>game-engine 2d physics box2d</tags>
     <dependencies>
