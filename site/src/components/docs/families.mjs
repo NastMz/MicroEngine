@@ -88,7 +88,7 @@ export const socketCards = {
     note: { text: 'Physics worlds', href: '#physics-worlds' },
     modules: [
       { name: 'Tiles', role: 'tile collision', status: 'available' },
-      { name: 'Box2D', role: 'optional backend', status: 'repo' },
+      { name: 'Box2D', role: 'optional package', status: 'available' },
     ],
   },
 };

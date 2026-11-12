@@ -67,3 +67,7 @@ Branch `docs/phys-1` for the evaluation; implementation branches follow the appr
   `none` for 0.5.0-alpha.2). Two blockers fixed in one batch: the external project test now skips the Box2D check for
   SDK versions published without the package (a manual `finish` of 0.5.0-alpha.2 would have failed), and a change to
   `box2d-natives.yml` now runs every check like the other workflows daily CI calls.
+- L6 (2026-11-11) Owner: "No tenías que tocar el sitio... en algún lado que mencione que no se ha desplegado, que no
+  está público". The site's own data still showed Box2D as repository-only (capabilities, roadmap, the world socket
+  card, the design notes, and a site test requiring it). Now available everywhere; site tests 71/71, `npm run build`
+  with `check-dist` passes (513 pages); the one remaining mention is the 0.5.0-alpha.1 migration note, true then.

@@ -24,7 +24,7 @@ how the engine is built, so the identity can grow with the engine without changi
 |---|---|
 | Modularity | Every subsystem is a socket with a contract; swapping an implementation is literally reseating a module |
 | Building on existing technology | Upstream libraries appear as credited modules seated in the board, never hidden and never the hero |
-| Honesty about status | Only shipping modules are seated and coloured; repository-only work (3D, Box2D) is an empty dashed socket |
+| Honesty about status | Only shipping modules are seated and coloured; repository-only work (3D) is an empty dashed socket |
 | Pixel-art origins, kept but not defining | The demos keep their pixel art inside their own frames; the mark keeps a 16-unit grid; the chrome has no pixel face or grid |
 | Growth toward HD, 2.5D and 3D | A new capability is a new module in an existing socket. The 3D socket is already drawn, empty and dashed: the direction is visible, nothing is promised |
 
@@ -246,11 +246,12 @@ always written.
 | In the repository, not published (experimental) | **Empty dashed socket**, module named inside in mono; dashed marker | `--status-repo` (neutral) | "In the repository, not published" |
 | Planned | Empty dotted socket; dotted marker | `--status-planned` (neutral) | "Planned" |
 
-`<Socket empty status="repo" module="Box2D" />` is how an unpublished backend appears. The SDL_GPU device ships in
+`<Socket empty status="repo" module="Graphics3D" />` is how an unpublished module appears. The SDL_GPU device ships in
 the `MicroEngine.Sdl` package (desktops, opt-in), so it is a seated module with the available status:
 `<Socket family="graphics" module="SDL_GPU" status="available" />`. There is no status between available and in the
-repository: the site describes the SDK that contains it as published. The 3D path (Graphics3D), Box2D physics
-and any other unpublished system is never drawn as a seated module until it ships in the SDK. The Open Graph image
+repository: the site describes the SDK that contains it as published. Box2D physics ships as the optional
+`MicroEngine.Physics.Box2D` package, so it is seated. The 3D path (Graphics3D) and any other unpublished system is
+never drawn as a seated module until it ships in the SDK. The Open Graph image
 shows four seated families that ship today and one empty dashed socket, unlabelled.
 
 ## 8. Motion

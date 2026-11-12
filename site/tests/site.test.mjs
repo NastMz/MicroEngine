@@ -181,7 +181,7 @@ test('content: every capability and roadmap item has an availability and a subsy
   assert.equal(new Set(capabilities.map(c => c.id)).size, capabilities.length, 'capability ids are unique');
 });
 
-test('content: the site names the published SDK version and never presents 3D or Box2D as available', async () => {
+test('content: the site names the published SDK version, never presents 3D as available, and presents the Box2D package as available', async () => {
   const { publishedSdk, capabilities } = await import('../src/data/capabilities.ts');
   const { roadmap, completed } = await import('../src/data/roadmap.ts');
   const published = JSON.parse(fs.readFileSync(path.join(siteRoot, '..', 'sdk', 'version.json'), 'utf8')).documented;
@@ -192,8 +192,15 @@ test('content: the site names the published SDK version and never presents 3D or
   assert.ok(completed.some(t => t.includes(`SDK ${published} on nuget.org`)));
   const shipping = [...capabilities.filter(c => c.status === 'available').map(c => `${c.name} ${c.summary}`),
     ...roadmap.filter(i => i.status === 'available').map(i => i.text)];
-  for (const text of shipping) assert.doesNotMatch(text, /\b3D\b|Box2D|glTF|visual editor/i, text);
-  for (const id of ['3d-path', 'box2d']) assert.equal(capabilities.find(c => c.id === id)?.status, 'repository', id);
+  for (const text of shipping) assert.doesNotMatch(text, /\b3D\b|glTF|visual editor/i, text);
+  assert.equal(capabilities.find(c => c.id === '3d-path')?.status, 'repository');
+  // Box2D ships as the optional MicroEngine.Physics.Box2D package (ADR 0051): nowhere "in the repository" any more.
+  assert.equal(capabilities.find(c => c.id === 'box2d')?.status, 'available');
+  assert.ok(roadmap.some(i => i.status === 'available' && /Box2D/.test(i.text)), 'the roadmap lists Box2D as available');
+  const { socketCards } = await import('../src/components/docs/families.mjs');
+  assert.equal(socketCards['docs/manual/world'].modules.find(m => m.name === 'Box2D')?.status, 'available');
+  for (const text of [...capabilities.map(c => c.summary), ...roadmap.map(i => i.text)].filter(t => /Box2D/.test(t)))
+    assert.doesNotMatch(text, /never published|not part of any published package|repository only/i, text);
 });
 
 test('content: capability documentation links point at published pages', async () => {
