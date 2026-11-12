@@ -12,7 +12,8 @@ dotnet workload install wasm-tools
 microengine package web
 ```
 
-The first command installs .NET's WebAssembly build tools, once per machine. `package web` writes
+The first command installs .NET's WebAssembly build tools, once per machine (with a .NET 11 SDK, `wasm-tools-net10`:
+the tools for the game's .NET 10; `microengine doctor web` names the one your SDK needs). `package web` writes
 `dist/<Game>-<version>-web/` and a ZIP of the same files. In browsers the game runs on the SDL platform compiled to
 WebAssembly (SDL for the browser comes inside the `MicroEngine.Sdl` package), so every game that references
 `MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged, with no code change.

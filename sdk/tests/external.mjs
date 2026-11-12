@@ -187,7 +187,11 @@ try {
   }
   if (process.platform !== 'win32') expectFailure('Windows package on another system', null, ['package', 'windows'], /built on Windows/);
   const workloads = run('dotnet', ['workload', 'list']).out;
-  if (!hasWorkload(workloads, webWorkload)) expectFailure(`web package without the ${webWorkload} workload`, null, ['package', 'web'], new RegExp(webWorkload));
+  // A newer SDK also accepts the older framework's workload as installed when another SDK's wasm-tools left the same
+  // runtime pack on disk (packs are shared), so the failure is certain only without any browser runtime pack.
+  const dotnetRoot = dotnetOutside(['--list-sdks']).match(/\[(.+)\]/)?.[1];
+  const wasmPacks = dotnetRoot && path.join(path.dirname(dotnetRoot), 'packs', 'Microsoft.NETCore.App.Runtime.Mono.browser-wasm');
+  if (!hasWorkload(workloads, webWorkload) && !(wasmPacks && fs.existsSync(wasmPacks))) expectFailure(`web package without the ${webWorkload} workload`, null, ['package', 'web'], new RegExp(webWorkload));
   r = run(me, ['doctor', 'web'], { cwd: game });
   check(`microengine doctor web names the ${webWorkload} workload for .NET SDK ${sdkVersion}`, new RegExp(`${webWorkload} workload: (installed|dotnet workload install ${webWorkload})`).test(r.out), tail(r.out));
   // Only a case-sensitive file system can hold both names; the build refuses them so every system loads the same file.

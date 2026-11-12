@@ -54,7 +54,9 @@ public sealed record DotnetRuntime(string Directory, string Version)
     {
         string file = Path.Combine(Directory, name);
         return File.Exists(file) ? file
-            : throw new CliException($"{file} is missing: the .NET {Version} runtime pack in {Directory} is incomplete; delete that folder and package again to restore it.");
+            : throw new CliException($"{file} is missing: the .NET {Version} runtime pack in {Directory} is incomplete; "
+                + (Directory.Replace('\\', '/').Contains("/packs/", StringComparison.OrdinalIgnoreCase)
+                    ? "it belongs to a .NET workload: run 'dotnet workload repair'." : "delete that folder and package again to restore it."));
     }
 }
 
