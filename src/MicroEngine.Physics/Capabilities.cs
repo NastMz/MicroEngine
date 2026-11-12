@@ -41,6 +41,11 @@ public enum PhysicsCapabilities
     /// kinematic bodies in its way and carries the ones resting on it.
     /// </summary>
     MovingSolids = 1 << 11,
+    /// <summary>
+    /// Reading shapes back (<see cref="IPhysicsWorld2D.ShapesOf"/>, <see cref="IPhysicsWorld2D.DescriptionOf"/>): what a
+    /// debug view needs to draw the world. Both built-in backends declare it.
+    /// </summary>
+    ShapeInspection = 1 << 12,
 }
 
 /// <summary>

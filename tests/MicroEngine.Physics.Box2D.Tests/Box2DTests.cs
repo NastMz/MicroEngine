@@ -99,7 +99,7 @@ public sealed class Box2DPhysicsWorldTests
         Assert.AreEqual("box2d", world.Backend);
         Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules
             | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
-            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms, world.Capabilities);
+            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection, world.Capabilities);
         Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids | PhysicsCapabilities.Joints)));
         Assert.AreEqual(0.015f, world.Skin, 1e-6f);
         Assert.AreEqual(new Vector2(0, 1), world.Up);

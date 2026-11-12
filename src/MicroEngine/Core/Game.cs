@@ -193,6 +193,12 @@ public abstract class Game : IEngineModule, IStateHashed
     /// of each frame system. Off until <see cref="GameDiagnostics.Enabled"/> is set or a tool listens to the engine's meter.
     /// </summary>
     public GameDiagnostics Diagnostics => _diagnostics ??= new GameDiagnostics(this);
+    private DebugDraw? _debugDraw;
+    /// <summary>
+    /// Lines, shapes, text and physics worlds any code can ask to see, drawn above the scenes at the end of the frame
+    /// (<see cref="Core.DebugDraw"/>). Calls do nothing until <see cref="Core.DebugDraw.Enabled"/> is set.
+    /// </summary>
+    public DebugDraw DebugDraw => _debugDraw ??= new DebugDraw(this);
 
     /// <summary>
     /// An optional feature, if there is one: one the engine declared (<see cref="EngineBuilder.Capabilities"/>), else one
@@ -514,6 +520,7 @@ public abstract class Game : IEngineModule, IStateHashed
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         DrawAboveScenes(renderer);
+        _debugDraw?.Flush(renderer, Scenes.Current?.WorldCamera, (float)Frame.Delta);
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
         // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
         // captured as the canvas alone, IViewCapture).

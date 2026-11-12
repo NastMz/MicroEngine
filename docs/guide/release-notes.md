@@ -21,6 +21,14 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
 - The engine publishes its frame time, phase times, allocations, draw calls and voices on the
   `System.Diagnostics.Metrics` meter `"MicroEngine"`: `dotnet-counters monitor --counters MicroEngine` shows them
   live, and attaching a listener turns the measurements on.
+- `Game.DebugDraw` draws lines, rectangles, circles, points and text from any code, in world space (under the scene's
+  camera) or screen space, for one frame or a number of seconds; calls do nothing until `DebugDraw.Enabled` is set.
+  `DebugDraw.Physics(world)` draws every shape of a physics world, the tiles in view and the contacts of the latest
+  step.
+- Physics worlds read shapes back: `IPhysicsWorld2D.ShapesOf(body, span)` and `DescriptionOf(shape)`, declared by the
+  new `PhysicsCapabilities.ShapeInspection` (both built-in backends declare it; a backend of your own that does not
+  refuses them with `PhysicsCapabilityException`). `TilePhysicsWorld2D.GridOf(shape)` returns the tiles of a tile
+  shape.
 - `IGraphicsDevice.Counters` (in `MicroEngine.Graphics.Devices`) and `AudioMixer.Statistics` read draw calls and voices
   without casting to the backend's class.
 
