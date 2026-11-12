@@ -62,3 +62,8 @@ Branch `docs/phys-1` for the evaluation; implementation branches follow the appr
   as is would have failed every sdk-release preflight on `main` (0.5.0-alpha.2 is published without it): packages now
   carry the published versions they were absent from (`shippedWithout`). Not verified: a browser build of a game
   through the package reference, iOS linking, Android and iOS on devices. NativeAOT: the sample fails in `MicroEngine.Saves` (reflection JSON, engine-wide, not Box2D); a Box2D-only AOT publish could not link on this machine (the MSVC linker of Visual Studio 18 is not found by ILCompiler 10.0.15).
+- L5 (2026-11-11) Independent verifier on the release-path commit: workflows, version tool and package check pass
+  (88 node tests, actionlint clean, differential `release` run identical to the baseline, live nuget.org probe gives
+  `none` for 0.5.0-alpha.2). Two blockers fixed in one batch: the external project test now skips the Box2D check for
+  SDK versions published without the package (a manual `finish` of 0.5.0-alpha.2 would have failed), and a change to
+  `box2d-natives.yml` now runs every check like the other workflows daily CI calls.

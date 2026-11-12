@@ -134,6 +134,7 @@ test('the Box2D natives, the Box2D backend and the physics it implements run the
   assert.deepEqual(plan(['tests/MicroEngine.Physics.Box2D.Tests/Box2DTests.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['tests/Shared/Physics/PhysicsConformance.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['.github/workflows/box2d.yml']), everything, 'daily CI runs box2d.yml');
+  assert.deepEqual(plan(['.github/workflows/box2d-natives.yml']), everything, 'daily CI runs box2d-natives.yml through box2d.yml and sdk.yml');
   assert.deepEqual(plan(['.github/workflows/sdl-web.yml']), everything, 'daily CI runs sdl-web.yml');
   assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, sdk: true, box2d: true }, 'the substitution scenarios and the external project run its code');
   assert.equal(plan(['src/MicroEngine/Core/GameLoop.cs']).box2d, false, 'the rest of the engine is not physics');

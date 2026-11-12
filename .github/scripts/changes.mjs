@@ -46,7 +46,7 @@ const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
 export const rules = [
-  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d|sdl-web)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
+  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d|box2d-natives|sdl-web)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
   { pattern: build, checks: 'all', why: 'build settings' },
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },

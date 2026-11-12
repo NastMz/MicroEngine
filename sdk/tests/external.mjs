@@ -20,6 +20,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { packagesAt } from '../version.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
@@ -147,8 +148,10 @@ try {
   await checkGallery();
 
   // 4c. The optional Box2D physics package (PHYS-1): samples/PhysicsSubstitution from the packages alone, run and
-  // published for this system, so the native library comes from the package's runtimes folder.
-  checkPhysics();
+  // published for this system, so the native library comes from the package's runtimes folder. SDK versions published
+  // before the package existed (sdk/version.mjs, packagesAt) have none to check: --public on such a version skips it.
+  if (packagesAt(version).includes('MicroEngine.Physics.Box2D')) checkPhysics();
+  else console.log(`SKIP physics: SDK ${version} has no MicroEngine.Physics.Box2D package`);
 
   // 5. Failures a developer meets, each with an actionable message.
   const original = fs.readFileSync(projectFile, 'utf8');
