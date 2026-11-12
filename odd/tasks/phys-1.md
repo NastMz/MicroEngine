@@ -44,8 +44,10 @@ Branch `docs/phys-1` for the evaluation; implementation branches follow the appr
 | T1 Map Tiles, Box2D, contract, tests, packaging | S2 S3 S5 | delegated (mapping trigger: >5 lookups across 4 projects, ADR, samples, CI) | done | evaluation §1–§2 |
 | T2 Measurements: conformance runs, benchmarks, package footprint | S4 S6 | inline | done | Box2D tests 101/101, Tiles physics 48/48; `PhysicsBench --backend` (evaluation §3) |
 | T3 Evaluation `docs/evaluations/phys-1.md` with the recommendation | S1–S7 S10 | inline | done | recommends option 1 |
-| T4 Owner decision on the option | S8 | owner | waiting | |
-| T5 Implementation of the approved option | S9 | per decision | pending | |
+| T4 Owner decision on the option | S8 | owner | done | L3: option 1; ADR 0051 |
+| T5a Release path: Box2D packed by `sdk.yml` from `box2d-natives.yml`, eighth package in `version.mjs` (per-version list), package and external checks, CI routing | S9 | inline | done | version tests 29/29 (RED: digits regex, `packagesAt`), CI script tests 59/59, actionlint clean, external.mjs physics checks 5/5 on Windows |
+| T5b Consumer sample: `PhysicsSubstitution` on package references | S9 | inline | done | runs both backends in repo and from the local feed; published win-x64 carries `me_box2d.dll` |
+| T5c Documentation: ADR 0051, SDK guides, physics manual, CI and release docs, notices, release notes | S9 | inline | done | snippets check, `version.mjs check` |
 
 ## Log
 
@@ -53,3 +55,10 @@ Branch `docs/phys-1` for the evaluation; implementation branches follow the appr
 - L2 (2026-11-11) Box2D natives built locally for win-x64 (self-test passed, hash `93f3a79ebf294b23`). Kinematic
   tile scenario: Tiles 0.19 ms / Box2D 0.87 ms at 200 bodies, 1.58 / 5.02 ms at 800. Recommendation: option 1 (keep
   Tiles, publish Box2D optional). Next: owner decision (T4).
+- L3 (2026-11-11) Owner: "Apruebo opción 1". Recorded as ADR 0051. T5 starts: package audit, release path, consumer
+  sample, documentation.
+- L4 (2026-11-11) The version tool's package-reference pattern did not match ids with digits (`Box2D`): a release
+  would have left the sample's Box2D reference at the old version. Fixed with a test. Adding Box2D to the package list
+  as is would have failed every sdk-release preflight on `main` (0.5.0-alpha.2 is published without it): packages now
+  carry the published versions they were absent from (`shippedWithout`). Not verified: a browser build of a game
+  through the package reference, iOS linking, Android and iOS on devices. NativeAOT: the sample fails in `MicroEngine.Saves` (reflection JSON, engine-wide, not Box2D); a Box2D-only AOT publish could not link on this machine (the MSVC linker of Visual Studio 18 is not found by ILCompiler 10.0.15).
