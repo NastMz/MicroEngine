@@ -14,6 +14,15 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
   behind `IPhysicsWorld2D` (dynamic bodies, rotation, circles, capsules, polygons, continuous collision, friction and
   mass) and carries Box2D's native library for Windows, Linux, macOS, Android, iOS and browsers. The tile backend
   stays in `MicroEngine` and needs no extra package.
+- `Game.Diagnostics` measures a running game when you ask it to: the last frame's events, update, render and present
+  times, fixed steps, allocated bytes, collections per generation, the graphics work it submitted and the audio voices
+  (`LastFrame`), and the time of every frame system (`Systems`). `FrameSchedule.MeasureTime` and `Times(phase)` give
+  the per-system times to code that drives the schedule itself. Off by default, and free while off.
+- The engine publishes its frame time, phase times, allocations, draw calls and voices on the
+  `System.Diagnostics.Metrics` meter `"MicroEngine"`: `dotnet-counters monitor --counters MicroEngine` shows them
+  live, and attaching a listener turns the measurements on.
+- `IGraphicsDevice.Counters` (in `MicroEngine.Graphics.Devices`) and `AudioMixer.Statistics` read draw calls and voices
+  without casting to the backend's class.
 
 **Removed**
 

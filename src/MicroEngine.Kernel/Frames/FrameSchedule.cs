@@ -26,6 +26,8 @@ public sealed class FrameSchedule
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
     private Action<FrameContext>[][]? _compiled;
     private string[][]? _names;
+    private double[][]? _times;
+    private bool _measure;
     private int _added;
 
     /// <summary>Whether the schedule is fixed (the engine was built): it can run but no longer change.</summary>
@@ -105,7 +107,52 @@ public sealed class FrameSchedule
     public void Run(FramePhase phase, in FrameContext context)
     {
         if (_compiled is null) Compile();
-        foreach (var system in _compiled![(int)phase]) system(context);
+        var systems = _compiled![(int)phase];
+        if (!MeasureTime)
+        {
+            foreach (var system in systems) system(context);
+            return;
+        }
+        var times = _times![(int)phase];
+        for (int i = 0; i < systems.Length; i++)
+        {
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            systems[i](context);
+            times[i] += System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+        }
+    }
+
+    /// <summary>
+    /// Whether <see cref="Run"/> measures how long each system takes (<see cref="Times"/>). Off by default: a schedule
+    /// that does not measure takes no timestamps. It may change once the schedule is frozen, since it changes no system.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Turning it on when the order cannot be resolved (see <see cref="Order"/>).</exception>
+    public bool MeasureTime
+    {
+        get => _measure;
+        set
+        {
+            if (value) Compile();
+            _measure = value;
+        }
+    }
+
+    /// <summary>
+    /// The milliseconds each system of <paramref name="phase"/> took since the last <see cref="ResetTimes"/>, aligned with
+    /// <see cref="Order"/>: a fixed phase adds up every step it ran. All zero while <see cref="MeasureTime"/> was off.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The order cannot be resolved (see <see cref="Order"/>).</exception>
+    public ReadOnlySpan<double> Times(FramePhase phase)
+    {
+        Compile();
+        return _times![(int)phase];
+    }
+
+    /// <summary>Sets every measured time (<see cref="Times"/>) back to zero; the loop does it at the start of each frame.</summary>
+    public void ResetTimes()
+    {
+        if (_times is null) return;
+        foreach (var phase in _times) Array.Clear(phase);
     }
 
     /// <summary>Resolves the order and fixes the schedule; the engine does this when it is built.</summary>
@@ -128,13 +175,15 @@ public sealed class FrameSchedule
         if (_compiled is not null) return;
         var compiled = new Action<FrameContext>[PhaseCount][];
         var names = new string[PhaseCount][];
+        var times = new double[PhaseCount][];
         for (int p = 0; p < PhaseCount; p++)
         {
             var ordered = Resolve((FramePhase)p);
             compiled[p] = ordered.Select(e => e.Run).ToArray();
             names[p] = ordered.Select(e => e.Name).ToArray();
+            times[p] = new double[ordered.Count];
         }
-        (_compiled, _names) = (compiled, names);
+        (_compiled, _names, _times) = (compiled, names, times);
     }
 
     /// <summary>

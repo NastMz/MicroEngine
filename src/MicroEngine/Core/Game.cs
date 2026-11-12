@@ -187,6 +187,12 @@ public abstract class Game : IEngineModule, IStateHashed
     public TimeSettings TimeSettings => Engine.Time;
     /// <summary>The time of the frame being run (<see cref="FrameContext"/>): its delta, the fixed step, the blend and the frame number.</summary>
     public FrameContext Frame => Engine.Clock.Context;
+    private GameDiagnostics? _diagnostics;
+    /// <summary>
+    /// The live measurements of the run: the last frame's times, allocations, graphics work and audio voices, and the time
+    /// of each frame system. Off until <see cref="GameDiagnostics.Enabled"/> is set or a tool listens to the engine's meter.
+    /// </summary>
+    public GameDiagnostics Diagnostics => _diagnostics ??= new GameDiagnostics(this);
 
     /// <summary>
     /// An optional feature, if there is one: one the engine declared (<see cref="EngineBuilder.Capabilities"/>), else one

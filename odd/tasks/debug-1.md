@@ -42,3 +42,4 @@ primitives, optional and cheap when disabled. Issue NastMz/MicroEngine#119. Bran
   contacts cannot be read back or drawn, input consumption is not recorded, crashes print only the message, engine
   messages bypass `ILog`, no live numbers or .NET metrics, counters hidden behind casts. Proposal: 9 primitives in
   four units (evaluation §4). Next: owner approval (T3).
+- L3 (2026-11-12) Owner: "Approve all nine". T4a starts.

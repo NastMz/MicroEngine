@@ -238,6 +238,13 @@ public sealed class AudioMixer
     /// <summary>Name of the music playing (also while it fades out, and while a song asked for still renders in slices), or null. It follows the game's requests and the music's end on the simulation's timeline, never rendering speed.</summary>
     public string? CurrentMusic => _waiting?.Name ?? _device.CurrentMusic?.Name;
 
+    /// <summary>
+    /// The voices of the device's mixer: how many sounds play now, how many can play at once and how many the voice
+    /// policy refused so far. Zeros for a device without the engine's mixer (<see cref="SilentAudioDevice"/>).
+    /// </summary>
+    public AudioStatistics Statistics => _device is MixerAudioDevice { Engine: var engine }
+        ? new AudioStatistics(engine.ActiveVoices, engine.MaxVoices, engine.RefusedSounds)
+        : default;
     /// <summary>Registers <paramref name="clip"/> as the sound effect <paramref name="name"/>, replacing any sound with that name.</summary>
     public void AddSound(string name, AudioClip clip) => _sounds[name] = _device.LoadSound(name, clip);
     /// <summary>Registers decoded music, such as a rendered <see cref="Song"/>, under <paramref name="name"/>.</summary>
@@ -491,3 +498,9 @@ public sealed class AudioMixer
         _device.Update();
     }
 }
+
+/// <summary>What <see cref="AudioMixer.Statistics"/> reports about the mixer's voices.</summary>
+/// <param name="ActiveVoices">Sounds playing now, music included.</param>
+/// <param name="MaxVoices">Sounds that can play at once.</param>
+/// <param name="RefusedSounds">Sounds the voice policy refused since the start because every voice played something of higher priority.</param>
+public readonly record struct AudioStatistics(int ActiveVoices, int MaxVoices, int RefusedSounds);

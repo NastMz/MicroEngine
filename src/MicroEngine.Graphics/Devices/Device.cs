@@ -44,6 +44,12 @@ public interface IGraphicsDevice : IDisposable
     /// <summary>Declared capabilities.</summary>
     GraphicsCapabilities Capabilities { get; }
 
+    /// <summary>
+    /// Deterministic counts of the work submitted to this device since it was created (draw calls, passes, uploads, live
+    /// resources). Every device built on <see cref="GraphicsDeviceBase"/> counts; a device that does not reports zeros.
+    /// </summary>
+    GraphicsCounters Counters => default;
+
     /// <summary>Optional: raised only by backends that can detect loss (SDL_GPU never raises it); resources are marked <see cref="GraphicsResource.IsLost"/>.</summary>
     event Action<DeviceLostReason>? DeviceLost;
 
