@@ -73,7 +73,7 @@ public const float ContactDistance = 0.01
 The capabilities this backend declares.
 
 ```csharp
-public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | MovingSolids
+public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | MovingSolids | ShapeInspection
 ```
 
 #### Field Value
@@ -284,6 +284,32 @@ public BodyId CreateBody(EntityId owner, in BodyDescription body)
 
  [BodyId](MicroEngine.Physics.BodyId.md)
 
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DescriptionOf_MicroEngine_Physics_ShapeId_"></a> DescriptionOf\(ShapeId\)
+
+The description <code class="paramref">shape</code> was added with (its geometry is relative to its body's origin).
+
+```csharp
+public ShapeDescription DescriptionOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [ShapeDescription](MicroEngine.Physics.ShapeDescription.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeInspection](MicroEngine.Physics.PhysicsCapabilities.md).
+
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DestroyBody_MicroEngine_Physics_BodyId_"></a> DestroyBody\(BodyId\)
 
 Destroys the body and its shapes; nothing for a stale or none id. Their sensor pairs end at the next step.
@@ -295,6 +321,28 @@ public void DestroyBody(BodyId body)
 #### Parameters
 
 `body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_GridOf_MicroEngine_Physics_ShapeId_"></a> GridOf\(ShapeId\)
+
+The tiles <code class="paramref">shape</code> stands for when it was added with [AddTiles](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md#MicroEngine_Physics_Tiles_TilePhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_UInt64_System_UInt64_); null for any other shape.
+
+```csharp
+public ICollisionGrid? GridOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)?
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
@@ -533,6 +581,35 @@ public void SetVelocity(BodyId body, Vector2 velocity)
  [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
 
 Always.
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_ShapesOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ShapeId__"></a> ShapesOf\(BodyId, Span<ShapeId\>\)
+
+Writes the live shapes of <code class="paramref">body</code>, in the order they were added, into <code class="paramref">results</code>
+and returns how many it has (which may exceed the span's length: only the first ones are written).
+
+```csharp
+public int ShapesOf(BodyId body, Span<ShapeId> results)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The body is stale.
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeInspection](MicroEngine.Physics.PhysicsCapabilities.md).
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_Step_System_Single_"></a> Step\(float\)
 

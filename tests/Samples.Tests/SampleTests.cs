@@ -762,3 +762,30 @@ public sealed class PlatformerExampleTests
         Assert.AreEqual(160, scene.Player.Bottom, "down + jump drops through it to the floor");
     }
 }
+
+[TestClass]
+public sealed class DiagnosticsExampleTests
+{
+    [TestMethod]
+    public void TheToggleTurnsOnMeasuringAndDrawingAndLeavingTheExampleTurnsThemOff()
+    {
+        var game = new ExamplesGame(Path.GetTempPath());
+        game.InitializeForTest(new HeadlessPlatform());
+        var scene = new DiagnosticsExample();
+        game.Scenes.Push(scene);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+        Assert.AreEqual(153, scene.PlayerPosition.Y, 1e-3f, "the player's box rests on the floor (top 160)");
+        Assert.IsFalse(scene.Showing);
+        Assert.AreEqual(0, game.DebugDraw.Count, "nothing is queued while the debug drawing is off");
+
+        game.Input.SetForced("diagnostics", true);
+        game.StepForTest();
+        game.Input.SetForced("diagnostics", false);
+        Assert.IsTrue(game.Diagnostics.Enabled && game.DebugDraw.Enabled);
+        Assert.IsTrue(game.DebugDraw.Count > 0, "the physics view and the velocity line are queued");
+
+        game.Scenes.Pop();
+        game.StepForTest();
+        Assert.IsFalse(game.Diagnostics.Enabled || game.DebugDraw.Enabled, "leaving the example turns both off");
+    }
+}

@@ -59,6 +59,25 @@ public bool IsFrozen { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Kernel_FrameSchedule_MeasureTime"></a> MeasureTime
+
+Whether [Run](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Run_MicroEngine_Kernel_FramePhase_MicroEngine_Kernel_FrameContext__) measures how long each system takes ([Times](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Times_MicroEngine_Kernel_FramePhase_)). Off by default: a schedule
+that does not measure takes no timestamps. It may change once the schedule is frozen, since it changes no system.
+
+```csharp
+public bool MeasureTime { get; set; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+Turning it on when the order cannot be resolved (see [Order](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Order_MicroEngine_Kernel_FramePhase_)).
+
 ## Methods
 
 ### <a id="MicroEngine_Kernel_FrameSchedule_Add_MicroEngine_Kernel_FramePhase_System_String_System_Action_MicroEngine_Kernel_FrameContext__System_String_System_String_"></a> Add\(FramePhase, string, Action<FrameContext\>, string?, string?\)
@@ -258,6 +277,14 @@ No system is named <code class="paramref">name</code>.
 
 The schedule is frozen.
 
+### <a id="MicroEngine_Kernel_FrameSchedule_ResetTimes"></a> ResetTimes\(\)
+
+Sets every measured time ([Times](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Times_MicroEngine_Kernel_FramePhase_)) back to zero; the loop does it at the start of each frame.
+
+```csharp
+public void ResetTimes()
+```
+
 ### <a id="MicroEngine_Kernel_FrameSchedule_Run_MicroEngine_Kernel_FramePhase_MicroEngine_Kernel_FrameContext__"></a> Run\(FramePhase, in FrameContext\)
 
 Runs the systems of <code class="paramref">phase</code>, in order, with <code class="paramref">context</code>.
@@ -275,6 +302,29 @@ public void Run(FramePhase phase, in FrameContext context)
 #### Remarks
 
 An exception thrown by a system stops the phase and reaches the caller.
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The order cannot be resolved (see [Order](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Order_MicroEngine_Kernel_FramePhase_)).
+
+### <a id="MicroEngine_Kernel_FrameSchedule_Times_MicroEngine_Kernel_FramePhase_"></a> Times\(FramePhase\)
+
+The milliseconds each system of <code class="paramref">phase</code> took since the last [ResetTimes](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_ResetTimes), aligned with
+[Order](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_Order_MicroEngine_Kernel_FramePhase_): a fixed phase adds up every step it ran. All zero while [MeasureTime](MicroEngine.Kernel.FrameSchedule.md#MicroEngine_Kernel_FrameSchedule_MeasureTime) was off.
+
+```csharp
+public ReadOnlySpan<double> Times(FramePhase phase)
+```
+
+#### Parameters
+
+`phase` [FramePhase](MicroEngine.Kernel.FramePhase.md)
+
+#### Returns
+
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[double](https://learn.microsoft.com/dotnet/api/system.double)\>
 
 #### Exceptions
 

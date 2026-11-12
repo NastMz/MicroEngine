@@ -47,8 +47,10 @@ today.
 5. **"Something is wrong and the console says nothing."** `ILog` exists, but the engine itself writes platform,
    audio and launcher messages straight to `Console.Error` (20 call sites), so a game that routes `ILog` to a file or
    an overlay misses them. **Partial.**
-6. **"The game crashed on a tester's machine."** The launcher prints `error: {message}` only: no stack trace, no file,
-   no record of the frames before it. A tester cannot send anything useful. **Fails.**
+6. **"The game crashed on a tester's machine."** The launcher prints the exception with its stack trace on standard
+   error and nothing else: no file, no versions or platform facts, no record of the frames before it. A tester who
+   double-clicked the game has no console and nothing to send. **Fails.** (Corrected after the map: the map read the
+   host-creation error line, which prints the message only; a game's run error already printed the stack.)
 7. **"Show me an FPS counter / timings while I play."** No debug drawing that update code can call (draw a line now,
    at this world position, for this frame), and no ready numbers to put on screen. The developer can build it on
    `DrawAboveScenes`, `IRenderer` and `Game.Font`, given the numbers. **Fails for the numbers; the drawing is

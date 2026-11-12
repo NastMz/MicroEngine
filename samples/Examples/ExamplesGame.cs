@@ -33,6 +33,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Saving", g => new SaveExample(g.SaveDirectory)),
         ("Camera", g => new CameraExample()),
         ("Platformer: tiles and collision", g => new PlatformerExample()),
+        ("Diagnostics and debug drawing", g => new DiagnosticsExample()),
         ("Particles and light", g => new ParticlesExample()),
         ("Tweens and coroutines", g => new TweensExample()),
         ("Dialogue", g => new DialogueExample()),

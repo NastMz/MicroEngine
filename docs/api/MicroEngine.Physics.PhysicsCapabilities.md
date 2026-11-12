@@ -92,6 +92,13 @@ Rotated bodies ([Rotation](MicroEngine.Physics.BodyDescription.md#MicroEngine_Ph
 
 
 
+`ShapeInspection = 4096` 
+
+Reading shapes back ([ShapesOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ShapesOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ShapeId__), [DescriptionOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_DescriptionOf_MicroEngine_Physics_ShapeId_)): what a
+debug view needs to draw the world. Both built-in backends declare it.
+
+
+
 `TileGeometry = 1` 
 
 Grid-aligned static geometry fed directly from tile layers (the tile backend's own <code>AddTiles</code>).

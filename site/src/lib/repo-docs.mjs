@@ -81,6 +81,7 @@ const guidePages = [
   { source: 'docs/manual/persistence.md', slug: 'docs/manual/persistence', group: 'manual', label: 'Saving data' },
   { source: 'docs/manual/achievements.md', slug: 'docs/manual/achievements', group: 'manual', label: 'Achievements' },
   { source: 'docs/examples/testing.md', slug: 'docs/examples/testing', group: 'manual', label: 'Testing your game' },
+  { source: 'docs/manual/diagnostics.md', slug: 'docs/manual/diagnostics', group: 'manual', label: 'Diagnosing a game' },
   { source: 'docs/guide/platforms.md', slug: 'docs/platforms', group: 'platforms', label: 'Platforms' },
   { source: 'docs/guide/packaging.md', slug: 'docs/packaging', group: 'platforms', label: 'Packaging a game' },
   { source: 'docs/guide/app-identity.md', slug: 'docs/app-identity', group: 'platforms', label: 'Name, id, version and icon' },

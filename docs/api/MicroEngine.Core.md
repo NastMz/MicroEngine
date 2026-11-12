@@ -62,6 +62,23 @@ executable (games copy it there at build time). Missing files fail with the full
 broken install or a typo is obvious. A content source ([IContentSource](MicroEngine.Platform.IContentSource.md)) over a
 [FolderContentSource](MicroEngine.Platform.FolderContentSource.md).
 
+ [CrashReport](MicroEngine.Core.CrashReport.md)
+
+A text file that describes a run that stopped on an error, for a tester to send: the game and engine versions, the
+operating system and runtime, the platform's facts ([IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)), the last measured frame and
+its slowest systems when [Diagnostics](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Diagnostics) measured, and the error with its stack trace. The desktop
+launcher writes one when a game's run fails and names it on standard error.
+
+ [DebugDraw.PhysicsColors](MicroEngine.Core.DebugDraw.PhysicsColors.md)
+
+The colours [Physics](MicroEngine.Core.DebugDraw.md#MicroEngine_Core_DebugDraw_Physics_MicroEngine_Physics_IPhysicsWorld2D_System_Nullable_MicroEngine_RectF__) uses.
+
+ [DebugDraw](MicroEngine.Core.DebugDraw.md)
+
+Shapes and text any code can ask for while the game runs, drawn above the scenes at the end of the frame
+([DebugDraw](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DebugDraw)): a ray an enemy casts, the box a move swept, a path, a value next to an entity. Calls
+do nothing while [Enabled](MicroEngine.Core.DebugDraw.md#MicroEngine_Core_DebugDraw_Enabled) is off, so they can stay in shipped code.
+
  [DisplayInfo](MicroEngine.Core.DisplayInfo.md)
 
 A display (monitor) as the system reports it.
@@ -82,6 +99,13 @@ adds no allocations to the frames it measures; a run without a profiler does not
 What a profiled run looked like. [MotionError](MicroEngine.Core.FrameSummary.md#MicroEngine_Core_FrameSummary_MotionError) is the measure of uneven motion: for every frame, how far
 the game time it advanced differs from the wall time that passed, so a frame that repeats the previous picture or
 jumps two steps counts even when every frame took the same time.
+
+ [GameDiagnostics](MicroEngine.Core.GameDiagnostics.md)
+
+The game's live measurements ([Diagnostics](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Diagnostics)): the last frame's times, allocations, collections,
+graphics work and audio voices, and the time of every system of the frame schedule. Off by default; a run measures
+while [Enabled](MicroEngine.Core.GameDiagnostics.md#MicroEngine_Core_GameDiagnostics_Enabled) is set or while a tool listens to the engine's meter ([MeterName](MicroEngine.Core.GameDiagnostics.md#MicroEngine_Core_GameDiagnostics_MeterName)), and costs
+nothing measurable otherwise.
 
  [GameHost](MicroEngine.Core.GameHost.md)
 
@@ -350,6 +374,10 @@ Totals over a scope and its children ([Statistics](MicroEngine.Core.AssetCache.m
 
 One frame as [FrameProfiler](MicroEngine.Core.FrameProfiler.md) measured it. Times are in milliseconds.
 
+ [FrameStatistics](MicroEngine.Core.FrameStatistics.md)
+
+What a frame cost, as [LastFrame](MicroEngine.Core.GameDiagnostics.md#MicroEngine_Core_GameDiagnostics_LastFrame) reports it. Times are in milliseconds of real time.
+
  [Percentiles](MicroEngine.Core.Percentiles.md)
 
 Percentiles of one frame measurement, in milliseconds.
@@ -357,6 +385,10 @@ Percentiles of one frame measurement, in milliseconds.
  [RecordingOverlayCanvas.Shape](MicroEngine.Core.RecordingOverlayCanvas.Shape.md)
 
 One recorded drawing call.
+
+ [SystemTiming](MicroEngine.Core.SystemTiming.md)
+
+How long one system of the frame schedule took during the last frame ([Systems](MicroEngine.Core.GameDiagnostics.md#MicroEngine_Core_GameDiagnostics_Systems)).
 
 ### Interfaces
 
@@ -410,6 +442,10 @@ Screen orientations a game allows on phones (<code>MicroEngineOrientation</code>
  [AudioOutput](MicroEngine.Core.AudioOutput.md)
 
 Where a run's sound may go ([AudioOutput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_AudioOutput), the launcher's <code>--audio</code>).
+
+ [DebugSpace](MicroEngine.Core.DebugSpace.md)
+
+Where a [DebugDraw](MicroEngine.Core.DebugDraw.md) item is placed.
 
  [GpuPreference](MicroEngine.Core.GpuPreference.md)
 

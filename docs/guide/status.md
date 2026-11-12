@@ -13,6 +13,7 @@ iOS and in web browsers. It is in Alpha: public APIs may still change between 0.
 | Tooling | The `microengine` tool: create a game from a template, run it, build it, and package it for every target ([The microengine tool](cli.md)) |
 | Distribution | Packages for players on each platform, with the game's own name, id, version and icon ([Packaging](packaging.md), [Application identity](app-identity.md)) |
 | Testing | Headless runs, scripted input and screenshot captures for automated tests of your game ([Testing](../examples/testing.md)) |
+| Diagnostics | Live frame and per-system timings, draw calls, allocations and voices, debug drawing with a physics view, input routing, crash reports and .NET metrics for `dotnet-counters` ([Diagnosing a game](../manual/diagnostics.md)) |
 | Examples | Hello Engine (the smallest complete game) and four complete demo games ([demos](/demos/)) |
 
 ## What it does not do

@@ -260,7 +260,8 @@ moved from the time it stood on screen, for the last update and for a game drawi
 every frame (CSV when the file ends in `.csv`) for comparing runs; compare only runs on the same machine, platform,
 window size and scene. The engine sees when presenting returns, not when the display shows the frame: for that, use the
 system's tools (PresentMon on Windows, Perfetto on Android, Instruments on Apple systems, the browser's performance
-panel). A run without `--profile` measures nothing.
+panel). A run without `--profile` measures nothing. To read the same measurements while the game runs, per system and
+on screen, see [Diagnosing a game](diagnostics.md).
 
 ## Quitting and shutdown
 

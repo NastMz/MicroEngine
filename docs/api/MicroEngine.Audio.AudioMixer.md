@@ -133,6 +133,19 @@ public float SfxVolume { get; set; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Audio_AudioMixer_Statistics"></a> Statistics
+
+The voices of the device's mixer: how many sounds play now, how many can play at once and how many the voice
+policy refused so far. Zeros for a device without the engine's mixer ([SilentAudioDevice](MicroEngine.Audio.SilentAudioDevice.md)).
+
+```csharp
+public AudioStatistics Statistics { get; }
+```
+
+#### Property Value
+
+ [AudioStatistics](MicroEngine.Audio.AudioStatistics.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_"></a> AddMusic\(string, AudioClip, bool\)

@@ -118,6 +118,20 @@ public IReadOnlyList<(DeviceId Id, IInputSource Source)> PolledSources { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<\([DeviceId](MicroEngine.Input.DeviceId.md) [Id](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,microengine.input.iinputsource\-.id), [IInputSource](MicroEngine.Input.IInputSource.md) [Source](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,microengine.input.iinputsource\-.source)\)\>
 
+### <a id="MicroEngine_Input_InputSystem_Routed"></a> Routed
+
+While [Trace](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Trace) is on, the events routed this frame (device changes excepted) in order, each with the
+layer that took it, or none when it reached the devices and gameplay: the answer to "why did my action not fire?"
+when a menu, the on-screen controls or another layer took the press.
+
+```csharp
+public IReadOnlyList<RoutedEvent> Routed { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[RoutedEvent](MicroEngine.Input.RoutedEvent.md)\>
+
 ### <a id="MicroEngine_Input_InputSystem_Text"></a> Text
 
 The text channel.
@@ -129,6 +143,19 @@ public TextInput Text { get; }
 #### Property Value
 
  [TextInput](MicroEngine.Input.TextInput.md)
+
+### <a id="MicroEngine_Input_InputSystem_Trace"></a> Trace
+
+Whether [Routed](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Routed) records where each event of the frame went. Off by default; the game's diagnostics
+turn it on while they measure.
+
+```csharp
+public bool Trace { get; set; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ## Methods
 
