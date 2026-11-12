@@ -6,6 +6,7 @@ using PhysicsSubstitution;
 
 // The only place that knows the backends: everything else talks to IPhysicsWorld2D.
 //   dotnet run --project samples/PhysicsSubstitution [tiles|box2d|both]
+#region backend
 static IPhysicsWorld2D Make(string backend) => backend switch
 {
     "tiles" => new TilePhysicsWorld2D(),
@@ -13,6 +14,7 @@ static IPhysicsWorld2D Make(string backend) => backend switch
     "box2d" => new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 16, YDown = true }),
     _ => throw new ArgumentException($"Unknown backend '{backend}': tiles or box2d."),
 };
+#endregion
 
 string which = args.Length > 0 ? args[0] : "both";
 var backends = which == "both" ? new[] { "tiles", "box2d" } : [which];
@@ -21,7 +23,7 @@ foreach (var backend in backends)
 {
     if (backend == "box2d" && !Box2DPhysicsWorld2D.IsSupported)
     {
-        Console.WriteLine("box2d: the native library of this machine is missing (src/MicroEngine.Physics.Box2D/native/build.sh).");
+        Console.WriteLine("box2d: no Box2D native library for this runtime.");
         continue;
     }
     var world = Make(backend);

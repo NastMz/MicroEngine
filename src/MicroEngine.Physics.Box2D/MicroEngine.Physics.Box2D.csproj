@@ -3,8 +3,8 @@
        native/build.sh builds for each runtime identifier into artifacts/box2d/<rid>/ (CI: .github/workflows/box2d.yml).
        It references only the physics contract, the scene world and the kernel (the architecture test checks it).
 
-       An optional package of its own, outside the SDK and NOT published: it packs only when asked
-       (-p:MicroEngineBox2DPackage=true), from MicroEngine.Physics.Box2D.nuspec: runtimes/<rid>/native/ for every runtime
+       An optional SDK package (ADR 0051), released with the others: it packs only when asked
+       (-p:MicroEngineBox2DPackage=true; sdk.yml does), from MicroEngine.Physics.Box2D.nuspec: runtimes/<rid>/native/ for every runtime
        built and, for browser builds, the two static archives the buildTransitive targets add as NativeFileReference.
          -p:MicroEngineBox2DNatives=<dir>          where the per-runtime folders are (default: artifacts/box2d)
          -p:MicroEngineBox2DRequireNatives=true    fail the pack when a runtime of NativeRuntime is missing
@@ -12,7 +12,7 @@
        next to the assembly, so tests and samples load it directly. -->
   <PropertyGroup>
     <RootNamespace>MicroEngine.Physics.Box2D</RootNamespace>
-    <Description>MicroEngine Box2D v3 physics backend: dynamic bodies, rotation, round and polygon shapes, continuous collision and one-way platforms behind the engine's 2D physics contract. Optional; not part of the SDK packages.</Description>
+    <Description>MicroEngine Box2D v3 physics backend: dynamic bodies, rotation, round and polygon shapes, continuous collision and one-way platforms behind the engine's 2D physics contract. Optional: the tile backend in MicroEngine needs no extra package.</Description>
     <IsPackable Condition="'$(MicroEngineBox2DPackage)' != 'true'">false</IsPackable>
     <IsAotCompatible>true</IsAotCompatible>
     <MicroEngineBox2DNatives Condition="'$(MicroEngineBox2DNatives)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)../../artifacts/box2d'))</MicroEngineBox2DNatives>
@@ -23,7 +23,9 @@
   <PropertyGroup Condition="'$(MicroEngineBox2DPackage)' == 'true'">
     <!-- Written at pack time from MicroEngine.Physics.Box2D.nuspec (_Box2DNuspec below). -->
     <NuspecFile>$(BaseIntermediateOutputPath)MicroEngine.Physics.Box2D.nuspec</NuspecFile>
+    <!-- A nuspec pack makes no .snupkg: the symbols travel inside the assembly (with Source Link, as in the others). -->
     <IncludeSymbols>false</IncludeSymbols>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Physics/MicroEngine.Physics.csproj" />

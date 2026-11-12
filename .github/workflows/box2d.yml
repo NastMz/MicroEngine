@@ -2,14 +2,12 @@
 # src/MicroEngine.Physics.Box2D/native/box2d.env pins plus the me_box2d layer, built for every runtime identifier by
 # src/MicroEngine.Physics.Box2D/native/build.sh (which developers run locally the same way) on a runner of that system.
 # ci.yml calls it when the planner's box2d check is needed (.github/scripts/changes.mjs); it is also started by hand.
-#   natives   one job per runtime identifier, cached by `build.sh key` (inputs + toolchain): a cache hit reuses the
-#             build and the self-test output it made; SHA256SUMS verified; me_box2d_selftest run wherever the runner can
-#             execute the result (desktop runners natively, browser-wasm under Node), build only for Android and iOS;
-#             each runtime is uploaded as artifact box2d-<rid> (30 days)
+#   natives   box2d-natives.yml: one job per runtime identifier, cached, checksummed and self-tested; each runtime is
+#             uploaded as artifact box2d-<rid> (30 days)
 #   tests     the backend's tests on Windows, Linux and macOS with that runtime's library (a missing library fails)
 #   browser   the same test classes in headless Chrome on the .NET browser runtime (interpreter), Box2D linked statically
-#   package   the optional MicroEngine.Physics.Box2D package packed with every runtime built and its contents checked;
-#             kept as the workflow artifact box2d-package (7 days), never pushed anywhere
+#   package   the MicroEngine.Physics.Box2D package packed with every runtime built and its contents checked; kept as
+#             the workflow artifact box2d-package (7 days), never pushed anywhere (sdk.yml packs the one a release ships)
 #   compare   one table of every runtime's library checksums and self-test results, and the determinism promise: every
 #             runtime that ran the self-test printed the same state hash, or the job fails; it also fails unless the
 #             jobs above passed, and records the evidence of the check
@@ -43,86 +41,12 @@ permissions:
 
 jobs:
   natives:
-    name: Box2D ${{ matrix.rid }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { rid: win-x64, os: windows-latest }
-          # The oldest supported Ubuntu runner: the library then needs glibc 2.35 or newer, not the newest runner's.
-          - { rid: linux-x64, os: ubuntu-22.04 }
-          - { rid: android-arm64, os: ubuntu-latest }
-          - { rid: android-x64, os: ubuntu-latest }
-          - { rid: browser-wasm, os: ubuntu-latest }
-          - { rid: osx-arm64, os: macos-latest, apple: true }
-          - { rid: osx-x64, os: macos-latest, apple: true }
-          - { rid: ios-arm64, os: macos-latest, apple: true }
-    runs-on: ${{ matrix.os }}
-    env:
-      RID: ${{ matrix.rid }}
-      SKIP: ${{ matrix.apple && github.event_name != 'workflow_dispatch' && !inputs.apple }}
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Not built on this run
-        if: env.SKIP == 'true'
-        run: |
-          mkdir -p "artifacts/box2d/$RID"
-          echo "not built: macOS runners are switched off for this run" > "artifacts/box2d/$RID/selftest.txt"
-      - uses: actions/checkout@v4
-        if: env.SKIP != 'true'
-        with:
-          ref: ${{ inputs.ref || github.sha }}
-      - name: Android NDK
-        if: env.SKIP != 'true' && startsWith(matrix.rid, 'android-')
-        run: |
-          source src/MicroEngine.Physics.Box2D/native/box2d.env
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ANDROID_NDK_VERSION" > /dev/null
-          echo "ANDROID_NDK=$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION" >> "$GITHUB_ENV"
-      # The emscripten .NET links browser builds with (web/setup.sh, cached like the other web jobs).
-      - name: Web toolchain location
-        if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
-        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
-        if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
-        with:
-          path: ${{ runner.temp }}/web-tools
-          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh') }}
-      - name: Web toolchain
-        if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
-        run: bash web/setup.sh --no-sdl
-      - name: Cache key
-        id: key
-        if: env.SKIP != 'true'
-        run: |
-          key=$(src/MicroEngine.Physics.Box2D/native/build.sh key "$RID")
-          echo "key=$key" >> "$GITHUB_OUTPUT"
-          echo "Cache key: \`$key\`" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/cache@v4
-        id: cache
-        if: env.SKIP != 'true'
-        with:
-          path: artifacts/box2d/${{ matrix.rid }}
-          key: ${{ steps.key.outputs.key }}
-      - name: Build and self-test
-        if: env.SKIP != 'true' && steps.cache.outputs.cache-hit != 'true'
-        run: src/MicroEngine.Physics.Box2D/native/build.sh "$RID" --work "$RUNNER_TEMP/box2d-work"
-      - name: Checksums
-        if: env.SKIP != 'true'
-        run: |
-          cd "artifacts/box2d/$RID"
-          if command -v sha256sum > /dev/null; then sha256sum -c SHA256SUMS; else shasum -a 256 -c SHA256SUMS; fi
-          {
-            echo "### Box2D $RID $([ '${{ steps.cache.outputs.cache-hit }}' = true ] && echo '(cached build)')"; echo
-            echo '```'; cat build.txt; echo; cat SHA256SUMS; echo; tail -3 selftest.txt; echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          ! grep -q '^FAIL' selftest.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: box2d-${{ matrix.rid }}
-          path: artifacts/box2d/${{ matrix.rid }}
-          retention-days: 30
+    name: Box2D natives
+    uses: ./.github/workflows/box2d-natives.yml
+    with:
+      ref: ${{ inputs.ref || github.sha }}
+      apple: ${{ github.event_name == 'workflow_dispatch' || inputs.apple }}
+      prefix: box2d
 
   # The backend's tests (tests/MicroEngine.Physics.Box2D.Tests) on each desktop system, with that runtime's native
   # library from the natives job; MICROENGINE_BOX2D_REQUIRED makes a missing library fail instead of skipping.

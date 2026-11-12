@@ -107,7 +107,7 @@ all the way to a package for each platform.
 | Persistence | JSON saves in the right place on every platform, and achievements with saved progress |
 | Tools | `microengine new`, `run`, `package` and `doctor`; a `dotnet new` template; scripted playthroughs and frame captures for tests |
 
-The [SDK status](https://micro-engine.vercel.app/docs/sdk/) page lists the seven NuGet packages and what each one holds.
+The [SDK status](https://micro-engine.vercel.app/docs/sdk/) page lists the eight NuGet packages and what each one holds.
 
 ## Platforms
 

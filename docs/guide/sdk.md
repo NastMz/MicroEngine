@@ -22,23 +22,23 @@ Alpha means two things:
 | `MicroEngine.Raylib` | the raylib platform (desktops only) | `MicroEngine`, `Raylib-cs` |
 | `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
 | `MicroEngine.Text.Shaping` | optional: `ShapedFont`, text shaped by HarfBuzz for Arabic, Hebrew, Indic and other complex scripts ([Shaped text](../manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts)) | `MicroEngine`, `HarfBuzzSharp` and its native packages |
+| `MicroEngine.Physics.Box2D` | optional: `Box2DPhysicsWorld2D`, Box2D 3.2 behind the physics contract, for dynamic bodies, rotation, round and polygon shapes and continuous collision, with Box2D's native library for each runtime ([The Box2D backend](../manual/world.md#the-box2d-backend)) | `MicroEngine` |
 | `MicroEngine.Cli` | the [`microengine` tool](cli.md), with [`microengine shaders`](cli.md#shaders), and the browser, Android and iOS hosts it builds with | — |
 | `MicroEngine.Templates` | `dotnet new microengine-game` | — |
 
 A game installs only what it uses: one that ships SDL only references `MicroEngine.Sdl` and gets no raylib file.
-Packages carry symbols (`.snupkg`, with Source Link to the commit), XML documentation, a README and the MIT
-licence. The demo games are not in any package: they stay in the repository under their own terms
+Packages carry symbols (`.snupkg`, with Source Link to the commit; `MicroEngine.Physics.Box2D` embeds them in its
+assembly), XML documentation, a README and the MIT licence. The demo games are not in any package: they stay in the repository under their own terms
 ([Licensing](licensing.md)).
 
-Two parts of the engine stay out of every published package: the 3D path
-([The 3D path](../manual/rendering.md#the-3d-path)) is in the repository only, and the Box2D physics backend
-([The Box2D backend](../manual/world.md#the-box2d-backend)) is an optional package that is not published.
+One part of the engine stays out of every published package: the 3D path
+([The 3D path](../manual/rendering.md#the-3d-path)) is in the repository only.
 
 ## Versioning and compatibility
 
 - SemVer with numbered pre-releases while in Alpha: `-alpha.1`, `-alpha.2`... A new minor (0.5) marks
   incompatible changes; numbered Alphas of one minor are for fixes and additions.
-- All seven packages share one version, and the tool builds games with the hosts of its own version: use the same
+- All eight packages share one version, and the tool builds games with the hosts of its own version: use the same
   version for the tool and the engine packages (the template does).
 - A game's own version is its own (`<Version>` in its project), independent of the SDK's.
 - SDK releases are published on GitHub as `sdk-v<version>`; the demo games have releases of their own (`v0.1.0`,

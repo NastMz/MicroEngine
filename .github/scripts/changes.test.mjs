@@ -126,16 +126,17 @@ test('the documented version and its samples check run the .NET tests, not the S
 });
 
 test('the Box2D natives, the Box2D backend and the physics it implements run the Box2D check; the games do not', () => {
-  assert.deepEqual(plan(['src/MicroEngine.Physics.Box2D/native/me_box2d.c']), { ...none, box2d: true }, 'natives only: no .NET job');
-  assert.deepEqual(plan(['src/MicroEngine.Physics.Box2D/Box2DPhysicsWorld2D.cs']), { ...none, dotnet: true, windows: true, box2d: true },
-    'an optional package outside the SDK: no SDK, native or browser game check');
+  assert.deepEqual(plan(['src/MicroEngine.Physics.Box2D/native/me_box2d.c']), { ...none, sdk: true, box2d: true }, 'natives only: no .NET job; the SDK packs them');
+  assert.deepEqual(plan(['src/MicroEngine.Physics.Box2D/Box2DPhysicsWorld2D.cs']), { ...none, dotnet: true, windows: true, sdk: true, box2d: true },
+    'an optional SDK package: no native or browser game check');
   for (const file of ['src/MicroEngine.Physics/IPhysicsWorld2D.cs', 'src/MicroEngine.Physics.Tiles/TilePhysicsWorld2D.cs', 'src/MicroEngine.Scene/SceneWorld.cs', 'src/MicroEngine.Kernel/Engine.cs'])
     assert.deepEqual(plan([file]), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true, web: true, box2d: true }, file);
   assert.deepEqual(plan(['tests/MicroEngine.Physics.Box2D.Tests/Box2DTests.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['tests/Shared/Physics/PhysicsConformance.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['.github/workflows/box2d.yml']), everything, 'daily CI runs box2d.yml');
+  assert.deepEqual(plan(['.github/workflows/box2d-natives.yml']), everything, 'daily CI runs box2d-natives.yml through box2d.yml and sdk.yml');
   assert.deepEqual(plan(['.github/workflows/sdl-web.yml']), everything, 'daily CI runs sdl-web.yml');
-  assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, box2d: true }, 'the substitution scenarios run its code');
+  assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, sdk: true, box2d: true }, 'the substitution scenarios and the external project run its code');
   assert.equal(plan(['src/MicroEngine/Core/GameLoop.cs']).box2d, false, 'the rest of the engine is not physics');
   assert.equal(plan(['games/MeadowRun/MeadowRunGame.cs']).box2d, false);
   assert.deepEqual(planScope(['src/MicroEngine.Physics.Box2D/native/me_box2d.c'], readGraph()), { tests: [], games: [] }, 'the natives never widen the .NET tests');

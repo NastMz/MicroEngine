@@ -10,7 +10,7 @@ workflows: [CI](ci.md).
 
 | | SDK | Demo distribution | Site |
 | --- | --- | --- | --- |
-| What | seven NuGet packages, one version (ADR 0019) | the four games: web packages and native downloads | documentation, landing, demo pages |
+| What | eight NuGet packages, one version (ADR 0019, 0051) | the four games: web packages and native downloads | documentation, landing, demo pages |
 | Identified by | SemVer (`0.x.y-alpha.n` in Alpha), tag `sdk-v<version>` | `v<version>` (`v0.4.0`): a release number, not an API promise; each game keeps its own `<Version>` | the Vercel deployment of a `main` commit |
 | Source of truth | nuget.org (immutable) | the latest published GitHub release `v*` | the production deployment |
 | Starts | merging a pull request that documents a new version; the `nuget` environment's approval publishes it | by hand: Actions → release | every push to `main` that changes the site |
@@ -79,7 +79,11 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
    dependencies each package should have (no raylib in `MicroEngine.Sdl`), the files that make each one work (the
    identity targets, raylib for WebAssembly, the hosts, the template), no build-machine path, no demo file. To run it
    on a local feed, pack as the workflow does (`dotnet pack MicroEngine.slnx -c Release -o <feed>
-   -p:MicroEngineRelease=true`): without that flag the build keeps this machine's paths and the path check fails.
+   -p:MicroEngineRelease=true`, then `dotnet pack src/MicroEngine.Physics.Box2D -c Release -o <feed>
+   -p:MicroEngineRelease=true -p:MicroEngineBox2DPackage=true` with the Box2D natives in `artifacts/box2d/<rid>`):
+   without that flag the build keeps this machine's paths and the path check fails. A package added after a release
+   is listed in `sdk/version.mjs` (`shippedWithout`) as absent from the versions published before it, so no check
+   asks nuget.org for it there.
 2. **An external project** (`sdk/tests/external.mjs`) on Windows, Linux and macOS: in a folder outside the
    repository, with only the package feed and nuget.org, it installs `microengine`, creates a game with
    `microengine new`, gives it its own name, id, version and icon, builds it, runs it with scripted input (the
@@ -139,7 +143,7 @@ For every release, **one pull request and one approval**:
    at **Publish to nuget.org** for the `nuget` environment.
 4. Review the draft (GitHub → Releases) and approve the deployment (the run's page → Review deployments). The run
    pushes exactly the draft's files, verified against `SHA256SUMS`, engine packages first; publishes the GitHub
-   release; waits until nuget.org serves all seven packages; creates, builds, runs and packages a game, and builds the
+   release; waits until nuget.org serves all eight packages; creates, builds, runs and packages a game, and builds the
    documented samples, from nuget.org alone; then deploys production with `main`'s head.
 
 Nothing else is done by hand. To not publish: reject the deployment (step 4); the draft stays and nothing is public.
@@ -158,7 +162,7 @@ done and continues from there; the summary says what it found:
 | --- | --- |
 | Nothing public, a draft of this commit (a rejected or timed-out approval) | publishes that draft; never rebuilds it |
 | Nothing public, a draft of an earlier commit (a fix merged since) | checks and drafts this commit instead |
-| Some packages on nuget.org (a push failed part way), or all seven with the GitHub release still a draft | pushes only the missing ones from the draft, then publishes the release; the draft's commit may be older than `main` (the summary lists the commits in between) |
+| Some packages on nuget.org (a push failed part way), or all of them with the GitHub release still a draft | pushes only the missing ones from the draft, then publishes the release; the draft's commit may be older than `main` (the summary lists the commits in between) |
 | Published, but nuget.org was slow, a check failed or the site did not deploy | verifies nuget.org and deploys the site again |
 | Documented version not public and not the prepared one | refused: a pull request must run `node sdk/version.mjs release` again |
 

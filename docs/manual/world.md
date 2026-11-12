@@ -248,18 +248,49 @@ gives identical results on every platform. A backend with dynamic bodies may lea
 
 ### The Box2D backend
 
-Optional, and in the repository only: `Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) is a package of its own,
-not one of the SDK packages. It runs Box2D 3.2 natively on Windows, Linux, macOS, Android, iOS and in browsers, behind
-the same `IPhysicsWorld2D`, so code that uses only the core works on either backend:
+`Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) runs Box2D 3.2 behind the same `IPhysicsWorld2D`, for
+games that need what the tile backend refuses: dynamic bodies, rotation, circles, capsules and polygons, continuous
+collision, friction and mass. It is an optional package; the tile backend needs none:
 
-```csharp
-// The engine's pixel space: 32 pixels a metre, y down. Box2D itself works in metres.
-using var physics = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 32, YDown = true });
-var crate = physics.CreateBody(crateEntity, BodyDescription.Dynamic(new Vector2(160, 40)) with { Rotation = 0.3f });
-physics.AddShape(crate, ShapeDescription.Box(new Vector2(16, 16)) with { Density = 2 });
-physics.Step(1 / 60f);
-foreach (var contact in physics.ContactEvents) { /* the crate began or stopped touching something */ }
+```xml
+<PackageReference Include="MicroEngine.Physics.Box2D" Version="0.5.0-alpha.2" />
 ```
+
+Choose the backend where the world is made; code that uses only the core then runs on either. Keep the tile backend
+for characters moving through tile levels: it rests exactly on surfaces, builds levels from tile grids (`AddTiles`),
+has moving platforms that push and carry (`MovingSolids`) and moves kinematic boxes several times faster. Choose Box2D
+when bodies must fall, stack, roll and push each other.
+
+<!-- code: samples/PhysicsSubstitution/Program.cs#backend -->
+```csharp
+static IPhysicsWorld2D Make(string backend) => backend switch
+{
+    "tiles" => new TilePhysicsWorld2D(),
+    // Box2D in the engine's pixel space: 16 pixels (a tile) to the metre, y down.
+    "box2d" => new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 16, YDown = true }),
+    _ => throw new ArgumentException($"Unknown backend '{backend}': tiles or box2d."),
+};
+```
+
+A crate is a dynamic body with a box; the solver moves and turns it on each `Step`:
+
+<!-- code: samples/PhysicsSubstitution/Crates.cs#crate -->
+```csharp
+private static BodyId Crate(IPhysicsWorld2D world, Vector2 position, float rotation)
+{
+    var body = world.CreateBody(Owner, BodyDescription.Dynamic(position) with { Rotation = rotation });
+    world.AddShape(body, ShapeDescription.Box(new Vector2(16, 16)));
+    return body;
+}
+```
+
+The package carries Box2D's native library for every runtime it supports, and the browser build links it into the
+page:
+
+| Platform | Support |
+| --- | --- |
+| Windows x64, Linux x64, macOS (Apple silicon and Intel), browsers | supported |
+| Android (arm64, x64), iOS (arm64) | experimental: the library is included for these devices |
 
 What differs from the tile backend, within what the core allows:
 

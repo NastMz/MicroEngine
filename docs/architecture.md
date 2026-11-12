@@ -81,8 +81,8 @@ Each box is an assembly, named without its `MicroEngine.` prefix; the table unde
 kernel, those that touch the host also the platform contracts, and the core references every engine module. The
 `MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
 package carries the tier-1 device. Text shaping (`MicroEngine.Text.Shaping`) is an optional package of its own, with
-HarfBuzz. The 3D path (`MicroEngine.Graphics3D`) and the Box2D backend
-(`MicroEngine.Physics.Box2D`) are not in the SDK packages: both are in the repository only.
+HarfBuzz, and so is the Box2D backend (`MicroEngine.Physics.Box2D`), with Box2D's native library for each runtime.
+The 3D path (`MicroEngine.Graphics3D`) is not in the SDK packages: it is in the repository only.
 
 The kernel is its own assembly,
 `MicroEngine.Kernel`, shipped inside the `MicroEngine` package. It references no other engine assembly; modules
@@ -180,8 +180,8 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 `MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
-`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; in the repository only, outside the
-SDK packages) is the second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
+`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; an optional package of its own) is the
+second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
 across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
 its package ([The Box2D backend](manual/world.md#the-box2d-backend)).
 
@@ -276,7 +276,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine` (core): testing support | `MicroEngine.Core` | `HeadlessPlatform` (no window, no sound, deterministic time), `InputScript` (scripted input for playthroughs), captures; with the kernel's state hash (`StateHasher`, `StateTrace`), the reference device (`ReferenceGraphicsDevice`) and offline audio (`OfflineAudioSink`) ([Testing your game](examples/testing.md)) |
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
-| `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; in the repository only, not part of the SDK packages |
+| `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package |
 | `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, the platform of every browser build) |
 | `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform |
 | `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |

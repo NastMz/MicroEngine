@@ -131,8 +131,8 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/world/#physics-worlds',
   },
   {
-    id: 'box2d', family: 'physics', status: 'repository', name: 'Box2D backend', contract: 'IPhysicsWorld2D',
-    summary: 'An optional backend with dynamic bodies, rotation and circles, polygons and capsules, behind the same contract. Not part of any published package.',
+    id: 'box2d', family: 'physics', status: 'available', name: 'Box2D backend', contract: 'IPhysicsWorld2D',
+    summary: 'An optional package with dynamic bodies, rotation and circles, polygons and capsules, behind the same contract.',
     builtOn: ['Box2D'],
     docs: '/docs/manual/world/#the-box2d-backend',
   },

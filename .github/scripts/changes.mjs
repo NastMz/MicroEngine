@@ -46,7 +46,7 @@ const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
 export const rules = [
-  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d|sdl-web)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
+  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d|box2d-natives|sdl-web)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
   { pattern: build, checks: 'all', why: 'build settings' },
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },
@@ -66,9 +66,10 @@ export const rules = [
   { pattern: /^src\/MicroEngine\.Sdl\/native\//, checks: ['full', 'sdk', 'web'], why: 'SDL for the web (SDL3.a)' },
   { pattern: /^src\/MicroEngine\.Sdl\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile', 'web'], why: 'SDL backend (desktop, phones and browser)' },
   { pattern: /^src\/MicroEngine\.Desktop\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'desktop platforms' },
-  // The Box2D backend is an optional package of its own (not in the SDK): its natives and its tests, not the games.
-  { pattern: /^src\/MicroEngine\.Physics\.Box2D\/native\//, checks: ['box2d'], why: 'Box2D natives (box2d.yml)' },
-  { pattern: /^src\/MicroEngine\.Physics\.Box2D\//, checks: ['dotnet', 'windows', 'box2d'], why: 'Box2D physics backend' },
+  // The Box2D backend is an optional SDK package (sdk.yml packs it with its natives): its natives, its tests and the
+  // SDK check, not the games.
+  { pattern: /^src\/MicroEngine\.Physics\.Box2D\/native\//, checks: ['sdk', 'box2d'], why: 'Box2D natives (box2d.yml, packed by sdk.yml)' },
+  { pattern: /^src\/MicroEngine\.Physics\.Box2D\//, checks: ['dotnet', 'windows', 'sdk', 'box2d'], why: 'Box2D physics backend' },
   { pattern: /^src\/MicroEngine\.(Kernel|Scene|Physics|Physics\.Tiles)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'web', 'box2d'], why: 'engine (physics and what it builds on)' },
   { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'web'], why: 'engine' },
   { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
@@ -79,7 +80,8 @@ export const rules = [
   { pattern: /^tests\/(MicroEngine\.Physics\.Box2D\.Tests|Shared\/Physics)\//, checks: ['dotnet', 'windows', 'macos', 'box2d'], why: 'physics backend tests and suites' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
   // The physics substitution sample: its gameplay code is what the Box2D check's scenario tests run on both backends.
-  { pattern: /^samples\/PhysicsSubstitution\//, checks: ['dotnet', 'box2d'], why: 'physics substitution sample (Box2D scenario tests)' },
+  // Also copied and run from the packages by sdk/tests/external.mjs (evidence.mjs: sdkSamples).
+  { pattern: /^samples\/PhysicsSubstitution\//, checks: ['dotnet', 'sdk', 'box2d'], why: 'physics substitution sample (Box2D scenario tests, SDK external project)' },
   // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
   { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },

@@ -3,25 +3,36 @@ using System.Globalization;
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Physics;
+using MicroEngine.Physics.Box2D;
 using MicroEngine.Physics.Tiles;
 using MicroEngine.Scenes;
 using MicroEngine.World;
 
-// Times the tile physics backend: N kinematic 12×14 boxes falling and walking through a 64×36 tile level with
+// Times a 2D physics backend: N kinematic 12×14 boxes falling and walking through a 64×36 tile level with
 // one-way platforms, 32 static boxes and 16 sensors, one Move per box and one Step per fixed step (60 Hz).
 //
-//   PhysicsBench [--bodies N] [--steps N] [--runs N]
+//   PhysicsBench [--backend tiles|box2d] [--bodies N] [--steps N] [--runs N]
 //
-// Prints the mean, median and 95th percentile time per step of each run (after one warm-up run), the TileMotion
-// façade's time for the same moves, and the bytes allocated per step on this thread.
+// Prints the mean, median and 95th percentile time per step of each run (after one warm-up run) and the bytes
+// allocated per step on this thread; for the tile backend, also the TileMotion façade's time for the same moves.
+// Box2D has no tile geometry, so its level is the same grid as boxes: one per horizontal run of solid or one-way
+// cells. It needs the native library of this machine (src/MicroEngine.Physics.Box2D/native/build.sh).
 int bodies = 200, steps = 600, runs = 3;
+string backend = "tiles";
 for (int i = 0; i < args.Length; i++)
     switch (args[i])
     {
         case "--bodies": bodies = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--steps": steps = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--runs": runs = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
+        case "--backend": backend = args[++i]; break;
     }
+if (backend is not ("tiles" or "box2d")) throw new ArgumentException($"Unknown backend '{backend}': tiles or box2d.");
+if (backend == "box2d" && !Box2DPhysicsWorld2D.IsSupported)
+{
+    Console.WriteLine("box2d: the native library of this machine is missing (src/MicroEngine.Physics.Box2D/native/build.sh).");
+    return 1;
+}
 
 const int Tile = 16, Width = 64, Height = 36;
 var layer = new TileLayer(Width, Height);
@@ -31,11 +42,37 @@ for (int p = 0; p < 12; p++)
 for (int x = 0; x < 6; x++) layer[4 + p * 5 % 54 + x, 6 + p * 7 % 26] = 2;
 var grid = new TileGrid(layer, Tile, new Dictionary<int, TileFlags> { [1] = TileFlags.Solid, [2] = TileFlags.OneWay });
 
-(TilePhysicsWorld2D World, BodyId[] Bodies, Vector2[] Velocity) Build()
+// The level as boxes, for a backend without tile geometry: one box per horizontal run of cells with the same flag.
+void AddLevelBoxes(IPhysicsWorld2D world)
 {
-    var world = new TilePhysicsWorld2D();
-    var level = world.CreateBody(default, BodyDescription.Static());
-    world.AddTiles(level, grid);
+    for (int y = 0; y < Height; y++)
+        for (int x = 0; x < Width;)
+        {
+            int id = layer[x, y];
+            if (id == 0) { x++; continue; }
+            int start = x;
+            while (x < Width && layer[x, y] == id) x++;
+            var center = new Vector2((start + x) * Tile / 2f, (y + 0.5f) * Tile);
+            var body = world.CreateBody(default, BodyDescription.Static(center));
+            world.AddShape(body, ShapeDescription.Box(new Vector2((x - start) * Tile, Tile)) with { OneWay = id == 2 });
+        }
+}
+
+(IPhysicsWorld2D World, BodyId[] Bodies, Vector2[] Velocity) Build()
+{
+    IPhysicsWorld2D world;
+    if (backend == "tiles")
+    {
+        var tiles = new TilePhysicsWorld2D();
+        tiles.AddTiles(tiles.CreateBody(default, BodyDescription.Static()), grid);
+        world = tiles;
+    }
+    else
+    {
+        // A tile to the metre, y down: the engine's pixel space, as the PhysicsSubstitution sample sets it.
+        world = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = Tile, YDown = true });
+        AddLevelBoxes(world);
+    }
     for (int i = 0; i < 32; i++)
     {
         var box = world.CreateBody(default, BodyDescription.Static(new Vector2(64 + i * 29 % 900, 120 + i * 53 % 400)));
@@ -58,7 +95,7 @@ var grid = new TileGrid(layer, Tile, new Dictionary<int, TileFlags> { [1] = Tile
 }
 
 const float Dt = 1 / 60f;
-void Simulate(TilePhysicsWorld2D world, BodyId[] ids, Vector2[] velocity, double[] times)
+void Simulate(IPhysicsWorld2D world, BodyId[] ids, Vector2[] velocity, double[] times)
 {
     var clock = new Stopwatch();
     for (int s = 0; s < steps; s++)
@@ -102,7 +139,7 @@ static string Stats(double[] t)
     return string.Create(CultureInfo.InvariantCulture, $"mean {t.Average():0.000} ms, median {sorted[sorted.Length / 2]:0.000} ms, p95 {sorted[(int)(sorted.Length * 0.95)]:0.000} ms");
 }
 
-Console.WriteLine($"PhysicsBench: {bodies} kinematic boxes, {steps} steps at 60 Hz, {runs} runs after a warm-up");
+Console.WriteLine($"PhysicsBench ({backend}): {bodies} kinematic boxes, {steps} steps at 60 Hz, {runs} runs after a warm-up");
 var times = new double[steps];
 for (int run = 0; run <= runs; run++)
 {
@@ -110,9 +147,11 @@ for (int run = 0; run <= runs; run++)
     long before = GC.GetAllocatedBytesForCurrentThread();
     Simulate(world, ids, velocity, times);
     long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+    (world as IDisposable)?.Dispose();
     if (run == 0) continue;
     Console.WriteLine($"world  run {run}: {Stats(times)}, {allocated / (double)steps:0} B/step");
 }
+if (backend != "tiles") return 0;
 for (int run = 0; run <= runs; run++)
 {
     var (world, ids, velocity) = Build();
@@ -123,3 +162,4 @@ for (int run = 0; run <= runs; run++)
     if (run == 0) continue;
     Console.WriteLine($"façade run {run}: {Stats(times)}, {allocated / (double)steps:0} B/step");
 }
+return 0;

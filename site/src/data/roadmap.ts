@@ -72,6 +72,7 @@ const available: RoadmapItem[] = [
   { text: 'TrueType and OpenType fonts at any size', family: 'graphics', status: 'available' },
   { text: 'A graphics device contract, and an opt-in SDL_GPU device on desktops with shaders compiled ahead of time', family: 'graphics', status: 'available' },
   { text: 'Physics worlds behind one contract, with the engine’s tile backend', family: 'physics', status: 'available' },
+  { text: 'An optional Box2D physics package: dynamic bodies, rotation, round and polygon shapes behind the same contract', family: 'physics', status: 'available' },
   { text: 'One audio mixer on every platform', family: 'audio', status: 'available' },
   { text: 'Input as device events with players and layers, rebinding and text input', family: 'input', status: 'available' },
   { text: 'SDL 3 in browsers (WebAssembly), with the same page, input and touch controls', family: 'platform', status: 'available' },
@@ -80,7 +81,6 @@ const available: RoadmapItem[] = [
 
 const repository: RoadmapItem[] = [
   { text: 'A minimal 3D path on the SDL_GPU device: glTF meshes, a perspective camera, depth and one lit material', family: 'graphics', status: 'repository' },
-  { text: 'A Box2D physics backend behind the same physics contract (optional, never published)', family: 'physics', status: 'repository' },
 ];
 
 export interface RoadmapTrack {

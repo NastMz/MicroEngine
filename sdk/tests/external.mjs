@@ -20,6 +20,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { packagesAt } from '../version.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
@@ -146,6 +147,12 @@ try {
   // TTF/OTF fonts, built from the packages alone, played through its tour and packaged with its content.
   await checkGallery();
 
+  // 4c. The optional Box2D physics package (PHYS-1): samples/PhysicsSubstitution from the packages alone, run and
+  // published for this system, so the native library comes from the package's runtimes folder. SDK versions published
+  // before the package existed (sdk/version.mjs, packagesAt) have none to check: --public on such a version skips it.
+  if (packagesAt(version).includes('MicroEngine.Physics.Box2D')) checkPhysics();
+  else console.log(`SKIP physics: SDK ${version} has no MicroEngine.Physics.Box2D package`);
+
   // 5. Failures a developer meets, each with an actionable message.
   const original = fs.readFileSync(projectFile, 'utf8');
   const expectFailure = (name, edit, command, pattern) => {
@@ -191,6 +198,32 @@ try {
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
+
+/**
+ * The Box2D package's consumer outside the repository: samples/PhysicsSubstitution copied (without build output),
+ * pointed at this SDK version, run (the same platformer on the tile backend and on Box2D; crates only on Box2D, refused
+ * by the tile backend with the typed error), then published for this system and run from the published folder.
+ */
+function checkPhysics() {
+  const source = path.join(repo, 'samples', 'PhysicsSubstitution');
+  const sample = path.join(work, 'PhysicsSubstitution');
+  fs.cpSync(source, sample, { recursive: true, filter: f => !/[\\/](bin|obj)([\\/]|$)/.test(path.relative(source, f)) });
+  const projectFile = path.join(sample, 'PhysicsSubstitution.csproj');
+  const project = fs.readFileSync(projectFile, 'utf8').replace(/(<PackageReference Include="MicroEngine\.[A-Za-z0-9.]+" Version=")[^"]+(")/g, `$1${version}$2`);
+  fs.writeFileSync(projectFile, project);
+  check('physics: the sample references the published packages only', project.includes(`<PackageReference Include="MicroEngine.Physics.Box2D" Version="${version}" />`) && !/ProjectReference/.test(project));
+  const expect = out => /^tiles: \d+ steps/m.test(out) && /^box2d: \d+ steps/m.test(out) && /^tiles: crates refused: .*DynamicBodies/m.test(out) && /^box2d: crates at /m.test(out);
+  let r = run('dotnet', ['run', '-c', 'Release'], { cwd: sample });
+  check('physics: both backends from the packages, crates only on Box2D', r.code === 0 && expect(r.out), tail(r.out));
+  const rid = { win32: 'win-x64', linux: 'linux-x64', darwin: process.arch === 'arm64' ? 'osx-arm64' : 'osx-x64' }[process.platform];
+  const published = path.join(sample, 'published');
+  r = run('dotnet', ['publish', '-c', 'Release', '-r', rid, '--self-contained', '-o', published], { cwd: sample });
+  if (!check(`physics: publishes for ${rid}`, r.code === 0, tail(r.out))) return;
+  const library = { win32: 'me_box2d.dll', linux: 'libme_box2d.so', darwin: 'libme_box2d.dylib' }[process.platform];
+  check(`physics ${rid}: Box2D's native library is published next to the game`, fs.existsSync(path.join(published, library)));
+  r = run(path.join(published, `PhysicsSubstitution${exe}`), []);
+  check(`physics ${rid}: the published sample runs both backends`, r.code === 0 && expect(r.out), tail(r.out));
+}
 
 /**
  * The asset pipeline's consumer outside the repository: samples/AssetGallery copied (without build output), pointed at

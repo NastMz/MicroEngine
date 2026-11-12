@@ -25,10 +25,12 @@ public static class Crates
         return crates.Select(c => (world.PositionOf(c), world.RotationOf(c))).ToList();
     }
 
+    #region crate
     private static BodyId Crate(IPhysicsWorld2D world, Vector2 position, float rotation)
     {
         var body = world.CreateBody(Owner, BodyDescription.Dynamic(position) with { Rotation = rotation });
         world.AddShape(body, ShapeDescription.Box(new Vector2(16, 16)));
         return body;
     }
+    #endregion
 }

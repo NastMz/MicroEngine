@@ -1,5 +1,7 @@
 # The SDK as an outside developer gets it (docs/releasing.md, "How the SDK is checked"):
-#   pack      every SDK package (dotnet pack MicroEngine.slnx), MicroEngine.Raylib with the web raylib; the feed is an artifact
+#   box2d     the Box2D natives for every runtime identifier (box2d-natives.yml, artifacts sdk-box2d-<rid>)
+#   pack      every SDK package (dotnet pack MicroEngine.slnx), MicroEngine.Raylib with the web raylib, and
+#             MicroEngine.Physics.Box2D with those natives; the feed is an artifact
 #   external  sdk/tests/external.mjs on Windows, Linux and macOS: install microengine and the template from that feed into
 #             a folder outside the repository, create, build, run and package a game, check expected failures
 #   evidence  with `evidence` on, the run that passed records evidence-sdk-<key> (.github/scripts/evidence.mjs)
@@ -24,6 +26,10 @@ on:
         description: Evidence key of the sdk check (evidence.mjs plan)
         type: string
         default: ''
+      release:
+        description: A release pack, which must carry every Box2D runtime (macOS and iOS included)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -34,8 +40,19 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
+  # A release builds every runtime; other runs build macOS and iOS unless the switch for macOS runners is off, and
+  # then pack without them.
+  box2d:
+    name: Box2D natives
+    uses: ./.github/workflows/box2d-natives.yml
+    with:
+      ref: ${{ inputs.ref || github.sha }}
+      apple: ${{ inputs.release || vars.MACOS_RUNNERS != 'off' }}
+      prefix: sdk-box2d
+
   pack:
     name: Pack the SDK
+    needs: box2d
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:
@@ -56,10 +73,22 @@ jobs:
           path: ${{ runner.temp }}/web-tools
           key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'src/MicroEngine.Sdl/native/sdl.env', 'src/MicroEngine.Sdl/native/build.sh') }}
       - run: bash web/setup.sh
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sdk-box2d-*
+          path: box2d-natives
+      - name: Box2D natives in place
+        run: |
+          mkdir -p artifacts/box2d
+          for dir in box2d-natives/sdk-box2d-*; do cp -r "$dir" "artifacts/box2d/${dir#box2d-natives/sdk-box2d-}"; done
       - name: Pack
         id: pack
+        env:
+          ALL: ${{ inputs.release || vars.MACOS_RUNNERS != 'off' }}
         run: |
           dotnet pack MicroEngine.slnx -c Release -o sdk-feed -p:MicroEngineRelease=true
+          # The optional Box2D package packs only when asked; every runtime built must be in it, all of them for a release.
+          dotnet pack src/MicroEngine.Physics.Box2D -c Release -o sdk-feed -p:MicroEngineRelease=true             -p:MicroEngineBox2DPackage=true -p:MicroEngineBox2DRequireNatives="$ALL"
           version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
           echo "version=$version" >> "$GITHUB_OUTPUT"
           node sdk/tests/packages.mjs sdk-feed | tee -a "$GITHUB_STEP_SUMMARY"

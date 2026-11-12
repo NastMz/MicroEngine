@@ -257,7 +257,7 @@ cannot start.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | packs every SDK package (with SDL for the web), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
+| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | builds the Box2D natives (`box2d-natives.yml`, every runtime for a release) and packs every SDK package (with SDL for the web, and `MicroEngine.Physics.Box2D` with those natives), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
 | `sdk-release.yml` | after every ci run that passed for a push to `main`; by hand to resume | preflight (`sdk/version.mjs release-plan`) reads nuget.org and the GitHub release `sdk-v<version>`: nothing to do unless `main` documents a version nuget.org lacks; otherwise checks with `sdk.yml`, drafts, waits for the `nuget` environment's approval, pushes exactly the draft's packages with a one-hour Trusted Publishing key (GitHub OIDC), publishes the release, waits for nuget.org and builds a game and the documented samples from it, then deploys the site |
 
 ```mermaid
@@ -487,15 +487,18 @@ The Box2D physics backend (`MicroEngine.Physics.Box2D`, ADR 0031) calls native B
 Box2D commit `src/MicroEngine.Physics.Box2D/native/box2d.env` pins, with
 [`native/build.sh`](../src/MicroEngine.Physics.Box2D/native/build.sh), the script developers run locally the same way.
 Daily CI calls it when the planner's `box2d` check is needed ([What runs for a change](#what-runs-for-a-change)); it
-can also be started by hand (Actions → box2d). Full validation does not run it. Nothing in it publishes: the package
-stays a workflow artifact and the artifacts expire.
+can also be started by hand (Actions → box2d). Full validation does not run it. Nothing in it publishes: its package
+stays a workflow artifact and the artifacts expire. The package a release publishes is packed by `sdk.yml` (ADR 0051),
+from natives built by the same reusable workflow, `box2d-natives.yml` (artifacts `sdk-box2d-<rid>`, since one ci run
+can call both and artifact names are unique per run); a change to the native layer, the backend or the substitution
+sample also runs the SDK check.
 
 | Job | What it shows |
 | --- | --- |
-| `natives` (one per runtime: `win-x64`, `linux-x64` on the oldest supported Ubuntu runner, `android-arm64`, `android-x64`, `browser-wasm`, `osx-arm64`, `osx-x64`, `ios-arm64`) | the library builds; it is cached by `build.sh key` (inputs and toolchain); its `SHA256SUMS` verify; `me_box2d_selftest` passes wherever the runner can run the result (desktop runners natively, `browser-wasm` under Node; Android and iOS build only); artifact `box2d-<rid>`, 30 days |
+| `natives` (`box2d-natives.yml`, one per runtime: `win-x64`, `linux-x64` on the oldest supported Ubuntu runner, `android-arm64`, `android-x64`, `browser-wasm`, `osx-arm64`, `osx-x64`, `ios-arm64`) | the library builds; it is cached by `build.sh key` (inputs and toolchain); its `SHA256SUMS` verify; `me_box2d_selftest` passes wherever the runner can run the result (desktop runners natively, `browser-wasm` under Node; Android and iOS build only); artifact `box2d-<rid>`, 30 days |
 | `tests` (Windows, Linux, macOS) | the backend's tests (`tests/MicroEngine.Physics.Box2D.Tests`) pass with that runtime's library; `MICROENGINE_BOX2D_REQUIRED=1` makes a missing library fail instead of skipping |
 | `browser` | the same test classes pass in headless Chrome on the .NET browser runtime (interpreter), Box2D linked statically, so every function of the native layer goes through the interpreter's P/Invoke path |
-| `package` | the optional `MicroEngine.Physics.Box2D` package packs with every runtime built and holds the files it must hold; artifact `box2d-package`, 7 days |
+| `package` | the `MicroEngine.Physics.Box2D` package packs with every runtime built and holds the files it must hold; artifact `box2d-package`, 7 days |
 | `compare` (**Box2D determinism**) | one table of every runtime's library checksum and self-test result; every runtime that ran the self-test printed the same state hash, or the job fails; it also fails unless the jobs above passed, and records the evidence of the check |
 
 The macOS and iOS runtimes build only when macOS runners are on (daily CI passes the repository variable
