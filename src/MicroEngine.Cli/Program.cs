@@ -203,7 +203,7 @@ namespace MicroEngine.Cli
                 Entry point  {game.DescribeEntryPoint()}
                 Content      {game.ContentDir ?? "(no Content folder)"}
                 Licence      {game.LicenseFile ?? "(none)"}
-                Engine       MicroEngine {game.EngineVersion}, .NET {game.DotnetVersion}
+                Engine       MicroEngine {game.EngineVersion}, {game.TargetFramework}
                 """);
             if (game.ApplicationId is { } id && !GameProject.IsValidId(id)) Console.WriteLine($"Problem      ApplicationId '{id}' is not valid.");
             return iconProblem is null ? 0 : 1;

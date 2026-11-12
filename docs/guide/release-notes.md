@@ -24,6 +24,16 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
   Android and iOS packages from the game's `Configure(HostBuilder)` entry point only, and stops with the method to add
   when a game has none. The tutorial's Gem Garden declares the entry point from its first step.
 
+**Fixed**
+
+- `microengine package` works with a .NET SDK newer than the game's .NET 10, such as .NET SDK 11: Windows and Linux
+  packages stopped because the tool looked for the licence of the SDK's own runtime (11.0) instead of the .NET 10
+  runtime the build used. Every package now carries the licence and notices of the runtime pack the build resolved,
+  and `build-info.json` names that runtime's version.
+- `microengine doctor` accepts any .NET SDK from 10 on, and `doctor web` names the workload that SDK needs for a .NET 10
+  game: `wasm-tools-net10` with .NET SDK 11. `microengine info` shows the game's target framework (`net10.0`) instead
+  of the SDK's runtime version.
+
 ## 0.5.0-alpha.2
 
 UI primitives for any game's interface, and a seventh package: `MicroEngine.Text.Shaping`, optional, for Arabic,

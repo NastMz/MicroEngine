@@ -90,7 +90,11 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
    captures before and after must differ: input, drawing and a sprite from Content), packages it for each target the
    runner can build (Windows, Linux, macOS, Android, web), checks each package's files and metadata, runs the desktop
    package, plays the web package in Chrome, and checks the failures a developer meets (invalid id, missing or invalid
-   icon, missing signing key, a target the system cannot build, a missing workload).
+   icon, missing signing key, a target the system cannot build, a missing workload). The repository's `global.json`
+   does not reach that folder, so the newest installed .NET SDK builds the game, as on a developer's machine: the
+   workflow installs .NET SDK 11 next to the repository's SDK 10, and the Linux runner installs the workloads for
+   SDK 11 from outside the repository (`wasm-tools-net10`, `android`), because workloads belong to one SDK. SDK 10 is
+   covered by the repository's own package checks.
 3. **The documented samples** (`sdk/tests/docs.mjs`, in the .NET Linux job): each sample the site quotes is copied
    outside the repository and built against the packages this commit packs (the SDK built from source), and, once the
    documented version is public, also from nuget.org at that version. The nuget.org build is only reported while the

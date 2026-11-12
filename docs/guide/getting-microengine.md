@@ -20,8 +20,10 @@ terminal:
 dotnet --version
 ```
 
-It should print `10.0.100` or later. Desktop games need nothing else: SDL 3 and raylib come inside the NuGet packages.
-Android, iOS and browser packages need extra .NET workloads; `microengine doctor` (step 4) lists them when you need them.
+It should print `10.0.100` or later. A newer SDK, such as .NET 11, builds .NET 10 games too, and their packages carry
+the .NET 10 runtime. Desktop games need nothing else: SDL 3 and raylib come inside the NuGet packages. Android, iOS and
+browser packages need extra .NET workloads, installed for the SDK that builds your games (each SDK has its own);
+`microengine doctor` (step 4) names the ones that SDK needs.
 
 ## 2. Install the `microengine` tool
 

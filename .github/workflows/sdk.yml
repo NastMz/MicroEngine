@@ -118,9 +118,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
+      # The external project lives outside the repository, so global.json does not choose its SDK: the newest installed
+      # one builds it, as for a developer who installs the latest .NET. Installing that major here, instead of taking
+      # whatever the runner image ships, keeps every runner on the same SDK while GitHub rolls out new images.
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+          dotnet-version: 11.0.x
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -132,7 +136,9 @@ jobs:
         if: matrix.os == 'Linux'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
-          dotnet workload install wasm-tools android > /dev/null
+          # Workloads belong to one SDK: install them outside the repository, for the SDK the external project uses.
+          # SDK 11 builds the net10.0 web host with wasm-tools-net10 (wasm-tools serves net11.0 only), as `microengine doctor web` says.
+          (cd "$RUNNER_TEMP" && dotnet --version && dotnet workload install wasm-tools-net10 android > /dev/null)
           npm ci --prefix web/tests > /dev/null
       - uses: actions/setup-java@v4
         if: matrix.os == 'Linux'

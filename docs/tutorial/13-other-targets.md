@@ -34,7 +34,8 @@ microengine package web
 ```
 
 The first command installs .NET's WebAssembly build tools once per machine (on Windows, from an administrator
-terminal if .NET was installed for all users). The package is a folder and a ZIP of the same files:
+terminal if .NET was installed for all users). With a .NET 11 SDK, install `wasm-tools-net10` instead: the tools for
+the game's .NET 10 (`microengine doctor web` says which one your SDK needs). The package is a folder and a ZIP of the same files:
 `dist/GemGarden-1.0.0-web/`, a static site with an `index.html` titled "Gem Garden", the icon as favicon, the .NET
 runtime compiled to WebAssembly, SDL 3, the game and its `Content`.
 

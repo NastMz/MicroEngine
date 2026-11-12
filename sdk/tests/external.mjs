@@ -30,8 +30,17 @@ const fromPublic = args.includes('--public');
 const feed = fromPublic ? null : path.resolve(option('feed') ?? path.join(repo, 'dist', 'sdk-feed'));
 const version = option('version') ?? fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 const host = { win32: 'windows', linux: 'linux', darwin: 'macos' }[process.platform];
+// The project lives outside the repository, so global.json does not apply: the newest .NET SDK installed builds it, as
+// for any developer, and workloads count only when installed for that SDK. Asked from a folder outside the repository.
+const outsideRepo = fs.realpathSync(os.tmpdir());
+const dotnetOutside = list => spawnSync('dotnet', list, { cwd: outsideRepo, encoding: 'utf8' }).stdout ?? '';
+const sdkVersion = dotnetOutside(['--version']).trim();
+// The browser workload for the template's net10.0 with that SDK, as `microengine doctor web` names it: wasm-tools serves
+// only the SDK's own framework, so SDK 11 needs wasm-tools-net10.
+const webWorkload = Number(sdkVersion.split('.')[0]) > 10 ? 'wasm-tools-net10' : 'wasm-tools';
+const hasWorkload = (list, name) => new RegExp(`^\\s*${name}\\s`, 'm').test(list);
 // By default: this system's own desktop target, Linux (cross-built from anywhere) and the web when the workload is here.
-const hasWasm = /^\s*wasm-tools\s/m.test(spawnSync('dotnet', ['workload', 'list'], { encoding: 'utf8' }).stdout ?? '');
+const hasWasm = hasWorkload(dotnetOutside(['workload', 'list']), webWorkload);
 const targets = (option('targets') ?? [host, 'linux', ...(hasWasm ? ['web'] : [])].join(',')).split(',').filter((t, i, all) => t && all.indexOf(t) === i);
 const exe = process.platform === 'win32' ? '.exe' : '';
 
@@ -47,9 +56,9 @@ if (feed && !fs.existsSync(feed) || feed && !fs.readdirSync(feed).some(f => f.st
   console.error(`error: ${feed} holds no MicroEngine.Cli ${version} package; run: dotnet pack MicroEngine.slnx -c Release -o ${feed}`);
   process.exit(2);
 }
-const work = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-external-'));
+const work = fs.mkdtempSync(path.join(outsideRepo, 'microengine-external-'));
 if (work.startsWith(repo)) throw new Error('the external project must live outside the repository');
-console.log(`external project in ${work}, SDK ${version} from ${feed ?? 'nuget.org only'}`);
+console.log(`external project in ${work}, SDK ${version} from ${feed ?? 'nuget.org only'}, .NET SDK ${sdkVersion}`);
 const env = { ...process.env, NUGET_PACKAGES: path.join(work, 'nuget'), DOTNET_CLI_HOME: path.join(work, 'home'), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
 for (const secret of ['ANDROID_KEYSTORE', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD', 'MICROENGINE_IOS_CODESIGN_KEY', 'MICROENGINE_IOS_PROVISIONING_PROFILE']) delete env[secret];
 delete env.MICROENGINE_DOTNET;
@@ -178,7 +187,9 @@ try {
   }
   if (process.platform !== 'win32') expectFailure('Windows package on another system', null, ['package', 'windows'], /built on Windows/);
   const workloads = run('dotnet', ['workload', 'list']).out;
-  if (!/^\s*wasm-tools\s/m.test(workloads)) expectFailure('web package without the wasm-tools workload', null, ['package', 'web'], /wasm-tools/);
+  if (!hasWorkload(workloads, webWorkload)) expectFailure(`web package without the ${webWorkload} workload`, null, ['package', 'web'], new RegExp(webWorkload));
+  r = run(me, ['doctor', 'web'], { cwd: game });
+  check(`microengine doctor web names the ${webWorkload} workload for .NET SDK ${sdkVersion}`, new RegExp(`${webWorkload} workload: (installed|dotnet workload install ${webWorkload})`).test(r.out), tail(r.out));
   // Only a case-sensitive file system can hold both names; the build refuses them so every system loads the same file.
   if (process.platform === 'linux') {
     const twin = path.join(game, 'Content', 'Hero.png');
@@ -274,6 +285,14 @@ async function checkGallery() {
   }
 }
 
+// A package carries the runtime of the game's target framework (net10.0: a 10.0 runtime) with its licence and notices,
+// whichever SDK built it: SDK 11 publishes a net10.0 game with the 10.0 runtime, not its own 11.0.
+function checkRuntime(target, info, has) {
+  const major = fs.readFileSync(path.join(work, 'Sample', 'Sample.csproj'), 'utf8').match(/<TargetFramework>net(\d+)\.\d+</)?.[1];
+  check(`${target}: the .NET runtime of the game's framework (net${major}) with its licence and notices`, String(info.dotnet).startsWith(`${major}.`)
+    && has('dotnet-LICENSE.txt') && has('dotnet-THIRD-PARTY-NOTICES.txt'), `build-info dotnet ${info.dotnet}, .NET SDK ${sdkVersion}`);
+}
+
 function checkPackage(target, file, dist) {
   const id = 'Sample';
   if (['windows', 'linux', 'macos'].includes(target)) {
@@ -285,6 +304,7 @@ function checkPackage(target, file, dist) {
     const info = JSON.parse(fs.readFileSync(path.join(top, 'build-info.json'), 'utf8'));
     check(`${target}: build-info names the game, its version and the SDK`, info.game === id && info.title === 'Sample Game' && info.gameVersion === '1.2.3' && info.engineVersion === version && info.applicationId === 'com.example.sample', JSON.stringify(info));
     const has = rel => fs.existsSync(path.join(top, rel));
+    checkRuntime(target, info, name => has(`licenses/${name}`));
     const code = target === 'macos' ? path.join(top, 'Sample Game.app', 'Contents', 'MacOS') : top;
     check(`${target}: executable, content, notices and README`, fs.existsSync(path.join(code, `${id}${target === 'windows' ? '.exe' : ''}`)) && has('README.txt') && has('THIRD-PARTY-NOTICES.txt') && has('licenses/microengine-LICENSE.txt')
       && (target === 'macos' ? has('Sample Game.app/Contents/Resources/Content/hero.png') : has('Content/hero.png')));
@@ -315,6 +335,7 @@ function checkPackage(target, file, dist) {
     const manifest = JSON.parse(fs.readFileSync(path.join(folder, 'manifest.webmanifest'), 'utf8'));
     check('web: app manifest and start screen', manifest.name === 'Sample Game' && manifest.icons?.[0]?.src === 'icon.png' && /rel="manifest"/.test(index)
       && /<img id="splash" src="splash.png"/.test(index) && fs.existsSync(path.join(folder, 'splash.png')) && /--splash: #[0-9a-f]{6}/.test(index), JSON.stringify(manifest));
+    checkRuntime('web', JSON.parse(fs.readFileSync(path.join(folder, 'build-info.json'), 'utf8')), name => fs.existsSync(path.join(folder, 'licenses', name)));
     webPlays.push(folder);
   } else if (target === 'android') {
     const sdk = process.env.ANDROID_HOME;
@@ -328,6 +349,7 @@ function checkPackage(target, file, dist) {
     const listing = run(path.join(tools, latest, `aapt${exe}`), ['list', file]).out;
     check('android: adaptive icon, round icon and launch screen resources', ['res/mipmap-anydpi-v26/appicon_round.xml', 'res/mipmap-xxxhdpi-v4/appicon_foreground.png', 'res/mipmap-mdpi-v4/appicon.png', 'res/drawable/splash.xml']
       .every(r => listing.includes(r)), tail(listing));
+    checkRuntime('android', JSON.parse(fs.readFileSync(file.replace(/\.apk$/, '.build-info.json'), 'utf8')), name => listing.includes(`assets/licenses/${name}`));
     if (args.includes('--device')) {
       const adb = path.join(sdk, 'platform-tools', `adb${exe}`);
       const installed = run(adb, ['install', '-r', file]);
