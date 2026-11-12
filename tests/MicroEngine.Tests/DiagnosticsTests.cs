@@ -60,6 +60,7 @@ public sealed class DiagnosticsTests
         Assert.IsTrue(slow.Milliseconds >= 2.5, $"{slow.Milliseconds} ms");
         var scenes = game.Diagnostics.Systems.Single(s => s.Name == "engine.scenes");
         Assert.AreEqual(FramePhase.FixedUpdate, scenes.Phase);
+        Assert.IsTrue(game.InputSystem.Trace, "measuring traces input routing too");
         var phases = game.Diagnostics.Systems.Select(s => (int)s.Phase).ToArray();
         CollectionAssert.AreEqual(phases.Order().ToArray(), phases, "systems are listed in the order phases run");
     }

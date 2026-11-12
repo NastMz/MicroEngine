@@ -64,6 +64,13 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// <summary>The game's application identity (name, id, icon, orientation); null keeps the backend's defaults.</summary>
     public AppIdentity? Identity { get; init; }
 
+    /// <summary>
+    /// Where the backend reports what it could not do and how it carried on (no audio device, no gamepads, a renderer
+    /// that did not start). Standard error by default; <see cref="GameHost"/> passes one that reaches the game's
+    /// <see cref="Game.Log"/> once the game starts, so a game that sends its log elsewhere receives these too.
+    /// </summary>
+    public Kernel.ILog Log { get; init; } = new Kernel.ConsoleLog();
+
     /// <summary>Whether the backend should open its own audio device: no device was supplied, no mute, and the output is not silent.</summary>
     public bool OpensOwnAudio => Audio is null && !Mute && AudioOutput != AudioOutput.Silent;
 

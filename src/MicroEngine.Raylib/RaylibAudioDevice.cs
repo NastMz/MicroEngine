@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using MicroEngine.Audio;
+using MicroEngine.Kernel;
 using MicroEngine.Platform;
 using Rl = Raylib_cs.Raylib;
 
@@ -14,17 +15,21 @@ internal sealed class RaylibAudioDevice : MixerAudioDevice
 {
     private RaylibAudioDevice(IAudioSink sink) : base(sink) => AddDecoder("mp3", DecodeMp3);
 
-    public static IAudioDevice TryCreate()
+    public static IAudioDevice TryCreate() => TryCreate(new ConsoleLog());
+
+    /// <summary>Opens raylib's audio device, or returns a silent device and writes why to <paramref name="log"/> when there is none.</summary>
+    public static IAudioDevice TryCreate(ILog log)
     {
+        ArgumentNullException.ThrowIfNull(log);
         try
         {
             Rl.InitAudioDevice();
             if (Rl.IsAudioDeviceReady()) return new RaylibAudioDevice(new RaylibFeederSink());
-            Console.Error.WriteLine("audio: no device available, continuing silently");
+            log.Write(LogLevel.Warning, "audio", "no device available, continuing silently");
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
         {
-            Console.Error.WriteLine($"audio: {e.Message}");
+            log.Write(LogLevel.Warning, "audio", $"{e.Message}");
         }
         return new SilentAudioDevice();
     }

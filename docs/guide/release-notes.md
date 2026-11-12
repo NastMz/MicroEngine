@@ -29,6 +29,15 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
   new `PhysicsCapabilities.ShapeInspection` (both built-in backends declare it; a backend of your own that does not
   refuses them with `PhysicsCapabilityException`). `TilePhysicsWorld2D.GridOf(shape)` returns the tiles of a tile
   shape.
+- `InputSystem.Trace` and `InputSystem.Routed` list the frame's input events with the layer that took each one (a
+  menu, the on-screen controls) or none when it reached gameplay. The game's diagnostics turn the trace on while they
+  measure.
+- When a run fails, the desktop launcher writes a crash report (`CrashReport`) to the game's save folder and names it
+  after the error: game and engine versions, system, platform facts, the last measured frame and its slowest systems,
+  and the error with its stack trace.
+- `PlatformRequest.Log`: what the SDL and raylib backends report (no audio device, no gamepads, a renderer that did
+  not start) now goes through the game's `ILog` instead of straight to standard error. With the default log the
+  console shows the same lines.
 - `IGraphicsDevice.Counters` (in `MicroEngine.Graphics.Devices`) and `AudioMixer.Statistics` read draw calls and voices
   without casting to the backend's class.
 

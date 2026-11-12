@@ -1,4 +1,5 @@
 using MicroEngine.Audio;
+using MicroEngine.Kernel;
 using MicroEngine.Platform;
 using SDL;
 using static SDL.SDL3;
@@ -22,16 +23,23 @@ public sealed class SdlAudioDevice : MixerAudioDevice
     private SdlAudioDevice(IAudioSink sink) : base(sink) { }
 
     /// <summary>Opens the default playback device, or returns a silent device (and says why) when there is none.</summary>
-    public static IAudioDevice TryCreate() => OperatingSystem.IsBrowser() ? OpenBrowser() : Open(null, DefaultLatencyMilliseconds);
+    public static IAudioDevice TryCreate() => TryCreate(new ConsoleLog());
+
+    /// <summary>Opens the default playback device, or returns a silent device and writes why to <paramref name="log"/> when there is none.</summary>
+    public static IAudioDevice TryCreate(ILog log)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+        return OperatingSystem.IsBrowser() ? OpenBrowser(log) : Open(null, DefaultLatencyMilliseconds, log);
+    }
 
     /// <summary>The page's AudioWorklet sink; silence (and why) when the page offers no audio.</summary>
     [System.Runtime.Versioning.SupportedOSPlatform("browser")]
-    private static IAudioDevice OpenBrowser()
+    private static IAudioDevice OpenBrowser(ILog log)
     {
         try { return new SdlAudioDevice(new BrowserAudioSink(BrowserAudioSink.DefaultLatencyMilliseconds)); }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            Console.Error.WriteLine($"audio: the page offers no audio output ({e.Message}), continuing silently");
+            log.Write(LogLevel.Warning, "audio", $"the page offers no audio output ({e.Message}), continuing silently");
             return new SilentAudioDevice();
         }
     }
@@ -45,7 +53,7 @@ public sealed class SdlAudioDevice : MixerAudioDevice
     public static IAudioDevice TryCreate(string driver)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(driver);
-        return Open(driver, DefaultLatencyMilliseconds);
+        return Open(driver, DefaultLatencyMilliseconds, new ConsoleLog());
     }
 
     /// <summary>
@@ -56,10 +64,10 @@ public sealed class SdlAudioDevice : MixerAudioDevice
     public static IAudioDevice TryCreate(string? driver, double latencyMilliseconds)
     {
         if (latencyMilliseconds is < 5 or > 1000) throw new ArgumentOutOfRangeException(nameof(latencyMilliseconds));
-        return Open(driver, latencyMilliseconds);
+        return Open(driver, latencyMilliseconds, new ConsoleLog());
     }
 
-    private static unsafe IAudioDevice Open(string? driver, double latency)
+    private static unsafe IAudioDevice Open(string? driver, double latency, ILog log)
     {
         try
         {
@@ -69,20 +77,20 @@ public sealed class SdlAudioDevice : MixerAudioDevice
             finally { if (driver is not null) SDL_ResetHint(SDL_HINT_AUDIO_DRIVER); }
             if (started && driver is not null && SDL_GetCurrentAudioDriver() != driver)
             {
-                Console.Error.WriteLine($"audio: SDL audio already runs with the '{SDL_GetCurrentAudioDriver()}' driver, not '{driver}'; continuing silently");
+                log.Write(LogLevel.Warning, "audio", $"SDL audio already runs with the '{SDL_GetCurrentAudioDriver()}' driver, not '{driver}'; continuing silently");
                 SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_AUDIO);
                 return new SilentAudioDevice();
             }
             if (!started)
             {
-                Console.Error.WriteLine($"audio: {SDL_GetError()}, continuing silently");
+                log.Write(LogLevel.Warning, "audio", $"{SDL_GetError()}, continuing silently");
                 return new SilentAudioDevice();
             }
             var spec = new SDL_AudioSpec { format = SDL_AudioFormat.SDL_AUDIO_F32LE, channels = 2, freq = Rate };
             var device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
             if (device == 0)
             {
-                Console.Error.WriteLine($"audio: no device available ({SDL_GetError()}), continuing silently");
+                log.Write(LogLevel.Warning, "audio", $"no device available ({SDL_GetError()}), continuing silently");
                 SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_AUDIO);
                 return new SilentAudioDevice();
             }
@@ -90,7 +98,7 @@ public sealed class SdlAudioDevice : MixerAudioDevice
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
         {
-            Console.Error.WriteLine($"audio: {e.Message}");
+            log.Write(LogLevel.Warning, "audio", $"{e.Message}");
             return new SilentAudioDevice();
         }
     }

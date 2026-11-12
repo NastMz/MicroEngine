@@ -82,6 +82,7 @@ public sealed class TextInput
 public sealed class InputSystem : IStateHashed
 {
     private readonly List<InputEvent> _drained = [], _sent = [], _pending = [], _events = [];
+    private readonly List<RoutedEvent> _routed = [];
     private readonly List<(DeviceId Id, IInputSource Source)> _polled = [];
     private readonly Dictionary<(int Device, InputEventKind Kind, long Code), IInputLayer> _captures = [];
     private readonly Dictionary<PlayerInput, IInputSource> _views = [];
@@ -106,6 +107,28 @@ public sealed class InputSystem : IStateHashed
 
     /// <summary>The text channel.</summary>
     public TextInput Text { get; } = new();
+
+    /// <summary>
+    /// Whether <see cref="Routed"/> records where each event of the frame went. Off by default; the game's diagnostics
+    /// turn it on while they measure.
+    /// </summary>
+    public bool Trace
+    {
+        get => _trace;
+        set
+        {
+            _trace = value;
+            if (!value) _routed.Clear();
+        }
+    }
+    private bool _trace;
+
+    /// <summary>
+    /// While <see cref="Trace"/> is on, the events routed this frame (device changes excepted) in order, each with the
+    /// layer that took it, or none when it reached the devices and gameplay: the answer to "why did my action not fire?"
+    /// when a menu, the on-screen controls or another layer took the press.
+    /// </summary>
+    public IReadOnlyList<RoutedEvent> Routed => _routed;
 
     /// <summary>The labels of the player's keyboard layout, when the backend knows them.</summary>
     public IKeyLabels? KeyLabels { get; private set; }
@@ -149,6 +172,7 @@ public sealed class InputSystem : IStateHashed
     /// <summary>Starts a frame: routes the backend's events, then the sent ones. Called by the loop once per frame.</summary>
     public void BeginFrame()
     {
+        _routed.Clear();
         _drained.Clear();
         _backend?.Drain(_drained);
         _drained.AddRange(_sent);
@@ -179,13 +203,16 @@ public sealed class InputSystem : IStateHashed
         {
             owner.Handle(e);
             if (Ends(e)) _captures.Remove(capture);
+            if (Trace) _routed.Add(new RoutedEvent(e, owner));
             return;
         }
         if (Layers.Offer(e) is { } taker)
         {
+            if (Trace) _routed.Add(new RoutedEvent(e, taker));
             if (Starts(e) && CaptureKey(e) is { } start) _captures[start] = taker;
             return;
         }
+        if (Trace) _routed.Add(new RoutedEvent(e, null));
         if (e.IsPress && Players.OwnerOf(e.Device) is null) Players.ReportUnpaired(e);
         Devices.Apply(e);
         if (e.Kind is InputEventKind.Text or InputEventKind.TextComposition) Text.Receive(e);
@@ -386,3 +413,8 @@ public sealed class InputSystem : IStateHashed
         public IReadOnlyList<PointerInfo> Pointers => devices.Pointers;
     }
 }
+
+/// <summary>One event of the frame and where it went (<see cref="InputSystem.Routed"/>).</summary>
+/// <param name="Event">The event.</param>
+/// <param name="Layer">The input layer that took it (or that took the press it ends), or null when it reached the devices and gameplay.</param>
+public readonly record struct RoutedEvent(InputEvent Event, IInputLayer? Layer);

@@ -193,6 +193,8 @@ public abstract class Game : IEngineModule, IStateHashed
     /// of each frame system. Off until <see cref="GameDiagnostics.Enabled"/> is set or a tool listens to the engine's meter.
     /// </summary>
     public GameDiagnostics Diagnostics => _diagnostics ??= new GameDiagnostics(this);
+    /// <summary>What the platform reported before the engine existed; replayed into <see cref="Log"/> when the game starts.</summary>
+    internal StartupLog StartupLog { get; } = new();
     private DebugDraw? _debugDraw;
     /// <summary>
     /// Lines, shapes, text and physics worlds any code can ask to see, drawn above the scenes at the end of the frame
@@ -312,6 +314,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Prompts = services.Get<ActionPrompts>();
         Assets = services.Get<AssetCache>();
         Assets.Log = engine.Log;
+        StartupLog.Attach(engine.Log);
         Audio = services.Get<AudioMixer>();
         // Deterministic runs keep audio state on the simulation's timeline only (songs render when waited for, sounds
         // never re-anchor to the device), so two runs hash and sound the same.

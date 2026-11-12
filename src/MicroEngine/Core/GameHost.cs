@@ -186,6 +186,7 @@ public sealed class GameHost
             Mute = arguments.Mute,
             AudioOutput = arguments.Audio == AudioOutput.Automatic && deterministic ? AudioOutput.Silent : arguments.Audio,
             Identity = identity,
+            Log = game.StartupLog,
         };
         foreach (var change in _parts.RequestChanges) request = change(request) ?? throw new InvalidOperationException("A request change returned null.");
         return request;
@@ -225,6 +226,20 @@ public sealed class GameHost
         }
     }
 
+    /// <summary>Writes the crash report of a failed run and names it on <paramref name="errors"/>; a report that cannot be written is reported instead.</summary>
+    private void WriteCrashReport(Game game, Exception error, TextWriter errors)
+    {
+        try
+        {
+            var directory = _environment.CrashDirectory ?? SaveStore.DefaultDirectory(AppIdentity.Of(game)?.Id ?? game.Settings.Title);
+            errors.WriteLine($"crash report: {CrashReport.Write(game, error, directory)}");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            errors.WriteLine($"crash report: not written ({e.Message})");
+        }
+    }
+
     /// <summary>A loop for one run of <paramref name="game"/> on <paramref name="platform"/>, with the composition applied to its engine.</summary>
     public GameLoop CreateLoop(Game game, IPlatform platform, RunOptions options) => new(game, platform, options, Compose);
 
@@ -232,9 +247,14 @@ public sealed class GameHost
     public RunResult Run(Game game, IPlatform platform, RunOptions options)
     {
         var loop = CreateLoop(game, platform, options);
-        if (loop.Start())
-            while (loop.Tick()) { }
-        return loop.Finish();
+        try
+        {
+            if (loop.Start())
+                while (loop.Tick()) { }
+            return loop.Finish();
+        }
+        // A run that failed before its engine existed still shows what the platform reported.
+        finally { game.StartupLog.Attach(new Kernel.ConsoleLog(_environment.Error)); }
     }
 
     /// <summary>
@@ -307,6 +327,7 @@ public sealed class GameHost
         try { (platform, profile) = CreatePlatform(request); }
         catch (PlatformConfigurationException e)
         {
+            game.StartupLog.Attach(new Kernel.ConsoleLog(errors));
             errors.WriteLine($"error: {e.Message}");
             return 1;
         }
@@ -339,6 +360,7 @@ public sealed class GameHost
         if (result.Error is { } error)
         {
             errors.WriteLine($"error: {error}");
+            WriteCrashReport(game, error, errors);
             return 1;
         }
         output.WriteLine($"done: {result.Updates} updates, {result.Frames} frames");

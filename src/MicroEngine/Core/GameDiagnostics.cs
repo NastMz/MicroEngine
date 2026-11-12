@@ -110,13 +110,18 @@ public sealed class GameDiagnostics
     /// </summary>
     public IReadOnlyList<SystemTiming> Systems => _systems;
 
-    /// <summary>Starts a frame: true when it is measured. Turns the schedule's timing on or off to follow <see cref="Active"/>.</summary>
+    /// <summary>
+    /// Starts a frame: true when it is measured. Turns the schedule's timing and the input trace
+    /// (<see cref="Input.InputSystem.Trace"/>, read through <see cref="Input.InputSystem.Routed"/>) on or off to follow
+    /// <see cref="Active"/>.
+    /// </summary>
     internal bool BeginFrame(FrameSchedule schedule)
     {
         bool active = Active;
         if (active != _wasActive)
         {
             schedule.MeasureTime = active;
+            _game.InputSystem.Trace = active;
             _wasActive = active;
             if (!active) _frameStart = 0;
         }

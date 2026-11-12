@@ -132,7 +132,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
             _vsync = graphics.VSync && options.WaitForDisplay;
             Pace();
         }
-        _audio = request?.CreateAudio(() => RaylibAudioDevice.TryCreate()) ?? (options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate());
+        _audio = request?.CreateAudio(() => RaylibAudioDevice.TryCreate(request.Log)) ?? (options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate());
         _surface = new HostSurface(GetWindowHandle(), () => (Rl.GetRenderWidth(), Rl.GetRenderHeight()),
             () => Rl.GetWindowScaleDPI().X is > 0 and var d ? d : 1, () => !OperatingSystem.IsBrowser() && Rl.IsWindowMinimized());
         // The graphics device on raylib's window; the game draws into a canvas render target through the 2D batcher and
