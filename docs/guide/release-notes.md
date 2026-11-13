@@ -4,9 +4,11 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
-## Next release
+## 0.6.0-alpha.1
 
-An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
+An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies. Diagnostics for finding out why a game
+misbehaves, and packaging with a .NET SDK newer than 10. The UI components and the project property deprecated earlier
+are removed: read the [migration notes](../migrations.md#060-alpha1) before updating.
 
 **New**
 
@@ -45,7 +47,7 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
 
 - `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
   `Game.UseAchievements` and `Game.AchievementToasts`, deprecated in 0.5.0-alpha.2. Build them from widgets and call
-  `TrackAchievements` ([migration notes](../migrations.md#next-release)).
+  `TrackAchievements` ([migration notes](../migrations.md#060-alpha1)).
 - The `MicroEngineGameFactory` project property, deprecated in 0.5.0-alpha.1. `microengine package` builds browser,
   Android and iOS packages from the game's `Configure(HostBuilder)` entry point only, and stops with the method to add
   when a game has none. The tutorial's Gem Garden declares the entry point from its first step.

@@ -253,7 +253,7 @@ games that need what the tile backend refuses: dynamic bodies, rotation, circles
 collision, friction and mass. It is an optional package; the tile backend needs none:
 
 ```xml
-<PackageReference Include="MicroEngine.Physics.Box2D" Version="0.5.0-alpha.2" />
+<PackageReference Include="MicroEngine.Physics.Box2D" Version="0.6.0-alpha.1" />
 ```
 
 Choose the backend where the world is made; code that uses only the core then runs on either. Keep the tile backend
