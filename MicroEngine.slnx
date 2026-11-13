@@ -16,6 +16,7 @@
     <Project Path="src/MicroEngine.Saves/MicroEngine.Saves.csproj" />
     <Project Path="src/MicroEngine.Text/MicroEngine.Text.csproj" />
     <Project Path="src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj" />
+    <Project Path="src/MicroEngine.Tiled/MicroEngine.Tiled.csproj" />
     <Project Path="src/MicroEngine.Achievements/MicroEngine.Achievements.csproj" />
     <Project Path="src/MicroEngine.UI/MicroEngine.UI.csproj" />
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
@@ -63,6 +64,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
     <Project Path="tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj" />
+    <Project Path="tests/MicroEngine.Tiled.Tests/MicroEngine.Tiled.Tests.csproj" />
     <Project Path="tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj" />
     <Project Path="tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj" />
     <Project Path="tests/MicroEngine.Raylib.Tests/MicroEngine.Raylib.Tests.csproj" />

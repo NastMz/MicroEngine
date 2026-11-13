@@ -53,6 +53,8 @@ const expected = {
   // Box2D physics: optional, its native library for each runtime (macOS and iOS too in a release pack, which the pack
   // itself requires: -p:MicroEngineBox2DRequireNatives) and the browser archives its buildTransitive targets link.
   'MicroEngine.Physics.Box2D': { deps: ['MicroEngine'], files: ['lib/net10.0/MicroEngine.Physics.Box2D.dll', 'lib/net10.0/MicroEngine.Physics.Box2D.xml', 'buildTransitive/MicroEngine.Physics.Box2D.targets', 'LICENSE-box2d.txt', 'runtimes/win-x64/native/me_box2d.dll', 'runtimes/linux-x64/native/libme_box2d.so', 'runtimes/android-arm64/native/libme_box2d.so', 'runtimes/android-x64/native/libme_box2d.so', 'runtimes/browser-wasm/native/me_box2d.a', 'runtimes/browser-wasm/native/box2d.a'] },
+  // Tiled maps: optional, the managed DotTiled parser its only dependency besides the engine.
+  'MicroEngine.Tiled': { deps: ['MicroEngine', 'DotTiled'], files: ['lib/net10.0/MicroEngine.Tiled.dll', 'lib/net10.0/MicroEngine.Tiled.xml'] },
   'MicroEngine.Cli': { deps: [], files: ['tools/net10.0/any/MicroEngine.Cli.dll', 'tools/net10.0/any/Hosts/android/Host.csproj', 'tools/net10.0/any/Hosts/ios/Host.csproj', 'tools/net10.0/any/Hosts/web/Host.csproj', 'tools/net10.0/any/Notices/THIRD-PARTY-NOTICES.txt', 'tools/net10.0/any/Notices/microengine-LICENSE.txt', 'tools/net10.0/any/Notices/HarfBuzz-LICENSE.txt', 'tools/net10.0/any/Notices/raylib-LICENSE.txt', 'tools/net10.0/any/Notices/SDL-LICENSE.txt'] },
   'MicroEngine.Templates': { deps: [], files: ['content/MicroEngineGame/.template.config/template.json', 'content/MicroEngineGame/MyGame.csproj', 'content/MicroEngineGame/Content/hero.png'] },
 };

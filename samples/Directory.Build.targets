@@ -15,6 +15,10 @@
     <_MicroEngineShaping Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Text.Shaping'))" />
     <PackageReference Remove="MicroEngine.Text.Shaping" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj" Condition="'@(_MicroEngineShaping)' != ''" />
+    <!-- The optional Tiled maps package, the same way. -->
+    <_MicroEngineTiled Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Tiled'))" />
+    <PackageReference Remove="MicroEngine.Tiled" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Tiled/MicroEngine.Tiled.csproj" Condition="'@(_MicroEngineTiled)' != ''" />
     <!-- The optional Box2D physics package, the same way. -->
     <_MicroEngineBox2D Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Physics.Box2D'))" />
     <PackageReference Remove="MicroEngine.Physics.Box2D" />
