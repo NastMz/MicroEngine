@@ -1,4 +1,8 @@
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace MicroEngine.Core;
 
@@ -16,6 +20,13 @@ namespace MicroEngine.Core;
 /// <remarks>
 /// A slot is a name such as "settings" or "progress"; with file storage it becomes <c>&lt;slot&gt;.json</c> in
 /// <see cref="Directory"/>. Values are serialized with <see cref="System.Text.Json.JsonSerializer"/> (public properties).
+/// <para>
+/// <see cref="Save{T}(string, T)"/> and <see cref="Load{T}(string)"/> find the properties of the saved type by reflection.
+/// A game published trimmed or with NativeAOT has no reflection to serialize with: it declares its saved types in a
+/// <see cref="System.Text.Json.Serialization.JsonSerializerContext"/> and passes the generated metadata to
+/// <see cref="Save{T}(string, T, JsonTypeInfo{T})"/> and <see cref="Load{T}(string, JsonTypeInfo{T})"/>. Both pairs
+/// write the same text and read each other's slots.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -29,7 +40,10 @@ namespace MicroEngine.Core;
 /// </example>
 public sealed class SaveStore
 {
+    private const string ReflectionMessage = "Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.";
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+    // The text of a slot is the store's choice, not the metadata's: indented, like the slots written without metadata.
+    private static readonly JsonWriterOptions WriterOptions = new() { Indented = true };
     private readonly Platform.IStorage _storage;
     private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
 
@@ -107,19 +121,42 @@ public sealed class SaveStore
     /// <exception cref="ArgumentNullException"><paramref name="storage"/> is null.</exception>
     public SaveStore(Platform.IStorage storage) => _storage = storage ?? throw new ArgumentNullException(nameof(storage));
 
-    /// <summary>Reads and deserializes a slot.</summary>
+    /// <summary>Reads and deserializes a slot, finding the properties of <typeparamref name="T"/> by reflection.</summary>
     /// <typeparam name="T">The saved type.</typeparam>
     /// <param name="slot">The slot name.</param>
     /// <returns>
     /// The saved value, or null when the slot does not exist, holds invalid JSON (the data is set aside) or could not be read
-    /// (the slot is then protected from <see cref="Save"/> for the life of this store).
+    /// (the slot is then protected from <see cref="Save{T}(string, T)"/> for the life of this store).
     /// </returns>
-    public T? Load<T>(string slot) where T : class
+    /// <exception cref="InvalidOperationException">The application was published trimmed or with NativeAOT; use <see cref="Load{T}(string, JsonTypeInfo{T})"/>.</exception>
+    [RequiresUnreferencedCode(ReflectionMessage)]
+    [RequiresDynamicCode(ReflectionMessage)]
+    public T? Load<T>(string slot) where T : class => Read(slot, static text => JsonSerializer.Deserialize<T>(text, Options));
+
+    /// <summary>
+    /// Reads and deserializes a slot with the game's own metadata for <typeparamref name="T"/>, without reflection: the
+    /// way to load in a game published trimmed or with NativeAOT. It reads the slots <see cref="Save{T}(string, T)"/> wrote.
+    /// </summary>
+    /// <typeparam name="T">The saved type.</typeparam>
+    /// <param name="slot">The slot name.</param>
+    /// <param name="typeInfo">The metadata of <typeparamref name="T"/>, from the game's <see cref="System.Text.Json.Serialization.JsonSerializerContext"/> (<c>MySaves.Default.Progress</c>).</param>
+    /// <returns>
+    /// The saved value, or null when the slot does not exist, holds invalid JSON (the data is set aside) or could not be read
+    /// (the slot is then protected from saving for the life of this store).
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is null.</exception>
+    public T? Load<T>(string slot, JsonTypeInfo<T> typeInfo) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return Read(slot, text => JsonSerializer.Deserialize(text, typeInfo));
+    }
+
+    private T? Read<T>(string slot, Func<string, T?> deserialize) where T : class
     {
         try
         {
             if (_storage.Read(slot) is not { } text) return null;
-            var value = JsonSerializer.Deserialize<T>(text, Options);
+            var value = deserialize(text);
             if (value is null) _storage.SetAside(slot);
             return value;
         }
@@ -136,13 +173,40 @@ public sealed class SaveStore
     }
 
     /// <summary>
-    /// Writes the whole slot at once, so a crash never leaves a half-written save. Returns false when the
-    /// medium refused the write, or when the slot could not be read earlier (see the class remarks).
+    /// Writes the whole slot at once, so a crash never leaves a half-written save, finding the properties of
+    /// <typeparamref name="T"/> by reflection. Returns false when the medium refused the write, or when the slot could
+    /// not be read earlier (see the class remarks).
     /// </summary>
+    /// <exception cref="InvalidOperationException">The application was published trimmed or with NativeAOT; use <see cref="Save{T}(string, T, JsonTypeInfo{T})"/>.</exception>
+    [RequiresUnreferencedCode(ReflectionMessage)]
+    [RequiresDynamicCode(ReflectionMessage)]
     public bool Save<T>(string slot, T data)
     {
         if (_unreadable.Contains(slot)) return false;
-        var text = JsonSerializer.Serialize(data, Options);
+        return Write(slot, JsonSerializer.Serialize(data, Options));
+    }
+
+    /// <summary>
+    /// Writes the whole slot at once with the game's own metadata for <typeparamref name="T"/>, without reflection: the
+    /// way to save in a game published trimmed or with NativeAOT. The text is the same indented JSON
+    /// <see cref="Save{T}(string, T)"/> writes, so either call reads the other's slots. Returns false when the medium
+    /// refused the write, or when the slot could not be read earlier (see the class remarks).
+    /// </summary>
+    /// <param name="slot">The slot name.</param>
+    /// <param name="data">The value to save.</param>
+    /// <param name="typeInfo">The metadata of <typeparamref name="T"/>, from the game's <see cref="System.Text.Json.Serialization.JsonSerializerContext"/> (<c>MySaves.Default.Progress</c>).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is null.</exception>
+    public bool Save<T>(string slot, T data, JsonTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        if (_unreadable.Contains(slot)) return false;
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, WriterOptions)) JsonSerializer.Serialize(writer, data, typeInfo);
+        return Write(slot, Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    private bool Write(string slot, string text)
+    {
         try
         {
             _storage.Write(slot, text);
