@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A level drawn in the Tiled editor, played: Tiled's own Sticker Knight example map (Content/map, saved by Tiled,
+       public domain: CREDITS.md) loaded with the optional MicroEngine.Tiled package. It references the packages a game
+       outside this repository references; inside the repository the projects replace them (samples/Directory.Build.targets).
+       Everything under Content/ ships with it without an item here. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TiledLevel</RootNamespace>
+    <ApplicationTitle>Tiled Level</ApplicationTitle>
+    <ApplicationId>com.example.tiled_level</ApplicationId>
+    <Version>1.0.0</Version>
+    <Description>A platformer level made in the Tiled editor, loaded with MicroEngine.Tiled.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Tiled" Version="0.6.0-alpha.1" />
+  </ItemGroup>
+</Project>

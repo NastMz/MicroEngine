@@ -293,6 +293,7 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
   `IAssetImporter` only reserves the place of that step.
 - Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a
   browser page still copies the package's files into memory before the game starts.
-- Atlases with rotated frames, Aseprite slices, libGDX `.atlas`, Spine and Tiled files are not read.
+- Atlases with rotated frames, Aseprite slices, libGDX `.atlas` and Spine files are not read. Tiled maps are read by the
+  optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)).
 - Animated GIFs load their first frame only; there is no video.
 - Fonts: see [Text](text.md#limits).

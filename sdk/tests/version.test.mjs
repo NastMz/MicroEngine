@@ -165,7 +165,7 @@ test('public state: every package, case-insensitive; a missing package id is not
   await assert.rejects(publicState('0.4.0-alpha.2', { fetchJson: async () => { throw new Error('HTTP 503'); } }), /503/);
 });
 
-test('wait-public: polls until all eight are served, survives a failed request, gives up at the deadline', async () => {
+test('wait-public: polls until every package is served, survives a failed request, gives up at the deadline', async () => {
   let calls = 0;
   const fetchJson = async () => { calls++; if (calls === 2) throw new Error('HTTP 503'); return index(calls > 8 ? ['1.0.0'] : []); };
   const state = await waitPublic('1.0.0', { fetchJson, sleep: async () => {}, timeoutSeconds: 60 });
@@ -231,8 +231,9 @@ test('release plan: frozen, no state releases, publishes or deploys anything, by
 });
 
 test('packages: a package a published SDK version did not have is never required of that version', () => {
-  assert.deepEqual(packagesAt('0.6.0-alpha.1'), packageIds);
-  assert.deepEqual(packagesAt('0.5.0-alpha.2'), packageIds.filter(id => id !== 'MicroEngine.Physics.Box2D'));
+  assert.deepEqual(packagesAt('0.6.0-alpha.2'), packageIds);
+  assert.deepEqual(packagesAt('0.6.0-alpha.1'), packageIds.filter(id => id !== 'MicroEngine.Tiled'));
+  assert.deepEqual(packagesAt('0.5.0-alpha.2'), packageIds.filter(id => id !== 'MicroEngine.Physics.Box2D' && id !== 'MicroEngine.Tiled'));
   const withoutBox2D = Object.fromEntries(packageIds.map(id => [id, id !== 'MicroEngine.Physics.Box2D']));
   const published = { documented: '0.5.0-alpha.2', prepared: '0.5.0-alpha.2', packages: withoutBox2D, release: { draft: false, target: 'a'.repeat(40) } };
   const plan = releasePlan(state(published));

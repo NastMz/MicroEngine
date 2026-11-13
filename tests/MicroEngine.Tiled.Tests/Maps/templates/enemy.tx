@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="enemy" type="enemy" width="8" height="8">
+  <properties>
+   <property name="hp" type="int" value="3"/>
+   <property name="kind" value="slime"/>
+  </properties>
+ </object>
+</template>

@@ -1,0 +1,26 @@
+{
+ "type": "template",
+ "object": {
+  "id": 0,
+  "name": "enemy",
+  "type": "enemy",
+  "x": 0,
+  "y": 0,
+  "width": 8,
+  "height": 8,
+  "rotation": 0,
+  "visible": true,
+  "properties": [
+   {
+    "name": "hp",
+    "type": "int",
+    "value": 3
+   },
+   {
+    "name": "kind",
+    "type": "string",
+    "value": "slime"
+   }
+  ]
+ }
+}

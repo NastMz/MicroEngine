@@ -98,3 +98,8 @@ dist/
 ## Experimental mobile hosts (platforms/)
 
 platforms/android/native/out/
+
+# Local promotional media (trailers, channel art): kept on the maintainer's machine, never in the repository
+/trailer/
+/trailer-*/
+/channel-art/

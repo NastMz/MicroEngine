@@ -20,8 +20,9 @@ sufficient without previous chats or agent memory.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
   feature records are [`odd/tasks/docs-1.md`](odd/tasks/docs-1.md), [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md),
   [`odd/tasks/input-1.md`](odd/tasks/input-1.md), [`odd/tasks/product-1.md`](odd/tasks/product-1.md),
-  [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025) and
-  [`odd/tasks/demo-refresh.md`](odd/tasks/demo-refresh.md) (the four demos modernized, new art for the two hybrids).
+  [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025),
+  [`odd/tasks/demo-refresh.md`](odd/tasks/demo-refresh.md) (the four demos modernized, new art for the two hybrids) and
+  [`odd/tasks/tile-1.md`](odd/tasks/tile-1.md) (maps from the Tiled editor, the optional `MicroEngine.Tiled` package, ADR 0052).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos

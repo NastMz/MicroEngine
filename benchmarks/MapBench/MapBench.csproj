@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MapBench</RootNamespace>
+    <Description>Times large Tiled maps: loading and parsing, and drawing what a camera shows at zoom 1 and 0.5.</Description>
+    <!-- It writes its maps into a temporary folder; it ships no files. -->
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Tiled/MicroEngine.Tiled.csproj" />
+  </ItemGroup>
+</Project>

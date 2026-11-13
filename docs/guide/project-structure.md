@@ -12,7 +12,7 @@ This page maps the folders and then shows how a game project is organised, using
 | `src/MicroEngine.Cli/` | The `microengine` tool, with the browser, Android and iOS hosts it packages games with (`Hosts/`) |
 | `templates/` | The `dotnet new` template |
 | `games/<Name>/` | A complete demo game: code, procedural art and audio, optional asset files, input scripts, README |
-| `samples/` | `HelloEngine` (the smallest game, [walkthrough](../examples/hello-engine.md)), `GemGarden` (the tutorial), `Examples` (the focused examples), `AssetGallery`, `Slice3D` (the 3D path), `PhysicsSubstitution` (the two physics backends side by side) |
+| `samples/` | `HelloEngine` (the smallest game, [walkthrough](../examples/hello-engine.md)), `GemGarden` (the tutorial), `Examples` (the focused examples), `AssetGallery`, `Slice3D` (the 3D path), `PhysicsSubstitution` (the two physics backends side by side), `TiledLevel` (a level saved by the Tiled editor) |
 | `tests/` | Engine and backend tests (MSTest), each game's rule tests and headless playthroughs, the samples' build checks, suites shared between test projects (`tests/Shared`) |
 | `web/` | The browser build scripts, the pinned toolchain, a local server and the browser tests ([web/README.md](../../web/README.md)) |
 | `sdk/` | The documented SDK version and the checks that use the SDK from outside the repository |

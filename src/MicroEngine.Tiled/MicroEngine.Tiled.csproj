@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tiled maps: reads maps made in the Tiled editor (.tmx, .tmj, with external tilesets and templates) into the
+       engine's tile types. An optional package of the SDK (ADR 0052): games without editor maps do not carry the
+       parser. DotTiled reads the files; no DotTiled type is public, so the parser can change without breaking games. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Tiled</RootNamespace>
+    <Description>MicroEngine Tiled maps: loads maps made in the Tiled editor (TMX and TMJ, external tilesets, templates, infinite maps) into tile layers, sprites, objects and typed properties, with collision from a tile property the game names. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);tiled;tmx;tmj;tilemap;level-editor</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+  <!-- DotTiled (MIT); THIRD-PARTY-NOTICES.md. Pinned: a new version is a deliberate change (ADR 0052). -->
+  <ItemGroup>
+    <PackageReference Include="DotTiled" Version="[1.0.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tiled.Tests" />
+  </ItemGroup>
+</Project>
