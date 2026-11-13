@@ -35,6 +35,19 @@ GraphicsCapabilities Capabilities { get; }
 
  [GraphicsCapabilities](MicroEngine.Graphics.Devices.GraphicsCapabilities.md)
 
+### <a id="MicroEngine_Graphics_Devices_IGraphicsDevice_Counters"></a> Counters
+
+Deterministic counts of the work submitted to this device since it was created (draw calls, passes, uploads, live
+resources). Every device built on [GraphicsDeviceBase](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md) counts; a device that does not reports zeros.
+
+```csharp
+GraphicsCounters Counters { get; }
+```
+
+#### Property Value
+
+ [GraphicsCounters](MicroEngine.Graphics.Devices.GraphicsCounters.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Graphics_Devices_IGraphicsDevice_BeginCommands"></a> BeginCommands\(\)

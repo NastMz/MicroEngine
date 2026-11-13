@@ -162,6 +162,36 @@ public abstract class PhysicsConformance
     }
 
     [TestMethod]
+    public void A_body_lists_its_shapes_and_each_shape_reads_back_its_description()
+    {
+        var world = CreateWorld();
+        if ((world.Capabilities & PhysicsCapabilities.ShapeInspection) == 0)
+        {
+            Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ShapesOf(world.CreateBody(default, BodyDescription.Static()), []));
+            return;
+        }
+        var body = world.CreateBody(default, BodyDescription.Static(At(world, 10, 0)));
+        var box = ShapeDescription.Box(new Vector2(4, 2) * Scale);
+        var sensor = ShapeDescription.Sensor(new Vector2(6, 6) * Scale, new Vector2(1, 0) * Scale);
+        var a = world.AddShape(body, box);
+        var b = world.AddShape(body, sensor);
+        Span<ShapeId> shapes = stackalloc ShapeId[4];
+        Assert.AreEqual(2, world.ShapesOf(body, shapes));
+        Assert.AreEqual(a, shapes[0], "in the order they were added");
+        Assert.AreEqual(b, shapes[1]);
+        Assert.AreEqual(box, world.DescriptionOf(a));
+        Assert.AreEqual(sensor, world.DescriptionOf(b));
+        Assert.AreEqual(2, world.ShapesOf(body, []), "the count even when the span is too short");
+
+        world.RemoveShape(a);
+        Assert.AreEqual(1, world.ShapesOf(body, shapes));
+        Assert.AreEqual(b, shapes[0]);
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.DescriptionOf(a), "a removed shape is stale");
+        world.DestroyBody(body);
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.ShapesOf(body, new ShapeId[4]), "a destroyed body is stale");
+    }
+
+    [TestMethod]
     public void Every_undeclared_capability_is_refused_with_the_typed_error_and_every_declared_one_is_accepted()
     {
         var requests = new (PhysicsCapabilities Flag, Action<IPhysicsWorld2D> Request)[]
@@ -176,6 +206,7 @@ public abstract class PhysicsConformance
             (PhysicsCapabilities.OneWayPlatforms, w => w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale) with { OneWay = true })),
             (PhysicsCapabilities.FrictionRestitution, w => w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale) with { Friction = 0.5f })),
             (PhysicsCapabilities.MassProperties, w => w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale) with { Density = 2 })),
+            (PhysicsCapabilities.ShapeInspection, w => w.DescriptionOf(w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale)))),
         };
         int refused = 0, accepted = 0;
         foreach (var (flag, request) in requests)

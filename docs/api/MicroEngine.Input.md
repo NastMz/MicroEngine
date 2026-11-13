@@ -200,6 +200,10 @@ A pointer the game can read: the mouse while it is over the window, or a finger 
 
 The mouse (or another pointer) over the game's virtual canvas.
 
+ [RoutedEvent](MicroEngine.Input.RoutedEvent.md)
+
+One event of the frame and where it went ([Routed](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Routed)).
+
  [TouchControlView](MicroEngine.Input.TouchControlView.md)
 
 Everything a skin needs to draw one control as it is this frame, in screen pixels.

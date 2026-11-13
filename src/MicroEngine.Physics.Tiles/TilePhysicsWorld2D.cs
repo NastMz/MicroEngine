@@ -32,7 +32,8 @@ namespace MicroEngine.Physics.Tiles;
 public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 {
     /// <summary>The capabilities this backend declares.</summary>
-    public const PhysicsCapabilities Declared = PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids;
+    public const PhysicsCapabilities Declared = PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids
+        | PhysicsCapabilities.ShapeInspection;
 
     /// <summary>The distance within which a surface counts as touching a box at the end of a move (the ground probe).</summary>
     public const float ContactDistance = 0.01f;
@@ -310,6 +311,30 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     /// <inheritdoc/>
     public bool IsAlive(ShapeId shape) =>
         shape.Generation != 0 && shape.Index < (uint)_shapeSlots.Count && _shapeSlots[(int)shape.Index] is { Alive: true } s && s.Generation == shape.Generation;
+
+    /// <inheritdoc/>
+    public int ShapesOf(BodyId body, Span<ShapeId> results)
+    {
+        var b = Resolve(body);
+        for (int i = 0; i < b.Shapes.Count && i < results.Length; i++)
+            results[i] = new ShapeId((uint)b.Shapes[i], _shapeSlots[b.Shapes[i]].Generation);
+        return b.Shapes.Count;
+    }
+
+    /// <inheritdoc/>
+    public ShapeDescription DescriptionOf(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        return _shapeSlots[(int)shape.Index].Description;
+    }
+
+    /// <summary>The tiles <paramref name="shape"/> stands for when it was added with <see cref="AddTiles"/>; null for any other shape.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    public ICollisionGrid? GridOf(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        return _shapeSlots[(int)shape.Index].Grid;
+    }
 
     /// <inheritdoc/>
     public BodyId BodyOf(ShapeId shape)

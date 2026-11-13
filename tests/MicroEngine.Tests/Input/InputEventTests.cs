@@ -227,6 +227,30 @@ public sealed class InputEventTests
     }
 
     [TestMethod]
+    public void A_trace_records_which_layer_took_each_event_of_the_frame()
+    {
+        var rig = new Rig();
+        var menu = new RecordingLayer(e => e.Key == Key.Escape);
+        rig.Input.Layers.Add(menu, InputLayerOrder.UI);
+        rig.Send(InputEvent.KeyDown(Keyboard, Key.Escape)).Update();
+        Assert.AreEqual(0, rig.Input.Routed.Count, "nothing is recorded while Trace is off");
+        rig.End();
+
+        rig.Input.Trace = true;
+        rig.Send(InputEvent.KeyUp(Keyboard, Key.Escape)).Send(InputEvent.KeyDown(Keyboard, Key.Space)).Update();
+        Assert.AreEqual(2, rig.Input.Routed.Count);
+        Assert.AreEqual((InputEventKind.KeyUp, (IInputLayer?)menu), (rig.Input.Routed[0].Event.Kind, rig.Input.Routed[0].Layer),
+            "the release went to the layer that took the press");
+        Assert.AreEqual(Key.Space, rig.Input.Routed[1].Event.Key);
+        Assert.IsNull(rig.Input.Routed[1].Layer, "no layer took it: it reached gameplay");
+        rig.End();
+
+        rig.Update();
+        Assert.AreEqual(0, rig.Input.Routed.Count, "the trace holds one frame");
+        rig.Input.Trace = false;
+    }
+
+    [TestMethod]
     public void Layers_see_events_from_the_highest_order_down()
     {
         var rig = new Rig();

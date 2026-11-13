@@ -38,7 +38,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     public const PhysicsCapabilities Declared = PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation
         | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules | PhysicsCapabilities.Polygons
         | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
-        | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms;
+        | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection;
 
     /// <summary>The most vertices a polygon may have (Box2D's limit).</summary>
     public const int MaxPolygonVertices = 8;
@@ -405,6 +405,22 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     /// <inheritdoc/>
     public bool IsAlive(ShapeId shape) =>
         shape.Generation != 0 && shape.Index < (uint)_shapeSlots.Count && _shapeSlots[(int)shape.Index] is { Alive: true } s && s.Generation == shape.Generation;
+
+    /// <inheritdoc/>
+    public int ShapesOf(BodyId body, Span<ShapeId> results)
+    {
+        var b = Resolve(body);
+        for (int i = 0; i < b.Shapes.Count && i < results.Length; i++)
+            results[i] = new ShapeId((uint)b.Shapes[i], _shapeSlots[b.Shapes[i]].Generation);
+        return b.Shapes.Count;
+    }
+
+    /// <inheritdoc/>
+    public ShapeDescription DescriptionOf(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        return _shapeSlots[(int)shape.Index].Description;
+    }
 
     /// <inheritdoc/>
     public BodyId BodyOf(ShapeId shape)

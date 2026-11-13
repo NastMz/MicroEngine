@@ -80,6 +80,22 @@ public static IAudioDevice TryCreate()
 
  [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
+### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_MicroEngine_Kernel_ILog_"></a> TryCreate\(ILog\)
+
+Opens the default playback device, or returns a silent device and writes why to <code class="paramref">log</code> when there is none.
+
+```csharp
+public static IAudioDevice TryCreate(ILog log)
+```
+
+#### Parameters
+
+`log` [ILog](MicroEngine.Kernel.ILog.md)
+
+#### Returns
+
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
+
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_System_String_"></a> TryCreate\(string\)
 
 Opens the default playback device of SDL's audio driver <code class="paramref">driver</code>: "dummy" runs SDL's whole audio

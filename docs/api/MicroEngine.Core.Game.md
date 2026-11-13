@@ -109,6 +109,32 @@ protected virtual string? ContentRoot { get; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
+### <a id="MicroEngine_Core_Game_DebugDraw"></a> DebugDraw
+
+Lines, shapes, text and physics worlds any code can ask to see, drawn above the scenes at the end of the frame
+([DebugDraw](MicroEngine.Core.DebugDraw.md)). Calls do nothing until [Enabled](MicroEngine.Core.DebugDraw.md#MicroEngine_Core_DebugDraw_Enabled) is set.
+
+```csharp
+public DebugDraw DebugDraw { get; }
+```
+
+#### Property Value
+
+ [DebugDraw](MicroEngine.Core.DebugDraw.md)
+
+### <a id="MicroEngine_Core_Game_Diagnostics"></a> Diagnostics
+
+The live measurements of the run: the last frame's times, allocations, graphics work and audio voices, and the time
+of each frame system. Off until [Enabled](MicroEngine.Core.GameDiagnostics.md#MicroEngine_Core_GameDiagnostics_Enabled) is set or a tool listens to the engine's meter.
+
+```csharp
+public GameDiagnostics Diagnostics { get; }
+```
+
+#### Property Value
+
+ [GameDiagnostics](MicroEngine.Core.GameDiagnostics.md)
+
 ### <a id="MicroEngine_Core_Game_Font"></a> Font
 
 The built-in pixel font, created before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and disposed by the engine when the game shuts down.

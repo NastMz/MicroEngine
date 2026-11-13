@@ -273,7 +273,8 @@ public sealed class GameLoop
     private bool Frame()
     {
         if (!Limit()) return false;
-        if (_options.Profiler is { } profiler) return ProfiledFrame(profiler);
+        bool diagnose = _game.Diagnostics.BeginFrame(_engine!.Schedule);
+        if (_options.Profiler is not null || diagnose) return MeasuredFrame(_options.Profiler, diagnose ? _game.Diagnostics : null);
         if (!Pump()) return _closeAccepted || _game.QuitRequested;
         var (stop, capture) = Update();
         Render();
@@ -282,9 +283,10 @@ public sealed class GameLoop
 
     private long _frameStart;
 
-    /// <summary><see cref="Frame"/> with each phase timed into <paramref name="profiler"/>.</summary>
-    private bool ProfiledFrame(FrameProfiler profiler)
+    /// <summary><see cref="Frame"/> with each phase timed into <paramref name="profiler"/> and <paramref name="diagnostics"/>, either of which may be null.</summary>
+    private bool MeasuredFrame(FrameProfiler? profiler, GameDiagnostics? diagnostics)
     {
+        var mark = diagnostics?.Start() ?? default;
         long start = Stopwatch.GetTimestamp();
         long allocated = GC.GetAllocatedBytesForCurrentThread();
         int collections = GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2);
@@ -306,6 +308,13 @@ public sealed class GameLoop
         engine.Run(Kernel.FramePhase.Present, frame);
         engine.Run(Kernel.FramePhase.EndFrame, frame);
         long presented = Stopwatch.GetTimestamp();
+        diagnostics?.End(mark, _frames + 1,
+            Stopwatch.GetElapsedTime(start, polled).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(polled, updated).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(updated, rendered).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(rendered, presented).TotalMilliseconds,
+            (int)(_game.UpdateCount - updates), engine.Schedule);
+        if (profiler is null) return EndOfFrame(stop, capture);
         profiler.Add(new FrameSample(interval,
             Stopwatch.GetElapsedTime(start, polled).TotalMilliseconds,
             Stopwatch.GetElapsedTime(polled, updated).TotalMilliseconds,

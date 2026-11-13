@@ -80,6 +80,10 @@ An opaque handle to a loaded sound effect.
 
 ### Structs
 
+ [AudioStatistics](MicroEngine.Audio.AudioStatistics.md)
+
+What [Statistics](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Statistics) reports about the mixer's voices.
+
  [PlayParameters](MicroEngine.Audio.PlayParameters.md)
 
 How a sound plays.

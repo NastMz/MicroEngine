@@ -8,6 +8,7 @@ using PresentMode = MicroEngine.Graphics.Devices.PresentMode;
 using Dev = MicroEngine.Graphics.Devices;
 using GpuBackend = MicroEngine.Graphics.SdlGpu;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Platform;
 using SDL;
 using static SDL.SDL3;
@@ -37,6 +38,7 @@ namespace MicroEngine.Sdl;
 public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
 {
     private readonly GameSettings _settings;
+    private readonly ILog _log;
     private readonly int _captureScale;
     private readonly SDL_Window* _window;
     private readonly SDL_Renderer* _sdl; // null on the sdl-gpu device: SDL_GPU owns the window's swapchain
@@ -143,6 +145,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _browser = OperatingSystem.IsBrowser();
         _page = page;
         _settings = request.Settings;
+        _log = request.Log;
         Letterbox = _settings.Letterbox;
         _captureScale = Math.Max(1, request.CaptureScale);
         SDL_SetHint(SDL_HINT_APP_NAME, _settings.Title);
@@ -248,7 +251,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _input = new SdlInput(this);
         _combinedInput = request.CombineInput(_input);
         Mark("frame", ref started);
-        _audio = request.CreateAudio(() => SdlAudioDevice.TryCreate());
+        _audio = request.CreateAudio(() => SdlAudioDevice.TryCreate(request.Log));
         Mark("audio", ref started);
         // A host that shows a start screen asks for the gamepad subsystem to start after it (StartGamepads); without one,
         // a window that showed the game's first frame and then froze would be worse than one that appears a moment later.
@@ -303,7 +306,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             try { device = new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, string.Join(',', graphics.Renderers))); }
             catch (InvalidOperationException e)
             {
-                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({e.Message}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
+                _log.Write(LogLevel.Warning, "platform", $"none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({e.Message}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
             }
         }
         try { device ??= new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, renderer)); }
@@ -703,7 +706,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _gamepadsStarted = true;
         long started = System.Diagnostics.Stopwatch.GetTimestamp();
         if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD))
-            Console.Error.WriteLine($"input: gamepads unavailable ({SDL_GetError()})");
+            _log.Write(LogLevel.Warning, "input", $"gamepads unavailable ({SDL_GetError()})");
         Mark("gamepad", ref started);
     }
 

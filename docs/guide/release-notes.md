@@ -14,6 +14,32 @@ An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies.
   behind `IPhysicsWorld2D` (dynamic bodies, rotation, circles, capsules, polygons, continuous collision, friction and
   mass) and carries Box2D's native library for Windows, Linux, macOS, Android, iOS and browsers. The tile backend
   stays in `MicroEngine` and needs no extra package.
+- `Game.Diagnostics` measures a running game when you ask it to: the last frame's events, update, render and present
+  times, fixed steps, allocated bytes, collections per generation, the graphics work it submitted and the audio voices
+  (`LastFrame`), and the time of every frame system (`Systems`). `FrameSchedule.MeasureTime` and `Times(phase)` give
+  the per-system times to code that drives the schedule itself. Off by default, and free while off.
+- The engine publishes its frame time, phase times, allocations, draw calls and voices on the
+  `System.Diagnostics.Metrics` meter `"MicroEngine"`: `dotnet-counters monitor --counters MicroEngine` shows them
+  live, and attaching a listener turns the measurements on.
+- `Game.DebugDraw` draws lines, rectangles, circles, points and text from any code, in world space (under the scene's
+  camera) or screen space, for one frame or a number of seconds; calls do nothing until `DebugDraw.Enabled` is set.
+  `DebugDraw.Physics(world)` draws every shape of a physics world, the tiles in view and the contacts of the latest
+  step.
+- Physics worlds read shapes back: `IPhysicsWorld2D.ShapesOf(body, span)` and `DescriptionOf(shape)`, declared by the
+  new `PhysicsCapabilities.ShapeInspection` (both built-in backends declare it; a backend of your own that does not
+  refuses them with `PhysicsCapabilityException`). `TilePhysicsWorld2D.GridOf(shape)` returns the tiles of a tile
+  shape.
+- `InputSystem.Trace` and `InputSystem.Routed` list the frame's input events with the layer that took each one (a
+  menu, the on-screen controls) or none when it reached gameplay. The game's diagnostics turn the trace on while they
+  measure.
+- When a run fails, the desktop launcher writes a crash report (`CrashReport`) to the game's save folder and names it
+  after the error: game and engine versions, system, platform facts, the last measured frame and its slowest systems,
+  and the error with its stack trace.
+- `PlatformRequest.Log`: what the SDL and raylib backends report (no audio device, no gamepads, a renderer that did
+  not start) now goes through the game's `ILog` instead of straight to standard error. With the default log the
+  console shows the same lines.
+- `IGraphicsDevice.Counters` (in `MicroEngine.Graphics.Devices`) and `AudioMixer.Statistics` read draw calls and voices
+  without casting to the backend's class.
 
 **Removed**
 

@@ -59,6 +59,19 @@ public Func<int> ClockSeed { get; init; }
 
  [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[int](https://learn.microsoft.com/dotnet/api/system.int32)\>
 
+### <a id="MicroEngine_Hosting_HostEnvironment_CrashDirectory"></a> CrashDirectory
+
+Where the desktop launcher writes the crash report of a run that fails (<code>Core.CrashReport</code>), or null for
+the game's save folder (<code>SaveStore.DefaultDirectory</code>).
+
+```csharp
+public string? CrashDirectory { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Hosting_HostEnvironment_Error"></a> Error
 
 Where the host prints errors (the console's standard error by default, as it was when this was created).

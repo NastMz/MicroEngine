@@ -113,6 +113,19 @@ public interface IPhysicsWorld2D
     /// <summary>The body <paramref name="shape"/> is attached to.</summary>
     /// <exception cref="InvalidOperationException">The id is stale.</exception>
     BodyId BodyOf(ShapeId shape);
+    /// <summary>
+    /// Writes the live shapes of <paramref name="body"/>, in the order they were added, into <paramref name="results"/>
+    /// and returns how many it has (which may exceed the span's length: only the first ones are written).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The body is stale.</exception>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeInspection"/>.</exception>
+    int ShapesOf(BodyId body, Span<ShapeId> results) =>
+        throw new PhysicsCapabilityException(nameof(ShapesOf), Backend, PhysicsCapabilities.ShapeInspection);
+    /// <summary>The description <paramref name="shape"/> was added with (its geometry is relative to its body's origin).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeInspection"/>.</exception>
+    ShapeDescription DescriptionOf(ShapeId shape) =>
+        throw new PhysicsCapabilityException(nameof(DescriptionOf), Backend, PhysicsCapabilities.ShapeInspection);
 
     /// <summary>
     /// Moves a kinematic body by <paramref name="delta"/> with collide-and-slide against the shapes

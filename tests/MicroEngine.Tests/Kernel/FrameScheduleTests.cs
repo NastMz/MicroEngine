@@ -129,4 +129,41 @@ public sealed class FrameScheduleTests
         AllocationAssert.None(() => schedule.Run(FramePhase.Update, Context), warmup: 1, calls: 100, rounds: 5);
         Assert.AreEqual(8 * (1 + 100 * 5), count, "every run runs every system");
     }
+
+    [TestMethod]
+    public void Measured_systems_report_their_time_in_order_and_accumulate_until_reset()
+    {
+        var schedule = new FrameSchedule();
+        schedule.Add(FramePhase.Update, "slow", _ => Thread.Sleep(5));
+        schedule.Add(FramePhase.Update, "fast", _ => { });
+        schedule.Add(FramePhase.FixedUpdate, "step", _ => Thread.Sleep(2));
+        schedule.Freeze();
+        Assert.IsTrue(schedule.Times(FramePhase.Update).ToArray().All(t => t == 0), "nothing measured while MeasureTime is off");
+        schedule.Run(FramePhase.Update, Context);
+        Assert.IsTrue(schedule.Times(FramePhase.Update).ToArray().All(t => t == 0), "a run while off measures nothing");
+
+        schedule.MeasureTime = true; // allowed once frozen: it changes no system
+        schedule.Run(FramePhase.Update, Context);
+        schedule.Run(FramePhase.FixedUpdate, Context);
+        schedule.Run(FramePhase.FixedUpdate, Context);
+        var update = schedule.Times(FramePhase.Update);
+        Assert.AreEqual(2, update.Length, "one time per system, aligned with Order");
+        Assert.IsTrue(update[0] >= 4, $"slow took {update[0]} ms");
+        Assert.IsTrue(update[1] < update[0]);
+        Assert.IsTrue(schedule.Times(FramePhase.FixedUpdate)[0] >= 3.5, "a fixed system adds up over the frame's steps");
+
+        schedule.ResetTimes();
+        Assert.IsTrue(schedule.Times(FramePhase.Update).ToArray().All(t => t == 0));
+        Assert.IsTrue(schedule.Times(FramePhase.FixedUpdate).ToArray().All(t => t == 0));
+    }
+
+    [TestMethod]
+    public void Running_a_measured_phase_allocates_nothing()
+    {
+        var schedule = new FrameSchedule();
+        for (int i = 0; i < 8; i++) schedule.Add(FramePhase.Update, $"s{i}", _ => { });
+        schedule.Freeze();
+        schedule.MeasureTime = true;
+        AllocationAssert.None(() => { schedule.ResetTimes(); schedule.Run(FramePhase.Update, Context); }, warmup: 1, calls: 100, rounds: 5);
+    }
 }

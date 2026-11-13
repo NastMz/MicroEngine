@@ -187,6 +187,20 @@ public abstract class Game : IEngineModule, IStateHashed
     public TimeSettings TimeSettings => Engine.Time;
     /// <summary>The time of the frame being run (<see cref="FrameContext"/>): its delta, the fixed step, the blend and the frame number.</summary>
     public FrameContext Frame => Engine.Clock.Context;
+    private GameDiagnostics? _diagnostics;
+    /// <summary>
+    /// The live measurements of the run: the last frame's times, allocations, graphics work and audio voices, and the time
+    /// of each frame system. Off until <see cref="GameDiagnostics.Enabled"/> is set or a tool listens to the engine's meter.
+    /// </summary>
+    public GameDiagnostics Diagnostics => _diagnostics ??= new GameDiagnostics(this);
+    /// <summary>What the platform reported before the engine existed; replayed into <see cref="Log"/> when the game starts.</summary>
+    internal StartupLog StartupLog { get; } = new();
+    private DebugDraw? _debugDraw;
+    /// <summary>
+    /// Lines, shapes, text and physics worlds any code can ask to see, drawn above the scenes at the end of the frame
+    /// (<see cref="Core.DebugDraw"/>). Calls do nothing until <see cref="Core.DebugDraw.Enabled"/> is set.
+    /// </summary>
+    public DebugDraw DebugDraw => _debugDraw ??= new DebugDraw(this);
 
     /// <summary>
     /// An optional feature, if there is one: one the engine declared (<see cref="EngineBuilder.Capabilities"/>), else one
@@ -300,6 +314,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Prompts = services.Get<ActionPrompts>();
         Assets = services.Get<AssetCache>();
         Assets.Log = engine.Log;
+        StartupLog.Attach(engine.Log);
         Audio = services.Get<AudioMixer>();
         // Deterministic runs keep audio state on the simulation's timeline only (songs render when waited for, sounds
         // never re-anchor to the device), so two runs hash and sound the same.
@@ -508,6 +523,7 @@ public abstract class Game : IEngineModule, IStateHashed
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         DrawAboveScenes(renderer);
+        _debugDraw?.Flush(renderer, Scenes.Current?.WorldCamera, (float)Frame.Delta);
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
         // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
         // captured as the canvas alone, IViewCapture).

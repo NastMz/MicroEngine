@@ -35,6 +35,11 @@ public sealed class HostEnvironment
     public TextWriter Error { get; init; } = Console.Error;
     /// <summary>The folder the host's program runs from (<see cref="AppContext.BaseDirectory"/> by default).</summary>
     public string BaseDirectory { get; init; } = AppContext.BaseDirectory;
+    /// <summary>
+    /// Where the desktop launcher writes the crash report of a run that fails (<c>Core.CrashReport</c>), or null for
+    /// the game's save folder (<c>SaveStore.DefaultDirectory</c>).
+    /// </summary>
+    public string? CrashDirectory { get; init; }
     /// <summary>A seed for runs that ask for none, from the clock by default (<see cref="LaunchRequest.ResolveSeed"/>).</summary>
     public Func<int> ClockSeed { get; init; } = () => Environment.TickCount & 0x7fffffff;
 

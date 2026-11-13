@@ -120,6 +120,20 @@ public AppIdentity? Identity { get; init; }
 
  [AppIdentity](MicroEngine.Core.AppIdentity.md)?
 
+### <a id="MicroEngine_Core_PlatformRequest_Log"></a> Log
+
+Where the backend reports what it could not do and how it carried on (no audio device, no gamepads, a renderer
+that did not start). Standard error by default; [GameHost](MicroEngine.Core.GameHost.md) passes one that reaches the game's
+[Log](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Log) once the game starts, so a game that sends its log elsewhere receives these too.
+
+```csharp
+public ILog Log { get; init; }
+```
+
+#### Property Value
+
+ [ILog](MicroEngine.Kernel.ILog.md)
+
 ### <a id="MicroEngine_Core_PlatformRequest_Mute"></a> Mute
 
 No sound: the backend opens no audio device.
