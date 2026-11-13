@@ -124,8 +124,9 @@ players' saves ([Saving data](../manual/persistence.md)). What to expect in thes
 - Saving and loading with declared types works, including nested objects, collections, enums, derived types declared
   with `JsonDerivedType`, and `JsonObject` for upgrading old saves.
 - `Save(slot, data)` and `Load<T>(slot)` without metadata throw `InvalidOperationException` when the slot is written
-  or read. The build reports each such call in the game's code as warnings `IL2026` and `IL3050` once the project sets
-  `PublishTrimmed`, `PublishAot` or `IsAotCompatible`.
+  or read. The build reports each such call in the game's code: warning `IL2026` once the project sets
+  `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` once it sets `PublishAot`,
+  `IsAotCompatible` or `EnableAotAnalyzer`.
 - `AchievementTracker` keeps its state through the calls without metadata. A trimmed game that tracks achievements
   with a store sets `<JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>` and
   `<TrimMode>partial</TrimMode>` in its project, as the Android, iOS and web packages do; NativeAOT has no equivalent.

@@ -20,8 +20,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
 - `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
   the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
   NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's
-  slots. The calls without metadata keep working and are reported by the build (`IL2026`, `IL3050`) in a project that
-  sets `PublishTrimmed`, `PublishAot` or `IsAotCompatible`
+  slots. The calls without metadata keep working and are reported by the build in a project that turns on trimming
+  or NativeAOT analysis: `IL2026` with `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` with
+  `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer`
   ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
 
 **Fixed**

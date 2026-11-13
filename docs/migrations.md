@@ -4,6 +4,20 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next release
+
+### Saves without metadata warn in trimmed and NativeAOT projects
+
+`SaveStore.Save(slot, data)` and `SaveStore.Load<T>(slot)` are marked as needing reflection. A project that sets
+`PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer` gets warning `IL2026` at each of those calls when it builds,
+and one that sets `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer` also gets `IL3050`. With
+`TreatWarningsAsErrors` the build fails there, and a `NoWarn` for `IL2104` does not cover it. A project with none of
+those settings builds as before.
+
+To update, declare the save types in a `JsonSerializerContext` and pass its metadata:
+`Save(slot, data, typeInfo)` and `Load(slot, typeInfo)` read and write the same files
+([Trimmed and NativeAOT publishing](guide/platforms.md#trimmed-and-nativeaot-publishing)).
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components
