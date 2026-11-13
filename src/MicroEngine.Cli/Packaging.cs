@@ -42,6 +42,24 @@ public sealed record PackageRequest(GameProject Game, PackageTarget Target, stri
     public string FileName => $"{Game.Id}-{Game.Version}-{Target.Id}.{Target.Archive}";
 }
 
+/// <summary>A .NET runtime pack a package carries: its folder and version.</summary>
+public sealed record DotnetRuntime(string Directory, string Version)
+{
+    /// <summary>The runtime's licence, which travels with every package.</summary>
+    public string Licence => Required("LICENSE.TXT");
+    /// <summary>The runtime's third-party notices, which travel with every package.</summary>
+    public string Notices => Required("THIRD-PARTY-NOTICES.TXT");
+
+    private string Required(string name)
+    {
+        string file = Path.Combine(Directory, name);
+        return File.Exists(file) ? file
+            : throw new CliException($"{file} is missing: the .NET {Version} runtime pack in {Directory} is incomplete; "
+                + (Directory.Replace('\\', '/').Contains("/packs/", StringComparison.OrdinalIgnoreCase)
+                    ? "it belongs to a .NET workload: run 'dotnet workload repair'." : "delete that folder and package again to restore it."));
+    }
+}
+
 /// <summary>Builds desktop packages (docs/guide/packaging.md): a self-contained single-file executable with its native
 /// libraries, content, notices, README.txt and build-info.json in one top folder named after the game; on macOS an
 /// application bundle.</summary>
@@ -93,8 +111,9 @@ public static class Packaging
                     File.WriteAllText(Path.Combine(top, $"{desktopId}.desktop"), DesktopEntry(game, icon is not null));
                 }
             }
-            var info = BuildInfo(request, signing);
-            WriteCommon(top, game, t, info);
+            var runtime = RuntimePack(game.Path, t.Rid);
+            var info = BuildInfo(request, signing, runtime.Version);
+            WriteCommon(top, game, t, runtime, info);
             Directory.CreateDirectory(request.Out);
             string file = Path.Combine(request.Out, request.FileName);
             if (t.Name == "macos" && MacSigning.NotaryProfile is { } profile)
@@ -116,22 +135,23 @@ public static class Packaging
     }
 
     /// <summary>The files every package carries next to the game: notices, README.txt and build-info.json.</summary>
-    public static void WriteCommon(string top, GameProject game, PackageTarget t, Dictionary<string, object> info)
+    public static void WriteCommon(string top, GameProject game, PackageTarget t, DotnetRuntime runtime, Dictionary<string, object> info)
     {
-        CopyNotices(top, game, t.Rid.Split(';')[0]);
+        CopyNotices(top, game, runtime);
         File.WriteAllText(Path.Combine(top, "README.txt"), Readme(game, t, info));
         File.WriteAllText(Path.Combine(top, "build-info.json"), JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }) + "\n");
     }
 
     /// <summary>build-info.json: what a package is, so a player or a check can tell which game, version and build it holds.</summary>
-    public static Dictionary<string, object> BuildInfo(PackageRequest request, string signing)
+    /// <param name="dotnet">The version of the .NET runtime the package carries (<see cref="RuntimePack"/>).</param>
+    public static Dictionary<string, object> BuildInfo(PackageRequest request, string signing, string dotnet)
     {
         var game = request.Game;
         var info = new Dictionary<string, object>
         {
             ["schema"] = 1, ["game"] = game.Id, ["title"] = game.Title, ["gameVersion"] = game.Version, ["engineVersion"] = game.EngineVersion,
             ["target"] = request.Target.Id, ["runtime"] = request.Target.Rid, ["key"] = request.Key, ["commit"] = Commit(game.Directory),
-            ["dotnet"] = game.DotnetVersion, ["signing"] = signing, ["tool"] = Tool.Version,
+            ["dotnet"] = dotnet, ["signing"] = signing, ["tool"] = Tool.Version,
         };
         if (game.ApplicationId is { } id) info["applicationId"] = id;
         return info;
@@ -144,20 +164,40 @@ public static class Packaging
         catch (CliException) { return "unknown"; }
     }
 
-    /// <summary>The .NET runtime pack of a runtime identifier in the NuGet cache: its licence and notices travel with the package.</summary>
-    public static string RuntimePack(string rid, string version)
+    /// <summary>
+    /// The Microsoft.NETCore.App runtime pack a publish of <paramref name="project"/> for <paramref name="rid"/> uses, as
+    /// MSBuild itself resolves it (its ResolvedRuntimePack item): the latest patch of the project's target framework that
+    /// the running SDK knows, in the NuGet cache or, for a workload's pack, in the SDK's packs folder. Never the SDK's own
+    /// runtime: SDK 11 publishes a net10.0 game with a 10.0 runtime pack. The project must be restored for
+    /// <paramref name="rid"/>; <paramref name="properties"/> are the publish's own (-p:Name=Value).
+    /// </summary>
+    public static DotnetRuntime RuntimePack(string project, string rid, IEnumerable<string>? properties = null)
     {
-        string cache = Environment.GetEnvironmentVariable("NUGET_PACKAGES") is { Length: > 0 } p ? p
-            : Tool.Run(Tool.Dotnet, ["nuget", "locals", "global-packages", "--list"], what: "dotnet nuget locals").Split(':', 2)[1].Trim();
-        string dir = Path.Combine(cache, $"microsoft.netcore.app.runtime.{rid}", version);
-        foreach (var f in new[] { "LICENSE.TXT", "THIRD-PARTY-NOTICES.TXT" })
-            if (!File.Exists(Path.Combine(dir, f))) throw new CliException($"{Path.Combine(dir, f)} is missing; the publish step should have restored the .NET runtime pack there.");
-        return dir;
+        string json = Tool.Run(Tool.Dotnet, ["msbuild", project, "-nologo", "-p:Configuration=Release", $"-p:RuntimeIdentifier={rid}", "-p:SelfContained=true",
+            .. properties ?? [], "-t:ResolveFrameworkReferences", "-getItem:ResolvedRuntimePack"], Path.GetDirectoryName(project), "resolving the .NET runtime pack");
+        return ParseRuntimePack(json) ?? throw new CliException($"MSBuild resolved no .NET runtime pack for {Path.GetFileName(project)} ({rid}).");
     }
 
-    private static void CopyNotices(string top, GameProject game, string rid)
+    /// <summary>The Microsoft.NETCore.App pack in the output of <c>dotnet msbuild -getItem:ResolvedRuntimePack</c>, or null.</summary>
+    public static DotnetRuntime? ParseRuntimePack(string json)
     {
-        var pack = RuntimePack(rid, game.DotnetVersion);
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("Items", out var items) || !items.TryGetProperty("ResolvedRuntimePack", out var packs)) return null;
+            foreach (var pack in packs.EnumerateArray())
+            {
+                string Metadata(string name) => pack.TryGetProperty(name, out var v) ? v.GetString() ?? "" : "";
+                if (Metadata("FrameworkName") == "Microsoft.NETCore.App" && Metadata("PackageDirectory") is { Length: > 0 } dir)
+                    return new DotnetRuntime(dir, Metadata("NuGetPackageVersion"));
+            }
+            return null;
+        }
+        catch (JsonException e) { throw new CliException($"could not read the .NET runtime pack from MSBuild: it printed something unexpected ({e.Message})."); }
+    }
+
+    private static void CopyNotices(string top, GameProject game, DotnetRuntime runtime)
+    {
         Directory.CreateDirectory(Path.Combine(top, "licenses"));
         if (game.LicenseFile is { } licence)
         {
@@ -168,8 +208,8 @@ public static class Packaging
         File.Copy(Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), Path.Combine(top, "licenses", "microengine-LICENSE.txt"));
         // SDL's and raylib's licences, for each of their native libraries the package holds (on macOS inside the bundle).
         foreach (string engine in EngineNotices.ForFiles(Walk(top))) File.Copy(EngineNotices.PathOf(engine), Path.Combine(top, "licenses", engine));
-        File.Copy(Path.Combine(pack, "LICENSE.TXT"), Path.Combine(top, "licenses", "dotnet-LICENSE.txt"));
-        File.Copy(Path.Combine(pack, "THIRD-PARTY-NOTICES.TXT"), Path.Combine(top, "licenses", "dotnet-THIRD-PARTY-NOTICES.txt"));
+        File.Copy(runtime.Licence, Path.Combine(top, "licenses", "dotnet-LICENSE.txt"));
+        File.Copy(runtime.Notices, Path.Combine(top, "licenses", "dotnet-THIRD-PARTY-NOTICES.txt"));
     }
 
     private static string Readme(GameProject game, PackageTarget t, Dictionary<string, object> info)

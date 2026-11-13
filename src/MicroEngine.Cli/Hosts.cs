@@ -61,13 +61,14 @@ public static class Hosts
         if (Directory.Exists(publish)) Directory.Delete(publish, recursive: true);
         Console.WriteLine($"Building {game.Title} for browsers (WebAssembly; the first build takes a few minutes)...");
         Tool.Run(Tool.Dotnet, ["publish", Path.Combine(host, "Host.csproj"), "-c", "Release", "-p:MicroEngineWebPackage=true", "-o", publish, "-nologo"], host, "the browser build");
+        var runtime = Packaging.RuntimePack(Path.Combine(host, "Host.csproj"), request.Target.Rid, ["-p:MicroEngineWebPackage=true"]);
         string stage = Directory.CreateTempSubdirectory("microengine-package-").FullName;
         try
         {
             string top = Path.Combine(stage, game.Id);
             CopyTree(Path.Combine(publish, "wwwroot"), top);
-            var info = Packaging.BuildInfo(request, "none");
-            WebNotices(top, game);
+            var info = Packaging.BuildInfo(request, "none", runtime.Version);
+            WebNotices(top, game, runtime);
             File.WriteAllText(Path.Combine(top, "build-info.json"), JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Directory.CreateDirectory(request.Out);
             // The folder to upload to any static web server, and the same files as one archive.
@@ -86,27 +87,9 @@ public static class Hosts
     private static string WebTools => Environment.GetEnvironmentVariable("MICROENGINE_WEB_TOOLS") is { Length: > 0 } w
         ? w : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microengine", "web-tools");
 
-    /// <summary>
-    /// The folder of the workload pack <paramref name="pack"/> under <paramref name="dotnetRoot"/>: the SDK's own runtime
-    /// version (<paramref name="version"/>) when it is installed, otherwise the newest version installed. An SDK released
-    /// before its workload set bundles a newer runtime than the packs the workload installs (SDK 10.0.404 with runtime
-    /// 10.0.15 installs the 10.0.14 packs of workload set 10.403), and the build uses the installed ones. With no pack at
-    /// all, the expected path, for the error message.
-    /// </summary>
-    public static string WorkloadPack(string dotnetRoot, string pack, string version)
-    {
-        string folder = Path.Combine(dotnetRoot, "packs", pack), preferred = Path.Combine(folder, version);
-        if (File.Exists(Path.Combine(preferred, "LICENSE.TXT")) || !Directory.Exists(folder)) return preferred;
-        return Directory.GetDirectories(folder)
-            .Where(d => File.Exists(Path.Combine(d, "LICENSE.TXT")))
-            .Select(d => (Dir: d, Version: Version.TryParse(Path.GetFileName(d).Split('-')[0], out var v) ? v : new Version(0, 0)))
-            .OrderByDescending(p => p.Version).Select(p => p.Dir).FirstOrDefault() ?? preferred;
-    }
-
-    private static void WebNotices(string top, GameProject game)
+    private static void WebNotices(string top, GameProject game, DotnetRuntime runtime)
     {
         string dotnetRoot = game.NetCoreRoot;
-        string runtime = WorkloadPack(dotnetRoot, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", game.DotnetVersion);
         string? emscripten = Directory.Exists(Path.Combine(dotnetRoot, "packs"))
             ? Directory.GetDirectories(Path.Combine(dotnetRoot, "packs"), "Microsoft.NET.Runtime.Emscripten.*.Sdk.*")
                 .SelectMany(d => Directory.GetFiles(d, "LICENSE", SearchOption.AllDirectories)).FirstOrDefault(f => f.Replace('\\', '/').EndsWith("tools/emscripten/LICENSE", StringComparison.Ordinal))
@@ -122,9 +105,9 @@ public static class Hosts
         // HarfBuzz is linked into the page's WebAssembly when the game shapes text (its binding is then in the package).
         if (Directory.GetFiles(Path.Combine(top, "_framework"), "HarfBuzzSharp.*").Length > 0) engines.Add(EngineNotices.HarfBuzz);
         foreach (string engine in engines) File.Copy(Path.Combine(Tool.Home, "Notices", engine), Path.Combine(top, "licenses", engine), overwrite: true);
-        foreach (var (from, to) in new[] { (Path.Combine(runtime, "LICENSE.TXT"), "dotnet-LICENSE.txt"), (Path.Combine(runtime, "THIRD-PARTY-NOTICES.TXT"), "dotnet-THIRD-PARTY-NOTICES.txt"), (emscripten, "emscripten-LICENSE.txt") })
+        foreach (var (from, to) in new[] { (runtime.Licence, "dotnet-LICENSE.txt"), (runtime.Notices, "dotnet-THIRD-PARTY-NOTICES.txt"), (emscripten, "emscripten-LICENSE.txt") })
         {
-            if (from is null || !File.Exists(from)) throw new CliException($"a licence file of the browser toolchain is missing ({from ?? "emscripten's LICENSE"}); is the wasm-tools workload installed in {dotnetRoot}?");
+            if (from is null || !File.Exists(from)) throw new CliException($"a licence file of the browser toolchain is missing ({from ?? "emscripten's LICENSE"}); is the {game.WebWorkload} workload installed in {dotnetRoot}? (dotnet workload install {game.WebWorkload})");
             File.Copy(from, Path.Combine(top, "licenses", to), overwrite: true);
         }
     }
@@ -139,8 +122,6 @@ public static class Hosts
         string host = Stage("android", game, new()
         {
             ["GameAndroidMinApi"] = game.AndroidMinApi,
-            // The runtime pack the Android workload installed, whose licence and notices the APK carries.
-            ["GameAndroidRuntimePack"] = WorkloadPack(game.NetCoreRoot, "Microsoft.NETCore.App.Runtime.Mono.android-arm64", game.DotnetVersion) + Path.DirectorySeparatorChar,
             ["GameVersionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
         }, $"    public const global::Android.Content.PM.ScreenOrientation ScreenOrientation = global::Android.Content.PM.ScreenOrientation.{game.Orientation switch { "portrait" => "SensorPortrait", "any" => "FullSensor", _ => "SensorLandscape" }};");
         string res = Path.Combine(host, "Resources");
@@ -154,17 +135,27 @@ public static class Hosts
         AndroidSplash(game, res, iconImage);
         string publish = host + "-publish";
         if (Directory.Exists(publish)) Directory.Delete(publish, recursive: true);
-        var args = new List<string> { "publish", Path.Combine(host, "Host.csproj"), "-c", "Release", "-p:MicroEngineNativePackage=true", "-o", publish, "-nologo" };
-        if (Environment.GetEnvironmentVariable("ANDROID_HOME") is { Length: > 0 } sdk) args.Add($"-p:AndroidSdkDirectory={sdk}");
-        if (Environment.GetEnvironmentVariable("JAVA_HOME") is { Length: > 0 } java) args.Add($"-p:JavaSdkDirectory={java}");
-        args.AddRange(signing.Arguments);
+        string project = Path.Combine(host, "Host.csproj");
+        var properties = new List<string> { "-p:MicroEngineNativePackage=true" };
+        if (Environment.GetEnvironmentVariable("ANDROID_HOME") is { Length: > 0 } sdk) properties.Add($"-p:AndroidSdkDirectory={sdk}");
+        if (Environment.GetEnvironmentVariable("JAVA_HOME") is { Length: > 0 } java) properties.Add($"-p:JavaSdkDirectory={java}");
         Console.WriteLine($"Building {game.Title} for Android ({signing.Kind} signing)...");
-        Tool.Run(Tool.Dotnet, args, host, "the Android build", secrets: signing.Secrets);
+        // The APK carries the licence and notices of the runtime pack the build uses, which MSBuild resolves once the
+        // host is restored (the publish's own restore then has nothing to do).
+        string runtimeProps = Path.Combine(host, "Runtime.props");
+        File.Delete(runtimeProps);
+        Tool.Run(Tool.Dotnet, ["restore", project, .. properties, "-nologo"], host, "the Android build (restore)");
+        var runtime = Packaging.RuntimePack(project, request.Target.Rid.Split(';')[0], properties);
+        File.WriteAllText(runtimeProps, "<Project>\n  <!-- Written by microengine: the .NET runtime pack's licence and notices. -->\n  <ItemGroup>\n"
+            + $"    <GameNotice Include=\"{Escape(runtime.Licence)}\" Name=\"dotnet-LICENSE.txt\" />\n"
+            + $"    <GameNotice Include=\"{Escape(runtime.Notices)}\" Name=\"dotnet-THIRD-PARTY-NOTICES.txt\" />\n"
+            + "  </ItemGroup>\n</Project>\n");
+        Tool.Run(Tool.Dotnet, ["publish", project, "-c", "Release", "-o", publish, "-nologo", .. properties, .. signing.Arguments], host, "the Android build", secrets: signing.Secrets);
         string apk = Directory.GetFiles(publish, "*-Signed.apk").FirstOrDefault() ?? throw new CliException("the Android build produced no signed APK.");
         Directory.CreateDirectory(request.Out);
         string file = Path.Combine(request.Out, request.FileName);
         File.Copy(apk, file, overwrite: true);
-        var info = Packaging.BuildInfo(request, signing.Kind);
+        var info = Packaging.BuildInfo(request, signing.Kind, runtime.Version);
         info["versionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture);
         File.WriteAllText(Path.ChangeExtension(file, ".build-info.json"), JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }) + "\n");
         if (signing.Kind == "debug") Packaging.Warn("this APK is signed with this machine's debug key: install it for testing, never distribute it (docs/guide/signing.md).");
@@ -208,9 +199,10 @@ public static class Hosts
         if (device) args.AddRange(["-o", publish, $"-p:CodesignKey={key}", $"-p:CodesignProvision={profile}"]);
         Console.WriteLine($"Building {game.Title} for {request.Target.Label}...");
         Tool.Run(Tool.Dotnet, args, host, "the iOS build");
+        var runtime = Packaging.RuntimePack(Path.Combine(host, "Host.csproj"), request.Target.Rid, ["-p:MicroEngineNativePackage=true"]);
         Directory.CreateDirectory(request.Out);
         string file = Path.Combine(request.Out, request.FileName);
-        var info = Packaging.BuildInfo(request, device ? "apple" : "simulator");
+        var info = Packaging.BuildInfo(request, device ? "apple" : "simulator", runtime.Version);
         info["versionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (device)
         {

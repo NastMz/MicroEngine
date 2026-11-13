@@ -15,7 +15,7 @@ public sealed partial class GameProject
         "AssemblyName", "ApplicationTitle", "ApplicationId", "Version", "Description", "MicroEngineIcon", "MicroEngineOrientation",
         "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
         "MicroEngineVersion", "MicroEngineAppTargets", "MicroEngineAndroidMinApi", "OutputType", "TargetFramework", "TargetDir",
-        "BundledNETCoreAppPackageVersion", "MicroEngineWebSdlFromPackage", "NetCoreRoot",
+        "MicroEngineWebSdlFromPackage", "NetCoreRoot", "NETCoreSdkVersion",
         "MicroEngineTextShaping", "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
     ];
 
@@ -39,7 +39,11 @@ public sealed partial class GameProject
     public string Description => this["Description"];
     public string Orientation => this["MicroEngineOrientation"].Length > 0 ? this["MicroEngineOrientation"] : "landscape";
     public string EngineVersion => this["MicroEngineVersion"].Length > 0 ? this["MicroEngineVersion"] : "unknown";
-    public string DotnetVersion => this["BundledNETCoreAppPackageVersion"];
+    /// <summary>The .NET the game targets (TargetFramework, for example net10.0); packages carry that framework's runtime.</summary>
+    public string TargetFramework => this["TargetFramework"];
+    /// <summary>The workload that builds this game's browser packages with the SDK that builds it (<see cref="Doctor.WebWorkload"/>).</summary>
+    public string WebWorkload => Doctor.WebWorkload(Doctor.Major(this["NETCoreSdkVersion"]),
+        int.TryParse(TargetFramework.Replace("net", "").Split('.')[0], out int framework) ? framework : Doctor.FrameworkMajor);
     public string NetCoreRoot => this["NetCoreRoot"];
     public string AndroidMinApi => this["MicroEngineAndroidMinApi"].Length > 0 ? this["MicroEngineAndroidMinApi"] : "24";
     /// <summary>The SDL3.a the MicroEngine.Sdl package carries for browser builds, when the game references the package.</summary>

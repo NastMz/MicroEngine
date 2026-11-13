@@ -41,24 +41,40 @@ public sealed class NoticesTests
     }
 
     [TestMethod]
-    public void The_runtime_licences_come_from_the_workload_pack_that_is_installed_even_when_the_SDK_is_newer()
+    public void The_runtime_licences_come_from_the_runtime_pack_MSBuild_resolved_not_from_the_SDK_version()
     {
-        // An SDK newer than the latest workload set (10.0.404 with the 10.403 set) bundles runtime 10.0.15, but the
-        // workload installs its runtime packs at 10.0.14.
-        string root = Directory.CreateTempSubdirectory("dotnet-root-").FullName;
+        // What SDK 11.0.100 (which bundles runtime 11.0.0) prints for a net10.0 Android host: the pack it uses is 10.0.15,
+        // and other frameworks' packs come first.
+        const string json = """
+            {
+              "Items": {
+                "ResolvedRuntimePack": [
+                  { "Identity": "Microsoft.Android.Runtime.36.android", "FrameworkName": "Microsoft.Android", "NuGetPackageVersion": "36.1.118", "PackageDirectory": "/dotnet/packs/Microsoft.Android.Runtime.36.android/36.1.118" },
+                  { "Identity": "Microsoft.NETCore.App.Runtime.Mono.android-arm64", "FrameworkName": "Microsoft.NETCore.App", "NuGetPackageVersion": "10.0.15", "PackageDirectory": "/dotnet/packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/10.0.15" }
+                ]
+              }
+            }
+            """;
+        Assert.AreEqual(new DotnetRuntime("/dotnet/packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/10.0.15", "10.0.15"), Packaging.ParseRuntimePack(json));
+        Assert.IsNull(Packaging.ParseRuntimePack("""{ "Items": { "ResolvedRuntimePack": [] } }"""), "no runtime pack resolved (a project restored for another runtime)");
+        Assert.IsNull(Packaging.ParseRuntimePack("""{ "Items": {} }"""));
+        Assert.ThrowsExactly<CliException>(() => Packaging.ParseRuntimePack("warning: not JSON"));
+    }
+
+    [TestMethod]
+    public void A_runtime_pack_without_its_licence_files_is_an_error_that_names_the_folder()
+    {
+        string dir = Directory.CreateTempSubdirectory("runtime-pack-").FullName;
         try
         {
-            string packs = Path.Combine(root, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm");
-            foreach (var version in new[] { "10.0.9", "10.0.14" })
-            {
-                Directory.CreateDirectory(Path.Combine(packs, version));
-                File.WriteAllText(Path.Combine(packs, version, "LICENSE.TXT"), version);
-            }
-            Assert.AreEqual(Path.Combine(packs, "10.0.14"), Hosts.WorkloadPack(root, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", "10.0.15"), "the newest pack installed");
-            Assert.AreEqual(Path.Combine(packs, "10.0.9"), Hosts.WorkloadPack(root, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", "10.0.9"), "the SDK's own runtime version when it is installed");
-            Assert.AreEqual(Path.Combine(root, "packs", "Missing", "10.0.15"), Hosts.WorkloadPack(root, "Missing", "10.0.15"), "no pack at all: the expected path, for the error message");
+            var pack = new DotnetRuntime(dir, "10.0.15");
+            File.WriteAllText(Path.Combine(dir, "LICENSE.TXT"), "MIT");
+            Assert.AreEqual(Path.Combine(dir, "LICENSE.TXT"), pack.Licence);
+            var error = Assert.ThrowsExactly<CliException>(() => pack.Notices);
+            StringAssert.Contains(error.Message, Path.Combine(dir, "THIRD-PARTY-NOTICES.TXT"));
+            StringAssert.Contains(error.Message, "10.0.15");
         }
-        finally { Directory.Delete(root, recursive: true); }
+        finally { Directory.Delete(dir, recursive: true); }
     }
 
     [TestMethod]
