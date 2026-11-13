@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.0" class="dungeon" orientation="orthogonal" renderorder="right-down" width="4" height="3" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#203040" nextlayerid="11" nextobjectid="9">
+ <properties>
+  <property name="music" value="cave"/>
+ </properties>
+ <tileset firstgid="1" source="../tilesets/terrain.tsx"/>
+ <tileset firstgid="5" name="props" tilewidth="16" tileheight="32" tilecount="1" columns="0">
+  <grid orientation="orthogonal" width="1" height="1"/>
+  <tile id="0" type="chest">
+   <properties>
+    <property name="bonus" type="float" value="0.5"/>
+    <property name="kind" value="treasure"/>
+    <property name="loot" type="int" value="10"/>
+   </properties>
+   <image source="../props/chest.png" width="16" height="32"/>
+  </tile>
+ </tileset>
+ <layer id="1" name="ground" width="4" height="3">
+  <data encoding="csv">
+536870915,0,0,0,
+4,0,0,5,
+1,2147483649,2,3221225474
+</data>
+ </layer>
+ <layer id="10" name="decor" width="4" height="3" visible="0">
+  <data encoding="csv">
+0,0,1,0,
+0,0,0,0,
+0,0,0,0
+</data>
+ </layer>
+ <group id="2" name="entities" offsetx="8" offsety="0">
+  <objectgroup id="3" name="spawns" offsety="4">
+   <object id="1" name="door" type="door" x="16" y="16" width="16" height="32" rotation="90">
+    <properties>
+     <property name="cost" type="int" value="3"/>
+     <property name="glow" type="color" value="#80ff00ff"/>
+     <property name="locked" type="bool" value="true"/>
+     <property name="partner" type="object" value="2"/>
+     <property name="speed" type="float" value="1.5"/>
+     <property name="sprite" type="file" value="../props/chest.png"/>
+     <property name="stats" type="class" propertytype="Stats">
+      <properties>
+       <property name="hp" type="int" value="7"/>
+      </properties>
+     </property>
+     <property name="target" value="cave"/>
+    </properties>
+   </object>
+   <object id="2" name="spawn" x="32" y="40">
+    <point/>
+   </object>
+   <object id="3" x="0" y="0" width="8" height="8">
+    <ellipse/>
+   </object>
+   <object id="4" x="10" y="10">
+    <polygon points="0,0 8,0 8,8"/>
+   </object>
+   <object id="5" x="20" y="20" visible="0">
+    <polyline points="0,0 5,5"/>
+   </object>
+   <object id="6" x="0" y="0" width="40" height="10">
+    <text>Hello</text>
+   </object>
+   <object id="7" gid="2147483653" x="48" y="48" width="16" height="32"/>
+   <object id="8" template="../templates/enemy.tx" x="24" y="24">
+    <properties>
+     <property name="hp" type="int" value="5"/>
+    </properties>
+   </object>
+  </objectgroup>
+ </group>
+ <imagelayer id="9" name="sky" opacity="0.5" repeatx="1">
+  <image source="../props/chest.png" width="16" height="32"/>
+ </imagelayer>
+</map>

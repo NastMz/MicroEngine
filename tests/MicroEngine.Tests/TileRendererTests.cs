@@ -53,6 +53,20 @@ public sealed class TileRendererTests
         Assert.IsTrue(asked.Contains((7, 7)));
     }
 
+    [TestMethod]
+    public void A_layer_is_drawn_at_its_offset_with_its_tint()
+    {
+        var (r, g) = Reference(8, 4);
+        var white = new PixelImage(1, 1);
+        white[0, 0] = Color.White;
+        var sprite = new Sprite(g.CreateTexture(white, TextureFilter.Nearest), new RectF(0, 0, 1, 1), Vector2.Zero);
+        var layer = new TileLayer(2, 1);
+        layer[0, 0] = 1;
+        TileRenderer.Draw(r, layer, 1, null, (_, _, _) => sprite, null, new Vector2(5, 2), new Color(255, 0, 0));
+        Assert.AreEqual(new Color(255, 0, 0), r.Frame![5, 2], "tile (0, 0) at the offset, tinted");
+        Assert.HasCount(1, Enumerable.Range(0, 32).Where(i => r.Frame![i % 8, i / 8] != Bg));
+    }
+
     /// <summary>The Tiled rule: the diagonal flip (x and y swapped) first, then the horizontal, then the vertical.</summary>
     private static Color Expected(Color[,] source, int x, int y, TileOrientation o)
     {

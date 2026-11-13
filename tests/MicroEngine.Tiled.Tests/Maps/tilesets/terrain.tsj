@@ -1,0 +1,68 @@
+{
+ "type": "tileset",
+ "version": "1.10",
+ "tiledversion": "1.11.0",
+ "name": "terrain",
+ "tilewidth": 16,
+ "tileheight": 16,
+ "tilecount": 4,
+ "columns": 2,
+ "image": "terrain.png",
+ "imagewidth": 32,
+ "imageheight": 32,
+ "margin": 0,
+ "spacing": 0,
+ "properties": [
+  {
+   "name": "biome",
+   "type": "string",
+   "value": "cave"
+  }
+ ],
+ "tiles": [
+  {
+   "id": 0,
+   "properties": [
+    {
+     "name": "collision",
+     "type": "string",
+     "value": "solid"
+    }
+   ]
+  },
+  {
+   "id": 1,
+   "properties": [
+    {
+     "name": "collision",
+     "type": "string",
+     "value": "oneway"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "animation": [
+    {
+     "tileid": 2,
+     "duration": 100
+    },
+    {
+     "tileid": 3,
+     "duration": 300
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "type": "lava",
+   "properties": [
+    {
+     "name": "collision",
+     "type": "string",
+     "value": "solid, hazard"
+    }
+   ]
+  }
+ ]
+}
