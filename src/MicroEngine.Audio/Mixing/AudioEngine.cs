@@ -314,6 +314,13 @@ public sealed class AudioEngine : IDisposable
         l.Order = ++_played;
         l.Paused = false;
         l.Feed = feed;
+        l.Loop = p.Loop;
+        l.Frames = clip is null ? 0 : clip.Samples.Length / clip.Channels;
+        l.Rate = clip is null ? 1 : (double)clip.SampleRate / _rate;
+        l.Step = step;
+        l.Position = 0;
+        l.PositionFrame = at;
+        l.Limit = long.MaxValue;
         var (left, right) = Balance(p.Pan);
         Post(new Command
         {
@@ -357,7 +364,8 @@ public sealed class AudioEngine : IDisposable
         if (!IsPlaying(voice)) return false;
         long fade = Math.Max(0, (long)Math.Round(fadeSeconds * _rate));
         ref var l = ref _logical[voice.Index];
-        l.End = Math.Min(l.End, Now + fade);
+        l.Limit = Math.Min(l.Limit, Now + fade);
+        l.End = Math.Min(l.End, l.Limit);
         if (fade == 0) Release(voice.Index);
         Post(new Command { Op = Op.Stop, Slot = voice.Index, Frame = Now, Fade = fade });
         return true;
@@ -373,6 +381,32 @@ public sealed class AudioEngine : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Changes the pitch of <paramref name="voice"/> from the current step's frame: the playback speed factor, 1 for the
+    /// clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
+    /// mixer's timeline moves its end accordingly. Streams play at their own pitch.
+    /// </summary>
+    /// <returns>Whether it was playing and is a clip; false for a stale handle or a stream.</returns>
+    public bool SetPitch(VoiceHandle voice, float pitch)
+    {
+        if (!IsPlaying(voice)) return false;
+        ref var l = ref _logical[voice.Index];
+        if (l.Feed is not null) return false;
+        long now = Now;
+        // Where the sound is on the timeline: it advanced at the old speed since the last change, unless paused.
+        if (!l.Paused) l.Position += (now - l.PositionFrame) * l.Step;
+        l.PositionFrame = now;
+        l.Step = l.Rate * Math.Clamp(pitch, 0.01f, 100f);
+        if (!l.Loop && l.Frames > 0)
+        {
+            long left = Math.Max(0, (long)Math.Ceiling((l.Frames - l.Position) / l.Step));
+            if (l.Paused) l.Remaining = left;
+            else l.End = Math.Min(now + left, l.Limit);
+        }
+        Post(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = l.Step });
+        return true;
+    }
+
     /// <summary>Pauses (true) or resumes (false) <paramref name="voice"/> from the current step's frame; a paused sound keeps its voice.</summary>
     /// <returns>Whether it was playing.</returns>
     public bool Pause(VoiceHandle voice, bool paused)
@@ -381,6 +415,8 @@ public sealed class AudioEngine : IDisposable
         ref var l = ref _logical[voice.Index];
         if (l.Paused == paused) return true;
         long now = Now;
+        if (paused) l.Position += (now - l.PositionFrame) * l.Step;
+        l.PositionFrame = now;
         if (paused)
         {
             l.Remaining = l.End == long.MaxValue ? long.MaxValue : l.End - now;
@@ -580,9 +616,11 @@ public sealed class AudioEngine : IDisposable
         if (voice.PendingVolume >= 0) voice.Volume = voice.PendingVolume;
         if (voice.PendingLeft >= 0) (voice.Left, voice.Right) = (voice.PendingLeft, voice.PendingRight);
         if (voice.PendingPause != 0) voice.Paused = voice.PendingPause > 0;
+        if (voice.PendingStep > 0) voice.Step = voice.PendingStep;
         voice.PendingAt = long.MaxValue;
         voice.PendingVolume = voice.PendingLeft = -1;
         voice.PendingPause = 0;
+        voice.PendingStep = 0;
     }
 
     private void Drain(long blockStart)
@@ -621,12 +659,14 @@ public sealed class AudioEngine : IDisposable
                 case Op.Set:
                 case Op.Pause:
                     ref var changing = ref Target(c.Slot);
-                    if (changing.PendingAt != long.MaxValue) ApplyPending(ref changing);
+                    // Changes of one frame (a step's volume, pan and pitch) wait together for it; an earlier one is due.
+                    if (changing.PendingAt != long.MaxValue && changing.PendingAt != at) ApplyPending(ref changing);
                     changing.PendingAt = at;
                     if (c.Op == Op.Set)
                     {
-                        changing.PendingVolume = c.Volume;
-                        (changing.PendingLeft, changing.PendingRight) = (c.Left, c.Right);
+                        if (c.Volume >= 0) changing.PendingVolume = c.Volume;
+                        if (c.Left >= 0) (changing.PendingLeft, changing.PendingRight) = (c.Left, c.Right);
+                        if (c.Step > 0) changing.PendingStep = c.Step;
                     }
                     else changing.PendingPause = c.Paused ? 1 : -1;
                     break;
@@ -670,16 +710,20 @@ public sealed class AudioEngine : IDisposable
         public long PendingAt;
         public float PendingVolume, PendingLeft, PendingRight;
         public int PendingPause;
+        public double PendingStep;
     }
 
     /// <summary>A voice as the main thread's policy sees it.</summary>
     private struct Logical
     {
         public uint Generation;
-        public bool Active, Paused;
+        public bool Active, Paused, Loop;
         public long Start, End, Remaining, Order;
         public int Priority;
         public StreamFeed? Feed;
+        // Live pitch: the clip's frames, its rate over the output's, its speed now, and its position at PositionFrame.
+        public long Frames, PositionFrame, Limit;
+        public double Rate, Step, Position;
     }
 }
 

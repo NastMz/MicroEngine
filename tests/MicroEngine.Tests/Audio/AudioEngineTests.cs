@@ -230,6 +230,108 @@ public sealed class AudioEngineTests
         Assert.AreEqual(0.5f, Right(sink, 3 * StepFrames + 3), "resumed");
     }
 
+    private static AudioClip Ramp(int frames) => new([.. Enumerable.Range(0, frames).Select(i => i / (float)frames)], Rate);
+
+    [TestMethod]
+    public void Pitch_changes_at_the_frame_of_its_step_and_moves_the_sounds_end()
+    {
+        var (engine, sink) = Open(maxVoices: 1);
+        int frames = 4 * StepFrames;
+        var voice = engine.Play(Ramp(frames), new PlayParameters());
+        Step(engine);
+        Assert.IsTrue(engine.SetPitch(voice, 2f));
+        Step(engine);
+        Assert.AreEqual((StepFrames - 1) / (float)frames, Left(sink, StepFrames - 1), 1e-6f, "the original pitch until the step that changed it");
+        for (int k = 0; k < StepFrames; k += 37)
+            Assert.AreEqual((StepFrames + 2 * k) / (float)frames, Left(sink, StepFrames + k), 1e-6f, $"twice as fast from that frame on ({k})");
+        // One step at pitch 1 and one at pitch 2 played three of its four steps; the last one takes half a step.
+        Assert.IsTrue(engine.IsPlaying(voice));
+        Step(engine);
+        Assert.IsFalse(engine.IsPlaying(voice), "the mixer's timeline knows the new end");
+        Assert.AreEqual(0f, Left(sink, 2 * StepFrames + StepFrames / 2 + 1), "and the sound ended there");
+        Assert.IsFalse(engine.SetPitch(voice, 1f), "a stale handle does nothing");
+    }
+
+    [TestMethod]
+    public void Slowing_a_sound_down_keeps_its_voice_until_its_later_end()
+    {
+        var (engine, _) = Open(maxVoices: 1);
+        var voice = engine.Play(Constant(0.1f, 2 * StepFrames), new PlayParameters());
+        Step(engine);
+        engine.SetPitch(voice, 0.5f);
+        Step(engine);
+        Assert.IsTrue(engine.IsPlaying(voice), "the remaining step lasts two at half speed");
+        Assert.IsTrue(engine.Play(Constant(0.1f, 10), new PlayParameters { Priority = -1 }).IsNone, "so its voice is still taken");
+        Step(engine);
+        Assert.IsFalse(engine.IsPlaying(voice));
+    }
+
+    [TestMethod]
+    public void Pitch_changes_while_paused_apply_to_what_is_left()
+    {
+        var (engine, sink) = Open();
+        int frames = 4 * StepFrames;
+        var voice = engine.Play(Ramp(frames), new PlayParameters());
+        Step(engine);
+        engine.Pause(voice, true);
+        Assert.IsTrue(engine.SetPitch(voice, 3f));
+        Step(engine);
+        Assert.IsTrue(engine.IsPlaying(voice), "paused sounds keep their voice");
+        engine.Pause(voice, false);
+        Step(engine);
+        Assert.AreEqual((StepFrames + 3 * 10) / (float)frames, Left(sink, 2 * StepFrames + 10), 1e-6f, "resumed where it was, three times as fast");
+        Assert.IsFalse(engine.IsPlaying(voice), "three steps of sound were left: one step at three times the speed");
+    }
+
+    [TestMethod]
+    public void Pitch_is_clamped_and_loops_and_streams_keep_playing()
+    {
+        var (engine, sink) = Open();
+        var loop = engine.Play(Constant(0.25f, 10), new PlayParameters { Loop = true });
+        Assert.IsTrue(engine.SetPitch(loop, 0f), "clamped to 0.01, as when a sound starts");
+        Step(engine, 3);
+        Assert.IsTrue(engine.IsPlaying(loop));
+        Assert.AreEqual(0.25f, Left(sink, 3 * StepFrames - 1));
+        var stream = engine.Play(new CountingStream(Rate, 0.5f), new PlayParameters { Bus = "music" });
+        Assert.IsFalse(engine.SetPitch(stream, 2f), "streams play at their own pitch");
+        Assert.IsTrue(engine.IsPlaying(stream));
+    }
+
+    [TestMethod]
+    public void Changes_of_one_step_take_effect_together_at_its_frame()
+    {
+        var (engine, sink) = Open(delayFrames: 100);
+        int frames = 4 * StepFrames;
+        var voice = engine.Play(Ramp(frames), new PlayParameters());
+        Step(engine);
+        engine.Set(voice, volume: 0.5f);
+        engine.SetPitch(voice, 2f);
+        engine.Set(voice, pan: 1f);
+        Step(engine, 2);
+        // The step's frame is one step plus the delay; the sound itself started at the delay.
+        int at = StepFrames + 100, played = StepFrames;
+        Assert.AreEqual((played - 1) / (float)frames, Left(sink, at - 1), 1e-6f, "unchanged until that frame: full volume, centred, original pitch");
+        Assert.AreEqual((played - 1) / (float)frames, Right(sink, at - 1), 1e-6f);
+        Assert.AreEqual(0f, Left(sink, at + 5), "panned right from it");
+        Assert.AreEqual((played + 2 * 5) / (float)frames * 0.5f, Right(sink, at + 5), 1e-6f, "at half volume and twice the speed");
+    }
+
+    [TestMethod]
+    public void Live_control_commands_render_without_garbage()
+    {
+        var (engine, _) = Open(maxVoices: 4);
+        var voice = engine.Play(Constant(0.01f, Rate * 4), new PlayParameters { Loop = true });
+        Step(engine, 5);
+        var buffer = new float[512];
+        int n = 0;
+        AllocationAssert.None(() =>
+        {
+            engine.SetPitch(voice, 0.5f + n++ % 10 * 0.1f);
+            engine.Set(voice, volume: 0.5f, pan: n % 3 * 0.5f);
+            engine.Render(buffer);
+        }, calls: 50, because: "neither the game thread's calls nor the render that applies them make garbage");
+    }
+
     /// <summary>A stream that records when it is read, to prove decoding never runs inside a step.</summary>
     private sealed class CountingStream(int frames, float value) : IAudioStream
     {
