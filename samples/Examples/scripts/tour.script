@@ -146,4 +146,11 @@
 2660 press confirm
 2700 capture 24-shaping.png
 2706 press pause
-2720 quit
+2720 press down
+2734 press down
+2748 press confirm
+2790 press confirm
+2812 capture 25-timeline.png
+2870 capture 25-timeline-rest.png
+2876 press pause
+2890 quit
