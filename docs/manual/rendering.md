@@ -495,7 +495,7 @@ a 3D renderer:
 - No shaders, render targets or post-processing are exposed through `IRenderer`.
 - No mipmaps or compressed GPU texture formats; textures are 32-bit RGBA.
 - No sprite batching control beyond packing art into atlases; draw order is call order.
-- Tile maps come from code (ASCII rows); there is no map editor or Tiled importer.
+- Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.
 - On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in
   quick succession can, rarely, be ended by a fault inside the driver's own background thread. A game keeps one device
   for its whole run and is not affected; tools that open devices repeatedly can use Direct3D 12 on such machines.

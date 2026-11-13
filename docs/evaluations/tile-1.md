@@ -68,8 +68,19 @@ reuse them later; doing both now doubles the surface before the first one is pro
   regions of one map has no measured need today. A game that wants rooms or regions loads one map file per area, as
   Tiled's world files (`.world`) and LDtk's per-level files already encourage.
 
-No measurement was run for this section; it is arithmetic over the code paths named. The implementation adds a
-benchmark of a large Tiled map (load time and draw time at zoom 1 and 0.5) so the claims become measurements.
+This section was written as arithmetic over the code paths named; the implementation measured it with
+`benchmarks/MapBench` (Windows x64, .NET 10.0.15, median of 5 runs, 2026-11-13) on a 1000 × 1000 map of 16-pixel tiles
+with three base64 + zlib layers (a 605 KB file):
+
+| Measurement | Median | Allocated |
+| --- | ---: | ---: |
+| Load the map through the asset cache (parse, decompress, build layers) | 80.35 ms | 45 MB |
+| Draw one frame, 320 × 180 camera at zoom 1 (351 tiles) | 82.2 µs | 1 KB |
+| Draw one frame at zoom 0.5 (1,044 tiles) | 244 µs | 1 KB |
+
+The layers take 14.3 MB (an id and an orientation per cell). Drawing follows what the camera shows, not the map's
+size, so streaming parts of one map stays unjustified; the load allocates about three times the map's final size in
+the parser's intermediate arrays, a one-off cost per level.
 
 ## 4. Options
 

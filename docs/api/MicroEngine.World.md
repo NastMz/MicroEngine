@@ -28,6 +28,10 @@ blocks). X is resolved before Y, each as a swept test in sub-steps no larger tha
 against the first solid tile or rectangle in its way, however thin, so it never tunnels. One-way tiles only stop
 bodies falling onto their top edge.
 
+ [TileOrientations](MicroEngine.World.TileOrientations.md)
+
+Turns a [TileOrientation](MicroEngine.World.TileOrientation.md) into drawing options.
+
  [TileRenderer](MicroEngine.World.TileRenderer.md)
 
 Draws the visible part of a layer, asking the game which sprite each tile uses.
@@ -50,5 +54,12 @@ Answers collision queries for [TileMotion](MicroEngine.World.TileMotion.md).
  [TileFlags](MicroEngine.World.TileFlags.md)
 
 Collision semantics of a tile. Games may use the Custom bits for their own meaning.
+
+ [TileOrientation](MicroEngine.World.TileOrientation.md)
+
+How one cell's tile is mirrored or turned, as map editors store it (Tiled's flip bits). The diagonal flip (x and y
+swapped) applies first, then the horizontal and the vertical flips, so the eight combinations cover every quarter
+turn with or without a mirror: <code>Diagonal | FlipX</code> is a quarter turn clockwise, <code>Diagonal | FlipY</code> a
+quarter turn anticlockwise, <code>FlipX | FlipY</code> a half turn.
 
 </div>

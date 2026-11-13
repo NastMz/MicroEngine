@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Text', 'MicroEngine.Text.Shaping', 'MicroEngine.Input', 'MicroEngine.Input.Touch', 'MicroEngine.UI', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine.Saves', 'MicroEngine.Achievements', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Text', 'MicroEngine.Text.Shaping', 'MicroEngine.Input', 'MicroEngine.Input.Touch', 'MicroEngine.UI', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine.Saves', 'MicroEngine.Achievements', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Tiled'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -40,6 +40,7 @@ const guides = {
   'MicroEngine.Saves': ['Persistence', '../manual/persistence.md'],
   'MicroEngine.Scenes': ['Scenes', '../manual/scenes.md'],
   'MicroEngine.Sdl': ['Backends and platforms', '../manual/backends.md'],
+  'MicroEngine.Tiled': ['Maps from Tiled', '../manual/world.md#maps-from-tiled'],
   'MicroEngine.UI': ['UI widgets', '../manual/ui.md'],
   'MicroEngine.World': ['Tile maps and collision', '../manual/world.md'],
 };
@@ -91,6 +92,7 @@ const namespaceSummaries = {
   'MicroEngine.Raylib': 'The raylib platform for desktops (in the published SDK, also the browser platform).',
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android, iOS and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
+  'MicroEngine.Tiled': 'Maps made in the Tiled editor (optional package): the map loaded through the assets, its tile, object, image and group layers, objects and typed properties, tilesets and tiles, collision grids from a tile property, and the sprites that draw tile layers and tile objects.',
   'MicroEngine.UI': 'Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer.',
   'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles.',
 };
@@ -106,8 +108,8 @@ function run(command, args, options = {}) {
 
 // 1. Build the assemblies (their XML documentation files sit next to them), then let DocFX read them.
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-api-'));
-// The desktop package brings every SDK assembly but the optional shaping package, built beside it.
-for (const project of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj'])
+// The desktop package brings every SDK assembly but the optional shaping and Tiled packages, built beside it.
+for (const project of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj', 'src/MicroEngine.Tiled/MicroEngine.Tiled.csproj'])
   run('dotnet', ['build', project, '-c', 'Release', '-v', 'q', '-nologo', `-p:OutDir=${path.join(work, 'bin')}${path.sep}`]);
 // Without symbols DocFX cannot turn a type of another assembly into a link to its source at the current commit, which
 // would make every page change with every commit (and differ in a copy without .git).

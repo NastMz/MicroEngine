@@ -167,10 +167,101 @@ The tutorial's player and slimes are plain classes too. MicroEngine has no entit
 
 ## Drawing tiles
 
-`TileRenderer.Draw(r, layer, tileSize, camera, spriteFor)` draws the cells the camera sees (with a one-tile margin),
-calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one. Call it between `PushCamera` and
-`PopCamera`. `Autotile.Mask4(layer, x, y, same)` returns a 4-bit mask of matching neighbours (1 up, 2 right, 4 down,
-8 left), the usual way to choose a wall's edge or corner sprite.
+`TileRenderer.Draw(r, layer, tileSize, camera, spriteFor)` draws the cells the camera shows, zoom and rotation
+included, with a one-tile margin, calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one.
+Call it between `PushCamera` and `PopCamera`. Its longer overload also takes each cell's `TileOrientation` (mirrored
+left to right, top to bottom, or across the diagonal, as map editors store it; the eight combinations cover every
+quarter turn), where the layer is drawn, a tint and an extra margin for sprites larger than a cell.
+`Autotile.Mask4(layer, x, y, same)` returns a 4-bit mask of matching neighbours (1 up, 2 right, 4 down, 8 left), the
+usual way to choose a wall's edge or corner sprite.
+
+## Maps from Tiled
+
+The optional `MicroEngine.Tiled` package loads maps made in the [Tiled](https://www.mapeditor.org/) editor: `.tmx` and
+`.tmj` files with their external tilesets (`.tsx`, `.tsj`) and templates (`.tx`, `.tj`), compressed or not, finite or
+infinite.
+
+```xml
+<PackageReference Include="MicroEngine.Tiled" Version="0.6.0-alpha.1" />
+```
+
+`Assets.TiledMap(path)` reads the map and every file it names through the game's assets, so maps load from folders,
+archives and browser packages alike, once per scope. The map is data; `new TiledSprites(map, Assets)` turns its
+tileset images into textures. Load both in `Load`, as any asset:
+
+<!-- code: samples/TiledLevel/TiledLevelGame.cs#load -->
+```csharp
+// The map, its tileset and its templates come through the game's assets, like any content file; the tileset's
+// images become textures here, so nothing loads during play.
+Map = Assets.TiledMap("map/sandbox.tmx");
+Sprites = new TiledSprites(Map, Assets);
+```
+
+What the map holds:
+
+- **Tile layers** (`map.TileLayer(name)`) are a `TileLayer` of global tile ids (0 for empty) the size of the map, and
+  `OrientationAt(x, y)` for each cell. `map.Tile(id)` gives a tile's tileset, class, properties, animation frames and
+  the collision shapes drawn in Tiled's tile editor.
+- **Object layers** (`map.ObjectLayer(name)`, or `map.Objects` for all of them) hold `TiledObject`s: name, class,
+  shape (rectangle, ellipse, point, polygon, polyline, text, tile), position in map pixels with the layer's offset
+  included, size, rotation in radians, `Bounds` and `TurnedBounds`. A template's instance has the template's values
+  and properties, its own winning; a tile object has its tile's class and properties under its own.
+- **Properties** of the map, layers, tilesets, tiles and objects are typed: `String`, `Int`, `Float`, `Bool`, `Color`,
+  `Class` (a custom class's members); a file property is a content path, an object property an object id
+  (`map.Object(id)`).
+- **Layers** keep their visibility, opacity, tint, offset and parallax factor, groups included.
+
+The engine gives no class or property a meaning: what an object is, is the game's rule. The Tiled sample builds its
+level from the objects the designer marked:
+
+<!-- code: samples/TiledLevel/LevelScene.cs#level -->
+```csharp
+// The map is data: this game decides what its classes and properties mean.
+foreach (var o in map.Objects)
+{
+    if (o.Properties.String("bodyType") is "static" or "dynamic") _solids.Add(o.TurnedBounds);
+    if (o.Class == "coin") _coins.Add(o);
+    if (o.Class == "hero")
+    {
+        _heroSprite = o;
+        // The box stands where the sprite's feet are: a tile object's position is its bottom-left corner.
+        _hero = new RectF(o.Position.X + (o.Size.X - HeroBox.X) / 2, o.Position.Y - HeroBox.Y, HeroBox.X, HeroBox.Y);
+    }
+}
+```
+
+For a tile map, `map.CollisionGrid(layer, "collision")` builds a `TileGrid` over a tile layer from a tile property
+the game names: `true` is solid, a text lists flags (`solid`, `oneway`, `hazard`, `water`, `custom1` to `custom4`), a
+whole number is the flags' bits. The grid reads the layer, so changing a cell changes collisions at once.
+`CollisionGrid(layer, tile => ...)` chooses the flags in code.
+
+`TiledSprites.Draw(r, tileLayer, camera, seconds)` draws a tile layer as `TileRenderer` does, with each cell's
+orientation, the layer's offset, opacity and tint, and animated tiles at `seconds`. `Draw(r, objectLayer, ...)` draws
+an object layer's tile objects as Tiled shows them: stretched to their size, standing on their bottom-left corner,
+mirrored and turned about it. `DrawAll(r, camera, seconds)` draws every visible layer in order, each shifted by its
+parallax (`map.ParallaxShift(layer, camera.Center)`, which a game can also use itself):
+
+<!-- code: samples/TiledLevel/LevelScene.cs#draw -->
+```csharp
+// Layer by layer, as Tiled shows them, each shifted by its parallax. The "game" layer's objects move, so the
+// scene draws them where the game has them instead of where the map placed them.
+var map = game.Map;
+foreach (var layer in map.ObjectLayers)
+{
+    var shift = map.ParallaxShift(layer, WorldCamera!.Center);
+    if (layer.Name != "game") game.Sprites.Draw(r, layer, WorldCamera, Age, shift);
+    else
+    {
+        foreach (var coin in _coins) game.Sprites.Draw(r, coin, Age);
+        var feet = new Vector2(_hero.Center.X - _heroSprite.Size.X / 2, _hero.Bottom);
+        game.Sprites.Draw(r, _heroSprite with { Position = feet, Orientation = _facingLeft ? TileOrientation.FlipX : TileOrientation.None });
+    }
+}
+```
+
+A 1000 × 1000 map of three compressed layers loads in about 80 ms and takes about 14 MB; drawing costs what the
+camera shows (about 350 tiles of 16 pixels in a 320 × 180 view), whatever the map's size. Load one map per area for
+worlds larger than that.
 
 ## Performance
 
@@ -184,7 +275,8 @@ a sensor looks only at the shapes near it; the results are the same as looking a
 - Axis-aligned boxes only: no slopes, circles or rotated shapes. `TileMotion` moves one box against rectangles that
   stand still during the call; a physics world's moving solids push and carry other bodies.
 - One tile size per grid; no isometric or hexagonal grids.
-- No importer for map editors (Tiled, LDtk): read their files yourself into a `TileLayer` if you use one.
+- Maps from Tiled load with `MicroEngine.Tiled`, orthogonal ones only. Image layers and text objects are data: the
+  game draws them. No other map editor's files are read (LDtk: read them yourself into a `TileLayer`).
 
 ## Common mistakes
 
@@ -333,5 +425,6 @@ at once.
 - API: [`TileMotion`](../api/MicroEngine.World.TileMotion.md), [`TileGrid`](../api/MicroEngine.World.TileGrid.md),
   [`IWorld`](../api/MicroEngine.Scenes.IWorld.md),
   [`IPhysicsWorld2D`](../api/MicroEngine.Physics.IPhysicsWorld2D.md),
-  [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md); `Box2DPhysicsWorld2D` is not in the API
+  [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md),
+  [`TiledMap`](../api/MicroEngine.Tiled.TiledMap.md), [`TiledSprites`](../api/MicroEngine.Tiled.TiledSprites.md); `Box2DPhysicsWorld2D` is not in the API
   reference until its package is published

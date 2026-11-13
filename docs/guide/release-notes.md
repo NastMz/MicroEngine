@@ -6,8 +6,22 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor.
+
+**Added**
+
+- `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets
+  (`Assets.TiledMap(path)`): tile layers with each cell's flips, tilesets as sprites (`TiledSprites`), objects and
+  typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
+  drawn as Tiled shows them ([Maps from Tiled](../manual/world.md#maps-from-tiled)). The `TiledLevel` sample plays a
+  level saved by Tiled.
+- `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
+  and with an extra margin for sprites larger than a cell.
+
 **Fixed**
 
+- `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
+  `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game
   whose `Directory.Build.props` moves the restore output when the package's publish properties are set: the tool
   looked for the .NET runtime pack the build used without those properties. It now reads it with the same properties

@@ -29,11 +29,11 @@ implementation branches follow the approved option. Delivery strategy: `ask-on-r
 | T2 Survey formats and .NET parsers (Tiled TMX/TMJ, LDtk; DotTiled, TiledCS, LDtk loaders) | S1 S2 | inline | done | evaluation §2 |
 | T3 Evaluation `docs/evaluations/tile-1.md` with the recommendation | S1–S6 | inline | done | this branch |
 | T4 Owner decision on the option | S7 | owner | done | L3: option 1; ADR 0052 |
-| T5 Engine fixes: `TileRenderer` culls with `VisibleBounds`; flipped and rotated cells | S3 | inline | pending | |
-| T6 `MicroEngine.Tiled`: loader, layers, tilesets, objects, properties, collision grid, tests over real TMX/TMJ | S1 S2 | inline | pending | |
-| T7 Release path: package list, package checks, notices, CLI notices, architecture test | S7 | inline | pending | |
-| T8 Example consuming a real Tiled map through the public SDK | S5 | inline | pending | |
-| T9 Large-map benchmark, manual, release notes | S3 | inline | pending | |
+| T5 Engine fixes: `TileRenderer` culls with `VisibleBounds`; flipped and rotated cells | S3 | inline | done | `adc0e1b`; RED: zoom 0.5 skipped tile (0,0); `TileRendererTests` 4/4 |
+| T6 `MicroEngine.Tiled`: loader, layers, tilesets, objects, properties, collision grid, tests over TMX/TMJ | S1 S2 | inline | done | `fd64fc2`, `70d8115`; `MicroEngine.Tiled.Tests` 25/25 |
+| T7 Release path: package list, package checks, notices, architecture test | S7 | inline | done | `2f8dd8b`; version tests 29/29; `dotnet pack` deps MicroEngine + DotTiled [1.0.0] |
+| T8 Example consuming a real Tiled map through the public SDK | S5 | inline | done | `7850eea`; `samples/TiledLevel` (Tiled's Sticker Knight map); `TiledLevelTests` 2/2; tour captures inspected |
+| T9 Large-map benchmark, manual, API reference, release notes | S3 | inline | done | `benchmarks/MapBench` (evaluation §3); snippets check passes |
 
 ## Log
 
@@ -45,3 +45,13 @@ implementation branches follow the approved option. Delivery strategy: `ask-on-r
   optional `MicroEngine.Tiled` package over DotTiled whose public API exposes engine types only. Next: owner decision
   (T4).
 - L3 (2026-11-13) Owner: "Approve option 1". Recorded as ADR 0052. Branch renamed to `feat/tile-1`; T5 starts.
+- L4 (2026-11-13) Owner, asked whether to download a map saved by Tiled for the example: "Download Sticker Knight
+  (Recommended)". Tiled's `examples/sticker-knight/map` (public domain, Ponywolf; commit `8c19461`) is in
+  `samples/TiledLevel/Content/map`.
+- L5 (2026-11-13) Two DotTiled 1.0.0 defects found and worked around inside the package, both pinned by tests: its
+  loader resolves a template's tileset against the map's folder (the package now resolves each file from its own
+  folder with DotTiled's readers), and its TMJ reader replaces a template's properties instead of merging them (merged
+  from the template read). `GetSourceRectangleForLocalTileID` returned empty rectangles for described tiles; cells
+  are computed from columns, margin and spacing. Not reported upstream (publishing needs the owner's approval).
+- L6 (2026-11-13) MapBench: 1000 × 1000 × 3 layers load in 80 ms (45 MB allocated), a frame draws in 82 µs at zoom 1
+  and 244 µs at zoom 0.5. Streaming one map stays unjustified (evaluation §3).

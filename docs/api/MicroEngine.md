@@ -38,6 +38,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Sdl](MicroEngine.Sdl.md)
 
+ [MicroEngine.Tiled](MicroEngine.Tiled.md)
+
  [MicroEngine.UI](MicroEngine.UI.md)
 
  [MicroEngine.World](MicroEngine.World.md)

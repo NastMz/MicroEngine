@@ -23,6 +23,7 @@ Alpha means two things:
 | `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
 | `MicroEngine.Text.Shaping` | optional: `ShapedFont`, text shaped by HarfBuzz for Arabic, Hebrew, Indic and other complex scripts ([Shaped text](../manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts)) | `MicroEngine`, `HarfBuzzSharp` and its native packages |
 | `MicroEngine.Physics.Box2D` | optional: `Box2DPhysicsWorld2D`, Box2D 3.2 behind the physics contract, for dynamic bodies, rotation, round and polygon shapes and continuous collision, with Box2D's native library for each runtime ([The Box2D backend](../manual/world.md#the-box2d-backend)) | `MicroEngine` |
+| `MicroEngine.Tiled` | optional: maps made in the Tiled editor (`.tmx`, `.tmj`, their tilesets and templates) as tile layers, sprites, objects and typed properties, with collision from a tile property ([Maps from Tiled](../manual/world.md#maps-from-tiled)) | `MicroEngine`, `DotTiled` |
 | `MicroEngine.Cli` | the [`microengine` tool](cli.md), with [`microengine shaders`](cli.md#shaders), and the browser, Android and iOS hosts it builds with | — |
 | `MicroEngine.Templates` | `dotnet new microengine-game` | — |
 
