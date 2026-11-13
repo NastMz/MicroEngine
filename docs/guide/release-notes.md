@@ -4,6 +4,15 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
+## Next release
+
+**Fixed**
+
+- `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game
+  whose `Directory.Build.props` moves the restore output when the package's publish properties are set: the tool
+  looked for the .NET runtime pack the build used without those properties. It now reads it with the same properties
+  as the publish.
+
 ## 0.6.0-alpha.1
 
 An eighth package: `MicroEngine.Physics.Box2D`, optional, for dynamic bodies. Diagnostics for finding out why a game
