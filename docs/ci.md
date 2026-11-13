@@ -507,8 +507,9 @@ The macOS and iOS runtimes build only when macOS runners are on (daily CI passes
 ### Browser tests
 
 `web/tests/run.mjs` plays development packages (`web/build.sh --dev`, SDL 3 in WebAssembly) in real browsers. In daily
-CI (the **Browser engine** jobs, Chrome and Firefox on a virtual X server with a virtual sound server, one job per game
-the change reaches) and in validate (all four games), it runs these suites, and the job fails when any of their checks
+CI (the **Browser engine** jobs, Chrome and Firefox on a virtual X server with a virtual sound server, Firefox also
+under a window manager (Openbox), without which Firefox 160 and later never complete a fullscreen request; one job per
+game the change reaches) and in validate (all four games), it runs these suites, and the job fails when any of their checks
 fails:
 
 | Suite | What it shows |

@@ -51,7 +51,7 @@ Builds a file a player installs, into `dist/` next to the project (or `--out`), 
 | `android` | APK for arm64-v8a and x86_64, signed with your key | any system | `android` workload, Android SDK, Java 17+ |
 | `ios` | `.ipa` for iPhone and iPad, signed for your devices or the App Store | macOS | Xcode, `ios` workload, Apple Developer account |
 | `ios-simulator` | ZIP holding the `.app` for Xcode's Simulator; **not installable on a device** | macOS | Xcode, `ios` workload |
-| `web` | a static site (folder and ZIP) for any web server | any system | `wasm-tools` workload |
+| `web` | a static site (folder and ZIP) for any web server | any system | `wasm-tools` workload (`wasm-tools-net10` with .NET SDK 11) |
 
 [Packaging](packaging.md) describes each package, its requirements and limits; [Signing](signing.md) the keys.
 

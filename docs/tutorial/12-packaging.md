@@ -69,7 +69,7 @@ Orientation  landscape
 Factory      new GemGarden.MainGame()
 Content      ...\GemGarden\Content\
 Licence      (none)
-Engine       MicroEngine 0.5.0-alpha.2, .NET 10.0.14
+Engine       MicroEngine 0.5.0-alpha.2, net10.0
 ```
 
 `Licence (none)`: a `LICENSE`, `LICENSE.txt` or `LICENSE.md` file next to the project is shipped in every package as

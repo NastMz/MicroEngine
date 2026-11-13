@@ -4,6 +4,9 @@
        folder and writes Game.props (identity and paths), GameEntry.cs (how to create the game), the launcher name
        and the icon; nothing here names a particular game. -->
   <Import Project="Game.props" />
+  <!-- The licence and notices of the .NET runtime pack this build uses, as MSBuild resolved it after the restore
+       (more GameNotice items; the tool writes it before the publish). -->
+  <Import Project="Runtime.props" Condition="Exists('Runtime.props')" />
   <PropertyGroup>
     <TargetFramework>net10.0-android</TargetFramework>
     <SupportedOSPlatformVersion>$(GameAndroidMinApi)</SupportedOSPlatformVersion>
@@ -36,9 +39,5 @@
     <AndroidAsset Include="$(GameContentDir)**" Exclude="$(GameContentDir)**/*.cs" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" Condition="'$(GameContentDir)' != ''" />
     <AndroidAsset Include="$(GameScriptsDir)*.script" Link="scripts/%(Filename)%(Extension)" Condition="'$(GameScriptsDir)' != ''" />
     <AndroidAsset Include="@(GameNotice)" Link="licenses/%(Name)" />
-    <!-- The runtime pack the Android workload installed (the tool finds it: an SDK newer than its workload set bundles a
-         newer runtime version than the installed pack's). -->
-    <AndroidAsset Include="$(GameAndroidRuntimePack)LICENSE.TXT" Link="licenses/dotnet-LICENSE.txt" />
-    <AndroidAsset Include="$(GameAndroidRuntimePack)THIRD-PARTY-NOTICES.TXT" Link="licenses/dotnet-THIRD-PARTY-NOTICES.txt" />
   </ItemGroup>
 </Project>

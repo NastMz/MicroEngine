@@ -63,6 +63,8 @@ SDL). Upload the folder to any static host (GitHub Pages, Netlify, an S3 bucket,
 pre-compressed (`.br`, `.gz`) for servers that serve them. The game runs on SDL 3 compiled to WebAssembly, in the
 same page in desktop and mobile browsers, with touch controls.
 
-It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). SDL for the browser comes inside the
+It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`); with a newer .NET SDK than the game's
+.NET 10, the workload for .NET 10 instead (`dotnet workload install wasm-tools-net10` with .NET SDK 11), because
+`wasm-tools` serves only the SDK's own .NET. `microengine doctor web` names the one your SDK needs. SDL for the browser comes inside the
 `MicroEngine.Sdl` package, built with the same emscripten as that workload, so any game that references
 `MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged for the web (`--sdl-wasm FILE` names another SDL library).
