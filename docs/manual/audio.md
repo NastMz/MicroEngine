@@ -78,15 +78,20 @@ registering it.
 | `TryPlay(...)` | Same, but returns `false` for unregistered names |
 | `PlayMusic(name, fadeSeconds = 0.4f)` | Switches track (see below); playing the current track again does nothing |
 | `StopMusic(fadeSeconds = 0.4f)`, `PauseMusic(bool)` | Stop with a fade, pause or resume |
-| `SfxVolume` (default 0.8), `MusicVolume` (0..1) | Global volumes |
+| `SfxVolume` (default 0.8), `MusicVolume` (0..1) | Volumes of `Play` and of the music track |
 | `HasSound`, `HasMusic`, `CurrentMusic` | Queries |
+| `PlayVoice(name, parameters)` | Plays a sound as a voice and returns its `VoiceHandle` ([Sounds that keep playing](#sounds-that-keep-playing)) |
+| `PlayMusicVoice(name, parameters)` | Plays registered music as one more voice, beside the music track |
+| `Set(voice, volume, pan, pitch)`, `Pause(voice, paused)`, `Stop(voice, fadeSeconds)`, `IsPlaying(voice)` | Change, pause, stop or ask about a voice while it plays |
+| `AddBus(name, parent)`, `SetBusVolume(name, volume)`, `BusVolume(name)`, `HasBus(name)` | Groups of sounds with one volume ([Buses](#buses)) |
 
 <!-- sdk-version: history -->
 **Music changes are fade-out then fade-in, not an overlapping crossfade.** With a fade, the current track fades to
 silence over `fadeSeconds`, then the new one starts and rises to full volume in about a quarter of a second. When
 nothing is playing, the new track starts at once and rises in about a quarter of a second. With `fadeSeconds` 0 it starts
 immediately; in 0.4.0-alpha.1 it still rises over that quarter of a second, and starts at full volume from
-0.4.0-alpha.2. Only one music track plays at a time.
+0.4.0-alpha.2. `PlayMusic` plays one track at a time; music that plays beside it is a
+[music voice](#music-beside-the-music).
 
 Neon Rift wraps the mixer so missing cues are recorded for its tests instead of crashing:
 
@@ -101,6 +106,91 @@ public void Music(string name)
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
+## Sounds that keep playing
+
+`Play` starts a sound and forgets it. A sound the game goes on changing (an engine that revs, a siren that passes, a
+loop that stops when its source dies) is a **voice**: `PlayVoice` starts it and returns a `VoiceHandle`, and the handle
+changes it while it plays.
+
+<!-- code: samples/Examples/Examples/VoicesExample.cs#voice-start -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasSound("hum"))
+    {
+        // One second of a 110 Hz tone: a whole number of cycles, so it loops without a click.
+        var samples = new float[AudioClip.DefaultSampleRate];
+        for (int i = 0; i < samples.Length; i++) samples[i] = MathF.Sin(i * MathF.Tau * 110 / samples.Length);
+        Audio.AddSound("hum", new AudioClip(samples));
+        Audio.AddBus("ambience");            // a group of sounds with one volume, beside "sfx" and "music"
+    }
+    // A voice: the sound plays until it is stopped, and the handle changes it while it plays.
+    _hum = Audio.PlayVoice("hum", new PlayParameters { Loop = true, Volume = 0, Bus = "ambience" });
+}
+
+public override void Exit() => Audio.Stop(_hum, fadeSeconds: 0.2f);
+```
+
+`PlayParameters` says how it plays: `Volume`, `Pitch`, `Pan`, `Loop`, `Priority` and `Bus`. A voice plays exactly what
+its parameters say: `SfxVolume` and the once-per-step rule of `Play` do not apply to it, so two voices of the same
+sound overlap.
+
+`Set` changes the volume, the stereo position or the pitch from the current update on; a value left out keeps what
+it was. Called every update it makes a sound follow something that moves. The engine has no listener or emitters:
+where a sound is heard is a `pan` and a `volume` the game computes from its own positions, in a few lines.
+
+<!-- code: samples/Examples/Examples/VoicesExample.cs#voice-follow -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    _x += _speed * dt;
+    if (_x < 20 || _x > Width - 20) _speed = -_speed;
+
+    // The listener stands in the middle of the screen. Where the source is gives the stereo position; how far it
+    // is, the volume; whether it comes or goes, a slightly higher or lower pitch.
+    float pan = _x / Width;                                  // 0 left .. 1 right
+    float distance = MathF.Abs(pan - 0.5f) * 2;              // 0 at the listener .. 1 at an edge
+    bool approaching = (pan < 0.5f) == (_speed > 0);
+    Audio.Set(_hum, volume: Loudest * (1 - 0.8f * distance), pan: pan, pitch: approaching ? 1.06f : 0.94f);
+
+    // The bus scales every sound played through it: what a settings screen changes.
+    float change = Input.Axis("down", "up") * dt;
+    if (change != 0) Audio.SetBusVolume("ambience", Math.Clamp(Audio.BusVolume("ambience") + change, 0, 1));
+}
+```
+
+| Call | Behaviour |
+| --- | --- |
+| `Set(voice, volume, pan, pitch)` | Volume 0..1, pan 0 (left) to 1 (right), pitch as a speed factor (0.01..100; 2 is an octave up and half the length). Changes made in one update take effect together |
+| `Pause(voice, paused)` | A paused sound keeps its voice and goes on from where it was |
+| `Stop(voice, fadeSeconds)` | Stops at once, or fades out over `fadeSeconds` |
+| `IsPlaying(voice)` | False once the sound ended, was stopped or lost its voice |
+
+A handle is safe to keep: once its sound ended, was stopped or was stolen by the voice limit, every call with it does
+nothing and returns `false`. `PlayVoice` returns `VoiceHandle.None` when every voice is busy with sounds of a higher
+`Priority`, and on a device without sound (headless runs, `--mute`, a machine without audio hardware); calls with
+`None` do nothing too, so game code needs no special case. A headless test still sees the sound's name in
+`SilentAudioDevice.Played`.
+
+### Buses
+
+Every sound plays through a bus, and a bus has a volume that scales everything on it. Three exist: `master`, and under
+it `sfx` (where sounds play unless their parameters name another) and `music` (the music track). `AddBus(name, parent)`
+adds one under a bus that exists (`master` by default), up to 32 in all: `ambience`, `voices`, `ui`.
+`SetBusVolume(name, volume)` takes 0..4 and changes what is already playing, from the current update on;
+`BusVolume(name)` reads it back, also on a device without sound. A settings screen with a slider per group sets bus
+volumes: `sfx` reaches the sounds of `Play` too (on top of `SfxVolume`), `music` the music track (on top of
+`MusicVolume`), `master` everything.
+
+### Music beside the music
+
+`PlayMusicVoice(name, parameters)` plays registered music as one more voice without replacing the track `PlayMusic`
+plays: rain under the theme, a second layer of the same piece that fades in when the fight starts. It returns a
+`VoiceHandle` like any voice, so `Set` and `Stop(voice, fadeSeconds)` fade it. Name the `music` bus in its parameters
+to keep it with the music; it loops when the parameters say so. `MusicVolume`, `CurrentMusic` and the fades of
+`PlayMusic` are those of the music track only. Streamed music (OGG) keeps its own pitch.
+
 ## One mixer on every platform
 
 Every audio device of the engine is the same managed mixer,
@@ -114,7 +204,7 @@ play.
 | --- | --- |
 | `Play(clip, parameters)` | Plays a clip; returns a `VoiceHandle`, or `VoiceHandle.None` when the voice policy refused it |
 | `Play(stream, parameters)` | Plays an `IAudioStream` (music decoded while it plays); several streams play side by side |
-| `Stop(voice, fadeSeconds)`, `Set(voice, volume, pan)`, `Pause(voice, paused)` | Control a playing sound; a stale handle does nothing and returns `false` |
+| `Stop(voice, fadeSeconds)`, `Set(voice, volume, pan)`, `SetPitch(voice, pitch)`, `Pause(voice, paused)` | Control a playing sound; a stale handle does nothing and returns `false` |
 | `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds` | What plays now |
 | `Bus(name)`, `AddBus(name, parent)`, `AudioBus.Volume` | Named buses under `master` (`sfx` and `music` exist); a bus is created under a parent that exists, so buses never form a cycle |
 | `MaxVoices` (32 by default), `DelayFrames` | The voice limit; the delay between a step and the sounds it starts |
@@ -122,7 +212,9 @@ play.
 `PlayParameters` holds `Volume`, `Pitch`, `Pan`, `Loop`, `Priority` and `Bus` (`sfx` by default). When every voice is
 busy, a new sound steals the oldest sound of the lowest priority, if that priority is not higher than its own;
 otherwise the new sound is refused. `Game.Audio` plays music with the highest priority, so sound effects never steal
-it. A device's mixer is `MixerAudioDevice.Engine`.
+it. A device's mixer is `MixerAudioDevice.Engine`; `Game.Audio` reaches its voices and buses by name
+([Sounds that keep playing](#sounds-that-keep-playing)), so a game needs the engine itself only to play a clip it did
+not register or an `IAudioStream` of its own.
 
 Sounds start at an exact output frame: the frame of the game update that played them plus a fixed delay at least as
 long as the output's queue, so what is heard does not depend on how the platform asks for audio, and an offline
@@ -191,10 +283,14 @@ sound and resumes it when shown again.
 
 ## Limitations
 
-- `Game.Audio` plays one music track at a time, with fade-out then fade-in; several streams at once, buses and
-  per-sound handles are on the engine's mixer (`MixerAudioDevice.Engine`), not on `Game.Audio` yet.
-- No positional audio beyond a per-play stereo `pan`, no effects on buses, no runtime pitch changes on a sound that is
-  already playing.
+- `PlayMusic` changes track with fade-out then fade-in, not an overlapping crossfade; a crossfade is two music voices
+  whose volumes the game sets.
+- No listener or emitters: a sound's position is the `pan` and `volume` the game sets. No effects on buses (reverb,
+  filters), and a bus has a volume but no pitch.
+- Volume, pan and pitch change in one step at the update that sets them, not as a ramp: large jumps on a loud sound
+  can click, so change them a little every update or fade with `Stop`.
+- Streamed music keeps its own pitch.
 - Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
-- Sound starts 60 ms (SDL) to about 100 ms (browsers) after the update that played it: the queue that keeps pauses
-  from being heard.
+- Sound is not instant: it starts after the queue that keeps pauses from being heard (60 ms on the SDL platform,
+  100 ms in browsers) and the delay that makes every sound start at an exact frame, about twice the queue in all:
+  roughly 120 ms after the update that played it on the SDL platform, and more in browsers, whose queue is longer.
