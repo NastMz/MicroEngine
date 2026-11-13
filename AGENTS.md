@@ -23,6 +23,7 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025),
   [`odd/tasks/demo-refresh.md`](odd/tasks/demo-refresh.md) (the four demos modernized, new art for the two hybrids) and
   [`odd/tasks/tile-1.md`](odd/tasks/tile-1.md) (maps from the Tiled editor, the optional `MicroEngine.Tiled` package, ADR 0052).
+  [`odd/tasks/anim-1.md`](odd/tasks/anim-1.md) records keyframe tracks and timelines (ADR 0055).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos

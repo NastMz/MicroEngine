@@ -29,11 +29,11 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
 | T1 Map clips, tweens, easing, coroutines, world transforms, atlas tags | S1 S2 | inline | done | L2 |
-| T2 Review tools, formats and libraries | S3 S4 | inline | pending | |
-| T3 `Track<T>`, `Keyframe<T>`, `Track` factories (kernel, next to `Ease`) | S2 S7 | inline | pending | |
-| T4 `Timeline` (next to `Tweener`): bound tracks, named events, loop, speed, seek, state hash | S2 S7 | inline | pending | |
-| T5 Example scene, guide page, release notes, API reference | S5 S7 | inline | pending | |
-| T6 Evaluation `docs/evaluations/anim-1.md`, ADR 0055, architecture table | S1–S6 | inline | pending | |
+| T2 Review tools, formats and libraries | S3 S4 | inline | done | L5; evaluation §3 |
+| T3 `Track<T>`, `Keyframe<T>`, `Track` factories (kernel, next to `Ease`) | S2 S7 | inline | done | `9a55183`; RED: 15 failing against stubs; `TimelineTests` 15/15 |
+| T4 `Timeline` (next to `Tweener`): bound tracks, named events, loop, speed, seek, state hash | S2 S7 | inline | done | `9a55183`; same tests |
+| T5 Example scene, guide page, release notes, API reference | S5 S7 | inline | done | L4; `TimelineExampleTests` 2/2; captures inspected |
+| T6 Evaluation `docs/evaluations/anim-1.md`, ADR 0055, architecture table | S1–S6 | inline | done | this branch |
 
 ## Log
 
@@ -60,3 +60,19 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   with more than two keys, a playhead shared by several values, and markers on that playhead. Each game would write
   those three itself; they are the generic gap. Homes: tracks next to `Ease` (kernel, no dependencies), the timeline
   next to `Tweener`.
+- L3 (2026-11-13) Decision. Three gaps are generic and implemented: keyframe tracks, a timeline, named events.
+  Layers, cross-fades and cut-out rigs are compositions of those with what exists and get documentation, not types.
+  Skeletal runtimes, state machines, a track file format and an editor are deferred (evaluation §4, §5, §7). `Track`
+  factories take `params` keys so keys read as `new(time, value, ease)`; with exactly one key the target type must be
+  written (`new Keyframe<float>(0, 1)`), which a one-key track rarely needs.
+- L4 (2026-11-13) Example. `TimelineExample` is the last entry of the examples so the tour script's earlier captures
+  keep their order; the tour presses down twice before it because, on `main`, the list's focus is one entry behind the
+  script by the end (after the 24th capture the focus is on "Text entry and clipboard", seen in a debug capture). Not
+  fixed here: the script's earlier blocks belong to other examples. Captures `25-timeline.png` (arm raised, "STRIKE")
+  and `25-timeline-rest.png` ("READY HITS 1") were inspected. The sample test was written together with the sample, so
+  no failing run was observed for it; the engine tests were seen failing first.
+- L5 (2026-11-13) Tools. Spine's runtime licence (text of 2025-04-05) requires each user of a product to hold a Spine
+  Editor licence; DragonBonesCSharp (MIT) lists Unity only; SpriterDotNet (zlib) was last pushed 2022-12; rive-sharp
+  needs a native `rive.dll`; MonoGame.Extended's tweener and Glide bind members through reflection. No dependency is
+  proposed. The guide page `docs/guide/animation.md` is not registered in `site/src/lib/repo-docs.mjs` (outside this
+  task's edit surface): owner follow-up.
