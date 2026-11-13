@@ -65,6 +65,13 @@ public sealed record DotnetRuntime(string Directory, string Version)
 /// application bundle.</summary>
 public static class Packaging
 {
+    /// <summary>The MSBuild properties of a desktop package's publish, given to every MSBuild call about that publish.</summary>
+    public static readonly string[] DesktopPublishProperties =
+    [
+        "-p:PublishSingleFile=true", "-p:EnableCompressionInSingleFile=true", "-p:MicroEngineNativePackage=true", "-p:DebugType=none",
+        "-p:DebugSymbols=false", "-p:InvariantGlobalization=true", "-p:PublishDocumentationFiles=false", "-p:PublishReferencesDocumentationFiles=false",
+    ];
+
     public static async Task<string> Desktop(PackageRequest request)
     {
         var (game, t) = (request.Game, request.Target);
@@ -79,9 +86,8 @@ public static class Packaging
         {
             string publish = Path.Combine(stage, "publish");
             Console.WriteLine($"Publishing {game.Title} for {t.Label}...");
-            Tool.Run(Tool.Dotnet, ["publish", game.Path, "-c", "Release", "-r", t.Rid, "--self-contained", "-p:PublishSingleFile=true",
-                "-p:EnableCompressionInSingleFile=true", "-p:MicroEngineNativePackage=true", "-p:DebugType=none", "-p:DebugSymbols=false",
-                "-p:InvariantGlobalization=true", "-p:PublishDocumentationFiles=false", "-p:PublishReferencesDocumentationFiles=false", "-o", publish, "-nologo"], game.Directory, "dotnet publish");
+            Tool.Run(Tool.Dotnet, ["publish", game.Path, "-c", "Release", "-r", t.Rid, "--self-contained", .. DesktopPublishProperties, "-o", publish, "-nologo"],
+                game.Directory, "dotnet publish");
             string top = Path.Combine(stage, game.Id);
             Directory.CreateDirectory(top);
             string exe = t.Name == "windows" ? $"{game.Id}.exe" : game.Id;
@@ -111,7 +117,9 @@ public static class Packaging
                     File.WriteAllText(Path.Combine(top, $"{desktopId}.desktop"), DesktopEntry(game, icon is not null));
                 }
             }
-            var runtime = RuntimePack(game.Path, t.Rid);
+            // The same properties as the publish: one of them may move the project's restore output (a game's own
+            // Directory.Build.props can put it under another obj folder), and the query reads that output.
+            var runtime = RuntimePack(game.Path, t.Rid, DesktopPublishProperties);
             var info = BuildInfo(request, signing, runtime.Version);
             WriteCommon(top, game, t, runtime, info);
             Directory.CreateDirectory(request.Out);
