@@ -58,13 +58,13 @@ source; no toolchains installed on this machine; ADR number 0054.
 
 | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
-| T1 Baseline: external consumer with its own save types, analyzer and publish diagnostics | S1 S9 | inline | pending | |
-| T2 Inventory of the Saves entry points and where reflection occurs | S2 S3 S6 | inline | pending | |
-| T3 Prototypes of the alternatives, compared | S4 S5 S10 | inline | pending | |
-| T4 Implement the evidence-backed option in `MicroEngine.Saves`, tests first | S11 S12 S13 | inline | pending | |
-| T5 External consumer on the new path: trimmed publish and run; NativeAOT as far as this machine goes | S14 S15 S17 | inline | pending | |
-| T6 Audit of the other SDK packages' analyzer warnings (inventory) | S7 S8 | inline | pending | |
-| T7 Evaluation, ADR 0054, guide, API reference, release notes | S10 S16 | inline | pending | |
+| T1 Baseline: external consumer with its own save types, analyzer and publish diagnostics | S1 S9 | inline | done | evaluation §1; scratch `baseline/` |
+| T2 Inventory of the Saves entry points and where reflection occurs | S2 S3 S6 | inline | done | evaluation §2 |
+| T3 Prototypes of the alternatives, compared | S4 S5 S10 | inline | done | evaluation §3; scratch `proto/`, published trimmed and run |
+| T4 Implement the evidence-backed option in `MicroEngine.Saves`, tests first | S11 S12 S13 | inline | done | `d97f506`; RED: CS1501 "no overload of Load takes 2 arguments"; `SaveStoreTypeInfoTests` and the existing save tests 48/48 |
+| T5 External consumer on the new path: trimmed publish and run; NativeAOT as far as this machine goes | S14 S15 S17 | inline | partial | `sdk/tests/trimmed.mjs`: 6 of 7 checks pass; the NativeAOT link is not runnable here (L4); Box2D-only package consumer not runnable here (L5) |
+| T6 Audit of the other SDK packages' analyzer warnings (inventory) | S7 S8 | inline | done | evaluation §5 |
+| T7 Evaluation, ADR 0054, guide, API reference, release notes, sample | S10 S16 | inline | done | this branch |
 
 ## Log
 
@@ -77,3 +77,28 @@ source; no toolchains installed on this machine; ADR number 0054.
   not be treated as certification of the engine." "This is a **discovery + implementation issue, not an upfront mandate
   to change formats or split packages**." "No premature commitment to JSON, binary, proprietary format, or package
   redesign."
+- L2 (2026-11-13) Baseline on `main` (`16af5af`), external console project on the packed `MicroEngine` package with
+  `PublishAot`: `dotnet build` reports nothing; the NativeAOT publish reports `IL2104` and `IL3053` for
+  `MicroEngine.Saves` (`IL2026`/`IL3050` at `SaveStore.cs:122` and `:145` with `TrimmerSingleWarn=false`); a trimmed
+  self-contained publish runs and fails in the first save with `InvalidOperationException: Reflection-based
+  serialization has been disabled for this application`. The failure is the switched-off reflection serializer, not
+  the trimming of the game's types.
+- L3 (2026-11-13) Prototypes (scratch `proto/`, trimmed and run): source-generated `JsonTypeInfo<T>`, a hand-written
+  JSON codec, a hand-written binary layout and a resolver on the store all work without reflection; only the first
+  turns a forgotten type into a compile error, keeps the file format and needs no hand-written per-type code. The
+  resolver variant fails at run time (`NotSupportedException`) for a type missing from the context. Decision: the first,
+  additively; ADR 0054 (Proposed, for the owner).
+- L4 (2026-11-13) NativeAOT on this machine: ILC runs and reports its analysis; the link fails (`findvcvarsall.bat`
+  fails in `vcvarsall.bat`, the `link` on `PATH` is GNU coreutils', and no Windows SDK import libraries are installed).
+  Nothing was installed. No NativeAOT executable was run; S14 is met for trimmed publishing and for NativeAOT
+  compilation without warnings, not for a NativeAOT run.
+- L5 (2026-11-13) S15: the Box2D package cannot be packed here (no `artifacts/box2d` natives), so no external
+  Box2D-only consumer. `samples/PhysicsSubstitution` from source under ILC reports only `Achievements.cs(157)` and
+  `(185)` (`IL2026`, `IL3050`): nothing from Box2D, Physics or Saves. It did not link (L4).
+- L6 (2026-11-13) Whole-program checks after the change: `samples/HelloEngine` under ILC, no warning; under ILLink
+  (full trim), only the two achievements calls; published trimmed and run with its script, `done: 70 updates, 70
+  frames`, capture inspected. Open blocker outside this unit's surface: `AchievementTracker` saves through the
+  reflection calls.
+- L7 (2026-11-13) Not covered: S14 (NativeAOT run), S15 (Box2D-only package consumer), S17 beyond one trimmed windowed
+  sample on Windows x64. Left for the owner (evaluation §7): achievements, running `sdk/tests/trimmed.mjs --aot` where a
+  native toolchain exists, the manual page, CI wiring.

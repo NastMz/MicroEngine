@@ -17,6 +17,12 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
+- `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
+  the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
+  NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's
+  slots. The calls without metadata keep working and are reported by the build (`IL2026`, `IL3050`) in a project that
+  sets `PublishTrimmed`, `PublishAot` or `IsAotCompatible`
+  ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
 
 **Fixed**
 

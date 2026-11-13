@@ -41,6 +41,14 @@ store.Save("progress", progress);
 A slot is a name such as "settings" or "progress"; with file storage it becomes <code>&lt;slot&gt;.json</code> in
 [Directory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Directory). Values are serialized with `JsonSerializer` (public properties).
 
+<p>
+[Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) and [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_) find the properties of the saved type by reflection.
+A game published trimmed or with NativeAOT has no reflection to serialize with: it declares its saved types in a
+`JsonSerializerContext` and passes the generated metadata to
+[Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) and [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_). Both pairs
+write the same text and read each other's slots.
+</p>
+
 ## Constructors
 
 ### <a id="MicroEngine_Core_SaveStore__ctor_System_String_System_String_"></a> SaveStore\(string, string?\)
@@ -196,9 +204,11 @@ public bool Exists(string slot)
 
 ### <a id="MicroEngine_Core_SaveStore_Load__1_System_String_"></a> Load<T\>\(string\)
 
-Reads and deserializes a slot.
+Reads and deserializes a slot, finding the properties of <code class="typeparamref">T</code> by reflection.
 
 ```csharp
+[RequiresUnreferencedCode("Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.")]
+[RequiresDynamicCode("Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.")]
 public T? Load<T>(string slot) where T : class
 ```
 
@@ -221,12 +231,59 @@ The saved value, or null when the slot does not exist, holds invalid JSON (the d
 
 The saved type.
 
-### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_"></a> Save<T\>\(string, T\)
+#### Exceptions
 
-Writes the whole slot at once, so a crash never leaves a half-written save. Returns false when the
-medium refused the write, or when the slot could not be read earlier (see the class remarks).
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The application was published trimmed or with NativeAOT; use [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_).
+
+### <a id="MicroEngine_Core_SaveStore_Load__1_System_String_System_Text_Json_Serialization_Metadata_JsonTypeInfo___0__"></a> Load<T\>\(string, JsonTypeInfo<T\>\)
+
+Reads and deserializes a slot with the game's own metadata for <code class="typeparamref">T</code>, without reflection: the
+way to load in a game published trimmed or with NativeAOT. It reads the slots [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) wrote.
 
 ```csharp
+public T? Load<T>(string slot, JsonTypeInfo<T> typeInfo) where T : class
+```
+
+#### Parameters
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The slot name.
+
+`typeInfo` [JsonTypeInfo](https://learn.microsoft.com/dotnet/api/system.text.json.serialization.metadata.jsontypeinfo\-1)<T\>
+
+The metadata of <code class="typeparamref">T</code>, from the game's `JsonSerializerContext` (<code>MySaves.Default.Progress</code>).
+
+#### Returns
+
+ T?
+
+The saved value, or null when the slot does not exist, holds invalid JSON (the data is set aside) or could not be read
+(the slot is then protected from saving for the life of this store).
+
+#### Type Parameters
+
+`T` 
+
+The saved type.
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">typeInfo</code> is null.
+
+### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_"></a> Save<T\>\(string, T\)
+
+Writes the whole slot at once, so a crash never leaves a half-written save, finding the properties of
+<code class="typeparamref">T</code> by reflection. Returns false when the medium refused the write, or when the slot could
+not be read earlier (see the class remarks).
+
+```csharp
+[RequiresUnreferencedCode("Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.")]
+[RequiresDynamicCode("Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.")]
 public bool Save<T>(string slot, T data)
 ```
 
@@ -242,6 +299,51 @@ public bool Save<T>(string slot, T data)
 
 #### Type Parameters
 
-`T`
+`T` 
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The application was published trimmed or with NativeAOT; use [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_).
+
+### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_System_Text_Json_Serialization_Metadata_JsonTypeInfo___0__"></a> Save<T\>\(string, T, JsonTypeInfo<T\>\)
+
+Writes the whole slot at once with the game's own metadata for <code class="typeparamref">T</code>, without reflection: the
+way to save in a game published trimmed or with NativeAOT. The text is the same indented JSON
+[Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) writes, so either call reads the other's slots. Returns false when the medium
+refused the write, or when the slot could not be read earlier (see the class remarks).
+
+```csharp
+public bool Save<T>(string slot, T data, JsonTypeInfo<T> typeInfo)
+```
+
+#### Parameters
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The slot name.
+
+`data` T
+
+The value to save.
+
+`typeInfo` [JsonTypeInfo](https://learn.microsoft.com/dotnet/api/system.text.json.serialization.metadata.jsontypeinfo\-1)<T\>
+
+The metadata of <code class="typeparamref">T</code>, from the game's `JsonSerializerContext` (<code>MySaves.Default.Progress</code>).
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T` 
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">typeInfo</code> is null.
 
 </div>
