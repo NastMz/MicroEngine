@@ -17,6 +17,12 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
+- `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples
+  it into the window. With a linear `Upscale` and `Presentation.AutoPrescale`, a pixel-art canvas shown at a scale
+  that is not whole (a 480 × 270 game on a 1366 × 768 screen) keeps every pixel the same size with antialiased edges,
+  instead of pixels of two widths or a blurred picture, and at a whole scale the picture is exactly the nearest one.
+  1, the default, changes nothing. `Presentation.PrescaleFor` gives the factors of a frame and `CanvasPresenter`
+  composes the window; windows of the SDL platform apply it, the raylib and headless platforms present without it.
 
 **Fixed**
 
