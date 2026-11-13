@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" class="dungeon" orientation="orthogonal" renderorder="right-down" width="4" height="3" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#203040" nextlayerid="11" nextobjectid="9">
+<map version="1.10" tiledversion="1.11.0" class="dungeon" orientation="orthogonal" renderorder="right-down" width="4" height="3" tilewidth="16" tileheight="16" infinite="0" parallaxoriginx="32" parallaxoriginy="24" backgroundcolor="#203040" nextlayerid="11" nextobjectid="10">
  <properties>
   <property name="music" value="cave"/>
  </properties>
  <tileset firstgid="1" source="../tilesets/terrain.tsx"/>
- <tileset firstgid="5" name="props" tilewidth="16" tileheight="32" tilecount="1" columns="0">
+ <tileset firstgid="5" name="props" tilewidth="16" tileheight="32" tilecount="2" columns="0">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="chest">
    <properties>
@@ -12,6 +12,9 @@
     <property name="kind" value="treasure"/>
     <property name="loot" type="int" value="10"/>
    </properties>
+   <image source="../props/chest.png" width="16" height="32"/>
+  </tile>
+  <tile id="2">
    <image source="../props/chest.png" width="16" height="32"/>
   </tile>
  </tileset>
@@ -63,6 +66,7 @@
     <text>Hello</text>
    </object>
    <object id="7" gid="2147483653" x="48" y="48" width="16" height="32"/>
+   <object id="9" template="parts/torch.tx" x="0" y="48"/>
    <object id="8" template="../templates/enemy.tx" x="24" y="24">
     <properties>
      <property name="hp" type="int" value="5"/>
@@ -70,7 +74,7 @@
    </object>
   </objectgroup>
  </group>
- <imagelayer id="9" name="sky" opacity="0.5" repeatx="1">
+ <imagelayer id="9" name="sky" opacity="0.5" parallaxx="0.5" parallaxy="0.25" repeatx="1">
   <image source="../props/chest.png" width="16" height="32"/>
  </imagelayer>
 </map>

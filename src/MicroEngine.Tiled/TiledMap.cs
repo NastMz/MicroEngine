@@ -45,6 +45,20 @@ public sealed class TiledMap
     public int PixelHeight => Height * TileHeight;
     /// <summary>Where tile (0, 0) was in Tiled, in tiles: (0, 0) except for an infinite map, which is cropped to the cells it uses.</summary>
     public (int X, int Y) Origin { get; }
+    /// <summary>The point where parallax shifts nothing, in map pixels (Tiled's parallax origin).</summary>
+    public Vector2 ParallaxOrigin { get; init; }
+
+    /// <summary>
+    /// How far <paramref name="layer"/> moves from its place for a view centred on <paramref name="viewCenter"/>, as
+    /// Tiled shows it: (view centre − <see cref="ParallaxOrigin"/>) × (1 − the layer's parallax factor). Add it to
+    /// where the layer is drawn; it is zero for layers that move with the map.
+    /// </summary>
+    public Vector2 ParallaxShift(TiledLayer layer, Vector2 viewCenter)
+    {
+        ArgumentNullException.ThrowIfNull(layer);
+        return (viewCenter - ParallaxOrigin) * (Vector2.One - layer.Parallax);
+    }
+
     /// <summary>The background colour set in Tiled, if any.</summary>
     public Color? Background { get; }
     /// <summary>The map's class (Tiled's "Class" field); empty when unset.</summary>
@@ -300,6 +314,29 @@ public sealed record TiledObject(int Id, string Name, string Class, TiledShape S
 
     /// <summary>The centre of <see cref="Bounds"/>.</summary>
     public Vector2 Center => Bounds.Center;
+
+    /// <summary>
+    /// The axis-aligned rectangle around the object as Tiled shows it turned by <see cref="Rotation"/> about
+    /// <see cref="Position"/>; <see cref="Bounds"/> when it is not turned. A quarter turn of a box gives its exact box.
+    /// </summary>
+    public RectF TurnedBounds
+    {
+        get
+        {
+            var b = Bounds;
+            if (Rotation == 0) return b;
+            var (sin, cos) = MathF.SinCos(Rotation);
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            foreach (var corner in (ReadOnlySpan<Vector2>)[new(b.X, b.Y), new(b.Right, b.Y), new(b.X, b.Bottom), new(b.Right, b.Bottom)])
+            {
+                var d = corner - Position;
+                // Rounded to 1/1000 pixel so a quarter turn of a box gives whole numbers back.
+                float x = MathF.Round(Position.X + d.X * cos - d.Y * sin, 3), y = MathF.Round(Position.Y + d.X * sin + d.Y * cos, 3);
+                (x0, y0, x1, y1) = (MathF.Min(x0, x), MathF.Min(y0, y), MathF.Max(x1, x), MathF.Max(y1, y));
+            }
+            return new RectF(x0, y0, x1 - x0, y1 - y0);
+        }
+    }
 }
 
 /// <summary>A tileset of a <see cref="TiledMap"/>: one image cut into tiles, or a collection of images.</summary>
@@ -331,11 +368,11 @@ public sealed class TiledTileset
     public string Class { get; }
     /// <summary>The tileset's custom properties.</summary>
     public TiledProperties Properties { get; }
-    /// <summary>Its tiles, by local id.</summary>
+    /// <summary>Its tiles by increasing id: every cell of its image, or the images of a collection (whose ids may have gaps).</summary>
     public IReadOnlyList<TiledTile> Tiles { get; internal set; }
 
     /// <summary>Whether <paramref name="gid"/> is one of this tileset's tiles.</summary>
-    public bool Contains(int gid) => gid >= FirstGid && gid < FirstGid + Tiles.Count;
+    public bool Contains(int gid) => Tiles.Count > 0 && gid >= FirstGid && gid <= Tiles[^1].Gid && Tiles.Any(t => t.Gid == gid);
 }
 
 /// <summary>One frame of a tile animation.</summary>

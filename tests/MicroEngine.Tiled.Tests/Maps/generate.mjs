@@ -47,14 +47,15 @@ const doorProperties = [
 ];
 const map = {
   type: 'map', version: '1.10', tiledversion: '1.11.0', orientation: 'orthogonal', renderorder: 'right-down',
-  width: 4, height: 3, tilewidth: 16, tileheight: 16, infinite: false, backgroundcolor: '#203040', class: 'dungeon',
-  compressionlevel: -1, nextlayerid: 11, nextobjectid: 9,
+  width: 4, height: 3, tilewidth: 16, tileheight: 16, infinite: false, parallaxoriginx: 32, parallaxoriginy: 24, backgroundcolor: '#203040', class: 'dungeon',
+  compressionlevel: -1, nextlayerid: 11, nextobjectid: 10,
   properties: [{ name: 'music', type: 'string', value: 'cave' }],
   tilesets: [
     { firstgid: 1, source: '../tilesets/terrain.tsj' },
-    { firstgid: 5, name: 'props', tilewidth: 16, tileheight: 32, tilecount: 1, columns: 0, margin: 0, spacing: 0,
+    { firstgid: 5, name: 'props', tilewidth: 16, tileheight: 32, tilecount: 2, columns: 0, margin: 0, spacing: 0,
       grid: { orientation: 'orthogonal', width: 1, height: 1 },
-      tiles: [{ id: 0, type: 'chest', image: '../props/chest.png', imagewidth: 16, imageheight: 32, properties: [{ name: 'bonus', type: 'float', value: 0.5 }, { name: 'kind', type: 'string', value: 'treasure' }, { name: 'loot', type: 'int', value: 10 }] }] },
+      tiles: [{ id: 0, type: 'chest', image: '../props/chest.png', imagewidth: 16, imageheight: 32, properties: [{ name: 'bonus', type: 'float', value: 0.5 }, { name: 'kind', type: 'string', value: 'treasure' }, { name: 'loot', type: 'int', value: 10 }] },
+        { id: 2, image: '../props/chest.png', imagewidth: 16, imageheight: 32 }] },
   ],
   layers: [
     { type: 'tilelayer', id: 1, name: 'ground', x: 0, y: 0, width: 4, height: 3, opacity: 1, visible: true,
@@ -70,10 +71,11 @@ const map = {
         { id: 5, name: '', type: '', polyline: [{ x: 0, y: 0 }, { x: 5, y: 5 }], x: 20, y: 20, width: 0, height: 0, rotation: 0, visible: false },
         { id: 6, name: '', type: '', text: { text: 'Hello', wrap: false }, x: 0, y: 0, width: 40, height: 10, rotation: 0, visible: true },
         { id: 7, name: '', type: '', gid: (H | 5) >>> 0, x: 48, y: 48, width: 16, height: 32, rotation: 0, visible: true },
+        { id: 9, template: 'parts/torch.tj', x: 0, y: 48 },
         { id: 8, template: '../templates/enemy.tj', x: 24, y: 24, properties: [{ name: 'hp', type: 'int', value: 5 }] },
       ] },
     ] },
-    { type: 'imagelayer', id: 9, name: 'sky', x: 0, y: 0, opacity: 0.5, visible: true, image: '../props/chest.png', imagewidth: 16, imageheight: 32, repeatx: true, repeaty: false },
+    { type: 'imagelayer', id: 9, name: 'sky', x: 0, y: 0, opacity: 0.5, parallaxx: 0.5, parallaxy: 0.25, visible: true, image: '../props/chest.png', imagewidth: 16, imageheight: 32, repeatx: true, repeaty: false },
   ],
 };
 writeFileSync(join(root, 'maps/level.tmj'), JSON.stringify(map, null, 1));
@@ -90,6 +92,8 @@ const tileset = {
   ],
 };
 writeFileSync(join(root, 'tilesets/terrain.tsj'), JSON.stringify(tileset, null, 1));
+writeFileSync(join(root, 'maps/parts/torch.tj'), JSON.stringify({ type: 'template', tileset: { firstgid: 1, source: '../../tilesets/terrain.tsj' },
+  object: { id: 0, name: 'torch', type: '', gid: 2, x: 0, y: 0, width: 16, height: 16, rotation: 0, visible: true } }, null, 1));
 writeFileSync(join(root, 'templates/enemy.tj'), JSON.stringify({ type: 'template', object: {
   id: 0, name: 'enemy', type: 'enemy', x: 0, y: 0, width: 8, height: 8, rotation: 0, visible: true,
   properties: [{ name: 'hp', type: 'int', value: 3 }, { name: 'kind', type: 'string', value: 'slime' }] } }, null, 1));

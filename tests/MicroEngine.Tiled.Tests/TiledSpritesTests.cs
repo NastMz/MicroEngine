@@ -11,17 +11,81 @@ public sealed class TiledSpritesTests
     private static readonly Color Bg = new(10, 20, 30);
     private static readonly Color White = Color.White, Red = new(255, 0, 0), Green = new(0, 255, 0), Blue = new(0, 0, 255), Yellow = new(255, 255, 0), Brown = new(120, 70, 20);
 
-    private static PixelImage DrawGround(string path, double seconds)
+    private static PixelImage Render(string path, Action<HeadlessRenderer, TiledSprites> draw, int width = 64, int height = 48)
     {
         var device = new HeadlessGraphicsDevice { KeepsPixels = true };
         var assets = new AssetCache(device, Maps);
-        var map = assets.TiledMap(path);
-        var sprites = new TiledSprites(map, assets, TextureFilter.Nearest);
-        var renderer = new HeadlessRenderer(64, 48, device);
+        var sprites = new TiledSprites(assets.TiledMap(path), assets, TextureFilter.Nearest);
+        var renderer = new HeadlessRenderer(width, height, device);
         renderer.Reset();
         renderer.Clear(Bg);
-        sprites.DrawAll(renderer, null, seconds);
+        draw(renderer, sprites);
         return renderer.Frame!;
+    }
+
+    private static PixelImage DrawGround(string path, double seconds) => Render(path, (r, s) =>
+    {
+        foreach (var layer in s.Map.TileLayers) s.Draw(r, layer, null, seconds);
+    });
+
+    [TestMethod]
+    [DataRow("maps/level.tmx")]
+    [DataRow("maps/level.tmj")]
+    public void A_tile_object_stands_on_its_position_stretched_to_its_size_and_mirrored(string path)
+    {
+        // Object 7: the 16 × 32 chest, mirrored, at (48, 48) in a layer offset by (8, 4): it covers x 56–71, y 20–51.
+        var f = Render(path, (r, s) => s.Draw(r, s.Map.ObjectLayer("spawns")), 80, 60);
+        Assert.AreEqual(Brown, f[56, 20]);
+        Assert.AreEqual(Brown, f[71, 51]);
+        Assert.AreEqual(Bg, f[55, 30]);
+        Assert.AreEqual(Bg, f[60, 52]);
+        Assert.AreEqual(Bg, f[60, 19]);
+        // The template's block is not a tile object, and the other shapes are data: nothing else is drawn.
+        Assert.AreEqual(Bg, f[34, 30]);
+        var everything = Render(path, (r, s) => s.DrawAll(r), 80, 60);
+        Assert.AreEqual(Brown, everything[60, 50], "DrawAll draws object layers too, above the tiles");
+    }
+
+    [TestMethod]
+    public void A_stretched_and_turned_tile_object_covers_what_Tiled_shows()
+    {
+        var f = Render("maps/level.tmj", (r, s) =>
+        {
+            var chest = s.Map.Object(7)! with { Position = new Vector2(40, 10), Size = new Vector2(32, 16), Rotation = MathF.PI / 2, Orientation = default };
+            s.Draw(r, chest);
+        }, 80, 60);
+        // Unturned, the 32 × 16 box would rise from its bottom-left (40, 10) to x 72, y -6. A quarter turn clockwise
+        // about that corner swings it down: x 40 to 56, y 10 to 42.
+        Assert.AreEqual(Brown, f[41, 11]);
+        Assert.AreEqual(Brown, f[55, 41]);
+        Assert.AreEqual(Bg, f[39, 20]);
+        Assert.AreEqual(Bg, f[57, 20]);
+        Assert.AreEqual(Bg, f[45, 9]);
+        Assert.AreEqual(Bg, f[45, 43]);
+    }
+
+    [TestMethod]
+    public void The_turned_bounds_hold_what_a_turned_object_covers()
+    {
+        var map = new AssetCache(new HeadlessGraphicsDevice(), Maps).TiledMap("maps/level.tmx");
+        var chest = map.Object(7)! with { Position = new Vector2(40, 10), Size = new Vector2(32, 16), Rotation = MathF.PI / 2 };
+        Assert.AreEqual(new RectF(40, 10, 16, 32), chest.TurnedBounds, "the box the drawing test covers");
+        var door = map.Object(1)!;   // 16 × 32 at (24, 20), a quarter turn about its top-left
+        Assert.AreEqual(new RectF(-8, 20, 32, 16), door.TurnedBounds);
+        Assert.AreEqual(map.Object(2)!.Bounds, map.Object(2)!.TurnedBounds, "an unturned object");
+    }
+
+    [TestMethod]
+    [DataRow("maps/level.tmx")]
+    [DataRow("maps/level.tmj")]
+    public void Parallax_shifts_a_layer_by_how_far_the_view_is_from_the_parallax_origin(string path)
+    {
+        var map = new AssetCache(new HeadlessGraphicsDevice(), Maps).TiledMap(path);
+        Assert.AreEqual(new Vector2(32, 24), map.ParallaxOrigin);
+        var sky = map.Layer<TiledImageLayer>("sky");
+        Assert.AreEqual(new Vector2(0.5f, 0.25f), sky.Parallax);
+        Assert.AreEqual(new Vector2(16, 18), map.ParallaxShift(sky, new Vector2(64, 48)));
+        Assert.AreEqual(Vector2.Zero, map.ParallaxShift(map.TileLayer("ground"), new Vector2(64, 48)), "a layer that moves with the map");
     }
 
     [TestMethod]

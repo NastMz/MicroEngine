@@ -49,7 +49,12 @@ public sealed class TiledMapTests
         var chest = map.Tile(5)!;
         Assert.AreEqual(("props/chest.png", new RectF(0, 0, 16, 32), "chest", 10), (chest.Image, chest.Source, chest.Class, chest.Properties.Int("loot")));
         Assert.IsNull(map.Tile(0));
-        Assert.IsNull(map.Tile(6));
+        Assert.IsNull(map.Tile(6), "a gap in the collection's ids");
+        Assert.AreEqual((7, "props/chest.png"), (map.Tile(7)!.Gid, map.Tile(7)!.Image));
+        CollectionAssert.AreEqual(new[] { 0, 2 }, props.Tiles.Select(t => t.Id).ToArray());
+        Assert.IsTrue(props.Contains(7));
+        Assert.IsFalse(props.Contains(6));
+        Assert.IsNull(map.Tile(8));
 
         var sky = map.Layer<TiledImageLayer>("sky");
         Assert.AreEqual(("props/chest.png", true, false, 0.5f), (sky.Image, sky.RepeatX, sky.RepeatY, sky.Opacity));
@@ -63,7 +68,7 @@ public sealed class TiledMapTests
         var map = Assets().TiledMap(path);
         var spawns = map.ObjectLayer("spawns");
         Assert.AreEqual(new Vector2(8, 4), spawns.Offset, "the group's offset plus the layer's");
-        Assert.HasCount(8, spawns.Objects);
+        Assert.HasCount(9, spawns.Objects);
         var offset = new Vector2(8, 4);
 
         var door = map.Object(1)!;
@@ -100,7 +105,9 @@ public sealed class TiledMapTests
         Assert.AreEqual(5, enemy.Properties.Int("hp"), "the instance's value wins");
         Assert.AreEqual("slime", enemy.Properties.String("kind"), "the template's other properties stay");
 
-        Assert.HasCount(8, map.Objects);
+        var torch = map.Object(9)!;
+        Assert.AreEqual(("torch", TiledShape.Tile, 2), (torch.Name, torch.Shape, torch.Gid), "a template whose tileset path is relative to the template's folder");
+        Assert.HasCount(9, map.Objects);
     }
 
     [TestMethod]

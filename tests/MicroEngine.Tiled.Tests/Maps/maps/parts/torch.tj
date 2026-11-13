@@ -1,0 +1,19 @@
+{
+ "type": "template",
+ "tileset": {
+  "firstgid": 1,
+  "source": "../../tilesets/terrain.tsj"
+ },
+ "object": {
+  "id": 0,
+  "name": "torch",
+  "type": "",
+  "gid": 2,
+  "x": 0,
+  "y": 0,
+  "width": 16,
+  "height": 16,
+  "rotation": 0,
+  "visible": true
+ }
+}

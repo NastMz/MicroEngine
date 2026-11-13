@@ -12,22 +12,50 @@ internal static class TiledReader
     /// <summary>Reads the map at <paramref name="path"/>; <paramref name="read"/> returns the text of any content file.</summary>
     public static TiledMap Read(string path, Func<string, string> read)
     {
-        var cache = new DefaultResourceCache();
-        var loader = Loader.DefaultWith(new Reader(read), cache);
+        var files = new Files(read);
         DT.Map map;
-        try { map = loader.LoadMap(path); }
+        try
+        {
+            using var reader = new MapReader(read(path), files.TilesetsFrom(Folder(path)), files.TemplatesFrom(Folder(path)), Files.NoCustomTypes);
+            map = reader.ReadMap();
+        }
         catch (Exception e) when (e is System.Xml.XmlException or System.Text.Json.JsonException or FormatException or NotSupportedException or KeyNotFoundException or ArgumentException)
         {
             throw new InvalidDataException($"{path}: not a Tiled map Tiled can read: {e.Message}", e);
         }
         if (map.Orientation != MapOrientation.Orthogonal)
             throw new NotSupportedException($"{path}: {map.Orientation} maps are not supported; only orthogonal maps load.");
-        return new Builder(path, map, cache).Build();
+        return new Builder(path, map, files).Build();
     }
 
-    private sealed class Reader(Func<string, string> read) : IResourceReader
+    /// <summary>
+    /// The files a map references, each resolved against the folder of the file that names it (DotTiled 1.0.0's own
+    /// loader resolves a template's tileset against the map's folder). Templates are read once; tilesets are read for
+    /// every reference, because the reader writes each reference's first global id into the tileset it gets.
+    /// </summary>
+    private sealed class Files(Func<string, string> read)
     {
-        public string Read(string resourcePath) => read(MicroEngine.Content.AssetPath.Normalize(resourcePath));
+        public static Optional<ICustomTypeDefinition> NoCustomTypes(string name) => Optional.Empty;
+
+        private readonly Dictionary<string, DT.Template> _templates = new(StringComparer.Ordinal);
+
+        public Func<string, DT.Tileset> TilesetsFrom(string folder) => source =>
+        {
+            string file = Join(folder, source);
+            using var reader = new TilesetReader(read(file), TilesetsFrom(Folder(file)), TemplatesFrom(Folder(file)), NoCustomTypes);
+            return reader.ReadTileset();
+        };
+
+        public Func<string, DT.Template> TemplatesFrom(string folder) => source =>
+        {
+            string file = Join(folder, source);
+            if (_templates.TryGetValue(file, out var template)) return template;
+            using var reader = new TemplateReader(read(file), TilesetsFrom(Folder(file)), TemplatesFrom(Folder(file)), NoCustomTypes);
+            return _templates[file] = reader.ReadTemplate();
+        };
+
+        /// <summary>The template at <paramref name="source"/> relative to <paramref name="folder"/>, if it was read.</summary>
+        public DT.Template? Template(string folder, string source) => _templates.GetValueOrDefault(Join(folder, source));
     }
 
     private static string Folder(string path)
@@ -48,7 +76,7 @@ internal static class TiledReader
         | ((flags & FlippingFlags.FlippedVertically) != 0 ? TileOrientation.FlipY : 0)
         | ((flags & FlippingFlags.FlippedDiagonally) != 0 ? TileOrientation.Diagonal : 0);
 
-    private sealed class Builder(string path, DT.Map map, IResourceCache cache)
+    private sealed class Builder(string path, DT.Map map, Files files)
     {
         private readonly string _folder = Folder(path);
         private readonly List<TiledTileset> _tilesets = [];
@@ -63,7 +91,11 @@ internal static class TiledReader
             var layers = map.Layers.Select(l => Layer(l, root)).ToList();
             return new TiledMap(path, _width, _height, (int)map.TileWidth, (int)map.TileHeight, (_originX, _originY),
                 map.BackgroundColor is { A: > 0 } bg ? ToColor(bg) : null,
-                Or(map.Class, ""), Properties(map.Properties), layers, _tilesets);
+                Or(map.Class, ""), Properties(map.Properties), layers, _tilesets)
+            {
+                // An infinite map is cropped, so its parallax origin moves with it.
+                ParallaxOrigin = new Vector2(map.ParallaxOriginX - _originX * (int)map.TileWidth, map.ParallaxOriginY - _originY * (int)map.TileHeight),
+            };
         }
 
         // ---- Tilesets ----
@@ -79,9 +111,9 @@ internal static class TiledReader
                 Or(t.Class, ""), Properties(t.Properties));
             var described = t.Tiles.ToDictionary(x => (int)x.ID);
             // A tileset cut from one image has TileCount tiles; a collection of images has the ids it lists (maybe with gaps).
-            int count = image is not null ? (int)t.TileCount : (described.Count == 0 ? 0 : described.Keys.Max() + 1);
-            var tiles = new TiledTile[count];
-            for (int id = 0; id < count; id++)
+            var ids = image is not null ? Enumerable.Range(0, (int)t.TileCount) : described.Keys.Order();
+            var tiles = new List<TiledTile>();
+            foreach (int id in ids)
             {
                 described.TryGetValue(id, out var d);
                 string tileImage = image ?? (d?.Image.HasValue == true ? Join(folder, d.Image.Value.Source.Value) : "");
@@ -102,9 +134,10 @@ internal static class TiledReader
                 else source = default;
                 var animation = d is null ? [] : d.Animation.Select(f => new TiledFrame(firstGid + (int)f.TileID, f.Duration / 1000f)).ToList();
                 var shapes = d?.ObjectLayer is { HasValue: true } group ? group.Value.Objects.Select(o => Object(o, Vector2.Zero, isShape: true)).ToList() : [];
-                tiles[id] = new TiledTile(tileset, id, firstGid + id, tileImage, source, d is null ? "" : d.Type, d is null ? TiledProperties.Empty : Properties(d.Properties),
+                var tile = new TiledTile(tileset, id, firstGid + id, tileImage, source, d is null ? "" : d.Type, d is null ? TiledProperties.Empty : Properties(d.Properties),
                     animation, shapes);
-                _tiles[firstGid + id] = tiles[id];
+                tiles.Add(tile);
+                _tiles[firstGid + id] = tile;
             }
             tileset.Tiles = tiles;
             return tileset;
@@ -201,10 +234,9 @@ internal static class TiledReader
             string className = o.Type;
             var properties = Properties(o.Properties);
             // An instance of a template has the template's properties, its own winning. DotTiled 1.0.0 merges them for
-            // TMX but replaces them for TMJ, so they are merged here from the template it cached (a no-op for TMX).
-            if (o.Template.HasValue
-                && cache.GetTemplate(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path) ?? "", o.Template.Value)) is { HasValue: true } template)
-                properties = new TiledProperties(Properties(template.Value.Object.Properties).Concat(properties));
+            // TMX but replaces them for TMJ, so they are merged here from the template read (a no-op for TMX).
+            if (o.Template.HasValue && files.Template(_folder, o.Template.Value) is { } template)
+                properties = new TiledProperties(Properties(template.Object.Properties).Concat(properties));
             TiledShape shape;
             switch (o)
             {
