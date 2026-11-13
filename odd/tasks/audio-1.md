@@ -23,12 +23,12 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 
 | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
-| T1 Map the public audio surface against S2 | S1 S2 S5 | inline | pending | |
-| T2 Baseline profile before any change: render time, allocations, trigger lead on the SDL sink | S3 S4 | inline | pending | |
-| T3 `AudioEngine.SetPitch`: live pitch through the existing command queue | S2 S4 | inline | pending | |
-| T4 `Game.Audio` (`AudioMixer`): voices with handles, voice control, buses, music layers | S2 S7 | inline | pending | |
-| T5 Game-side example (sample region), manual, release notes, API reference | S6 | inline | pending | |
-| T6 Profile after the change; evaluation `docs/evaluations/audio-1.md` | S3 S4 S6 | inline | pending | |
+| T1 Map the public audio surface against S2 | S1 S2 S5 | inline | done | evaluation §1, §3 |
+| T2 Baseline profile before any change: render time, allocations, trigger timing on the SDL sink | S3 S4 | inline | done | evaluation §2 (run before the first source write) |
+| T3 `AudioEngine.SetPitch`: live pitch through the existing command queue; one step's changes apply together | S2 S4 | inline | done | `f8e22ee`; RED: `SetPitch` missing (CS1061), then `Changes_of_one_step_take_effect_together_at_its_frame` failed without the merge; `AudioEngineTests` green |
+| T4 `Game.Audio` (`AudioMixer`): voices with handles, voice control, buses, music voices | S2 S7 | inline | done | `c4110df`; RED: 10 missing members (CS1061); `AudioMixerVoiceTests` 8/8 |
+| T5 Game-side example (sample region), manual, release notes, API reference | S6 | inline | done | `74af2e2` (`VoicesExample`, capture and audio capture inspected), `7af2942`, `f3b1ffd` (manual: outside the listed surfaces, own commit) |
+| T6 Profile after the change; evaluation `docs/evaluations/audio-1.md` | S3 S4 S6 | inline | done | evaluation §2, §4, §5 |
 
 ## Log
 
@@ -50,3 +50,29 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   > and evidence for timing/latency claims.
   >
   > **Status:** Future candidate.
+- L2 (2026-11-13) Mapping. `AudioEngine` (public, `MixerAudioDevice.Engine`) already has voices with handles, stop
+  with fade, live volume and pan, pause, nested buses, priorities and any number of streams
+  (`src/MicroEngine.Audio/Mixing/AudioEngine.cs`). `AudioMixer` (`Game.Audio`, `src/MicroEngine.Audio/Audio.cs`)
+  exposes none of it: `Play` returns `void`, no loop, bus or priority, one music track; and it keeps only device
+  handles, so a sound registered by name cannot be played on the engine. Live pitch exists nowhere. The facade is in
+  `src/MicroEngine.Audio`, inside the edit surfaces.
+- L3 (2026-11-13) Baseline, before the first source write (harness in the session's scratch folder, default SDL
+  output of this machine): rendering 32 voices takes 40.6 µs per 256-frame block (0.76 % of real time) and allocates
+  nothing; game-thread calls allocate nothing; a sound's frame is rendered a median 60.9 ms after `Play` at a steady
+  60 fps, and the SDL queue adds its 60 ms, so sounds reach the device about 120 ms after the update, twice what
+  ADR 0033 and the manual say; after slow frames the median stays higher (87 ms after 40 ms frames, 120 ms after
+  120 ms frames). Browser not measured (no browser build made in this session).
+- L4 (2026-11-13) Decisions. New members instead of new overloads of `Play` (`PlayVoice`, `PlayMusicVoice`), so no
+  existing call can become ambiguous. A voice plays exactly its `PlayParameters`; `SfxVolume`, `MusicVolume` and the
+  once-per-step rule stay those of `Play` and `PlayMusic`. Buses by name on `Game.Audio`, kept in a table when the
+  device has no mixer, so headless code behaves the same. Positional stereo stays game code over `Set` (the example).
+  No ADR: additive, no new contract or threading rule.
+- L5 (2026-11-13) The latency findings are not fixed here: both fixes change when existing sounds are heard and trade
+  exact-frame starts against latency (evaluation §5). They wait for the owner.
+- L6 (2026-11-13) The audio manual is `docs/manual/audio.md`, outside the surfaces listed for this work (which name
+  `docs/guide/**`); its limitations stated what this change adds, so it was edited in a commit of its own (`f3b1ffd`)
+  for the owner to keep or drop. `AGENTS.md` was not edited (other work in progress touches the same sentence): this
+  record still has to be added to its list of feature records.
+- L7 (2026-11-13) After the change: rendering 32 voices with a pitch, volume and pan change per block takes 40.2 µs
+  per block, 0 bytes; `SetPitch` 42 ns, `AudioMixer.Set(volume, pan, pitch)` 173 ns, 0 bytes; trigger timing
+  unchanged (median 60.3 ms at 60 fps).

@@ -284,6 +284,20 @@ public sealed class AudioEngineTests
     }
 
     [TestMethod]
+    public void A_pitch_change_never_outlives_a_stop_that_is_fading()
+    {
+        var (engine, _) = Open(maxVoices: 1);
+        var voice = engine.Play(Constant(0.1f, 10 * StepFrames), new PlayParameters());
+        Step(engine);
+        engine.Stop(voice, fadeSeconds: 2.0 / Steps);
+        engine.SetPitch(voice, 0.5f);
+        Step(engine);
+        Assert.IsTrue(engine.IsPlaying(voice), "still fading");
+        Step(engine);
+        Assert.IsFalse(engine.IsPlaying(voice), "the fade ends the sound, however slow it plays");
+    }
+
+    [TestMethod]
     public void Pitch_is_clamped_and_loops_and_streams_keep_playing()
     {
         var (engine, sink) = Open();
