@@ -35,6 +35,7 @@
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
+    <Project Path="benchmarks/MapBench/MapBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
     <Project Path="benchmarks/PhysicsBench/PhysicsBench.csproj" />
     <Project Path="benchmarks/WorldBench/WorldBench.csproj" />
