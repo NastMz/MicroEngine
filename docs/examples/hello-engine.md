@@ -24,7 +24,7 @@ folder builds anywhere:
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.2" />
+    <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
   </ItemGroup>
 </Project>
 ```
