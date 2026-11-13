@@ -154,9 +154,12 @@ jobs:
           else echo "::notice::No Android signing key (packaging/README.md): Android packages are not built."; fi
           node site/scripts/demos.mjs plan --policy none --native "$targets" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
 
+  # The jobs after resolve name its result: the implicit success() also looks at prune, which a manual run skips, and
+  # would skip every check of that run.
   checks:
     name: Supported
     needs: resolve
+    if: ${{ !cancelled() && needs.resolve.result == 'success' }}
     uses: ./.github/workflows/checks.yml
     permissions:
       contents: write # storing demo packages in the integration store (never a release)
@@ -180,7 +183,7 @@ jobs:
   sdk:
     name: SDK
     needs: resolve
-    if: needs.resolve.outputs.sdk == 'true'
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && needs.resolve.outputs.sdk == 'true' }}
     uses: ./.github/workflows/sdk.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
@@ -188,7 +191,9 @@ jobs:
   platforms:
     name: Experimental
     needs: resolve
-    if: needs.resolve.outputs.macos == 'true' || needs.resolve.outputs.android == 'true' || needs.resolve.outputs.ios == 'true'
+    if: >-
+      ${{ !cancelled() && needs.resolve.result == 'success' &&
+      (needs.resolve.outputs.macos == 'true' || needs.resolve.outputs.android == 'true' || needs.resolve.outputs.ios == 'true') }}
     uses: ./.github/workflows/platforms.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
