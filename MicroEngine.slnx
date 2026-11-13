@@ -45,6 +45,7 @@
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
     <Project Path="samples/Slice3D/Slice3D.csproj" />
     <Project Path="samples/PhysicsSubstitution/PhysicsSubstitution.csproj" />
+    <Project Path="samples/TiledLevel/TiledLevel.csproj" />
   </Folder>
   <Folder Name="/samples/GemGarden/part1-scenes/">
     <Project Path="samples/GemGarden/part1-scenes/GemGarden.csproj" />

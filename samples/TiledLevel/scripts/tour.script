@@ -1,0 +1,7 @@
+# The level as loaded, then a run to the right over the first diamonds and a running jump onto the castle platform.
+1 hold right 140
+20 capture start.png
+31 press confirm
+46 capture jump.png
+120 capture platform.png
+122 quit

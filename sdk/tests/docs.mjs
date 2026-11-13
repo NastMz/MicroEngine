@@ -53,6 +53,7 @@ const samples = [
   ['samples/GemGarden/part4-complete', 'GemGarden.csproj', 'scripts/tour.script'],
   ['samples/Examples', 'Examples.csproj', 'scripts/tour.script'],
   ['samples/HelloEngine', 'HelloEngine.csproj', 'hello.script'],
+  ['samples/TiledLevel', 'TiledLevel.csproj', 'scripts/tour.script'],
 ];
 
 const tail = text => text.trim().split('\n').slice(-4).join(' | ');
@@ -108,7 +109,7 @@ async function main() {
       const referenced = csproj.match(/<PackageReference Include="MicroEngine\.Desktop" Version="([^"]+)"/)?.[1];
       // The repository's samples reference the documented version (what a reader installs).
       if (!check(`${name}: references MicroEngine.Desktop ${documented}`, referenced === documented && !/ProjectReference/.test(csproj), referenced ?? 'no package reference')) continue;
-      // Every SDK package it references (MicroEngine.Desktop, and MicroEngine.Text.Shaping for the examples) moves to the version under test.
+      // Every SDK package it references (MicroEngine.Desktop, MicroEngine.Text.Shaping for the examples, MicroEngine.Tiled for the Tiled level) moves to the version under test.
       if (version !== referenced) fs.writeFileSync(file, csproj.replaceAll(new RegExp(`(<PackageReference Include="MicroEngine(?:\\.[A-Za-z]+)*" Version=")${referenced.replaceAll('.', '\\.')}"`, 'g'), `$1${version}"`));
       let r = run(['build', project, '-c', 'Release', '-v', 'q', '-nologo'], target, env);
       if (!check(`${name}: builds against ${what}`, r.code === 0, r.code === 0 ? '' : tail(r.out), required)) continue;
