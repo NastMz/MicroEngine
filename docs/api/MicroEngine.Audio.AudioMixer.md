@@ -148,6 +148,35 @@ public AudioStatistics Statistics { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Audio_AudioMixer_AddBus_System_String_System_String_"></a> AddBus\(string, string\)
+
+Adds a bus playing into <code class="paramref">parent</code>: a group of sounds with one volume ("ambience", "voices",
+"ui"), named by [Bus](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_Bus). At most 32 buses exist.
+
+```csharp
+public void AddBus(string name, string parent = "master")
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`parent` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+A bus already has that name, or the name is empty.
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+<code class="paramref">parent</code> does not exist.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+There are 32 buses already.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_"></a> AddMusic\(string, AudioClip, bool\)
 
 Registers decoded music, such as a rendered [Song](MicroEngine.Audio.Retro.Song.md), under <code class="paramref">name</code>.
@@ -299,6 +328,44 @@ The file does not exist.
 
 The WAV is not 8, 16 or 24-bit PCM, mono or stereo.
 
+### <a id="MicroEngine_Audio_AudioMixer_BusVolume_System_String_"></a> BusVolume\(string\)
+
+The volume of bus <code class="paramref">name</code>.
+
+```csharp
+public float BusVolume(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No such bus.
+
+### <a id="MicroEngine_Audio_AudioMixer_HasBus_System_String_"></a> HasBus\(string\)
+
+Whether a bus is named <code class="paramref">name</code>. "master", "sfx" (sounds, by default) and "music" always exist.
+
+```csharp
+public bool HasBus(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Audio_AudioMixer_HasMusic_System_String_"></a> HasMusic\(string\)
 
 Whether music is registered under <code class="paramref">name</code>.
@@ -330,6 +397,42 @@ public bool HasSound(string name)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_AudioMixer_IsPlaying_MicroEngine_Audio_VoiceHandle_"></a> IsPlaying\(VoiceHandle\)
+
+Whether <code class="paramref">voice</code> is still playing (or paused, or fading out).
+
+```csharp
+public bool IsPlaying(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_AudioMixer_Pause_MicroEngine_Audio_VoiceHandle_System_Boolean_"></a> Pause\(VoiceHandle, bool\)
+
+Pauses (true) or resumes (false) <code class="paramref">voice</code>; a paused sound keeps its voice.
+
+```csharp
+public bool Pause(VoiceHandle voice, bool paused)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`paused` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it was playing.
 
 ### <a id="MicroEngine_Audio_AudioMixer_PauseMusic_System_Boolean_"></a> PauseMusic\(bool\)
 
@@ -401,6 +504,66 @@ A song registered with [AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Au
             of memory); its name is then unregistered. With a fade, this surfaces from [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is
             due to start.
 
+### <a id="MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__"></a> PlayMusicVoice\(string, in PlayParameters\)
+
+Plays registered music as one more voice, beside the track [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_) plays and without replacing
+it: ambience under the music, layers of one piece faded in and out. It plays exactly as
+<code class="paramref">parameters</code> say (name the "music" bus to keep it with the music; it loops when they say so,
+whatever the music was registered with); [MusicVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_MusicVolume) and music fades do not apply. Streamed music
+(OGG) keeps its own pitch.
+
+```csharp
+public VoiceHandle PlayMusicVoice(string name, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+The voice, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) as [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__) returns it.
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No music is registered under <code class="paramref">name</code>, or the bus does not exist.
+
+### <a id="MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(string, in PlayParameters\)
+
+Plays a registered sound as a voice and returns its handle, to change or stop it while it plays: a loop that
+follows something (an engine, a siren), a sound to cut short, a sound on a bus of its own or with a priority.
+It plays exactly as <code class="paramref">parameters</code> say: [SfxVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SfxVolume) and the once-per-frame rule of
+[Play](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Play_System_String_System_Single_System_Single_System_Single_System_Single_) do not apply (scale voices with their bus, [SetBusVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SetBusVolume_System_String_System_Single_)).
+
+```csharp
+public VoiceHandle PlayVoice(string name, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+The voice, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when every voice is busy with sounds of higher priority or the device
+has no mixer (headless, muted, no hardware); calls with that handle do nothing.
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No sound is registered under <code class="paramref">name</code>, or the bus does not exist.
+
 ### <a id="MicroEngine_Audio_AudioMixer_Pump"></a> Pump\(\)
 
 The host frame's audio work, outside the simulation step: renders songs that render in slices (browsers), then
@@ -410,6 +573,81 @@ only for a mixer you created.
 ```csharp
 public void Pump()
 ```
+
+### <a id="MicroEngine_Audio_AudioMixer_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Nullable_System_Single__"></a> Set\(VoiceHandle, float?, float?, float?\)
+
+Changes a playing voice from this update on; null keeps a value. Called every update it follows something that
+moves: the pan and volume of a sound source crossing the screen, the pitch of an engine.
+
+```csharp
+public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, float? pitch = null)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+A handle from [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__) or [PlayMusicVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__).
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+Volume, 0..1.
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+Stereo position, 0 (left) to 1 (right).
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+Playback speed factor, 1 for the original pitch (0.01..100); ignored by streamed music.
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it was playing.
+
+### <a id="MicroEngine_Audio_AudioMixer_SetBusVolume_System_String_System_Single_"></a> SetBusVolume\(string, float\)
+
+Sets the volume of everything playing through bus <code class="paramref">name</code> and the buses under it, clamped to
+0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of [Play](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Play_System_String_System_Single_System_Single_System_Single_System_Single_) too,
+on top of [SfxVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SfxVolume)), "music" for the music track and the voices played on it.
+
+```csharp
+public void SetBusVolume(string name, float volume)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No such bus.
+
+### <a id="MicroEngine_Audio_AudioMixer_Stop_MicroEngine_Audio_VoiceHandle_System_Single_"></a> Stop\(VoiceHandle, float\)
+
+Stops <code class="paramref">voice</code>, fading it out over <code class="paramref">fadeSeconds</code> (0: at once).
+
+```csharp
+public bool Stop(VoiceHandle voice, float fadeSeconds = 0)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`fadeSeconds` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it was playing; false for a handle whose sound already ended, was stopped or lost its voice.
 
 ### <a id="MicroEngine_Audio_AudioMixer_StopMusic_System_Single_"></a> StopMusic\(float\)
 

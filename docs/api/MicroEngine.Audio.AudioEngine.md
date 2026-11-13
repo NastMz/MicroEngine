@@ -442,6 +442,28 @@ public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
 
 Whether it was playing.
 
+### <a id="MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_"></a> SetPitch\(VoiceHandle, float\)
+
+Changes the pitch of <code class="paramref">voice</code> from the current step's frame: the playback speed factor, 1 for the
+clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
+mixer's timeline moves its end accordingly. Streams play at their own pitch.
+
+```csharp
+public bool SetPitch(VoiceHandle voice, float pitch)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it was playing and is a clip; false for a stale handle or a stream.
+
 ### <a id="MicroEngine_Audio_AudioEngine_StepFrame_System_Int64_"></a> StepFrame\(long\)
 
 The first output frame of simulation step <code class="paramref">step</code>.

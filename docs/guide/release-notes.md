@@ -17,6 +17,13 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
+- `Game.Audio` plays sounds that keep playing and change while they play
+  ([Sounds that keep playing](../manual/audio.md#sounds-that-keep-playing)): `PlayVoice(name, parameters)` returns a
+  `VoiceHandle` for a looping or one-shot sound on any bus with a priority; `Set(voice, volume, pan, pitch)`,
+  `Pause`, `Stop(voice, fadeSeconds)` and `IsPlaying` control it; `AddBus`, `SetBusVolume`, `BusVolume` and `HasBus`
+  group sounds under one volume; `PlayMusicVoice` plays registered music beside the music track. The pitch of a
+  playing sound changes with `AudioEngine.SetPitch`, and the volume, pan and pitch set in one update take effect at
+  the same instant. The Examples sample has a looping sound that follows a moving source.
 
 **Fixed**
 
