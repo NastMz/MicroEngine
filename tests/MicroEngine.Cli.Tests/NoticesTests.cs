@@ -62,6 +62,43 @@ public sealed class NoticesTests
     }
 
     [TestMethod]
+    public void The_runtime_pack_is_resolved_with_the_publish_properties_that_move_the_restore_output()
+    {
+        // As in the repository's demos: a publish property moves the restore output to obj/package/. Resolving the runtime
+        // pack without that property reads obj/, which a fresh checkout does not have.
+        string dir = Directory.CreateTempSubdirectory("microengine-runtime-pack-").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), """
+                <Project>
+                  <PropertyGroup Condition="'$(MicroEngineNativePackage)' == 'true'">
+                    <BaseIntermediateOutputPath>obj/package/</BaseIntermediateOutputPath>
+                  </PropertyGroup>
+                </Project>
+                """);
+            string project = Path.Combine(dir, "Game.csproj");
+            File.WriteAllText(project, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+                </Project>
+                """);
+            string rid = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+            Tool.Run(Tool.Dotnet, ["restore", project, "-r", rid, "-p:SelfContained=true", .. Packaging.DesktopPublishProperties, "-nologo"], dir, "restore");
+            Assert.IsFalse(File.Exists(Path.Combine(dir, "obj", "project.assets.json")), "the restore output is under obj/package/ only");
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "obj", "package", "project.assets.json")));
+
+            var runtime = Packaging.RuntimePack(project, rid, Packaging.DesktopPublishProperties);
+            StringAssert.StartsWith(runtime.Version, "10.0.");
+            Assert.IsTrue(Directory.Exists(runtime.Directory), runtime.Directory);
+            Assert.ThrowsExactly<CliException>(() => Packaging.RuntimePack(project, rid), "without the properties MSBuild reads obj/, which has no restore output");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void A_runtime_pack_without_its_licence_files_is_an_error_that_names_the_folder()
     {
         string dir = Directory.CreateTempSubdirectory("runtime-pack-").FullName;
