@@ -528,7 +528,7 @@ jobs:
       - name: Virtual display and sound server
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri pulseaudio pulseaudio-utils
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri pulseaudio pulseaudio-utils openbox
           export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
@@ -560,10 +560,13 @@ jobs:
           exit "$status"
       - name: Firefox suites
         if: ${{ !cancelled() }}
+        # Under a window manager, as on a real desktop: from Firefox 160 on, a fullscreen request on X11 waits for the
+        # window manager to make the window fullscreen, so on a bare Xvfb it never completes (Firefox 159 completed it).
         run: |
           status=0
           firefox --version
-          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs platform scripts repeat keyboard framerate audio gamepad \
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -c 'openbox & sleep 1; exec node web/tests/run.mjs "$@"' firefox-suites \
+            platform scripts repeat keyboard framerate audio gamepad \
             --browsers firefox --games "$GAME" --headed --out web-tests | tee web-tests-firefox.log || status=$?
           grep -E '^(==|FAIL|[0-9]+ passed)' web-tests-firefox.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
           exit "$status"
