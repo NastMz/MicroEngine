@@ -49,6 +49,7 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 | T10 Queue saturation: reproduce, consequences, fix | S11 S14 | inline | done | `08692db`; RED: 5 of 6 new tests failed; evaluation §5.4 |
 | T11 Latency: measure both approaches, output latency and precision apart; implement if local | S9 S14 | inline | done | `3a66d01`; RED: 5 of 6 new tests failed; evaluation §5.2; 116 offline renders byte-identical |
 | T12 Manual, release notes, migration note, API reference, evaluation | S9 S13 | inline | done | this commit; `f3b1ffd` kept, its latency figures corrected to the measured ones |
+| T13 Correction of T11 and T10 after the second review: catch-up never moves the timeline back at any update rate; stall behaviour of `main` restored; check at every call; kept resume always sent | S9 S11 S14 | inline | done | evaluation §5.6; RED: 11 new test cases failed on `2a954f8` |
 
 ## Log
 
@@ -132,3 +133,11 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 - L13 (2026-11-13) Scratch (outside the repository, not deleted): the latency program, the PCM comparison scripts and
   their outputs, and a rebuild of the verifier's probe, under the session's temporary folder named in the hand-off.
 - L14 (2026-11-13) Still open from L6: `AGENTS.md` does not list this record (outside the edit surfaces).
+- L15 (2026-11-13) Second review (independent verifier), two blockers in `3a66d01`: the fixed quarter-second stall
+  threshold let the catch-up steps of one frame move `Now` back at update rates of 15 or less, or with 17 or more
+  steps in a frame; and the stalled-sink wait had changed from a second to a quarter without saying so (L12's last
+  sentence but one). Corrected: a stall is the sink's rendered position not moving during a second of steps over at
+  least two host frames, which the steps of one frame cannot be; the one-second wait of `main` is back. Also: the
+  check against the device runs at every sound or change, not once per step (a frame-phase call used it up), and a
+  resume kept while the queue was full is sent even if the sound ended on the timeline. 116 offline renders still
+  byte-identical. Evaluation §5.6.

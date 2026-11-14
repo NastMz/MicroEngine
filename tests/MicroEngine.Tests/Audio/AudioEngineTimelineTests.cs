@@ -20,6 +20,8 @@ public sealed class AudioEngineTimelineTests
     {
         private AudioRender? _render;
         private readonly float[] _block = new float[256 * 2];
+        /// <summary>The left and right samples rendered so far, when the test asks for them.</summary>
+        public List<float>? Heard;
         public AudioFormat Format => Stereo;
         public AudioSinkSchedule Schedule => AudioSinkSchedule.SinkThread;
         public int LatencyFrames => latencyFrames;
@@ -30,14 +32,19 @@ public sealed class AudioEngineTimelineTests
         /// <summary>Time passes: the device plays <paramref name="frames"/> and the sink renders as many to keep its queue.</summary>
         public void Play(int frames)
         {
-            for (; frames > 0; frames -= 256) _render!(_block.AsSpan(0, Math.Min(256, frames) * 2));
+            for (; frames > 0; frames -= 256)
+            {
+                var block = _block.AsSpan(0, Math.Min(256, frames) * 2);
+                _render!(block);
+                if (Heard is not null) foreach (float sample in block) Heard.Add(sample);
+            }
         }
     }
 
-    private static (AudioEngine Engine, QueuedSink Sink) Open(bool deterministic = false)
+    private static (AudioEngine Engine, QueuedSink Sink) Open(bool deterministic = false, int updateRate = Steps)
     {
         var sink = new QueuedSink(Queue);
-        var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps }) { Deterministic = deterministic };
+        var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = updateRate }) { Deterministic = deterministic };
         sink.Play(Queue); // the sink fills its queue as soon as it starts
         return (engine, sink);
     }
@@ -131,15 +138,129 @@ public sealed class AudioEngineTimelineTests
     }
 
     [TestMethod]
-    public void A_sink_that_does_not_render_holds_the_timeline_within_a_quarter_second()
+    [DataRow(10, 5)]
+    [DataRow(15, 5)]
+    [DataRow(30, 5)]
+    [DataRow(60, 5)]
+    [DataRow(60, 20)]
+    [DataRow(144, 5)]
+    [DataRow(144, 40)]
+    [DataRow(2, 5)]
+    public void Catch_up_steps_never_move_the_timeline_back_at_any_update_rate(int updateRate, int catchUpSteps)
+    {
+        var (engine, sink) = Open(updateRate: updateRate);
+        // 48000 / 144 is not whole: the steps' frames are 333 or 334 apart.
+        int step = Rate / updateRate, uneven = Rate % updateRate == 0 ? 0 : 1, shortest = step - Math.Max(1, step / 16);
+        long previous = Frame(engine, sink, step)[0].Start;
+        void Check(List<(long Start, long Ahead)> played, string where)
+        {
+            for (int i = 0; i < played.Count; i++)
+            {
+                long spacing = played[i].Start - previous;
+                Assert.IsTrue(spacing >= shortest, $"{where}, step {i}: {spacing} frames after the previous step's sounds (a step is {step})");
+                if (i > 0) Assert.IsTrue(spacing >= step && spacing <= step + uneven, $"{where}, step {i}: the steps of one frame are exactly one step apart ({spacing})");
+                Assert.IsTrue(played[i].Ahead >= 0, $"{where}, step {i}: not in frames already rendered");
+                previous = played[i].Start;
+            }
+        }
+        for (int cycle = 0; cycle < 20; cycle++)
+        {
+            for (int i = 0; i < 7; i++) Check(Frame(engine, sink, step), $"cycle {cycle}, frame {i}");
+            // A slow frame: the time of all its steps went by, and the game makes it up at once.
+            Check(Frame(engine, sink, catchUpSteps * step, catchUpSteps), $"cycle {cycle}, the slow frame");
+        }
+    }
+
+    [TestMethod]
+    [DataRow(10)]
+    [DataRow(15)]
+    [DataRow(30)]
+    [DataRow(144)]
+    public void At_other_update_rates_a_sound_starts_within_a_step_of_what_the_sink_renders_next(int updateRate)
+    {
+        var (engine, sink) = Open(updateRate: updateRate);
+        int step = Rate / updateRate;
+        for (int i = 0; i < 4 * updateRate; i++) Frame(engine, sink, step);
+        long previous = Frame(engine, sink, step)[0].Start;
+        for (int i = 0; i < 2 * updateRate; i++)
+        {
+            var (start, ahead) = Frame(engine, sink, step)[0];
+            Assert.IsTrue(ahead >= 0 && ahead <= step + 1, $"frame {i}: {ahead} frames ahead");
+            Assert.IsTrue(start - previous >= step && start - previous <= step + 1, $"frame {i}: one step after the previous ({start - previous})");
+            previous = start;
+        }
+    }
+
+    [TestMethod]
+    public void A_call_between_the_frames_steps_does_not_make_the_next_steps_sounds_late()
+    {
+        var (engine, sink) = Open();
+        var loop = engine.Play(Click, new PlayParameters { Loop = true });
+        for (int i = 0; i < 60; i++) Frame(engine, sink);
+        for (int i = 0; i < 240; i++)
+        {
+            // After the frame's last step (while drawing, say), the game changes a sound; then time passes unevenly.
+            Assert.IsTrue(engine.Set(loop, volume: 0.5f));
+            var (_, ahead) = Frame(engine, sink, elapsedFrames: i % 2 == 0 ? StepFrames + 300 : StepFrames - 300)[0];
+            Assert.IsTrue(ahead >= 0, $"frame {i}: the step's sound is scheduled {-ahead} frames into what is already rendered");
+        }
+    }
+
+    [TestMethod]
+    public void A_sink_that_does_not_render_is_waited_for_once_a_second()
     {
         var (engine, sink) = Open();
         for (int i = 0; i < 60; i++) Frame(engine, sink);
-        for (int i = 0; i < 300; i++)
+        long previous = Frame(engine, sink)[0].Start;
+        int back = 0;
+        for (int i = 0; i < 150; i++)
         {
-            var (_, ahead) = Frame(engine, sink, elapsedFrames: 0)[0];
-            Assert.IsTrue(ahead <= Rate / 4 + StepFrames, $"step {i}: {ahead} frames ahead of a sink that stopped");
+            var (start, ahead) = Frame(engine, sink, elapsedFrames: 0)[0];
+            long spacing = start - previous;
+            if (spacing < 0) back++;
+            else Assert.IsTrue(spacing > 0 && spacing <= StepFrames, $"step {i}: {spacing}");
+            Assert.IsTrue(ahead <= Rate + StepFrames, $"step {i}: {ahead} frames ahead of a sink that stopped");
+            previous = start;
         }
+        // The timeline goes on for a second, so sounds keep their spacing; then it waits for the sink where the sink is.
+        Assert.AreEqual(2, back, "it went back to the sink once per second of steps, not at every step");
+    }
+
+    [TestMethod]
+    public void Sounds_played_while_the_sink_did_not_render_play_whole_and_end_once_it_renders_again()
+    {
+        var (engine, sink) = Open();
+        for (int i = 0; i < 60; i++) Frame(engine, sink);
+        sink.Heard = [];
+        // Left: a half-second sound played 50 steps into the stall. Right: a loop stopped with a fade a little later.
+        var shot = VoiceHandle.None;
+        var loop = engine.Play(new AudioClip([.. Enumerable.Repeat(0.25f, StepFrames)], Rate), new PlayParameters { Loop = true, Pan = 1f });
+        long before = 0, after = 0;
+        for (int i = 0; i < 90; i++)
+        {
+            if (i == 50) shot = engine.Play(new AudioClip([.. Enumerable.Repeat(0.5f, Rate / 2)], Rate), new PlayParameters { Pan = 0f });
+            if (i == 55) Assert.IsTrue(engine.Stop(loop, fadeSeconds: 0.1));
+            if (i == 58) before = engine.Now;
+            if (i == 62) after = engine.Now;
+            engine.Advance();
+            engine.Pump();
+        }
+        Assert.IsTrue(after < before, "the timeline went back to the sink during the stall");
+        Assert.IsTrue(engine.IsPlaying(shot), "a sound that has not been rendered yet is still playing");
+        Assert.IsTrue(engine.IsPlaying(loop), "and the fade that has not been rendered is still running");
+        for (int i = 0; i < 150; i++) Frame(engine, sink);
+        Assert.IsFalse(engine.IsPlaying(shot) || engine.IsPlaying(loop));
+        Assert.IsFalse(engine.Stop(shot), "its handle ended with it");
+        var heard = sink.Heard!;
+        int shotFrames = 0, lastLoop = -1, lastShot = -1;
+        for (int f = 0; f < heard.Count / 2; f++)
+        {
+            if (heard[f * 2] >= 0.4f) { shotFrames++; lastShot = f; }
+            if (heard[f * 2 + 1] != 0) lastLoop = f;
+        }
+        Assert.AreEqual(Rate / 2, shotFrames, "the whole sound was heard, once");
+        Assert.IsTrue(lastLoop >= 0 && lastLoop < lastShot, "the loop faded out and stayed silent");
+        Assert.IsTrue(engine.ActiveVoices <= 1, "nothing but the last step's click is left");
     }
 
     [TestMethod]

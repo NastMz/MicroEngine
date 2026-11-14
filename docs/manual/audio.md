@@ -234,7 +234,10 @@ When the output stops taking audio while the game goes on (a page whose sound th
 or click), nothing the game asks for is lost: stops, pauses, and the latest volume, pan and pitch of each sound and
 the volume of each bus apply when the output plays again. Once the calls waiting for it fill the mixer's queue
 (4096), a new sound is refused (`VoiceHandle.None`) until then; `AudioEngine.DroppedCommands` counts the calls that
-had to wait or were refused.
+had to wait or were refused. Sounds played while the output took no audio are not dropped: the ones of the last
+second before it resumes are heard, with their spacing, during the second after; a longer wait folds its earlier
+sounds onto that same second, so a game that keeps firing sounds at a suspended page is heard as a short burst when
+the page resumes.
 
 ## Sound and music files
 

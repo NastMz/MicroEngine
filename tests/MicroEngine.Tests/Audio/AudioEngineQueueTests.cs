@@ -53,7 +53,7 @@ public sealed class AudioEngineQueueTests
     }
 
     /// <summary>
-    /// The sink renders again. While it did not, the mixer's timeline went ahead of it (up to a quarter second), so what
+    /// The sink renders again. While it did not, the mixer's timeline went ahead of it (up to a second), so what
     /// the game asked for in those steps is due a little later in the sound: this renders past it and returns the last step.
     /// </summary>
     private static float[] Resume(AudioEngine engine, StalledSink sink)
@@ -134,6 +134,28 @@ public sealed class AudioEngineQueueTests
         var heard = Resume(engine, sink);
         Assert.AreEqual(0.125f * 0.5f, heard[10], 1e-6f, "left: only the resumed sound, through the bus at half volume");
         Assert.AreEqual(0.25f * 0.5f, heard[11], 1e-6f, "right: the changed sound at its last volume and pan");
+    }
+
+    [TestMethod]
+    public void A_resume_that_could_not_be_queued_arrives_even_if_the_sound_ended_on_the_timeline_meanwhile()
+    {
+        var (engine, sink) = Open(maxVoices: 33);
+        var filler = Loops(engine, 32, level: 0f);
+        var sound = engine.Play(Constant(0.5f, Rate / 4), new PlayParameters());
+        engine.Pause(sound, true);
+        Step(engine, sink);
+        Stall(engine, filler);
+        Assert.IsTrue(engine.Pause(sound, false), "resumed while the queue is full");
+        // The sink still does not render; the timeline goes on past the quarter second that was left of the sound.
+        for (int i = 0; i < 40; i++)
+        {
+            engine.Advance();
+            engine.Pump();
+        }
+        Assert.IsFalse(engine.IsPlaying(sound), "it ended on the mixer's timeline");
+        float peak = 0;
+        for (int i = 0; i < 2 * Steps; i++) peak = Math.Max(peak, Step(engine, sink).Max(Math.Abs));
+        Assert.AreEqual(0.5f, peak, "the sink renders again and plays what was left of it, as it does for a resume that was queued");
     }
 
     [TestMethod]

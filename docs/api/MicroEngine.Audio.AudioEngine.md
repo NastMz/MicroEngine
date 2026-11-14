@@ -36,7 +36,9 @@ In real time (not [Deterministic](MicroEngine.Audio.AudioEngine.md#MicroEngine_A
 has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
 after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
 timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
-back by a sixteenth of a step per host frame until it is within one step again.
+back by a sixteenth of a step per host frame until it is within one step again. Neither moves it back: sounds of
+consecutive steps keep their order. Only a sink that renders nothing for a second of steps, over several host
+frames, is waited for where it is.
 </p>
 <p>
 Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
@@ -196,7 +198,7 @@ public int MaxVoices { get; }
 ### <a id="MicroEngine_Audio_AudioEngine_Now"></a> Now
 
 The output frame the current step's sounds start at (the step's frame plus [DelayFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DelayFrames)). In real
-time, the step's first sound or change moves it forward when the sink has already rendered past it.
+time, a sound or change moves it forward when the sink has already rendered past it.
 
 ```csharp
 public long Now { get; }

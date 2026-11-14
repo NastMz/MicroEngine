@@ -286,8 +286,8 @@ change, a flag in `Pump`; the render function is untouched and allocates nothing
 deterministic output is byte-identical (the 116 offline renders of §5.1 rebuilt on the final code: 0 differ; and
 `Deterministic_runs_follow_the_simulation_whatever_the_sink_rendered`), and precision does not degrade beyond 1 ms
 steps while it removes the late sounds the old policy had after slow frames. Pinned by `AudioEngineTimelineTests`
-(six tests against a sink with a 70 ms queue; five failed before the change). A sink that stops rendering now holds
-the timeline within a quarter second instead of a second.
+(against a sink with a 70 ms queue; five of the first six failed before the change). §5.6 corrects two faults of
+the first version of this change.
 
 **Hypotheses, not run.** Browsers: `BrowserAudioSink` is pumped by the host after the frame's steps, so a step's
 sounds start in the audio rendered by that frame's pump and nothing can be late; the expected figure is the 100 ms
@@ -350,9 +350,84 @@ a pitch change in a clip's last three frames ends the sound where the timeline s
 pitch changes at the tail of clips of 1, 2, 3 and 801 frames, mono and stereo, looping or not, stay inside the clip.
 These passed when written (no defect found).
 
+### 5.6 Correction of the timeline change (2026-11-13, second review)
+
+An independent verifier found two blockers in the first version of §5.2 (`3a66d01`); both are **demonstrated
+failures of that version**, not of `main`, and are fixed.
+
+1. **Catch-up steps could move the timeline back.** That version waited for the sink whenever the timeline was more
+   than a quarter second ahead of the device, a fixed threshold that the legitimate catch-up steps of one slow frame
+   cross when a step is long or the steps are many. Spacing of consecutive steps' `Now`, verifier's probe (`repro`):
+
+   | Update rate, catch-up steps | `3a66d01` | Now |
+   | --- | --- | --- |
+   | 15, 5 | 3200 ×4, **-9600**, 3200, 3200 | 3200 ×6, 3000 |
+   | 10, 5 | 4800 ×3, **-9600**, 4800 ×3 | 4800 ×6, 4500 |
+   | 60, 20 | 800 ×16, **-12000**, 800 ×4, 750 | 800 ×21, 750 |
+   | 60, 5; 30, 5; 20, 5; 60, 16 | all positive | unchanged |
+
+   The threshold is gone. A stalled sink is told from catch-up by what distinguishes them: the sink's rendered
+   position has not moved during a second of steps spread over at least two host frames. The catch-up steps of one
+   frame are steps of a single host frame, whatever the update rate and the limit of steps per frame, so they never
+   move the timeline back; recovery shortens a step by a sixteenth at most. Pinned by
+   `Catch_up_steps_never_move_the_timeline_back_at_any_update_rate` (rates 2, 10, 15, 30, 60 and 144 with 5 to 40
+   steps in a frame; six of eight rows failed on `3a66d01`) and
+   `At_other_update_rates_a_sound_starts_within_a_step_of_what_the_sink_renders_next`.
+
+2. **A stalled sink was waited for four times as often** (an undisclosed change of that version). Verifier's probe
+   (`stall`: two seconds without rendering at 60 steps per second, a one-frame click per step):
+
+   | | `main` (verifier's figures) | `3a66d01` | Now |
+   | --- | --- | --- | --- |
+   | `Now` ahead of what is rendered during the stall | 70 to 1054 ms | 17 to 253 ms | 17 to 948 ms |
+   | Times `Now` moved back | 1 | 7 | 1 |
+   | Clicks heard after resume span | (not given) | 971 ms | 967 ms |
+   | Largest summed click amplitude on one frame | 0.50 | 1.00 | 1.00 |
+
+   Decision: **the behaviour of `main` is restored** (wait for the sink once per second of steps). For a player the
+   two differ only in how the sounds of a long stall are folded when the output resumes: either way they are all
+   heard within about a second; the shorter window of `3a66d01` put four times as many of them on top of each other
+   and moved the timeline back four times as often, for no gain a player hears, since a suspended output plays
+   nothing meanwhile. One difference from `main` remains on the probe's last row: the timeline now sits within a step
+   of the sink where `main` sat a whole queue ahead, so in this probe (exact 60 Hz frames) some clicks of the two
+   folded seconds and of the first steps after resume land on one frame; the timeline waits half a step ahead of the
+   sink so that two folded seconds interleave. With sounds longer than one frame the overlap is the same in all
+   three. **User-perceptible difference: none demonstrated against `main`.** Pinned by
+   `A_sink_that_does_not_render_is_waited_for_once_a_second`.
+
+   The timeline still moves back once per second of a real stall, as on `main`. Voice bookkeeping across it is
+   pinned by `Sounds_played_while_the_sink_did_not_render_play_whole_and_end_once_it_renders_again`: a half-second
+   sound played and a loop stopped with a fade before the timeline goes back are still playing after it, the sound
+   is heard whole and once when the sink renders again, the fade completes, and the handles end. Pausing or changing
+   the pitch of a sound whose start frame is ahead of the timeline that went back no longer counts frames it has not
+   played (read from the code and guarded; not reproduced as an audible fault). Music fades of `Game.Audio` are
+   volume changes of a voice per update and go through the same path; they have no test of their own across a stall.
+
+Also from that review:
+
+- **(a) A call between a frame's last step and the next frame's first one used up that step's check
+  (demonstrated failure of `3a66d01`).** The timeline was checked against the device at a step's first call only, so
+  a call made while drawing fixed the next step's frame a frame early. Verifier's probe (`paced framecall`, real
+  threads, 20 s at 60 fps with a 100 ms hitch every 4 s): 4 late sounds (max 94.7 ms) before, 0 now. The check now
+  runs at every sound or change (one volatile read). Without frame-phase calls the same probe reported 0 late sounds
+  before, and in two runs now 2 (by at most 0.7 ms) and 0: less than one render block, which the render thread can
+  finish between the call and the probe's reading (hypothesis; not pursued). Pinned by
+  `A_call_between_the_frames_steps_does_not_make_the_next_steps_sounds_late`.
+- **(b) A resume kept while the queue was full was never sent if the sound ended on the timeline first
+  (demonstrated failure of `08692db`**, reproduced by
+  `A_resume_that_could_not_be_queued_arrives_even_if_the_sound_ended_on_the_timeline_meanwhile`, red before): the
+  render function kept the sound paused until another sound took its voice, and what was left of it was never
+  heard, unlike a resume that had been queued. The kept resume is now sent whether or not the sound is still on the
+  timeline.
+
 ## 6. Left for the owner
 
 Nothing here blocks the batch.
+
+0. **Sounds played into a stalled output** are all heard within a second of its resuming, as on `main` (§5.6). A
+   game that fires many sounds at a page waiting for its first click is heard as a burst. Dropping the one-shot
+   sounds of a stall longer than a second (keeping loops and music) would remove it; it changes what a suspended page
+   plays on resume, so it was not made.
 
 1. **Measure in a browser** (and on raylib, Android and iOS): the latency after §5.2 and what is heard when a
    suspended page resumes are read from code only.

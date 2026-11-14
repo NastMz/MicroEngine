@@ -127,7 +127,9 @@ public sealed class AudioBus
 /// has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
 /// after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
 /// timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
-/// back by a sixteenth of a step per host frame until it is within one step again.
+/// back by a sixteenth of a step per host frame until it is within one step again. Neither moves it back: sounds of
+/// consecutive steps keep their order. Only a sink that renders nothing for a second of steps, over several host
+/// frames, is waited for where it is.
 /// </para>
 /// <para>
 /// Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
@@ -162,11 +164,13 @@ public sealed class AudioEngine : IDisposable
     private readonly float[] _busVolume = new float[MaxBuses], _busGain = new float[MaxBuses];
     private readonly List<StreamFeed> _feeds = [];
     private long _step, _offset, _played, _position;
-    // Real time: the sink's latency, whether the current step's frame was checked against the sink, the smallest lead of
-    // the timeline over the device in the steps of the current host frame, and whether a host frame ended since.
+    // Real time: the sink's latency, the smallest lead of the timeline over the device in the steps of the current host
+    // frame, whether a host frame ended since, and when the sink last rendered anything: what it had rendered, the step
+    // that saw it, and the host frames ended since.
     private readonly int _sinkLatency;
-    private bool _anchored, _pumped;
-    private long _frameLead = long.MaxValue;
+    private bool _pumped;
+    private long _frameLead = long.MaxValue, _progressRendered = -1, _progressStep;
+    private int _progressPumps;
     private bool _disposed;
     // RenderAllocations: written by the rendering thread only.
     private readonly bool _sinkThread;
@@ -239,19 +243,18 @@ public sealed class AudioEngine : IDisposable
     public long Steps => _step;
     /// <summary>
     /// The output frame the current step's sounds start at (the step's frame plus <see cref="DelayFrames"/>). In real
-    /// time, the step's first sound or change moves it forward when the sink has already rendered past it.
+    /// time, a sound or change moves it forward when the sink has already rendered past it.
     /// </summary>
     public long Now => StepFrame(_step) + _offset + DelayFrames;
 
     /// <summary>
-    /// Real time, at a step's first sound or change: when the step runs later than the timeline expected (the device is
-    /// already past the step's frame), the timeline moves forward to the device, so the step's sounds start in the
-    /// frames the sink renders next instead of in frames it has rendered. Later calls of the step keep that frame.
+    /// Real time, at every sound or change: when the call comes later than the timeline expected (the device is already
+    /// past the step's frame), the timeline moves forward to the device, so the sound starts in the frames the sink
+    /// renders next instead of in frames it has rendered. It is checked at each call, not once per step: a call made
+    /// between a frame's last step and the next frame's first one (while drawing) comes a frame before that step's.
     /// </summary>
     private void Anchor()
     {
-        if (_anchored) return;
-        _anchored = true;
         if (Deterministic) return;
         long behind = RenderedFrames - _sinkLatency - (StepFrame(_step) + _offset);
         if (behind > 0) _offset += behind;
@@ -472,8 +475,8 @@ public sealed class AudioEngine : IDisposable
         if (float.IsNaN(pitch)) return true;
         long now = Now;
         // Where the sound is on the timeline: it advanced at the old speed since the last change, unless paused.
-        if (!l.Paused) l.Position += (now - l.PositionFrame) * l.Step;
-        l.PositionFrame = now;
+        if (!l.Paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
+        l.PositionFrame = Math.Max(now, l.PositionFrame);
         l.Step = l.Rate * Speed(pitch);
         if (!l.Loop && l.Frames > 0)
         {
@@ -494,11 +497,12 @@ public sealed class AudioEngine : IDisposable
         ref var l = ref _logical[voice.Index];
         if (l.Paused == paused) return true;
         long now = Now;
-        if (paused) l.Position += (now - l.PositionFrame) * l.Step;
-        l.PositionFrame = now;
+        // A sound paused before its start frame (the timeline went back to a sink that had stopped) has played nothing.
+        if (paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
+        l.PositionFrame = Math.Max(now, l.PositionFrame);
         if (paused)
         {
-            l.Remaining = l.End == long.MaxValue ? long.MaxValue : l.End - now;
+            l.Remaining = l.End == long.MaxValue ? long.MaxValue : l.End - Math.Max(now, l.Start);
             l.End = long.MaxValue;
         }
         else l.End = l.Remaining == long.MaxValue ? long.MaxValue : now + l.Remaining;
@@ -515,7 +519,6 @@ public sealed class AudioEngine : IDisposable
         Flush();
         if (!Deterministic) Follow();
         _step++;
-        _anchored = false;
         if (Deterministic) return;
         for (int i = 0; i < _logical.Length; i++) if (_logical[i].Active && _logical[i].End <= Now) Release(i);
     }
@@ -528,13 +531,25 @@ public sealed class AudioEngine : IDisposable
     private void Follow()
     {
         int stepFrames = _rate / _updateRate;
-        // How far ahead of the device the step that ends was. Behind it (the game fell behind): catch up. More than a
-        // quarter second ahead (a sink that has not started, or stopped rendering): wait for it.
-        long lead = StepFrame(_step) + _offset - (RenderedFrames - _sinkLatency);
-        if (lead < 0 || lead > _rate / 4)
+        long rendered = RenderedFrames;
+        if (rendered != _progressRendered) (_progressRendered, _progressStep, _progressPumps) = (rendered, _step, 0);
+        // How far ahead of the device the step that ends was. Behind it (the game fell behind): catch up.
+        long lead = StepFrame(_step) + _offset - (rendered - _sinkLatency);
+        if (lead < 0)
         {
             _offset -= lead;
             lead = 0;
+        }
+        else if (_progressPumps >= 2 && _step - _progressStep >= _updateRate)
+        {
+            // The sink rendered nothing during a second of steps spread over several host frames: it has not started
+            // or it stopped (a suspended page). The timeline waits for it where it is, the only time it goes back;
+            // sounds already scheduled keep their frames. The catch-up steps of one slow frame never get here, however
+            // many they are and however long a step is: they are steps of a single host frame. It waits half a step
+            // ahead, so the sounds of the second it starts fall between those of the second it leaves, not on them.
+            _offset -= lead - stepFrames / 2;
+            lead = stepFrames / 2;
+            _progressStep = _step;
         }
         if (_pumped)
         {
@@ -543,7 +558,7 @@ public sealed class AudioEngine : IDisposable
             // frame, and this one, are more than a step ahead, the timeline comes back a sixteenth of a step: steps
             // stay in order and almost evenly spaced (about a millisecond closer at 60 steps per second).
             long excess = Math.Min(lead, _frameLead) - stepFrames;
-            if (excess > 0) _offset -= Math.Min(excess, Math.Max(1, stepFrames / 16));
+            if (excess > 0) _offset -= Math.Min(excess, Math.Clamp(stepFrames / 16, 1, Math.Max(1, stepFrames - 1)));
             _frameLead = long.MaxValue;
             _pumped = false;
         }
@@ -558,6 +573,7 @@ public sealed class AudioEngine : IDisposable
     {
         if (_disposed) return;
         _pumped = true;
+        if (_progressPumps < int.MaxValue) _progressPumps++;
         Flush();
         for (int i = _feeds.Count - 1; i >= 0; i--)
         {
@@ -619,11 +635,14 @@ public sealed class AudioEngine : IDisposable
         {
             ref var l = ref _logical[slot];
             if (l.Unsent == Unsent.None) continue;
-            // A sound that ended or was stopped at once needs only its stop; its voice is taken again after it is sent.
+            // The values of a sound that ended or was stopped at once are of no use; its voice is taken again only after
+            // what is left here is sent.
             if ((l.Unsent & Unsent.Values) != 0 && l.Active
                 && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is null ? l.Step : 0 })) return false;
             l.Unsent &= ~Unsent.Values;
-            if ((l.Unsent & Unsent.Pause) != 0 && l.Active && !TryPost(new Command { Op = Op.Pause, Slot = slot, Frame = now, Paused = l.Paused })) return false;
+            // A resume is sent even when the sound has since ended on the timeline: the render function still holds it
+            // paused, and plays what is left as it would have had the resume been queued.
+            if ((l.Unsent & Unsent.Pause) != 0 && !TryPost(new Command { Op = Op.Pause, Slot = slot, Frame = now, Paused = l.Paused })) return false;
             l.Unsent &= ~Unsent.Pause;
             if ((l.Unsent & Unsent.Stop) != 0 && !TryPost(new Command { Op = Op.Stop, Slot = slot, Frame = l.StopFrame, Fade = l.StopFade })) return false;
             l.Unsent = Unsent.None;
