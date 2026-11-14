@@ -34,6 +34,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
 
 **Fixed**
 
+- `AchievementTracker` with a store threw `InvalidOperationException` in a game published trimmed or with NativeAOT,
+  when it loaded and when it saved. It now reads and writes its slot without reflection; the file is unchanged and
+  existing achievement files load as before.
 - A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
   an empty slot wrote a file named `.json`.
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with

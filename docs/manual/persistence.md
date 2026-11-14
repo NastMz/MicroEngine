@@ -14,6 +14,7 @@ refused writes return `false`.
 | `new SaveStore(ISaveStorage storage)` | Any storage implementation |
 | `Save<T>(slot, data)` | Serialises `data` to indented JSON and writes the slot whole; `false` if refused |
 | `Load<T>(slot)` | The object, or `null` when missing, corrupt or unreadable |
+| `Save<T>(slot, data, typeInfo)`, `Load<T>(slot, typeInfo)` | The same, with the metadata of the game's `JsonSerializerContext` instead of reflection: for games published trimmed or with NativeAOT ([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)) |
 | `Exists(slot)`, `Delete(slot)` | Slot management |
 | `Directory` | The folder (file storage) or a description of the medium |
 | `SaveStore.DefaultStorage(gameId)` | The platform's default medium (below); a host composes another one instead (`host.Storage`) |
@@ -280,5 +281,9 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
 - Saves are local to one machine or one browser profile; there is no cloud sync, export or import.
 - JSON only, through `System.Text.Json`. There are no built-in version numbers or migrations; a game upgrades its own
   saves ([Changing what a save holds](#changing-what-a-save-holds)).
+- `Save(slot, data)` and `Load<T>(slot)` find the saved type's properties by reflection, which a game published with
+  .NET's `PublishTrimmed` or `PublishAot` does not have: such a game declares its saved types and passes their metadata
+  (`Save(slot, data, typeInfo)`, `Load(slot, typeInfo)`), reading and writing the same slots
+  ([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)).
 - A slot is a plain name; folders inside the save folder are not supported ([Slot names](#slot-names)).
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).

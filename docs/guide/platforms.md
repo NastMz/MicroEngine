@@ -127,8 +127,7 @@ players' saves ([Saving data](../manual/persistence.md)). What to expect in thes
   or read. The build reports each such call in the game's code: warning `IL2026` once the project sets
   `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` once it sets `PublishAot`,
   `IsAotCompatible` or `EnableAotAnalyzer`.
-- `AchievementTracker` keeps its state through the calls without metadata. A trimmed game that tracks achievements
-  with a store sets `<JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>` and
-  `<TrimMode>partial</TrimMode>` in its project, as the Android, iOS and web packages do; NativeAOT has no equivalent.
+- Achievements persist as in any other build: `AchievementTracker` reads and writes its slot without reflection, and
+  the game declares nothing for it.
 - NativeAOT is not one of the targets above: `microengine package` does not build it, and the SDK makes no promise
   about a game compiled that way beyond what this section states.

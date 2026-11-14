@@ -6,7 +6,8 @@
 //
 // 1. "typed": the game declares its save types in a JsonSerializerContext and passes the metadata to SaveStore. It is
 //    published trimmed and self-contained with every trim warning an error, and the published program is run: it must
-//    save, load, read a slot an earlier version wrote, and set a corrupt slot aside.
+//    save, load, read a slot an earlier version wrote, and set a corrupt slot aside. It also tracks achievements with
+//    that store (the engine's own saved type): they must unlock, persist, and load a file an earlier version wrote.
 // 2. "plain": the same game with Save(slot, data) and Load<T>(slot). Its build, with the trim and AOT analyzers on, must
 //    name those two calls (IL2026, IL3050) in the game's own file, and the trimmed program must fail in them.
 // 3. --aot: the typed game is also published with NativeAOT and run. NativeAOT needs the platform's native linker
@@ -123,6 +124,16 @@ try
     Console.WriteLine($"old: {old?.Level} {old?.Hero.Name} {old?.Bag.Count}");
     File.WriteAllText(Path.Combine(dir, "broken.json"), "{ \\"Level\\": 3, \\"Hero\\"");
     Console.WriteLine("corrupt: " + (${load('"broken"')} is null) + " " + File.Exists(Path.Combine(dir, "broken.corrupt.json")) + " " + store.Exists("broken"));
+    // Achievements keep their state in the same store: the engine's own saved type, which the game declares nowhere.
+    Achievement[] catalog = [new("first", "First", "Once."), new("ten", "Ten", "Ten times.", Goal: 10)];
+    var tracker = new AchievementTracker(catalog, store);
+    tracker.AddProgress("ten", 3);
+    Console.WriteLine("achievements: " + tracker.Unlock("first") + " " + tracker.Flush() + " " + File.ReadAllText(Path.Combine(dir, "achievements.json")).ReplaceLineEndings("").Replace(" ", ""));
+    var again = new AchievementTracker(catalog, store);
+    Console.WriteLine($"achievements again: {again.IsUnlocked("first")} {again.Progress("ten")} {again.Unlock("first")}");
+    File.WriteAllText(Path.Combine(dir, "achievements.json"), "{\\"Entries\\":{\\"ten\\":{\\"Unlocked\\":false,\\"Progress\\":7,\\"When\\":1},\\"gone\\":{\\"Progress\\":2}}}");
+    var earlier = new AchievementTracker(catalog, store);
+    Console.WriteLine($"achievements earlier: {earlier.IsUnlocked("first")} {earlier.Progress("ten")} {earlier.AddProgress("ten", 3)} {File.ReadAllText(Path.Combine(dir, "achievements.json")).Contains("gone")}");
     return 0;
 }
 catch (Exception e)
@@ -135,7 +146,9 @@ finally
     if (Directory.Exists(dir)) Directory.Delete(dir, true);
 }
 `;
-const expected = ['missing: True', 'save: True', 'load: 3 Ada 2 Hard 1200 5 cellar', 'old: 7 Pip 0', 'corrupt: True True False'];
+const expected = ['missing: True', 'save: True', 'load: 3 Ada 2 Hard 1200 5 cellar', 'old: 7 Pip 0', 'corrupt: True True False',
+  'achievements: True True {"Version":1,"Entries":{"ten":{"Progress":3,"Unlocked":false},"first":{"Progress":1,"Unlocked":true}}}',
+  'achievements again: True 3 False', 'achievements earlier: False 7 True True'];
 
 function game(name, save, load) {
   const dir = path.join(work, name);
@@ -159,7 +172,7 @@ const typed = game('typed', (slot, data) => `store.Save(${slot}, ${data}, GameSa
 const trimmed = published(typed, 'typed', 'out-trimmed', ['-p:PublishTrimmed=true', '--self-contained', '-warnaserror']);
 if (check('typed game: trimmed publish without warnings', trimmed.code === 0 && trimmed.found.length === 0, trimmed.found.join(' | ') || (trimmed.code === 0 ? '' : trimmed.text.slice(-600)))) {
   const ran = run(trimmed.program, [], typed);
-  check('typed game: the trimmed program saves and loads its own types', ran.code === 0 && sameLines(ran.text, expected), ran.text.trim().replace(/\r?\n/g, ' | '));
+  check('typed game: the trimmed program saves and loads its own types and its achievements', ran.code === 0 && sameLines(ran.text, expected), ran.text.trim().replace(/\r?\n/g, ' | '));
 }
 
 // 2. The plain game: the analyzers name the two reflection calls in the game's file, and the trimmed program fails there.
@@ -182,7 +195,7 @@ if (args.includes('--aot')) {
   check('typed game: NativeAOT compilation reports no trim or AOT warnings', analysis.length === 0, analysis.join(' | '));
   if (check('typed game: NativeAOT publish links', aot.code === 0, aot.code === 0 ? '' : aot.text.trim().split(/\r?\n/).filter(l => /error/.test(l)).slice(-2).join(' | ').slice(0, 400))) {
     const ran = run(aot.program, [], typed);
-    check('typed game: the NativeAOT program saves and loads its own types', ran.code === 0 && sameLines(ran.text, expected), ran.text.trim().replace(/\r?\n/g, ' | '));
+    check('typed game: the NativeAOT program saves and loads its own types and its achievements', ran.code === 0 && sameLines(ran.text, expected), ran.text.trim().replace(/\r?\n/g, ' | '));
   }
 }
 
