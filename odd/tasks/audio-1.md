@@ -18,6 +18,20 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 - S7 Owner's standing rule for research issues (as TILE-1 S6): they end in implementation; the bar is whether an
   external developer could build that game today with the published SDK. Additive public API only; the hand-off between
   the game thread and the render function stays the one command queue; rendering stays allocation-free.
+- S8 Same-update changes (L8): "Conservar provisionalmente la nueva semántica de comandos en el mismo paso. Cuantificar
+  las 34 diferencias encontradas y determinar si generan artefactos perceptibles o regresiones funcionales."
+- S9 Latency (L8): "Investigar la latencia de 120 ms frente a la propuesta de 70 ms. Medir la desviación de
+  sincronización real en ambos enfoques, separando latencia de salida y precisión temporal. Si la solución es
+  localizada y no introduce regresiones significativas, implementarla. No modificar el modelo temporal a ciegas."
+- S10 (L8): "Corregir `SetPitch(NaN)` y añadir pruebas."
+- S11 Queue (L8): "Reproducir la saturación de la cola, identificar sus consecuencias reales y corregirlas dentro de
+  este lote si el alcance es razonable."
+- S12 (L8): "Añadir pruebas de pausa/cambio en un mismo paso y reutilización de handles."
+- S13 (L8): "Conservar las modificaciones de `docs/manual/audio.md`."
+- S14 General criterion (L8): "corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar
+  innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta
+  evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
+  hipótesis y las diferencias perceptibles para el usuario."
 
 ## Tasks
 
@@ -76,3 +90,17 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 - L7 (2026-11-13) After the change: rendering 32 voices with a pitch, volume and pan change per block takes 40.2 µs
   per block, 0 bytes; `SetPitch` 42 ns, `AudioMixer.Set(volume, pan, pitch)` 173 ns, 0 bytes; trigger timing
   unchanged (median 60.3 ms at 60 fps).
+- L8 (2026-11-13) The owner's review of the batch, verbatim:
+
+  ```
+  AUDIO-1
+
+  * Conservar provisionalmente la nueva semántica de comandos en el mismo paso. Cuantificar las 34 diferencias encontradas y determinar si generan artefactos perceptibles o regresiones funcionales.
+  * Investigar la latencia de 120 ms frente a la propuesta de 70 ms. Medir la desviación de sincronización real en ambos enfoques, separando latencia de salida y precisión temporal. Si la solución es localizada y no introduce regresiones significativas, implementarla. No modificar el modelo temporal a ciegas.
+  * Corregir `SetPitch(NaN)` y añadir pruebas.
+  * Reproducir la saturación de la cola, identificar sus consecuencias reales y corregirlas dentro de este lote si el alcance es razonable.
+  * Añadir pruebas de pausa/cambio en un mismo paso y reutilización de handles.
+  * Conservar las modificaciones de `docs/manual/audio.md`.
+
+  Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
+  ```
