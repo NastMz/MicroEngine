@@ -145,6 +145,8 @@ public sealed class AudioEngine : IDisposable
     /// <summary>The bus music plays through.</summary>
     public const string MusicBus = "music";
     private const int MaxBuses = 32, QueueSize = 4096;
+    /// <summary>Changes to one sound that can wait for their frames at once, each for its own.</summary>
+    private const int WaitingChanges = 8;
 
     private readonly IAudioSink _sink;
     private readonly int _channels, _rate, _updateRate;
@@ -736,7 +738,7 @@ public sealed class AudioEngine : IDisposable
                 continue;
             }
             if (pos < voice.Start) continue;
-            if (voice.PendingAt != long.MaxValue && pos >= voice.PendingAt) ApplyPending(ref voice);
+            while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
             if (pos >= voice.StopAt + voice.Fade) { Silence(ref voice); continue; }
             if (voice.Paused) continue;
             float gain = voice.Volume * busGain;
@@ -789,16 +791,47 @@ public sealed class AudioEngine : IDisposable
         voice.Feed = null;
     }
 
+    /// <summary>Applies the oldest waiting change of <paramref name="voice"/>; the others move up.</summary>
     private static void ApplyPending(ref Voice voice)
     {
-        if (voice.PendingVolume >= 0) voice.Volume = voice.PendingVolume;
-        if (voice.PendingLeft >= 0) (voice.Left, voice.Right) = (voice.PendingLeft, voice.PendingRight);
-        if (voice.PendingPause != 0) voice.Paused = voice.PendingPause > 0;
-        if (voice.PendingStep > 0) voice.Step = voice.PendingStep;
-        voice.PendingAt = long.MaxValue;
-        voice.PendingVolume = voice.PendingLeft = -1;
-        voice.PendingPause = 0;
-        voice.PendingStep = 0;
+        ref var change = ref voice.Pending[0];
+        if (change.Volume >= 0) voice.Volume = change.Volume;
+        if (change.Left >= 0) (voice.Left, voice.Right) = (change.Left, change.Right);
+        if (change.Pause != 0) voice.Paused = change.Pause > 0;
+        if (change.Step > 0) voice.Step = change.Step;
+        voice.Changes--;
+        for (int i = 0; i < voice.Changes; i++) voice.Pending[i] = voice.Pending[i + 1];
+    }
+
+    /// <summary>
+    /// The waiting change of <paramref name="voice"/> for frame <paramref name="at"/>: the newest one when it is for that
+    /// frame (a step's volume, pan, pitch and pause wait together), or a new one after it. Each waits for its own frame,
+    /// so the changes of several steps can wait at once (a delay longer than a step, the steps after a slow frame).
+    /// A voice keeps <see cref="WaitingChanges"/> apart: with more, the two oldest become one, at the later of their
+    /// frames, so a change is late rather than early and the values asked for last are the ones that stay.
+    /// </summary>
+    private static ref Change Waiting(ref Voice voice, long at)
+    {
+        if (voice.Changes > 0)
+        {
+            ref var newest = ref voice.Pending[voice.Changes - 1];
+            // Frames only go forward; a change for an earlier frame than the newest joins it.
+            if (at <= newest.At) return ref newest;
+            if (voice.Changes == WaitingChanges)
+            {
+                ref var oldest = ref voice.Pending[0];
+                ref var second = ref voice.Pending[1];
+                if (second.Volume < 0) second.Volume = oldest.Volume;
+                if (second.Left < 0) (second.Left, second.Right) = (oldest.Left, oldest.Right);
+                if (second.Pause == 0) second.Pause = oldest.Pause;
+                if (second.Step <= 0) second.Step = oldest.Step;
+                voice.Changes--;
+                for (int i = 0; i < voice.Changes; i++) voice.Pending[i] = voice.Pending[i + 1];
+            }
+        }
+        ref var added = ref voice.Pending[voice.Changes++];
+        added = new Change { At = at, Volume = -1, Left = -1 };
+        return ref added;
     }
 
     private void Drain(long blockStart)
@@ -814,8 +847,7 @@ public sealed class AudioEngine : IDisposable
                     var started = new Voice
                     {
                         Active = true, Clip = c.Clip, Feed = c.Feed, Step = c.Step, Loop = c.Loop, Bus = c.Bus, Volume = c.Volume,
-                        Left = c.Left, Right = c.Right, Start = at, StopAt = long.MaxValue, PendingAt = long.MaxValue,
-                        PendingVolume = -1, PendingLeft = -1,
+                        Left = c.Left, Right = c.Right, Start = at, StopAt = long.MaxValue,
                     };
                     if (_voices[c.Slot].Active && at > blockStart)
                     {
@@ -836,17 +868,16 @@ public sealed class AudioEngine : IDisposable
                     break;
                 case Op.Set:
                 case Op.Pause:
-                    ref var changing = ref Target(c.Slot);
-                    // Changes of one frame (a step's volume, pan and pitch) wait together for it; an earlier one is due.
-                    if (changing.PendingAt != long.MaxValue && changing.PendingAt != at) ApplyPending(ref changing);
-                    changing.PendingAt = at;
+                    // Changes of one frame (a step's volume, pan and pitch) wait together for it; those of other
+                    // steps wait each for its own frame.
+                    ref var change = ref Waiting(ref Target(c.Slot), at);
                     if (c.Op == Op.Set)
                     {
-                        if (c.Volume >= 0) changing.PendingVolume = c.Volume;
-                        if (c.Left >= 0) (changing.PendingLeft, changing.PendingRight) = (c.Left, c.Right);
-                        if (c.Step > 0) changing.PendingStep = c.Step;
+                        if (c.Volume >= 0) change.Volume = c.Volume;
+                        if (c.Left >= 0) (change.Left, change.Right) = (c.Left, c.Right);
+                        if (c.Step > 0) change.Step = c.Step;
                     }
-                    else changing.PendingPause = c.Paused ? 1 : -1;
+                    else change.Pause = c.Paused ? 1 : -1;
                     break;
                 case Op.Bus:
                     if (_busPendingAt[c.Slot] != long.MaxValue) _busVolume[c.Slot] = _busPendingVolume[c.Slot];
@@ -889,10 +920,25 @@ public sealed class AudioEngine : IDisposable
         public float Volume, Left, Right;
         public int Bus;
         public long Start, StopAt, Fade;
-        public long PendingAt;
-        public float PendingVolume, PendingLeft, PendingRight;
-        public int PendingPause;
-        public double PendingStep;
+        // The changes waiting for their frames, oldest first.
+        public int Changes;
+        public WaitingList Pending;
+    }
+
+    /// <summary>A change to a voice waiting for its frame: the values it sets (a negative volume or left gain, no pause and no step keep what the voice has).</summary>
+    private struct Change
+    {
+        public long At;
+        public float Volume, Left, Right;
+        public int Pause;
+        public double Step;
+    }
+
+    /// <summary>The waiting changes of a voice, inside it: nothing is allocated for them while rendering.</summary>
+    [System.Runtime.CompilerServices.InlineArray(WaitingChanges)]
+    private struct WaitingList
+    {
+        private Change _first;
     }
 
     /// <summary>A voice as the main thread's policy sees it.</summary>
