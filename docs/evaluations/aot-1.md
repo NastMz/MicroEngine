@@ -8,11 +8,16 @@ Two findings are kept apart throughout, as the issue asks:
 - **A. Saves needed reflection.** `SaveStore` serialized the game's types with `System.Text.Json`'s reflection API. A
   trimmed or NativeAOT program has that API switched off, so saving failed at run time. This is a property of the SDK,
   on every machine. It is fixed by this work for the game's own types (section 4).
-- **B. This Windows machine cannot link NativeAOT programs.** The NativeAOT compiler (ILC) runs here and reports its
-  analysis, but the native link step fails (section 1.3). This is a property of the machine. It says nothing about the
-  SDK, and it means no NativeAOT program was *run* in this work.
+- **B. This Windows machine did not link NativeAOT programs as it was first used.** The NativeAOT compiler (ILC) ran
+  and reported its analysis, but the native link step failed (section 1.3). This is a property of the machine's
+  environment (the length of the account's `PATH`), not of the SDK and not a missing toolchain. With a short `PATH`
+  for the publishing process the link works, and NativeAOT programs were published and run (sections 4 and 5.3).
 
 Fixing A is not a certification of the SDK under NativeAOT (section 6).
+
+Every finding below is one of three kinds, and is labelled where the kind is not obvious: a **demonstrated failure**
+(reproduced here, with the command or test that shows it), a **hypothesis** (reasoned, not run), or a
+**user-perceptible difference** (something a game or its developer sees change).
 
 ## 1. Baseline
 
@@ -60,12 +65,32 @@ link: extra operand '/DEF:obj\\Release\\net10.0\\win-x64\\native\\<name>.def'
 Microsoft.NETCore.Native.targets(396,5): error MSB3073: El comando ""link" @"obj\Release\net10.0\win-x64\native\link.rsp"" salió con el código 1.
 ```
 
-ILC's `findvcvarsall.bat` fails inside `vcvarsall.bat`, so the `link` found on `PATH` is the GNU coreutils one. Visual
-Studio 18 Community has the MSVC linker (`VC\Tools\MSVC\14.52.37025\bin\Hostx64\x64\link.exe`) and `vswhere.exe` is
-in its usual folder, but no Windows SDK import libraries (`kernel32.lib`) are under `Windows Kits`, so pointing the
-build at that linker would not link either. Nothing was installed. **Consequence: on this machine ILC's whole-program
-analysis is observable, a NativeAOT executable is not.** Trimmed self-contained programs (ILLink, no native linker)
-were built and run instead; they exercise the same "no reflection serializer" condition.
+ILC's `findvcvarsall.bat` fails inside `vcvarsall.bat`, so the `link` found on `PATH` is the GNU coreutils one.
+
+**Cause (demonstrated, second pass).** The toolchain is installed; nothing had to be installed, and nothing was:
+
+- `vswhere -all -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`
+  answers `C:\Program Files\Microsoft Visual Studio\18\Community` (MSVC 14.52.37025 and 14.44.35207, `link.exe`
+  present) and the 2019 Build Tools.
+- The Windows SDK import libraries are present: `C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64\kernel32.lib`
+  and `...\ucrt\x64\ucrt.lib` (also 10.0.19041.0). The first pass's statement that there were none was wrong.
+- The account's `PATH` is 7578 characters (machine 2152, user 5426, 148 entries). Run by hand,
+  `findvcvarsall.bat x64` prints `La línea escrita es demasiado larga` ("the input line is too long") from
+  `vcvarsall.bat` and exits 255. The same command with `PATH` set, for that process only, to
+  `C:\Windows\System32;C:\Windows;C:\Program Files\dotnet` exits 0 and prints the MSVC `link.exe` folder and the
+  library paths.
+- `vcvarsall.bat` also calls `vswhere.exe` by name; without its folder on `PATH` its "not recognized" message is
+  captured as part of the linker's path and the link fails with exit code 123.
+
+**What works.** Publishing with the process's `PATH` reduced to
+`C:\Windows\System32;C:\Windows;C:\Program Files\dotnet;C:\Program Files (x86)\Microsoft Visual Studio\Installer`
+(plus Node's folder for the script). No system or user setting was changed. A console program published that way with
+`PublishAot` links and prints `RuntimeFeature.IsDynamicCodeSupported` as `False`. A machine with an ordinary `PATH`
+(or a Visual Studio developer prompt) needs none of this.
+
+In the first pass, trimmed self-contained programs (ILLink, no native linker) were built and run instead; they
+exercise the same "no reflection serializer" condition. The NativeAOT runs of the second pass are in sections 4 and
+5.3.
 
 ## 2. Inventory of Saves
 
@@ -89,9 +114,11 @@ were built and run instead; they exercise the same "no reflection serializer" co
   until deleted. Refused write: false. With reflection switched off, `InvalidOperationException` escapes both calls
   (it is not a `JsonException`); that is deliberate to keep: it is a build configuration error, not bad data.
 - **File compatibility.** A slot is plain JSON text; nothing in it names a format version or a .NET type.
-- **Other callers in the SDK.** `AchievementTracker` saves and loads `AchievementSaveData` through the two reflection
-  calls (`src/MicroEngine.Achievements/Achievements.cs:157`, `:185`). Input bindings do not: `InputMap` writes its own
-  JSON (`Bindings.cs:230`).
+- **Other callers in the SDK.** `AchievementTracker` saved and loaded `AchievementSaveData` through the two reflection
+  calls (`src/MicroEngine.Achievements/Achievements.cs:157`, `:185` before this work); fixed in section 4.1. Input
+  bindings do not: `InputMap` writes its own JSON (`Bindings.cs:230`).
+- **Slot names.** No entry point checked the slot: it went straight into `Path.Combine(directory, slot + ".json")`.
+  Section 4.2.
 
 **Storage format and object serialization are separate problems.** The storage side (`IStorage`: named texts written
 whole) uses no reflection and needed no change. What needs reflection is turning an arbitrary `T` into that text and
@@ -102,7 +129,8 @@ needed the game to write, by hand, exactly the per-type code that reflection was
 the `MicroEngine` package, and PHYS-1 recorded the `PhysicsSubstitution` sample, which never saves, failing its NativeAOT
 publish "in `MicroEngine.Saves`" (`odd/tasks/phys-1.md:64`). Nothing fails at run time for them, since the reflection call is never executed. No package split is
 needed to fix this: once the two calls carry `RequiresUnreferencedCode`/`RequiresDynamicCode`, `MicroEngine.Saves`
-produces no warning of its own (section 5). What remains for such a consumer is the achievements caller above.
+produces no warning of its own (section 5). What remained for such a consumer was the achievements caller above, fixed
+in section 4.1: `PhysicsSubstitution` now publishes under NativeAOT with no warning at all.
 
 ## 3. Alternatives, prototyped
 
@@ -174,11 +202,98 @@ repository, observed here:
 | Check | Result |
 | --- | --- |
 | typed game: `dotnet publish -r win-x64 -p:PublishTrimmed=true --self-contained -warnaserror` | passes, no warning |
-| typed game: the trimmed program | `missing: True`, `save: True`, `load: 3 Ada 2 Hard 1200 5 cellar`, `old: 7 Pip 0`, `corrupt: True True False` |
+| typed game: the trimmed program | `missing: True`, `save: True`, `load: 3 Ada 2 Hard 1200 5 cellar`, `old: 7 Pip 0`, `corrupt: True True False`, and the three achievements lines of 4.1 |
 | plain game (reflection calls): `dotnet build -p:PublishAot=true` | `IL2026` and `IL3050` at `Program.cs`, naming `SaveStore.Save`/`Load` |
 | plain game: trimmed publish | no `IL2104`/`IL3053` for an engine assembly any more; the trimmed program reports `InvalidOperationException` |
 | typed game, `--aot`: NativeAOT compilation (ILC) | **no trim or AOT warning** |
-| typed game, `--aot`: NativeAOT link and run | **not runnable on this machine** (1.3) |
+| typed game, `--aot`: NativeAOT link | **links**, with the short `PATH` of 1.3 |
+| typed game, `--aot`: the NativeAOT executable | **runs**: the same eight lines as the trimmed program, exit code 0 |
+
+All eight checks pass (`all checks passed`), Windows x64, .NET SDK 11.0.100, packages packed from this branch.
+
+### 4.1 Achievements
+
+**Demonstrated failure (before the fix).** The typed external consumer, extended to track two achievements with its
+store, packed from the branch before the change:
+
+- `dotnet publish -p:PublishTrimmed=true --self-contained -warnaserror` fails with `IL2026` in
+  `AchievementTracker.Flush()` and `AchievementTracker.Load()`;
+- published without `-warnaserror` and run, the program prints the five saves lines and then
+  `FAILED: InvalidOperationException: Reflection-based serialization has been disabled for this application`, thrown
+  by the tracker's constructor;
+- `dotnet build src/MicroEngine.Achievements -p:IsAotCompatible=true` reports `IL2026` and `IL3050` at
+  `Achievements.cs(157)` and `(185)`.
+
+**Fix.** `MicroEngine.Achievements` declares an internal `JsonSerializerContext` (`AchievementSaveTypes`) for
+`AchievementSaveData` and calls `Save(slot, data, typeInfo)` and `Load(slot, typeInfo)`. No public API changes. The
+project is marked `IsAotCompatible`, so a reflection call added later fails its build.
+
+**Compatibility (demonstrated).** `tests/MicroEngine.Tests/AchievementSaveFormatTests.cs` was written and passed
+against the reflection implementation first, then against the change, unmodified: the exact bytes of the file the
+tracker writes (ids with characters JSON escapes, an entry no longer in the catalog); files as earlier versions wrote
+them, indented with either newline, and compact, reordered, with unknown properties and a null entry; and which
+contents are set aside as corrupt (`null`, an array, a wrong value type, truncated, empty) and which are not (`{}`, a
+null `Entries`). The 21 existing achievement tests pass unchanged.
+
+**After the fix (demonstrated).** The same consumer, trimmed in full trim mode with no reflection switch, and as a
+NativeAOT executable, prints
+`achievements: True True {"Version":1,"Entries":{"ten":{"Progress":3,"Unlocked":false},"first":{"Progress":1,"Unlocked":true}}}`,
+`achievements again: True 3 False` (a second tracker reads it back) and `achievements earlier: False 7 True True` (a
+compact file with an unknown property and an entry outside the catalog loads, and that entry survives the next save).
+The guide no longer tells trimmed games that track achievements to turn the reflection serializer back on.
+
+**User-perceptible difference.** A trimmed or NativeAOT game that tracks achievements with a store now starts and
+keeps them, instead of throwing at start-up. For every other game: none; the file is byte-identical.
+
+### 4.2 Slot names
+
+**Demonstrated failures (before the fix)**, with `new SaveStore("game", "<root>/saves")` on Windows (scratch `escape/`):
+
+| Call | Result before |
+| --- | --- |
+| `Save("../up", data)` | `True`; wrote `<root>/up.json`, outside the save folder; `Exists` then `True` |
+| `Save("..\up2", data)` | `True`; wrote `<root>/up2.json` |
+| `Save("<root>\absolute", data)` (a rooted path) | `True`; wrote `<root>/absolute.json` |
+| `Save("", data)` | `True`; wrote `saves/.json` |
+| `Save("sub/name", data)` | `False` (the folder does not exist; the file medium never creates it) |
+| `Save("NUL", data)`, `Save("name.", data)` | `True`; wrote `saves/NUL.json` and `saves/name..json` on Windows 11 |
+
+`Load`, `Exists` and `Delete` resolved the same paths, so a slot could also read and delete a file outside the folder.
+A `null` slot behaved as the empty one with the file medium (`null + ".json"`), by reading the code; not run.
+
+**Rule implemented** (`SlotName` in `src/MicroEngine.Saves/SaveStore.cs`, used by every `SaveStore` call that takes a
+slot and by every member of `FileSaveStorage`): a slot is a plain name. `ArgumentNullException` for `null`;
+`ArgumentException` (parameter `slot`, the message quotes the slot) when it is empty or white space, contains `/` or
+`\`, contains `: * ? " < > |`, a control character or half of a surrogate pair, ends with a dot or a space (which
+covers `.` and `..`), or is a Windows device name with or without an extension (`CON`, `PRN`, `AUX`, `NUL`, `CONIN$`,
+`CONOUT$`, `COM0`-`COM9`, `LPT0`-`LPT9` and the superscript-digit forms), in any letter case and on every system. The
+store checks before it touches the medium, so the rule holds for browser storage and for a game's own `ISaveStorage`.
+
+**Which shapes are in legitimate use, and how that was established.** Every slot passed in `src`, `games`, `samples`,
+`templates`, the tests and the documentation was listed (`grep`): `progress`, `adventure`, `record`, `achievements`,
+`input-bindings`, `example`, `profile`, and `profile.v<n>` (the backup slot of the documented upgrade pattern, a dot
+inside the name). All are accepted and resolve to the same `<slot>.json`
+(`TheNamesGamesUseKeepTheirFile`, which also covers spaces, a leading dot, non-ASCII letters and ASCII punctuation
+outside the refused set). Slots with a folder (`folder/name`) are **not** preserved: the documentation describes a
+slot as a name, no code in the repository uses one, and the file medium refused them already unless the folder
+happened to exist. The full test suite passes with the rule in place.
+
+**User-perceptible differences.**
+
+- A call with a refused name now throws `ArgumentException` where it returned a value or wrote a file. Listed in the
+  migration notes.
+- `"NUL"`, `"name."` and similar worked on Windows 11 and are now refused there too, so that a slot valid on one
+  system is valid on all. **Hypothesis**, not run: on Windows 10 and earlier `NUL.json` is the null device, so such a
+  save was silently lost; trailing dots are stripped by Win32 path normalization in some APIs.
+- A slot with a folder worked in browser storage (a key `microengine/<game>/a/b`) and in a custom medium, and in file
+  storage when the folder already existed. **Hypothesis**: no shipped game depends on it; a game that does renames the
+  slot (migration notes).
+- `FileSaveStorage.SetAside` documents "never throws" for storage failures; with a refused name it now throws
+  `ArgumentException`, like its other members. The store never calls it with one.
+
+**Not changed.** `BrowserStorage` and `InputMap.SaveBindings(IStorage, slot)` used without a `SaveStore` do not check
+the name themselves (`MicroEngine.Platform` and `MicroEngine.Input` are outside this work's surface). With the default
+file medium the check in `FileSaveStorage` covers them; browser keys cannot leave the game's prefix.
 
 ## 5. Audit of the rest of the SDK
 
@@ -195,51 +310,65 @@ Physics.Box2D, Tiled. Forcing the property on the ones that do not set it, on `m
 | `MicroEngine.Saves` | `SaveStore.cs(122)`, `(145)`: `IL2026`, `IL3050` — fixed here |
 | `MicroEngine.Cli` | `Hosts.cs(32, 54, 72, 160, 222, 227, 407)`, `Packaging.cs(150)`: `IL2026`, `IL3050` on `JsonSerializer.Serialize`. A build tool that runs on the developer's machine under the .NET SDK; never part of a game |
 
-After the change, `MicroEngine.Achievements` would report the two calls at `Achievements.cs:157` and `:185` if it set
-the property; it does not, so the solution builds clean.
+After the saves change alone, `MicroEngine.Achievements` reported the two calls at `Achievements.cs:157` and `:185`
+when the property was forced; with 4.1 it sets the property itself and builds without warnings.
 
-**5.2 Whole-program analysis** (ILC and ILLink over a real program, `-p:TrimmerSingleWarn=false`, after the change):
+**5.2 Whole-program analysis** (ILC and ILLink over a real program, `-p:TrimmerSingleWarn=false`):
 
-| Program | Tool | Warnings |
-| --- | --- | --- |
-| `samples/HelloEngine` (window, SDL and raylib platforms, sprites, synth audio, scenes) | ILC (`PublishAot`) | **none** |
-| `samples/HelloEngine` | ILLink (`PublishTrimmed`, full trim mode) | `Achievements.cs(157)`, `(185)`: `IL2026` |
-| `samples/PhysicsSubstitution` (tile and Box2D physics, console) | ILC | `Achievements.cs(157)`, `(185)`: `IL2026`, `IL3050` |
-| external typed consumer (`MicroEngine` package, saves) | ILC and ILLink | none |
+| Program | Tool | After the saves change | After 4.1 |
+| --- | --- | --- | --- |
+| `samples/HelloEngine` (window, SDL and raylib platforms, sprites, synth audio, scenes) | ILC (`PublishAot`) | none | **none** |
+| `samples/HelloEngine` | ILLink (`PublishTrimmed`, full trim mode) | `Achievements.cs(157)`, `(185)`: `IL2026` | not run again |
+| `samples/PhysicsSubstitution` (tile and Box2D physics, console) | ILC | `Achievements.cs(157)`, `(185)`: `IL2026`, `IL3050` | **none** |
+| external typed consumer (`MicroEngine` package, saves and achievements) | ILC and ILLink | none (saves only) | **none** |
 
-**5.3 Trimmed programs run:** the external typed consumer (section 4), and `samples/HelloEngine` published
-`PublishTrimmed`, self-contained, full trim mode (31 MB), run with
-`--script hello.script --hidden --mute --captures captures`: `done: 70 updates, 70 frames`, and the capture shows the
-title, the sprite and the hint text.
+**5.3 Programs run.**
+
+- Trimmed: the external typed consumer (section 4), and `samples/HelloEngine` published `PublishTrimmed`,
+  self-contained, full trim mode (31 MB), run with `--script hello.script --hidden --mute --captures captures`:
+  `done: 70 updates, 70 frames`, and the capture shows the title, the sprite and the hint text (first pass).
+- NativeAOT, Windows x64, with the short `PATH` of 1.3 (second pass):
+  - the external typed consumer (section 4): links and runs;
+  - `dotnet publish samples/HelloEngine/HelloEngine.csproj -c Release -r win-x64 -p:PublishAot=true -p:TrimmerSingleWarn=false`:
+    no warning; a 9.7 MB `HelloEngine.exe` beside `SDL3.dll` and `raylib.dll`. Run with
+    `--script hello.script --hidden --mute --captures captures`: `capture: captures\hello.png`,
+    `done: 70 updates, 70 frames`, exit code 0; the capture, looked at, shows the title, the sprite and the hint text;
+  - `samples/PhysicsSubstitution`, the same publish: no warning. Run: the tile backend's whole scenario
+    (`tiles: 740 steps, end at (618, 121), coins 2/3 ... goal at step 653`), then
+    `box2d: no Box2D native library for this runtime.`, exit code 0. Box2D itself did not run: this machine has no
+    Box2D native library (`artifacts/box2d`).
 
 Classification:
 
 | | |
 | --- | --- |
 | **Confirmed failure, fixed** | Saving the game's own types in a trimmed or NativeAOT program (`MicroEngine.Saves`) |
-| **Confirmed blocker, open** | `AchievementTracker` with a store: reflection calls at `Achievements.cs:157`, `:185`. In a trimmed or NativeAOT program, saving achievements throws. The fix is the same pattern (a context for `AchievementSaveData` inside `MicroEngine.Achievements`, calling the new overloads) and is outside this work's edit surface |
+| **Confirmed failure, fixed** | `AchievementTracker` with a store in a trimmed or NativeAOT program threw at start-up (4.1) |
+| **Confirmed failure, fixed** | A slot could read, write and delete a file outside the save folder (4.2) |
 | **Warnings, not a game's concern** | `MicroEngine.Cli` |
 | **Game code, not SDK** | `json.Deserialize<Profile>()` in the documented upgrade pattern (`samples/Examples/SaveVersions.cs`, quoted by `docs/manual/persistence.md`): a trimmed game uses `json.Deserialize(SaveTypes.Default.Profile)` |
-| **Verified** | A game's own types save and load in a trimmed self-contained Windows x64 program; a windowed sample runs trimmed on Windows x64; ILC compiles a windowed sample and the saves consumer without warnings |
-| **Not tested: toolchain gap** | Any NativeAOT executable, on any system (no native link here). NativeAOT of the native dependencies' static or dynamic linking (SDL3, raylib, HarfBuzz, Box2D) is therefore unknown |
-| **Not tested: no packages or platform here** | A Box2D-only external consumer from packages: the Box2D package needs its native libraries built (`artifacts/box2d`), which this machine does not have; `PhysicsSubstitution` was analyzed from source instead. Linux, macOS, Android, iOS and WebAssembly under full trimming or AOT. `MicroEngine.Tiled` (DotTiled) and `MicroEngine.Text.Shaping` (HarfBuzzSharp) in a published trimmed program |
+| **Verified, Windows x64 only** | A game's own types and its achievements save and load in a trimmed self-contained program and in a NativeAOT executable, from the packed packages; a windowed sample (`HelloEngine`, with SDL3 and raylib loaded as DLLs) runs trimmed and as a NativeAOT executable; the tile physics scenario runs as a NativeAOT executable; ILC reports no warning for the three programs |
+| **Not tested: no native library here** | Box2D under NativeAOT, from source or as a Box2D-only external consumer from packages: the Box2D package and sample need its native libraries built (`artifacts/box2d`), which this machine does not have |
+| **Not tested: no platform here** | Linux, macOS, Android, iOS and WebAssembly under full trimming or AOT. `MicroEngine.Tiled` (DotTiled) and `MicroEngine.Text.Shaping` (HarfBuzzSharp) in a published trimmed or NativeAOT program. The four demo games under NativeAOT |
 
 ## 6. Claims
 
 The SDK does not claim NativeAOT support. What the public documentation states is limited to what was run: saves with
-declared types work in trimmed and NativeAOT builds *as far as serialization is concerned*, the calls without metadata
-do not, achievements need the reflection switch, and NativeAOT is not a packaging target. A claim of NativeAOT support
-for a target needs an end-to-end game published and exercised on that target; `node sdk/tests/trimmed.mjs --aot` on a
-machine with a native toolchain is the first step for the saves part, not the certification.
+declared types and achievements work in trimmed and NativeAOT builds, the calls without metadata do not, and NativeAOT
+is not a packaging target. The NativeAOT runs of this work are one system (Windows x64), two samples and a console
+consumer; a claim of NativeAOT support for a target needs an end-to-end game published and exercised on that target.
 
-## 7. Needs the owner's decision
+## 7. Owner's decisions (2026-11-13) and what stays open
 
-1. **Achievements.** Apply the same pattern in `MicroEngine.Achievements` (internal context for `AchievementSaveData`,
-   no public API change, same file). Small; outside this work's surface.
-2. **NativeAOT run.** Run `node sdk/tests/trimmed.mjs --feed <feed> --aot` where a native toolchain exists (the Linux
-   CI runner has clang), and decide whether it becomes a CI check. CI files were outside this work's surface.
-3. **Box2D-only external consumer under NativeAOT** needs the Box2D natives and the same toolchain; it stays open.
-4. **The manual** (`docs/manual/persistence.md`) should link the new section from its limitations and show the typed
-   upgrade call; it was outside this work's surface.
-5. **Hosts.** The web, Android and iOS hosts keep `TrimMode=partial` and the reflection switch. Moving them to full
+Decided and done in the second pass (task record, L8): the achievements fix (4.1), the slot-name rule (4.2), ADR 0054
+accepted, and the NativeAOT publish and run on this machine (1.3, 4, 5.3), for which nothing had to be installed.
+
+Open, not started, no issue created:
+
+1. **CI.** `node sdk/tests/trimmed.mjs --feed <feed>` (and `--aot`, which the Linux runner's clang can link) is not
+   wired into CI; CI files were outside this work's surface.
+2. **Box2D under NativeAOT** needs the Box2D native libraries; untested.
+3. **Hosts.** The web, Android and iOS hosts keep `TrimMode=partial` and the reflection switch. Moving them to full
    trimming would make every game declare its saved types: a breaking change for games, not proposed.
+4. **`BrowserStorage` and `InputMap.SaveBindings`** used without a `SaveStore` do not check slot names themselves
+   (4.2); no failure was demonstrated there.

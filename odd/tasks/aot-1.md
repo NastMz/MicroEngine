@@ -54,6 +54,20 @@ Constraints of this work unit (delegation brief, not the issue): additive public
 keep compiling and behaving the same; files written by the current version still load; no edits to other packages'
 source; no toolchains installed on this machine; ADR number 0054.
 
+Second pass, the owner's request of 2026-11-13 (L8, verbatim there; it lifts "no edits to other packages' source" for
+Achievements and "no toolchains installed"):
+
+- S18 "Aplicar el patrón sin reflexión a Achievements."
+- S19 "Aceptar ADR 0054 verificando que refleje la implementación."
+- S20 "Corregir la validación de slots para impedir escapes del directorio de guardado, rutas inválidas y nombres
+  vacíos, preservando la compatibilidad legítima."
+- S21 "Intentar instalar el toolchain NativeAOT localmente y ejecutar una publicación real. Si hay un impedimento
+  concreto, documentarlo."
+- S22 "Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar
+  innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta
+  evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
+  hipótesis y las diferencias perceptibles para el usuario."
+
 ## Tasks
 
 | Task | Specs | Route | Status | Commit / evidence |
@@ -62,9 +76,13 @@ source; no toolchains installed on this machine; ADR number 0054.
 | T2 Inventory of the Saves entry points and where reflection occurs | S2 S3 S6 | inline | done | evaluation §2 |
 | T3 Prototypes of the alternatives, compared | S4 S5 S10 | inline | done | evaluation §3; scratch `proto/`, published trimmed and run |
 | T4 Implement the evidence-backed option in `MicroEngine.Saves`, tests first | S11 S12 S13 | inline | done | `d97f506`; RED: CS1501 "no overload of Load takes 2 arguments"; `SaveStoreTypeInfoTests` and the existing save tests 48/48 |
-| T5 External consumer on the new path: trimmed publish and run; NativeAOT as far as this machine goes | S14 S15 S17 | inline | partial | `sdk/tests/trimmed.mjs`: 6 of 7 checks pass; the NativeAOT link is not runnable here (L4); Box2D-only package consumer not runnable here (L5) |
+| T5 External consumer on the new path: trimmed publish and run; NativeAOT as far as this machine goes | S14 S15 S17 | inline | partial | first pass: `sdk/tests/trimmed.mjs`, 6 of 7 checks; reopened by S21 and closed for S14 by T11 (8 of 8, NativeAOT run included). S15 stays open: no Box2D native library here (L5, L11) |
 | T6 Audit of the other SDK packages' analyzer warnings (inventory) | S7 S8 | inline | done | evaluation §5 |
 | T7 Evaluation, ADR 0054, guide, API reference, release notes, sample | S10 S16 | inline | done | this branch |
+| T8 Slot names: refuse what is not a plain name at every entry point, keep the names in use | S20 S22 | delegated (one bounded worker, the whole second pass) | done | `d7e6f06`; RED: 4 of 5 `SaveSlotNameTests` failed, and scratch `escape/` wrote three files outside the folder; GREEN 5/5; evaluation §4.2 |
+| T9 Achievements without reflection, file byte-identical | S18 S11 S12 | delegated (same worker) | done | `0d21b94`; pin: `AchievementSaveFormatTests` 4/4 before and after; RED: `trimmed.mjs` typed publish `IL2026` in `AchievementTracker`, and the run threw `InvalidOperationException`; GREEN: all checks; evaluation §4.1 |
+| T10 ADR 0054 checked against the code and accepted | S19 | delegated (same worker) | done | the commit that closes this pass; corrections in L10 |
+| T11 NativeAOT toolchain on this machine: real publish and run | S21 S14 S17 | delegated (same worker) | done | nothing to install (L9); `trimmed.mjs --aot` 8 of 8; `HelloEngine` and `PhysicsSubstitution` published and run as NativeAOT executables; evaluation §1.3, §5.3 |
 
 ## Log
 
@@ -102,3 +120,36 @@ source; no toolchains installed on this machine; ADR number 0054.
 - L7 (2026-11-13) Not covered: S14 (NativeAOT run), S15 (Box2D-only package consumer), S17 beyond one trimmed windowed
   sample on Windows x64. Left for the owner (evaluation §7): achievements, running `sdk/tests/trimmed.mjs --aot` where a
   native toolchain exists, the manual page, CI wiring.
+- L8 (2026-11-13) The owner's request for the second pass, verbatim:
+
+  ```
+  AOT-1
+
+  * Aplicar el patrón sin reflexión a Achievements.
+  * Aceptar ADR 0054 verificando que refleje la implementación.
+  * Corregir la validación de slots para impedir escapes del directorio de guardado, rutas inválidas y nombres vacíos, preservando la compatibilidad legítima.
+  * Intentar instalar el toolchain NativeAOT localmente y ejecutar una publicación real. Si hay un impedimento concreto, documentarlo.
+
+  Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
+  ```
+
+  Specs S18-S22; tasks T8-T11; T5 reopened for the NativeAOT run.
+- L9 (2026-11-13) NativeAOT toolchain (S21). Nothing was installed, because nothing was missing: `vswhere` finds the
+  x64 C++ tools in Visual Studio 18 Community (and the 2019 Build Tools), and `Windows Kits\10\Lib\10.0.26100.0` holds
+  `kernel32.lib` and `ucrt.lib`. L4's "no Windows SDK import libraries are installed" was wrong. The demonstrated
+  cause of the failed link is the account's `PATH` (7578 characters): `vcvarsall.bat` stops with "La línea escrita es
+  demasiado larga". With `PATH` set for the publishing process only to Windows, `dotnet` and the Visual Studio
+  Installer folder (where `vswhere.exe` is), the link works. No system or user setting was changed.
+- L10 (2026-11-13) ADR 0054 against the code (S19). Corrected: the status; the context now names the engine's own
+  caller; decision 3 said the reflection pair was "unchanged in behaviour", which the slot rule makes untrue (it is
+  unchanged in how it serializes); a new decision 5 for the engine's own saved types; the consequences listed the
+  achievements caller and the NativeAOT run as open and named only three of the six properties that turn the analyzers
+  on. Checked and left as written: decisions 1, 2 and 4, the alternatives, the hosts' settings
+  (`TrimMode=partial` and the reflection switch in the three `Host.csproj`).
+- L11 (2026-11-13) Second pass, observed. Slots: `Save("../up")`, `Save("..\up2")` and a rooted path wrote outside the
+  save folder and `Save("")` wrote `.json` (scratch `escape/`); refused now, with the names in use keeping their file
+  (`d7e6f06`). Folder slots (`a/b`) are refused: undocumented, unused in the repository, and already refused by the
+  file medium unless the folder existed. Achievements: `0d21b94`. NativeAOT on Windows x64: the external consumer
+  (saves and achievements), `HelloEngine` (capture inspected) and `PhysicsSubstitution`'s tile scenario run; Box2D did
+  not run (`box2d: no Box2D native library for this runtime.`). Not covered: S15, and S17 beyond Windows x64. No issue
+  was created and no CI file was touched.
