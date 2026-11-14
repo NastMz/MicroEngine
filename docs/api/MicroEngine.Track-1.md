@@ -44,13 +44,13 @@ It receives the eased progress, which is below 0 or above 1 where a curve oversh
 
 `keys` [Keyframe](MicroEngine.Keyframe\-1.md)<T\>\[\]
 
-The keys, in order of time.
+The keys, in order of time, each later than the one before: keys are not sorted, and two keys cannot share a time.
 
 #### Exceptions
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No keys, a time that is not a number, or times that do not increase.
+No keys, a time that is infinite or not a number, or times that do not increase.
 
 ## Properties
 
@@ -83,7 +83,8 @@ public IReadOnlyList<Keyframe<T>> Keys { get; }
 ### <a id="MicroEngine_Track_1_At_System_Single_"></a> At\(float\)
 
 The value at <code class="paramref">time</code> seconds: the first key's value before it, the last key's value after it, a
-key's own value at its time, and between two keys their blend along the later key's curve.
+key's own value at its time (whatever its curve), and between two keys their blend along the later key's
+curve. A time that is not a number gives the first key's value.
 
 ```csharp
 public T At(float time)

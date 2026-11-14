@@ -41,8 +41,17 @@ private static readonly Track<float> Breath = Track.Float(
 
 A track is immutable and keeps no time of its own, so one track serves every object that moves the same way, and it
 can be read at any time you choose: `Swing.At(scene.Age)`, or `Swing.At(distance / speed)` to follow something other
-than a clock. Keys are in increasing order of time; a track with no keys, or with keys out of order, is refused when it
-is created.
+than a clock. Keys are in increasing order of time, and may start before 0 or after it; a track with no keys, with
+keys out of order (they are not sorted for you), with two keys at one time or with a time that is not a finite number
+is refused when it is created.
+
+| Time given to `At` | Value |
+| --- | --- |
+| Before the first key | The first key's value |
+| Exactly a key's time | That key's value, whatever its curve; a step track switches exactly there |
+| Between two keys | Their blend along the later key's curve |
+| After the last key | The last key's value |
+| Not a number | The first key's value |
 
 ## Timelines
 
@@ -88,25 +97,43 @@ the examples.
 
 | Member | Meaning |
 | --- | --- |
-| `new Timeline(duration, loop = false)` | A timeline of `duration` seconds; a looping one starts over at the end |
-| `Add(track, apply)` | Plays a track; a track shorter than the timeline holds its last key |
+| `new Timeline(duration, loop = false)` | A timeline of `duration` seconds (positive); a looping one starts over at the end |
+| `Add(track, apply)` | Plays a track; a track shorter than the timeline holds its last key, a longer one is played up to the timeline's end |
 | `At(time, name)` | A named event at `time` (0 to `Duration`) |
 | `Reached` | Raised with the event's name, after the tracks were applied for that update |
 | `Update(dt)` | Advances by `dt × Speed`, applies the tracks and raises the events reached |
 | `Seek(time)` | Moves the playhead and applies the tracks there, raising nothing; `Seek(0)` plays again |
 | `Time`, `Duration`, `Loop` | The playhead and the timeline's shape |
 | `Speed` | 1 by default; 0 pauses, 2 plays twice as fast |
-| `Finished` | Whether a timeline that does not loop reached its end |
+| `Finished` | Whether a timeline that does not loop is at its end |
+
+The timeline's length is the one you give it, not its tracks': events may lie after the last key of every track.
 
 Rules worth knowing:
 
 - **Events fire once per pass, in time order.** An update that jumps over several events raises all of them, and an
   update longer than a looping timeline raises the events of every pass it covered, so a slow frame never loses a
   footstep. Events at the same time fire in the order they were added.
-- **An event at 0 fires in the first update**, and each time a looping timeline starts over.
-- **A handler sees the values of its update**: tracks are applied before events are raised. A handler may call `Seek`;
-  the rest of that update's events are dropped.
-- **A finished timeline stops applying**, so the game may change the values afterwards.
+- **An event at 0 fires in the first update that advances**, and each time a looping timeline starts over. **An event
+  at the duration fires when the timeline ends**; on a looping timeline it fires at the end of each pass, just before
+  the events at 0 of the next one.
+- **A handler sees the values of its update**: tracks are applied before events are raised, so every handler of one
+  update reads the same `Time` and the same values, the ones the update ended on. A handler may call `Seek`; the rest
+  of that update's events are dropped.
+- **A looping playhead never rests on the end.** `Time` goes from 0 up to, but not including, `Duration`: reaching the
+  end is being at the start of the next pass, so the values applied are always the tracks' values at `Time`.
+- **A finished timeline stops applying**, so the game may change the values afterwards. It stays finished until `Seek`
+  moves it back.
+- **`Seek` raises nothing**: neither the events it jumps over, in either direction, nor one at the time it moves to.
+  The next update that advances plays from there, an event exactly there included, so seeking back plays earlier
+  events again. The time is kept within 0 and `Duration`, on a looping timeline too (it does not wrap).
+- **Seeking a timeline that does not loop to its end finishes it**: the tracks are applied there and nothing more
+  plays, an event at the end included. This is how the example starts at rest.
+- **An update of 0 seconds, or at `Speed` 0, applies the tracks and raises nothing.** Time only goes forwards:
+  `Update` refuses a step that is negative, infinite or not a number, `Speed` refuses the same, and `Seek` refuses a
+  time that is not a number.
+- **One update raises the events of at most 1,000 passes** of a looping timeline. A longer one (hours given at once
+  to a loop of a fraction of a second) ends at the same place and skips the passes in between.
 - **Timelines take part in the state hash** when the scene adds them: call `timeline.HashState(hash)` from the scene's
   `HashState`.
 

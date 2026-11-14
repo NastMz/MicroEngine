@@ -20,8 +20,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
 - Keyframe animation: `Track<T>` holds a value through keys in time, each with the easing curve of the way to it
   (`Track.Float`, `Track.Vector2`, `Track.Color`, `Track.Step<T>`, or any type with its own blend), and `Timeline`
   plays several tracks from one playhead with looping, speed, `Seek` and named events (`At`, `Reached`) that fire once
-  per pass, in order, also across a long frame ([Animation](animation.md)). The "Tracks and timelines" example shows
-  them.
+  per pass, in order, also across a long frame. `Seek` raises no events and finishes a timeline moved to its end;
+  time only goes forwards, so `Update` refuses a negative or non-finite step ([Animation](animation.md)). The "Tracks
+  and timelines" example shows them.
 
 **Fixed**
 

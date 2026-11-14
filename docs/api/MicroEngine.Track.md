@@ -41,7 +41,7 @@ The keys, in order of time.
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No keys, a time that is not a number, or times that do not increase.
+No keys, a time that is infinite or not a number, or times that do not increase.
 
 ### <a id="MicroEngine_Track_Float_MicroEngine_Keyframe_System_Single____"></a> Float\(params Keyframe<float\>\[\]\)
 
@@ -65,7 +65,7 @@ The keys, in order of time.
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No keys, a time that is not a number, or times that do not increase.
+No keys, a time that is infinite or not a number, or times that do not increase.
 
 ### <a id="MicroEngine_Track_Step__1_MicroEngine_Keyframe___0____"></a> Step<T\>\(params Keyframe<T\>\[\]\)
 
@@ -94,7 +94,7 @@ The keys, in order of time.
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No keys, a time that is not a number, or times that do not increase.
+No keys, a time that is infinite or not a number, or times that do not increase.
 
 ### <a id="MicroEngine_Track_Vector2_MicroEngine_Keyframe_System_Numerics_Vector2____"></a> Vector2\(params Keyframe<Vector2\>\[\]\)
 
@@ -118,6 +118,6 @@ The keys, in order of time.
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No keys, a time that is not a number, or times that do not increase.
+No keys, a time that is infinite or not a number, or times that do not increase.
 
 </div>

@@ -65,7 +65,8 @@ public float Duration { get; }
 
 ### <a id="MicroEngine_Scenes_Timeline_Finished"></a> Finished
 
-Whether a timeline that does not loop reached its end. Always false for a looping one.
+Whether a timeline that does not loop is at its end, played or moved there with [Seek](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Seek_System_Single_); it stays
+finished until [Seek](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Seek_System_Single_) moves it back. Always false for a looping one.
 
 ```csharp
 public bool Finished { get; }
@@ -103,7 +104,7 @@ public float Speed { get; set; }
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-Set to a negative value or NaN (timelines do not play backwards).
+Set to a negative value, infinity or NaN (timelines do not play backwards).
 
 ### <a id="MicroEngine_Scenes_Timeline_Time"></a> Time
 
@@ -146,7 +147,8 @@ This timeline, for chaining.
 ### <a id="MicroEngine_Scenes_Timeline_At_System_Single_System_String_"></a> At\(float, string\)
 
 Adds the event <code class="paramref">name</code> at <code class="paramref">time</code> seconds. An event at 0 fires in the first
-update and, when looping, each time the timeline starts over.
+update and, when looping, each time the timeline starts over; an event at [Duration](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Duration) fires when
+the timeline ends and, when looping, at the end of each pass, before the events at 0 of the next one.
 
 ```csharp
 public Timeline At(float time, string name)
@@ -184,9 +186,11 @@ public void HashState(StateHasher hash)
 
 ### <a id="MicroEngine_Scenes_Timeline_Seek_System_Single_"></a> Seek\(float\)
 
-Moves the playhead to <code class="paramref">time</code> seconds (kept within 0..[Duration](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Duration)) and applies the
-tracks there, raising no events; <code>Seek(0)</code> plays the timeline again. The next update raises the events
-from that time on, one exactly there included.
+Moves the playhead to <code class="paramref">time</code> seconds (kept within 0..[Duration](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Duration), on a looping
+timeline too) and applies the tracks there, raising no events, neither the ones it jumps over nor one at that
+time; <code>Seek(0)</code> plays the timeline again. The next update that advances raises the events from that time
+on, one exactly there included. Moving a timeline that does not loop to its end finishes it: the tracks are
+applied there and nothing more plays, the events at the end included, until it is moved back.
 
 ```csharp
 public void Seek(float time)
@@ -196,12 +200,19 @@ public void Seek(float time)
 
 `time` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">time</code> is NaN.
+
 ### <a id="MicroEngine_Scenes_Timeline_Update_System_Single_"></a> Update\(float\)
 
 Advances the playhead by <code class="paramref">dt</code> seconds times [Speed](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Speed), applies every track and raises
-the events it reached; an update longer than a looping timeline raises the events of every pass it covered. With
-nothing to advance (a pause, 0 seconds) it only applies the tracks. A finished timeline does nothing, so the
-game may change the values afterwards.
+the events it reached; an update longer than a looping timeline raises the events of every pass it covered, up
+to 1,000 passes (a longer update skips the passes in between and ends at the same place). With nothing to
+advance (a pause, 0 seconds) it only applies the tracks and raises nothing. A finished timeline does nothing,
+so the game may change the values afterwards.
 
 ```csharp
 public void Update(float dt)
@@ -210,6 +221,12 @@ public void Update(float dt)
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">dt</code> is negative, infinite or NaN (timelines do not play backwards).
 
 ### <a id="MicroEngine_Scenes_Timeline_Reached"></a> Reached
 

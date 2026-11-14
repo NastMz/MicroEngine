@@ -18,6 +18,8 @@ public sealed class Timeline : IStateHashed
     private bool _ended;
     // Counts Seek calls, so an event handler that moves the playhead ends that update's events.
     private int _moves;
+    // The passes of a looping timeline whose events one update raises; a longer update skips the passes in between.
+    private const int MaxPassesPerUpdate = 1000;
 
     /// <summary>Creates a timeline at time 0.</summary>
     /// <param name="duration">Its length in seconds; positive.</param>
@@ -37,13 +39,16 @@ public sealed class Timeline : IStateHashed
     /// <summary>The playhead, in seconds from the start: 0 to <see cref="Duration"/>.</summary>
     public float Time { get; private set; }
     /// <summary>Playback speed multiplier: 1 by default, 0 pauses, 2 plays twice as fast.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">Set to a negative value or NaN (timelines do not play backwards).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Set to a negative value, infinity or NaN (timelines do not play backwards).</exception>
     public float Speed
     {
         get => _speed;
-        set => _speed = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Timeline speed must be 0 or more.");
+        set => _speed = value >= 0 && float.IsFinite(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Timeline speed must be 0 or more.");
     }
-    /// <summary>Whether a timeline that does not loop reached its end. Always false for a looping one.</summary>
+    /// <summary>
+    /// Whether a timeline that does not loop is at its end, played or moved there with <see cref="Seek"/>; it stays
+    /// finished until <see cref="Seek"/> moves it back. Always false for a looping one.
+    /// </summary>
     public bool Finished => !Loop && Time >= Duration;
 
     /// <summary>
@@ -64,7 +69,8 @@ public sealed class Timeline : IStateHashed
 
     /// <summary>
     /// Adds the event <paramref name="name"/> at <paramref name="time"/> seconds. An event at 0 fires in the first
-    /// update and, when looping, each time the timeline starts over.
+    /// update and, when looping, each time the timeline starts over; an event at <see cref="Duration"/> fires when
+    /// the timeline ends and, when looping, at the end of each pass, before the events at 0 of the next one.
     /// </summary>
     /// <returns>This timeline, for chaining.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="time"/> is outside 0..<see cref="Duration"/>.</exception>
@@ -80,20 +86,31 @@ public sealed class Timeline : IStateHashed
 
     /// <summary>
     /// Advances the playhead by <paramref name="dt"/> seconds times <see cref="Speed"/>, applies every track and raises
-    /// the events it reached; an update longer than a looping timeline raises the events of every pass it covered. With
-    /// nothing to advance (a pause, 0 seconds) it only applies the tracks. A finished timeline does nothing, so the
-    /// game may change the values afterwards.
+    /// the events it reached; an update longer than a looping timeline raises the events of every pass it covered, up
+    /// to 1,000 passes (a longer update skips the passes in between and ends at the same place). With nothing to
+    /// advance (a pause, 0 seconds) it only applies the tracks and raises nothing. A finished timeline does nothing,
+    /// so the game may change the values afterwards.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="dt"/> is negative, infinite or NaN (timelines do not play backwards).</exception>
     public void Update(float dt)
     {
+        if (!(dt >= 0) || float.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt), dt, "A timeline advances by 0 seconds or more.");
         if (_ended) return;
-        float advance = dt * _speed;
-        if (!(advance > 0)) { Apply(); return; }
+        // In double precision, so a long step keeps its place inside the pass and never overflows.
+        double total = Time + (double)dt * _speed;
+        if (!(total > Time)) { Apply(); return; }
 
-        float from = Time, now = from + advance;
+        float from = Time, now = (float)total;
         bool inclusive = !_started;
         int passes = 0;
-        if (Loop) while (now >= Duration) { now -= Duration; passes++; }
+        if (Loop)
+        {
+            double covered = Math.Floor(total / Duration);
+            now = (float)(total - covered * Duration);
+            // The place may round up to the end of the pass, which is the start of the next one.
+            if (!(now < Duration)) { now = 0; covered++; }
+            passes = (int)Math.Min(covered, MaxPassesPerUpdate);
+        }
         else if (now >= Duration) { now = Duration; _ended = true; }
         _started = true;
         Time = now;
@@ -110,15 +127,20 @@ public sealed class Timeline : IStateHashed
     }
 
     /// <summary>
-    /// Moves the playhead to <paramref name="time"/> seconds (kept within 0..<see cref="Duration"/>) and applies the
-    /// tracks there, raising no events; <c>Seek(0)</c> plays the timeline again. The next update raises the events
-    /// from that time on, one exactly there included.
+    /// Moves the playhead to <paramref name="time"/> seconds (kept within 0..<see cref="Duration"/>, on a looping
+    /// timeline too) and applies the tracks there, raising no events, neither the ones it jumps over nor one at that
+    /// time; <c>Seek(0)</c> plays the timeline again. The next update that advances raises the events from that time
+    /// on, one exactly there included. Moving a timeline that does not loop to its end finishes it: the tracks are
+    /// applied there and nothing more plays, the events at the end included, until it is moved back.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="time"/> is NaN.</exception>
     public void Seek(float time)
     {
+        if (float.IsNaN(time)) throw new ArgumentOutOfRangeException(nameof(time), time, "A timeline cannot move to a time that is not a number.");
         Time = Math.Clamp(time, 0, Duration);
-        _started = false;
-        _ended = false;
+        _ended = !Loop && Time >= Duration;
+        // A finished timeline has nothing left to raise, as if it had played to its end.
+        _started = _ended;
         _moves++;
         Apply();
     }
