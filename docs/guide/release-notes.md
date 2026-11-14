@@ -25,8 +25,17 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer`
   ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
 
+**Changed**
+
+- A save slot is a plain name on every system. `SaveStore` and `FileSaveStorage` throw `ArgumentException` for a slot
+  that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, or is
+  a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file
+  ([Slot names](../manual/persistence.md#slot-names), [migration](../migrations.md#slot-names-that-are-not-plain-names-are-refused)).
+
 **Fixed**
 
+- A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
+  an empty slot wrote a file named `.json`.
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

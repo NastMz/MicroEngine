@@ -42,6 +42,13 @@ A slot is a name such as "settings" or "progress"; with file storage it becomes 
 [Directory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Directory). Values are serialized with `JsonSerializer` (public properties).
 
 <p>
+A slot is a plain name, never a path, and the same names are valid on every system, so a save can move between
+them: letters, digits, spaces and punctuation such as <code>-</code>, <code>_</code> and <code>.</code> ("profile.v2"). Every call
+that takes a slot throws `ArgumentException` for a name that is empty or white space, contains
+<code>/ \ : * ? " &lt; &gt; |</code> or a control character, ends with a dot or a space (which includes "." and ".."), or
+is a Windows device name ("CON", "PRN", "AUX", "NUL", "COM1", "LPT1" and the like, with or without an extension).
+</p>
+<p>
 [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) and [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_) find the properties of the saved type by reflection.
 A game published trimmed or with NativeAOT has no reflection to serialize with: it declares its saved types in a
 `JsonSerializerContext` and passes the generated metadata to
@@ -186,6 +193,12 @@ public void Delete(string slot)
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
+
 ### <a id="MicroEngine_Core_SaveStore_Exists_System_String_"></a> Exists\(string\)
 
 Whether the slot has saved data.
@@ -201,6 +214,12 @@ public bool Exists(string slot)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
 
 ### <a id="MicroEngine_Core_SaveStore_Load__1_System_String_"></a> Load<T\>\(string\)
 
@@ -236,6 +255,10 @@ The saved type.
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 The application was published trimmed or with NativeAOT; use [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_).
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
 
 ### <a id="MicroEngine_Core_SaveStore_Load__1_System_String_System_Text_Json_Serialization_Metadata_JsonTypeInfo___0__"></a> Load<T\>\(string, JsonTypeInfo<T\>\)
 
@@ -275,6 +298,10 @@ The saved type.
 
 <code class="paramref">typeInfo</code> is null.
 
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
+
 ### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_"></a> Save<T\>\(string, T\)
 
 Writes the whole slot at once, so a crash never leaves a half-written save, finding the properties of
@@ -306,6 +333,10 @@ public bool Save<T>(string slot, T data)
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 The application was published trimmed or with NativeAOT; use [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_).
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
 
 ### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_System_Text_Json_Serialization_Metadata_JsonTypeInfo___0__"></a> Save<T\>\(string, T, JsonTypeInfo<T\>\)
 
@@ -345,5 +376,9 @@ The metadata of <code class="typeparamref">T</code>, from the game's `JsonSerial
  [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
 
 <code class="paramref">typeInfo</code> is null.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
 
 </div>

@@ -40,6 +40,23 @@ Source: [`games/CourtyardKey/Model/Progress.cs`](../../games/CourtyardKey/Model/
 Use one `gameId` per game: it names the save folder and the browser key prefix, which keeps the games isolated.
 Pass a `directory` in tests so they never touch the player's real saves.
 
+### Slot names
+
+A slot is a plain name, never a path, and the same names are valid on every system, so a save copied from one system
+to another keeps working. Letters, digits, spaces and punctuation such as `-`, `_` and `.` are fine: `"progress"`,
+`"input-bindings"`, `"profile.v2"`, `"Slot 2"`. Every call that takes a slot (`Save`, `Load`, `Exists`, `Delete`, and
+the members of `FileSaveStorage`) throws `ArgumentException`, naming the slot, when the name:
+
+- is `null`, empty or only white space;
+- contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control character, which rules out folders, drive letters
+  and absolute paths (`"saves/1"`, `"../other"`, `"C:\save"`);
+- ends with a dot or a space, which includes `"."` and `".."`;
+- is a Windows device name, with or without an extension: `CON`, `PRN`, `AUX`, `NUL`, `COM0` to `COM9`, `LPT0` to
+  `LPT9` (`"NUL"`, `"con.v2"`), in any letter case.
+
+A slot never reaches a file outside the save folder. To group saves, put the group in the name (`"profile1.progress"`)
+or give each group its own store over its own directory.
+
 ## Where saves live
 
 ```csharp
@@ -263,4 +280,5 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
 - Saves are local to one machine or one browser profile; there is no cloud sync, export or import.
 - JSON only, through `System.Text.Json`. There are no built-in version numbers or migrations; a game upgrades its own
   saves ([Changing what a save holds](#changing-what-a-save-holds)).
+- A slot is a plain name; folders inside the save folder are not supported ([Slot names](#slot-names)).
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).

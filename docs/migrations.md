@@ -18,6 +18,20 @@ To update, declare the save types in a `JsonSerializerContext` and pass its meta
 `Save(slot, data, typeInfo)` and `Load(slot, typeInfo)` read and write the same files
 ([Trimmed and NativeAOT publishing](guide/platforms.md#trimmed-and-nativeaot-publishing)).
 
+### Slot names that are not plain names are refused
+
+`SaveStore.Save`, `Load`, `Exists` and `Delete`, and the members of `FileSaveStorage`, throw `ArgumentException` for a
+slot that is `null`, empty or white space, contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control
+character, ends with a dot or a space, or is a Windows device name such as `CON` or `NUL`
+([Slot names](manual/persistence.md#slot-names)). Before, a slot such as `"../other"` or an absolute path read and
+wrote a file outside the save folder, an empty slot wrote a file named `.json`, and a slot with a folder
+(`"saves/1"`) was written by browser storage and refused by file storage unless the folder already existed. Names
+without those characters, dots inside the name included (`"profile.v2"`), keep the file they had.
+
+To update, pass a plain name. A game that used a slot with a folder renames it (`"saves.1"`); to keep reading the old
+data in a browser, read it once from the old key with `BrowserStorage` directly and save it under the new name. A game
+that grouped files in folders gives each group its own `SaveStore` over that directory.
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components

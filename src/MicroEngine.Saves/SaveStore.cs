@@ -21,6 +21,13 @@ namespace MicroEngine.Core;
 /// A slot is a name such as "settings" or "progress"; with file storage it becomes <c>&lt;slot&gt;.json</c> in
 /// <see cref="Directory"/>. Values are serialized with <see cref="System.Text.Json.JsonSerializer"/> (public properties).
 /// <para>
+/// A slot is a plain name, never a path, and the same names are valid on every system, so a save can move between
+/// them: letters, digits, spaces and punctuation such as <c>-</c>, <c>_</c> and <c>.</c> ("profile.v2"). Every call
+/// that takes a slot throws <see cref="ArgumentException"/> for a name that is empty or white space, contains
+/// <c>/ \ : * ? " &lt; &gt; |</c> or a control character, ends with a dot or a space (which includes "." and ".."), or
+/// is a Windows device name ("CON", "PRN", "AUX", "NUL", "COM1", "LPT1" and the like, with or without an extension).
+/// </para>
+/// <para>
 /// <see cref="Save{T}(string, T)"/> and <see cref="Load{T}(string)"/> find the properties of the saved type by reflection.
 /// A game published trimmed or with NativeAOT has no reflection to serialize with: it declares its saved types in a
 /// <see cref="System.Text.Json.Serialization.JsonSerializerContext"/> and passes the generated metadata to
@@ -129,9 +136,10 @@ public sealed class SaveStore
     /// (the slot is then protected from <see cref="Save{T}(string, T)"/> for the life of this store).
     /// </returns>
     /// <exception cref="InvalidOperationException">The application was published trimmed or with NativeAOT; use <see cref="Load{T}(string, JsonTypeInfo{T})"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     [RequiresUnreferencedCode(ReflectionMessage)]
     [RequiresDynamicCode(ReflectionMessage)]
-    public T? Load<T>(string slot) where T : class => Read(slot, static text => JsonSerializer.Deserialize<T>(text, Options));
+    public T? Load<T>(string slot) where T : class => Read(SlotName.Checked(slot), static text => JsonSerializer.Deserialize<T>(text, Options));
 
     /// <summary>
     /// Reads and deserializes a slot with the game's own metadata for <typeparamref name="T"/>, without reflection: the
@@ -145,8 +153,10 @@ public sealed class SaveStore
     /// (the slot is then protected from saving for the life of this store).
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public T? Load<T>(string slot, JsonTypeInfo<T> typeInfo) where T : class
     {
+        SlotName.Check(slot);
         ArgumentNullException.ThrowIfNull(typeInfo);
         return Read(slot, text => JsonSerializer.Deserialize(text, typeInfo));
     }
@@ -178,10 +188,12 @@ public sealed class SaveStore
     /// not be read earlier (see the class remarks).
     /// </summary>
     /// <exception cref="InvalidOperationException">The application was published trimmed or with NativeAOT; use <see cref="Save{T}(string, T, JsonTypeInfo{T})"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     [RequiresUnreferencedCode(ReflectionMessage)]
     [RequiresDynamicCode(ReflectionMessage)]
     public bool Save<T>(string slot, T data)
     {
+        SlotName.Check(slot);
         if (_unreadable.Contains(slot)) return false;
         return Write(slot, JsonSerializer.Serialize(data, Options));
     }
@@ -196,8 +208,10 @@ public sealed class SaveStore
     /// <param name="data">The value to save.</param>
     /// <param name="typeInfo">The metadata of <typeparamref name="T"/>, from the game's <see cref="System.Text.Json.Serialization.JsonSerializerContext"/> (<c>MySaves.Default.Progress</c>).</param>
     /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public bool Save<T>(string slot, T data, JsonTypeInfo<T> typeInfo)
     {
+        SlotName.Check(slot);
         ArgumentNullException.ThrowIfNull(typeInfo);
         if (_unreadable.Contains(slot)) return false;
         var buffer = new ArrayBufferWriter<byte>();
@@ -219,13 +233,16 @@ public sealed class SaveStore
     }
 
     /// <summary>Whether the slot has saved data.</summary>
-    public bool Exists(string slot) => _storage.Exists(slot);
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
+    public bool Exists(string slot) => _storage.Exists(SlotName.Checked(slot));
     /// <summary>
     /// Removes the slot's data; does nothing when it does not exist. A slot that could not be read can be saved again
     /// after it is deleted: deleting is the game's explicit choice to start over.
     /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public void Delete(string slot)
     {
+        SlotName.Check(slot);
         _storage.Delete(slot);
         _unreadable.Remove(slot);
     }
@@ -238,13 +255,66 @@ public sealed class SaveStore
 /// </summary>
 public interface ISaveStorage : Platform.IStorage;
 
-/// <summary>One JSON file per slot in a directory (desktop and tests).</summary>
+/// <summary>
+/// The rule for slot names, shared by <see cref="SaveStore"/> and <see cref="FileSaveStorage"/>: a slot is a plain name
+/// that every supported system can store as a file name, so it never leaves the save folder and a save can be copied
+/// from one system to another.
+/// </summary>
+internal static class SlotName
+{
+    /// <summary>The device names Windows reserves, with or without an extension.</summary>
+    private static readonly HashSet<string> Devices = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$",
+        "COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM¹", "COM²", "COM³",
+        "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT¹", "LPT²", "LPT³",
+    };
+
+    /// <summary>Returns <paramref name="slot"/> when it is a valid slot name; throws otherwise.</summary>
+    public static string Checked(string slot)
+    {
+        Check(slot);
+        return slot;
+    }
+
+    /// <exception cref="ArgumentNullException"><paramref name="slot"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a plain, portable file name.</exception>
+    public static void Check(string slot)
+    {
+        ArgumentNullException.ThrowIfNull(slot, nameof(slot));
+        if (Problem(slot) is { } problem)
+            throw new ArgumentException($"\"{slot}\" is not a valid slot name: {problem}. A slot is a plain name such as \"progress\" or \"profile.v2\", not a path.", nameof(slot));
+    }
+
+    private static string? Problem(string slot)
+    {
+        if (string.IsNullOrWhiteSpace(slot)) return "it is empty";
+        for (int i = 0; i < slot.Length; i++)
+        {
+            char c = slot[i];
+            if (c is '/' or '\\') return "it contains a path separator";
+            if (c < ' ' || c is ':' or '*' or '?' or '"' or '<' or '>' or '|') return "it contains a character that file names cannot hold";
+            if (char.IsHighSurrogate(c) && i + 1 < slot.Length && char.IsLowSurrogate(slot[i + 1])) i++;
+            else if (char.IsSurrogate(c)) return "it contains half of a character";
+        }
+        if (slot[^1] is '.' or ' ') return "it ends with a dot or a space";
+        int dot = slot.IndexOf('.');
+        if (Devices.Contains((dot < 0 ? slot : slot[..dot]).TrimEnd(' '))) return "it is a device name on Windows";
+        return null;
+    }
+}
+
+/// <summary>
+/// One JSON file per slot in a directory (desktop and tests). A slot is a plain name (see <see cref="SaveStore"/>):
+/// every member that takes one throws <see cref="ArgumentException"/> for a name that is not, so no slot reaches a file
+/// outside the directory.
+/// </summary>
 public sealed class FileSaveStorage(string directory) : ISaveStorage
 {
     /// <summary>The directory that holds the slot files.</summary>
     public string Location { get; } = directory ?? throw new ArgumentNullException(nameof(directory));
 
-    private string PathFor(string slot) => Path.Combine(Location, slot + ".json");
+    private string PathFor(string slot) => Path.Combine(Location, SlotName.Checked(slot) + ".json");
 
     /// <inheritdoc/>
     public string? Read(string slot)
