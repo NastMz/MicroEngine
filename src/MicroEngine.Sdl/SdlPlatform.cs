@@ -44,7 +44,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly SDL_Renderer* _sdl; // null on the sdl-gpu device: SDL_GPU owns the window's swapchain
     private readonly Dev.GraphicsDeviceBase _device;
     private readonly DeviceCanvas _canvas;
-    private CanvasPresenter? _presenter;
     private readonly SdlInput _input;
     private readonly IInputSource _combinedInput;
     private readonly IAudioDevice _audio;
@@ -685,22 +684,13 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         _canvas.EndFrame();
         // The canvas into the window as the presentation says; nothing to present while minimised.
-        if (Compose())
+        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
         {
             // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
             if (_touch.Canvas is { } overlayCanvas) _touch.Overlay?.Draw(overlayCanvas);
             _device.Present();
         }
         if (!_gamepadsStarted) StartGamepads();
-    }
-
-    /// <summary>The canvas (and the frame's UI view) into the window; a presentation with a prescale goes through the presenter that enlarges the canvas first.</summary>
-    private bool Compose()
-    {
-        var presentation = _settings.Presentation;
-        if (presentation.Prescale == 1) return _canvas.Compose(presentation, FrameRect(), Letterbox);
-        _presenter ??= new CanvasPresenter(_device);
-        return _presenter.Present(presentation, _canvas.Target, _frameHasUi ? _canvas.UiTarget : null, FrameRect(), Letterbox);
     }
 
     private bool _gamepadsStarted;
@@ -743,20 +733,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
         // A prescaled canvas is sampled from its enlargement, as the window's frame was.
-        var frame = FrameRect();
-        var (px, py) = _settings.Presentation.PrescaleFor(frame, world.Width, world.Height, _device.Capabilities.Limits.MaxRenderTargetSize);
-        if (px > 1 || py > 1) world = Enlarged(world, px, py);
-        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, frame, Letterbox, _settings.Presentation.Upscale);
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation, _device.Capabilities.Limits.MaxRenderTargetSize);
     }
-    private static PixelImage Enlarged(PixelImage image, int factorX, int factorY)
-    {
-        var enlarged = new PixelImage(image.Width * factorX, image.Height * factorY);
-        for (int y = 0; y < enlarged.Height; y++)
-            for (int x = 0; x < enlarged.Width; x++)
-                enlarged[x, y] = image[x / factorX, y / factorY];
-        return enlarged;
-    }
-
     void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
     /// <summary>Switches between the window and borderless full screen (exclusive full screen goes back to the window).</summary>
@@ -876,7 +854,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             _self.Free();
         }
         (_audio as IDisposable)?.Dispose();
-        _presenter?.Dispose();
         _canvas?.Dispose();
         _input?.Dispose();
         _touch?.Dispose();

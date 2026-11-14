@@ -22,7 +22,10 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   that is not whole (a 480 × 270 game on a 1366 × 768 screen) keeps every pixel the same size with antialiased edges,
   instead of pixels of two widths or a blurred picture, and at a whole scale the picture is exactly the nearest one.
   1, the default, changes nothing. `Presentation.PrescaleFor` gives the factors of a frame and `CanvasPresenter`
-  composes the window; windows of the SDL platform apply it, the raylib and headless platforms present without it.
+  composes the window; SDL and raylib windows apply it, and captures of the window show it on every platform, the
+  headless one included (`ScreenCapture.Compose` takes the presentation)
+  ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)). `Presentation.Fit` places the frame on
+  whole window pixels at every scale: 480 × 270 in 1366 × 768 is 1365 × 768, centred, where it was 1365.33 wide.
 
 **Fixed**
 
