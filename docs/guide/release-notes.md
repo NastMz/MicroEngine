@@ -17,6 +17,12 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
+- Keyframe animation: `Track<T>` holds a value through keys in time, each with the easing curve of the way to it
+  (`Track.Float`, `Track.Vector2`, `Track.Color`, `Track.Step<T>`, or any type with its own blend), and `Timeline`
+  plays several tracks from one playhead with looping, speed, `Seek` and named events (`At`, `Reached`) that fire once
+  per pass, in order, also across a long frame. `Seek` raises no events and finishes a timeline moved to its end;
+  time only goes forwards, so `Update` refuses a negative or non-finite step ([Animation](animation.md)). The "Tracks
+  and timelines" example shows them.
 - `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
   the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
   NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's

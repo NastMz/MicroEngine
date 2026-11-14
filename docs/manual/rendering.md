@@ -234,7 +234,8 @@ called while drawing. Duplicate names and unknown names throw.
 frame. `Animator` plays named clips: `Add(name, clip)`, `Play(name, restart = false)` (playing the current clip
 again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-looping clips). Source:
 [`src/MicroEngine.Graphics2D/Legacy/Animation.cs`](../../src/MicroEngine.Graphics2D/Legacy/Animation.cs). Games may equally pick
-frames themselves from `atlas.Frames(...)` and a timer.
+frames themselves from `atlas.Frames(...)` and a timer. Values that move through several keys, and moments the game
+reacts to during a clip (a footstep, the frame a swing lands), are tracks and timelines: [Animation](../guide/animation.md).
 
 ## Camera
 
