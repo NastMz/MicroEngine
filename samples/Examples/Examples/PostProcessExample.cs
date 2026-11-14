@@ -9,12 +9,13 @@ namespace Examples;
 
 /// <summary>
 /// A chain of full-screen passes over the finished picture: its bright parts blurred across, then down, at half size,
-/// and a last pass that adds that glow and darkens the corners and every other line. Needs a graphics device with custom
-/// shaders (<c>--graphics sdl-gpu</c>); on any other the scene draws the picture as it is.
+/// and a last pass that adds that glow and darkens the corners and every other line. Each pass is one draw of the
+/// previous pass's target through a material. Needs a graphics device with custom shaders (<c>--graphics sdl-gpu</c>);
+/// on any other the scene draws the picture as it is.
 /// </summary>
 public sealed class PostProcessExample : Scene
 {
-    private static readonly RectF Whole = new(0, 0, 320, 180), Half = new(0, 0, 160, 90), All = new(0, 0, 1, 1);
+    private static readonly RectF Whole = new(0, 0, 320, 180);
 
     /// <summary>The blur's parameters, laid out as its <c>cbuffer Blur</c>.</summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -32,7 +33,8 @@ public sealed class PostProcessExample : Scene
     }
 
     private Renderer2D? _batcher;
-    private RawShaderPass? _blur, _combine;
+    private Dev.Shader? _vertex, _blurFragment, _lookFragment;
+    private Material2D? _blur, _look;
     private Dev.RenderTarget? _scene, _across, _glow;
     private bool _on = true;
     private float _time;
@@ -42,10 +44,13 @@ public sealed class PostProcessExample : Scene
         if (Game.Graphics is not DeviceGraphics graphics || !graphics.Device.Capabilities.Has(Dev.GraphicsFeatures.Shaders)) return;
         var device = graphics.Device;
         _batcher = new Renderer2D(device);
-        _blur = new RawShaderPass(device, Assets, "glow", Dev.BlendState.Opaque);
-        _combine = new RawShaderPass(device, Assets, "combine", Dev.BlendState.Opaque);
+        _vertex = Dev.CompiledShader.Parse(Assets.Bytes("shaders/sprite.vert.shader")).Create(device);
+        _blurFragment = Dev.CompiledShader.Parse(Assets.Bytes("shaders/glow.frag.shader")).Create(device);
+        _lookFragment = Dev.CompiledShader.Parse(Assets.Bytes("shaders/combine.frag.shader")).Create(device);
+        _blur = new Material2D(_vertex, _blurFragment);
+        _look = new Material2D(_vertex, _lookFragment);
         _scene = device.CreateRenderTarget(new Dev.RenderTargetDescription(320, 180));
-        _across = device.CreateRenderTarget(new Dev.RenderTargetDescription(160, 90));
+        _across = device.CreateRenderTarget(new Dev.RenderTargetDescription(160, 90));   // the glow at half size
         _glow = device.CreateRenderTarget(new Dev.RenderTargetDescription(160, 90));
     }
 
@@ -54,8 +59,11 @@ public sealed class PostProcessExample : Scene
         _glow?.Dispose();
         _across?.Dispose();
         _scene?.Dispose();
-        _combine?.Dispose();
+        _look?.Dispose();
         _blur?.Dispose();
+        _lookFragment?.Dispose();
+        _blurFragment?.Dispose();
+        _vertex?.Dispose();
         _batcher?.Dispose();
     }
 
@@ -77,25 +85,40 @@ public sealed class PostProcessExample : Scene
         }
         r.FillRect(new RectF(0, 150, 320, 30), Color.Hex("333c57"));
         r.FillRect(new RectF(20, 146, 280, 4), Color.Hex("f4f4f4"));
-        Heading.Draw(r, Font, "POST-PROCESSING", _on ? "CONFIRM: OFF" : "CONFIRM: ON");
 
-        if (r is not DeviceRenderer canvas || _blur is null)
+        if (r is DeviceRenderer canvas && _blur is not null)
         {
-            Font.DrawCentered(r, "THE SHADERS NEED --GRAPHICS SDL-GPU", new Vector2(160, 30), Color.White);
-            return;
+            if (_on)
+            {
+                #region chain
+                canvas.Flush();
+                // 1. The finished picture, copied where the passes can read it.
+                Pass(canvas.Target.Color!, _scene!, null);
+                // 2. Its bright parts blurred across, at half size. 3. That, blurred down.
+                _blur.SetUniforms(new BlurParameters { Step = new Vector2(1f / 160, 0), Threshold = 0.55f });
+                Pass(_scene!.Color!, _across!, _blur);
+                _blur.SetUniforms(new BlurParameters { Step = new Vector2(0, 1f / 90) });
+                Pass(_across!.Color!, _glow!, _blur);
+                // 4. The picture and the glow together, back into the canvas.
+                _look!.SetUniforms(new LookParameters { GlowStrength = 1.4f, Vignette = 0.9f, Scanlines = 0.18f, Lines = 180 });
+                _look.SetTexture(1, _glow!.Color!, Dev.SamplerDescription.LinearClamp);
+                Pass(_scene.Color!, canvas.Target, _look);
+                #endregion
+            }
         }
-        if (!_on) return;
+        else Font.DrawCentered(r, "THE SHADERS NEED --GRAPHICS SDL-GPU", new Vector2(160, 30), Color.White);
 
-        canvas.Flush();
-        // 1. The finished picture, copied where the passes can read it.
-        _batcher!.Begin(new BatchSettings(_scene!, Blend: Dev.BlendState.Opaque));
-        _batcher.Draw(canvas.Target.Color!, Whole, Matrix3x2.Identity, ColorF.White);
-        _batcher.End();
-        // 2. Its bright parts blurred across, at half size; 3. that, blurred down.
-        _blur.Draw(_across!, Half, All, new BlurParameters { Step = new Vector2(1f / 160, 0), Threshold = 0.55f }, _scene!.Color!);
-        _blur.Draw(_glow!, Half, All, new BlurParameters { Step = new Vector2(0, 1f / 90) }, _across!.Color!);
-        // 4. The picture and the glow together, back into the canvas.
-        _combine!.Draw(canvas.Target, Whole, All, new LookParameters { GlowStrength = 1.4f, Vignette = 0.9f, Scanlines = 0.18f, Lines = 180 },
-            _scene.Color!, _glow!.Color!);
+        Heading.Draw(r, Font, "POST-PROCESSING", _on ? "CONFIRM: OFF" : "CONFIRM: ON");
     }
+
+    #region pass
+    /// <summary>One pass: the whole of <paramref name="source"/> drawn over the whole of <paramref name="target"/>, through a material or as it is.</summary>
+    private void Pass(Dev.Texture source, Dev.RenderTarget target, Material2D? material)
+    {
+        _batcher!.Begin(new BatchSettings(target, Blend: Dev.BlendState.Opaque, Sampler: Dev.SamplerDescription.LinearClamp) { Material = material });
+        _batcher.Draw(source, new RectF(0, 0, source.Width, source.Height),
+            Matrix3x2.CreateScale(target.Width / (float)source.Width, target.Height / (float)source.Height), ColorF.White);
+        _batcher.End();
+    }
+    #endregion
 }
