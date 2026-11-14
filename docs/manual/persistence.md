@@ -49,11 +49,12 @@ to another keeps working. Letters, digits, spaces and punctuation such as `-`, `
 the members of `FileSaveStorage`) throws `ArgumentException`, naming the slot, when the name:
 
 - is `null`, empty or only white space;
-- contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control character, which rules out folders, drive letters
-  and absolute paths (`"saves/1"`, `"../other"`, `"C:\save"`);
+- contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control character below U+0020, which rules out
+  folders, drive letters and absolute paths (`"saves/1"`, `"../other"`, `"C:\save"`);
+- contains half of a surrogate pair;
 - ends with a dot or a space, which includes `"."` and `".."`;
-- is a Windows device name, with or without an extension: `CON`, `PRN`, `AUX`, `NUL`, `COM0` to `COM9`, `LPT0` to
-  `LPT9` (`"NUL"`, `"con.v2"`), in any letter case.
+- is a Windows device name, with or without an extension: `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, `COM0` to
+  `COM9`, `LPT0` to `LPT9` and their superscript-digit forms (`"NUL"`, `"con.v2"`), in any letter case.
 
 A slot never reaches a file outside the save folder. To group saves, put the group in the name (`"profile1.progress"`)
 or give each group its own store over its own directory.

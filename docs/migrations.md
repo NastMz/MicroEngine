@@ -22,7 +22,8 @@ To update, declare the save types in a `JsonSerializerContext` and pass its meta
 
 `SaveStore.Save`, `Load`, `Exists` and `Delete`, and the members of `FileSaveStorage`, throw `ArgumentException` for a
 slot that is `null`, empty or white space, contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control
-character, ends with a dot or a space, or is a Windows device name such as `CON` or `NUL`
+character below U+0020, contains half of a surrogate pair, ends with a dot or a space, or is a Windows device name
+such as `CON` or `NUL`
 ([Slot names](manual/persistence.md#slot-names)). Before, a slot such as `"../other"` or an absolute path read and
 wrote a file outside the save folder, an empty slot wrote a file named `.json`, and a slot with a folder
 (`"saves/1"`) was written by browser storage and refused by file storage unless the folder already existed. Names
@@ -31,6 +32,11 @@ without those characters, dots inside the name included (`"profile.v2"`), keep t
 To update, pass a plain name. A game that used a slot with a folder renames it (`"saves.1"`); to keep reading the old
 data in a browser, read it once from the old key with `BrowserStorage` directly and save it under the new name. A game
 that grouped files in folders gives each group its own `SaveStore` over that directory.
+
+A file that an earlier version wrote under a name that is now refused (`"name."` wrote `name..json`, `"CON"` wrote
+`CON.json`) stays in the save folder, and `Load`, `Exists` and `Delete` no longer reach it. A game that used such a
+slot renames the file once at startup, before it opens its store, with `File.Move` from the old file name to the new
+slot's (`name.json`).
 
 ## 0.6.0-alpha.1
 
