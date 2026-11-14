@@ -16,6 +16,16 @@ What can sound different: a sound paused and resumed, or paused and changed, in 
 position up to the output delay later than before; and `PauseMusic` or `MusicVolume` during a music fade applies at
 the fade's current point instead of slightly ahead of it. No code needs to change.
 
+### Sounds are heard sooner
+
+On the SDL platform a sound reaches the device about 65 ms after the update that played it, where it took about
+120 ms; the same rule applies in browsers, whose output queue is 100 ms. Sounds played in consecutive updates are
+still exactly one update apart. Recordings made with `CaptureAudioDevice` or `--audio-capture`, and every
+deterministic run, are unchanged.
+
+What can need a change: a game that delayed its pictures or shifted its timing windows to match the sound (a rhythm
+game's audio offset) was compensating for the longer delay; reduce that offset by about 55 ms on the SDL platform.
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components

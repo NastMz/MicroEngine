@@ -43,6 +43,12 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 | T4 `Game.Audio` (`AudioMixer`): voices with handles, voice control, buses, music voices | S2 S7 | inline | done | `c4110df`; RED: 10 missing members (CS1061); `AudioMixerVoiceTests` 8/8 |
 | T5 Game-side example (sample region), manual, release notes, API reference | S6 | inline | done | `74af2e2` (`VoicesExample`, capture and audio capture inspected), `7af2942`, `f3b1ffd` (manual: outside the listed surfaces, own commit) |
 | T6 Profile after the change; evaluation `docs/evaluations/audio-1.md` | S3 S4 S6 | inline | done | evaluation §2, §4, §5 |
+| T7 Quantify the 34 differences of the same-update rule and classify them; tests for pause and change in one step | S8 S12 S14 | inline | done | `dccbad5`; evaluation §5.1; six of the new tests fail with the previous rule put back |
+| T8 Values that are not numbers | S10 | inline | done | `88b0a3c`; RED: 4 of 5 new tests failed |
+| T9 Reused and stale handles, pitch at a clip's tail | S12 | inline | done | `dccbad5`; passed when written (no defect) |
+| T10 Queue saturation: reproduce, consequences, fix | S11 S14 | inline | done | `08692db`; RED: 5 of 6 new tests failed; evaluation §5.4 |
+| T11 Latency: measure both approaches, output latency and precision apart; implement if local | S9 S14 | inline | done | `3a66d01`; RED: 5 of 6 new tests failed; evaluation §5.2; 116 offline renders byte-identical |
+| T12 Manual, release notes, migration note, API reference, evaluation | S9 S13 | inline | done | this commit; `f3b1ffd` kept, its latency figures corrected to the measured ones |
 
 ## Log
 
@@ -104,3 +110,25 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 
   Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
   ```
+- L9 (2026-11-13) Same-update rule kept. The 34 differing renders were quantified against the same sequence rendered
+  without delay and moved by the delay: 30 of the 34 are now exactly that, none was before; no functional regression;
+  the perceptible differences are a sound continuing 2 to 21 ms away from before after a pause or resume combined
+  with another change, and the gap pause-then-resume used to leave, which is gone (evaluation §5.1).
+- L10 (2026-11-13) Found while quantifying: a voice holds one waiting change, so with a delay longer than one update a
+  change applies early when the next update's change arrives (older than the branch; 3 of the 34 files). Not fixed:
+  with the timeline of L12 it only happens just after a slow frame, by a few milliseconds, and the fix is a larger
+  change to the render function (evaluation §6).
+- L11 (2026-11-13) Queue. Decision: no second hand-off and nothing in the render function. The main thread keeps what
+  the queue had no room for (per voice: values, pause, stop; per bus: volume) and sends the latest first when there
+  is room; a sound that does not fit is refused before it takes a voice. `DroppedCommands` keeps its name and now
+  counts calls that waited or were refused.
+- L12 (2026-11-13) Latency. Measured on the SDL sink, both approaches on one recording per loop and the engine before
+  and after: update to device 118-130 ms before, 65-76 ms after; the proposal as written (device position checked in
+  `Advance`) started 6 to 8 sounds in 600 late, so the step's frame is also checked at its first sound or change; the
+  timeline comes back a sixteenth of a step per host frame beyond one step ahead (142-174 ms after slow frames
+  before, 71-73 ms after). Spacing of consecutive steps: exact except moved steps, which are 1 ms. Implemented:
+  local to `Advance`, `Pump` and the first call of a step; deterministic output byte-identical. The stalled-sink
+  wait went from one second to a quarter. Browser, raylib, Android and iOS not measured.
+- L13 (2026-11-13) Scratch (outside the repository, not deleted): the latency program, the PCM comparison scripts and
+  their outputs, and a rebuild of the verifier's probe, under the session's temporary folder named in the hand-off.
+- L14 (2026-11-13) Still open from L6: `AGENTS.md` does not list this record (outside the edit surfaces).

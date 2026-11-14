@@ -28,6 +28,17 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
 
 **Fixed**
 
+- Sounds are heard about 55 ms sooner on the SDL platform: a sound reaches the device about 65 ms after the update
+  that played it instead of about 120 ms, and no longer stays later after a slow frame. The output queue was waited
+  for twice; in browsers, whose queue is 100 ms, the same rule applies
+  ([migration notes](../migrations.md#sounds-are-heard-sooner)).
+- A value that is not a number (`float.NaN`) no longer reaches the sound: `AudioEngine.SetPitch` with it ended the
+  handle while the sound played on, and as a volume, pan, pitch or bus volume it silenced or corrupted the output.
+  `Play` uses the default for such a value; `Set`, `SetPitch`, bus volumes, `MusicVolume` and `SfxVolume` ignore it.
+- When the output stopped taking audio while the game went on (a page whose sound the browser holds suspended), the
+  mixer's queue filled and further calls were lost: a looping sound stopped then played on with no handle once the
+  output resumed. Stops, pauses and the latest values of each sound and bus now apply when the output plays again,
+  and a sound that cannot be queued is refused (`VoiceHandle.None`).
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

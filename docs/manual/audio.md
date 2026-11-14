@@ -202,10 +202,10 @@ play.
 
 | `AudioEngine` member | Behaviour |
 | --- | --- |
-| `Play(clip, parameters)` | Plays a clip; returns a `VoiceHandle`, or `VoiceHandle.None` when the voice policy refused it |
+| `Play(clip, parameters)` | Plays a clip; returns a `VoiceHandle`, or `VoiceHandle.None` when the voice policy refused it (or the output stopped taking audio, see below) |
 | `Play(stream, parameters)` | Plays an `IAudioStream` (music decoded while it plays); several streams play side by side |
 | `Stop(voice, fadeSeconds)`, `Set(voice, volume, pan)`, `SetPitch(voice, pitch)`, `Pause(voice, paused)` | Control a playing sound; a stale handle does nothing and returns `false` |
-| `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds` | What plays now |
+| `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds`, `DroppedCommands` | What plays now; calls made while the output took no audio |
 | `Bus(name)`, `AddBus(name, parent)`, `AudioBus.Volume` | Named buses under `master` (`sfx` and `music` exist); a bus is created under a parent that exists, so buses never form a cycle |
 | `MaxVoices` (32 by default), `DelayFrames` | The voice limit; the delay between a step and the sounds it starts |
 
@@ -218,9 +218,23 @@ not register or an `IAudioStream` of its own.
 
 Sounds start at an exact output frame: the frame of the game update that played them plus a fixed delay at least as
 long as the output's queue, so what is heard does not depend on how the platform asks for audio, and an offline
-render (`OfflineAudioSink`, `CaptureAudioDevice`) gives the same samples on every machine. Music streams are decoded
-ahead once per frame, outside the game's updates. `SdlAudioDevice.TryCreate(driver, latencyMilliseconds)` changes the
-SDL queue (lower plays sounds sooner; higher survives longer pauses, such as long garbage collections).
+render (`OfflineAudioSink`, `CaptureAudioDevice`) gives the same samples on every machine. Sounds played in
+consecutive updates start exactly one update apart, also when a frame runs two updates at once. In real time the
+updates' frames follow what the device is playing, so a sound is heard one output queue after its update; an update
+that runs late starts its sounds in the next audio to be rendered, and after a slow frame (whose catch-up updates
+run ahead of the device) the timing comes back within about a second, a millisecond per frame. Music streams are
+decoded ahead once per frame, outside the game's updates. `SdlAudioDevice.TryCreate(driver, latencyMilliseconds)`
+changes the SDL queue (lower plays sounds sooner; higher survives longer pauses, such as long garbage collections).
+
+A value that is not a number (`float.NaN`, the result of dividing zero by zero in a distance or a ratio) never reaches
+the sound: `Play` uses the default instead (full volume, original pitch, centred), and `Set`, `SetPitch`, bus volumes,
+`MusicVolume` and `SfxVolume` ignore it and keep their value.
+
+When the output stops taking audio while the game goes on (a page whose sound the browser holds suspended until a key
+or click), nothing the game asks for is lost: stops, pauses, and the latest volume, pan and pitch of each sound and
+the volume of each bus apply when the output plays again. Once the calls waiting for it fill the mixer's queue
+(4096), a new sound is refused (`VoiceHandle.None`) until then; `AudioEngine.DroppedCommands` counts the calls that
+had to wait or were refused.
 
 ## Sound and music files
 
@@ -291,6 +305,10 @@ sound and resumes it when shown again.
   can click, so change them a little every update or fade with `Stop`.
 - Streamed music keeps its own pitch.
 - Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
-- Sound is not instant: it starts after the queue that keeps pauses from being heard (60 ms on the SDL platform,
-  100 ms in browsers) and the delay that makes every sound start at an exact frame, about twice the queue in all:
-  roughly 120 ms after the update that played it on the SDL platform, and more in browsers, whose queue is longer.
+- Sound is not instant: it is heard after the queue that keeps pauses from being heard, 60 ms on the SDL platform
+  and 100 ms in browsers. On the SDL platform a sound reaches the device about 65 ms after the update that played it
+  at 60 or more frames per second and about 75 ms at 30, before the device's own buffer; a slow frame adds up to its
+  catch-up updates to that for about a second.
+- Changes to one sound in consecutive updates (a pause, then a volume change in the next update) can take effect a
+  few milliseconds before their update's point in the sound when the timing runs ahead of the device, as it does
+  just after a slow frame. Changes made in the same update always apply together.

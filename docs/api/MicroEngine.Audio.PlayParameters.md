@@ -54,7 +54,8 @@ public bool Loop { get; init; }
 
 ### <a id="MicroEngine_Audio_PlayParameters_Pan"></a> Pan
 
-Stereo position, 0 (left) to 1 (right); 0.5 is centred. Balance panning: the far side is attenuated.
+Stereo position, 0 (left) to 1 (right); 0.5 is centred, as is a value that is not a number. Balance panning: the
+far side is attenuated.
 
 ```csharp
 public float Pan { get; init; }
@@ -66,7 +67,8 @@ public float Pan { get; init; }
 
 ### <a id="MicroEngine_Audio_PlayParameters_Pitch"></a> Pitch
 
-Playback speed factor, 1 for the original pitch (clamped to 0.01..100). Streams play at their own pitch.
+Playback speed factor, 1 for the original pitch (clamped to 0.01..100; a value that is not a number counts as 1).
+Streams play at their own pitch.
 
 ```csharp
 public float Pitch { get; init; }
@@ -91,7 +93,7 @@ public int Priority { get; init; }
 
 ### <a id="MicroEngine_Audio_PlayParameters_Volume"></a> Volume
 
-Volume, 0..1 (clamped).
+Volume, 0..1 (clamped); a value that is not a number counts as 1.
 
 ```csharp
 public float Volume { get; init; }

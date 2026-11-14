@@ -111,7 +111,8 @@ public bool MusicPaused { get; }
 
 ### <a id="MicroEngine_Audio_AudioMixer_MusicVolume"></a> MusicVolume
 
-Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade.
+Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade. A
+value that is not a number is ignored.
 
 ```csharp
 public float MusicVolume { get; set; }
@@ -123,7 +124,8 @@ public float MusicVolume { get; set; }
 
 ### <a id="MicroEngine_Audio_AudioMixer_SfxVolume"></a> SfxVolume
 
-Volume multiplier for sound effects, 0..1 (default 0.8). Each played volume is multiplied by it and clamped to 0..1.
+Volume multiplier for sound effects, 0..1 (default 0.8). Each played volume is multiplied by it and clamped to
+0..1. A value that is not a number is ignored.
 
 ```csharp
 public float SfxVolume { get; set; }
@@ -576,8 +578,9 @@ public void Pump()
 
 ### <a id="MicroEngine_Audio_AudioMixer_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Nullable_System_Single__"></a> Set\(VoiceHandle, float?, float?, float?\)
 
-Changes a playing voice from this update on; null keeps a value. Called every update it follows something that
-moves: the pan and volume of a sound source crossing the screen, the pitch of an engine.
+Changes a playing voice from this update on; null, or a value that is not a number, keeps a value. Called every
+update it follows something that moves: the pan and volume of a sound source crossing the screen, the pitch of
+an engine.
 
 ```csharp
 public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, float? pitch = null)
@@ -611,7 +614,8 @@ Whether it was playing.
 
 Sets the volume of everything playing through bus <code class="paramref">name</code> and the buses under it, clamped to
 0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of [Play](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Play_System_String_System_Single_System_Single_System_Single_System_Single_) too,
-on top of [SfxVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SfxVolume)), "music" for the music track and the voices played on it.
+on top of [SfxVolume](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SfxVolume)), "music" for the music track and the voices played on it. A value that is
+not a number is ignored.
 
 ```csharp
 public void SetBusVolume(string name, float volume)
