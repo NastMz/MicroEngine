@@ -23,5 +23,7 @@
   <ItemGroup>
     <!-- The gallery's tour, played by the tests as the launcher plays it. -->
     <None Include="../../samples/AssetGallery/scripts/tour.script" Link="scripts/tour.script" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The examples' tour, checked against the list of examples. -->
+    <None Include="../../samples/Examples/scripts/tour.script" Link="scripts/examples-tour.script" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
