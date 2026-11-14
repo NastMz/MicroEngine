@@ -54,6 +54,7 @@ const samples = [
   ['samples/Examples', 'Examples.csproj', 'scripts/tour.script'],
   ['samples/HelloEngine', 'HelloEngine.csproj', 'hello.script'],
   ['samples/TiledLevel', 'TiledLevel.csproj', 'scripts/tour.script'],
+  ['samples/Pathfinding', 'Pathfinding.csproj', 'scripts/tour.script'],
 ];
 
 const tail = text => text.trim().split('\n').slice(-4).join(' | ');

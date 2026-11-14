@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>NavBench</RootNamespace>
+    <Description>Times pathfinding on large grids: A* searches, straightened routes, a goal that cannot be reached, distance fields and reading a tile map.</Description>
+    <!-- It builds its maps in memory; it ships no files. -->
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Navigation/MicroEngine.Navigation.csproj" />
+  </ItemGroup>
+</Project>

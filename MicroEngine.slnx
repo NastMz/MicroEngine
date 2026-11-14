@@ -37,6 +37,7 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
     <Project Path="benchmarks/MapBench/MapBench.csproj" />
+    <Project Path="benchmarks/NavBench/NavBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
     <Project Path="benchmarks/PhysicsBench/PhysicsBench.csproj" />
     <Project Path="benchmarks/WorldBench/WorldBench.csproj" />
@@ -48,6 +49,7 @@
     <Project Path="samples/Slice3D/Slice3D.csproj" />
     <Project Path="samples/PhysicsSubstitution/PhysicsSubstitution.csproj" />
     <Project Path="samples/TiledLevel/TiledLevel.csproj" />
+    <Project Path="samples/Pathfinding/Pathfinding.csproj" />
   </Folder>
   <Folder Name="/samples/GemGarden/part1-scenes/">
     <Project Path="samples/GemGarden/part1-scenes/GemGarden.csproj" />

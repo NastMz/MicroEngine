@@ -1,0 +1,10 @@
+# A click sends the unit into the far room; the door closes ahead of the patrol, which goes around; then it opens again.
+1 mouse 264,136
+2 mouse 264,136 down
+4 mouse 264,136 up
+20 press confirm
+40 capture routes.png
+200 capture around.png
+330 press confirm
+480 capture gathered.png
+482 quit
