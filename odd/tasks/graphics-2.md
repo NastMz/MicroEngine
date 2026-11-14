@@ -24,6 +24,16 @@ Evaluation: [`docs/evaluations/graphics-2.md`](../../docs/evaluations/graphics-2
   implementation; the bar is whether an external developer could build that game today with the published SDK. Only
   additive public API; anything that breaks existing public API or changes the demos' default visuals is described
   under "Needs owner decision" instead of implemented.
+- S8 Neon Rift's default (owner, L5): "Mantener el aspecto predeterminado de Neon Rift por ahora."
+- S9 Real captures (owner, L5): "Generar capturas REALES del renderer comparando nearest, smooth y prescale/sharp a
+  1366×768 y 1920×1080, con el mismo frame, para evaluar visualmente el resultado."
+- S10 Fit (owner, L5): "Corregir `Presentation.Fit` si es un ajuste localizado, con pruebas de dimensiones impares,
+  centrado y bordes."
+- S11 Prescale everywhere (owner, L5): "Completar prescale en headless y raylib."
+- S12 Criterion (owner, L5): "corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar
+  innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta
+  evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
+  hipótesis y las diferencias perceptibles para el usuario."
 
 ## Tasks
 
@@ -34,6 +44,11 @@ Evaluation: [`docs/evaluations/graphics-2.md`](../../docs/evaluations/graphics-2
 | T3 `Presentation.Prescale`, `PrescaleFor`, `CanvasPresenter`, the SDL platform, tests | S6 S7 | inline | done | `f01e2f1`; RED: the tests did not compile without the API; `CanvasPresenterTests` 9/9, `SdlPrescaleTests` 1/1 |
 | T4 `RIFT_PRESENT` on Neon Rift for the comparison | S6 | inline | done | `ac20064`; RED: `sharp` gave the default; `LaunchOptionsTests` 4/4 |
 | T5 Evaluation, release notes, architecture table, API reference | S6 | inline | done | this branch |
+| T6 Pin Neon Rift's default presentation | S8 | inline | pending | |
+| T7 `Presentation.Fit` returns whole-pixel frames (own commit) | S10 S12 | inline | pending | |
+| T8 Prescale in `DeviceCanvas.Compose`, the headless `ScreenCapture.Compose` and raylib; manual row; release note | S11 | inline | pending | |
+| T9 Captures of the presented image from the real device, three options at two window sizes, same frame | S9 S12 | inline | pending | |
+| T10 Evaluation updated: demonstrated failures, hypotheses, perceptible differences | S12 | inline | pending | |
 
 ## Log
 
@@ -73,3 +88,15 @@ Evaluation: [`docs/evaluations/graphics-2.md`](../../docs/evaluations/graphics-2
   is the one it had. Listed in the evaluation §4 for the owner, with the other hooks not implemented (a canvas rendered
   above its size, a shader on the 2D or present pass, snapping fractional frames, Neon Rift's default). No ADR: one
   additive presentation field. `AGENTS.md` not edited (its record list is one line every parallel branch would touch).
+- L5 (2026-11-13) Owner's request, verbatim:
+
+  ```
+  GRAPHICS-2
+
+  * Mantener el aspecto predeterminado de Neon Rift por ahora.
+  * Generar capturas REALES del renderer comparando nearest, smooth y prescale/sharp a 1366×768 y 1920×1080, con el mismo frame, para evaluar visualmente el resultado.
+  * Corregir `Presentation.Fit` si es un ajuste localizado, con pruebas de dimensiones impares, centrado y bordes.
+  * Completar prescale en headless y raylib.
+
+  Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
+  ```
