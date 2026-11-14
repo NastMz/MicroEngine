@@ -23,9 +23,51 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   per pass, in order, also across a long frame. `Seek` raises no events and finishes a timeline moved to its end;
   time only goes forwards, so `Update` refuses a negative or non-finite step ([Animation](animation.md)). The "Tracks
   and timelines" example shows them.
+- `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
+  the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
+  NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's
+  slots. The calls without metadata keep working and are reported by the build in a project that turns on trimming
+  or NativeAOT analysis: `IL2026` with `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` with
+  `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer`
+  ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
+- `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples
+  it into the window. With a linear `Upscale` and `Presentation.AutoPrescale`, a pixel-art canvas shown at a scale
+  that is not whole (a 480 × 270 game on a 1366 × 768 screen) keeps every pixel the same size with antialiased edges,
+  instead of pixels of two widths or a blurred picture, and at a whole scale the picture is exactly the nearest one.
+  1, the default, changes nothing. `Presentation.PrescaleFor` gives the factors of a frame and `CanvasPresenter`
+  composes the window; SDL and raylib windows apply it, and captures of the window show it on every platform, the
+  headless one included (`ScreenCapture.Compose` takes the presentation)
+  ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
+
+**Changed**
+
+- A save slot is a plain name on every system. `SaveStore` and `FileSaveStorage` throw `ArgumentException` for a slot
+  that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, ends
+  with `.corrupt` (the name unreadable data is set aside under), or is a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file
+  ([Slot names](../manual/persistence.md#slot-names), [migration](../migrations.md#slot-names-that-are-not-plain-names-are-refused)).
+- `InputMap.SaveBindings` and `LoadBindings`, and every member of `BrowserStorage`, throw `ArgumentException` for a
+  slot that is `null` or empty (for the bindings calls, also white space) instead of handing it to the storage. Other
+  names go to the storage as before, and each storage decides which names it holds
+  ([Who checks the name](../manual/persistence.md#who-checks-the-name)).
 
 **Fixed**
 
+- `AchievementTracker` with a store threw `InvalidOperationException` in a game published trimmed or with NativeAOT,
+  when it loaded and when it saved. It now reads and writes its slot without reflection; the file is unchanged and
+  existing achievement files load as before.
+- A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
+  an empty slot wrote a file named `.json`.
+- A game id such as `"../other"` or an absolute path put the save folder outside the user's `MicroEngine` data
+  folder. `SaveStore.DefaultDirectory` now throws `ArgumentException` for an id that starts with `/` or `\`, starts
+  with a drive, or has a part made only of dots and spaces (`.`, `..`, `...`) ([migration](../migrations.md#game-ids-that-are-paths-out-of-the-data-folder-are-refused)).
+- A slot named `<another slot>.corrupt` was replaced, and its data lost, when that other slot held unreadable data
+  and was set aside.
+- `BrowserStorage` used with a `null` or empty slot read and wrote the key `microengine/<gameId>/`, the prefix of the
+  game's slots.
+- `Presentation.Fit` places the frame on whole window pixels at every scale: 480 × 270 in 1366 × 768 is 1365 × 768,
+  centred, where it was 1365.33 wide and painted with letterbox bars of unequal width. Each side is the nearest whole
+  size, at least one pixel and never larger than the area; at a whole scale the frame is the one it was
+  ([migration notes](../migrations.md#presentationfit-returns-whole-pixels)).
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

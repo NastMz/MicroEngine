@@ -6,8 +6,8 @@
 #              sdk-v<version> (none, draft, published), and decides what is left to do. Nothing to do is the normal
 #              outcome after any other merge. While .github/phase-freeze exists on that commit (publication freeze),
 #              its decision is `frozen`: nothing below runs, by hand either
-#   check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
-#              on Windows, Linux and macOS
+#   check      sdk.yml on this commit: pack every package, check them, build, run and package a new game from them
+#              on Windows, Linux and macOS, and publish and run trimmed and NativeAOT programs on Linux and Windows
 #   draft      a draft GitHub prerelease sdk-v<version> holding exactly the checked packages and SHA256SUMS; not public
 #   publish    after the `nuget` environment's reviewers approve: a one-hour nuget.org key (Trusted Publishing, GitHub
 #              OIDC), the draft's files verified against SHA256SUMS and pushed (engine first, a package nuget.org

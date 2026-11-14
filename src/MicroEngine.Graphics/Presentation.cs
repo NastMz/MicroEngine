@@ -38,7 +38,7 @@ public enum AspectMode
 /// <summary>
 /// How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
 /// (<see cref="Rounding"/>), what happens to the window's other shape (<see cref="Aspect"/>), how it is sampled when it is
-/// scaled (<see cref="Upscale"/>), the sampler textures get when they choose none (<see cref="DefaultSampler"/>), the size
+/// scaled (<see cref="Upscale"/>), the whole factor it is enlarged by first (<see cref="Prescale"/>), the sampler textures get when they choose none (<see cref="DefaultSampler"/>), the size
 /// factor of captures (<see cref="CaptureScale"/>), whether desktop windows open at whole factors
 /// (<see cref="WholeFactorWindows"/>) and whether 2D cameras snap to whole pixels by default
 /// (<see cref="CameraPixelSnap"/>). <see cref="PixelArt"/> and <see cref="HighResolution2D"/> are presets: start from
@@ -86,6 +86,49 @@ public sealed record Presentation
 
     /// <summary>How the canvas is sampled when it is drawn to the window at another size.</summary>
     public SamplerDescription Upscale { get; init; } = SamplerDescription.LinearClamp;
+
+    /// <summary>The value of <see cref="Prescale"/> that follows the window: the smallest whole factor that covers the frame.</summary>
+    public const int AutoPrescale = 0;
+
+    private readonly int _prescale = 1;
+
+    /// <summary>
+    /// The whole factor the canvas is enlarged by, with nearest sampling, before <see cref="Upscale"/> samples it into the
+    /// window. 1 (the default) enlarges nothing: <see cref="Upscale"/> samples the canvas itself. With a linear
+    /// <see cref="Upscale"/> and <see cref="AutoPrescale"/>, a canvas drawn at a scale that is not whole keeps every pixel
+    /// the same size, with one blended window pixel at its edges instead of pixels of two widths (nearest) or a blurred
+    /// picture (linear alone); at a whole scale the picture is exactly the nearest one. A fixed factor (2, 3...) below
+    /// the scale gives softer edges. It has no effect with a nearest <see cref="Upscale"/> or on a canvas drawn smaller
+    /// than its size. <see cref="PrescaleFor"/> gives the factors a frame gets.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int Prescale
+    {
+        get => _prescale;
+        init => _prescale = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "A prescale is a whole factor of 1 or more, or Presentation.AutoPrescale.");
+    }
+
+    /// <summary>
+    /// The whole factors (one per axis; they differ only with <see cref="AspectMode.Stretch"/>) a canvas of
+    /// <paramref name="canvasWidth"/> × <paramref name="canvasHeight"/> pixels is enlarged by before it is sampled into
+    /// <paramref name="frame"/>: <see cref="Prescale"/>, or with <see cref="AutoPrescale"/> the smallest factor that
+    /// covers the frame, limited so the enlarged canvas is at most <paramref name="maxSize"/> pixels on a side (a device's
+    /// largest render target). (1, 1), nothing to enlarge, with a nearest <see cref="Upscale"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The canvas size is not positive.</exception>
+    public (int X, int Y) PrescaleFor(RectF frame, int canvasWidth, int canvasHeight, int maxSize = int.MaxValue)
+    {
+        if (canvasWidth <= 0 || canvasHeight <= 0) throw new ArgumentOutOfRangeException(nameof(canvasWidth), "The canvas size must be positive.");
+        if (_prescale == 1 || Upscale.Mag != Filter.Linear) return (1, 1);
+        int limit = Math.Max(1, Math.Min(maxSize / canvasWidth, maxSize / canvasHeight));
+        return (Axis(frame.Width, canvasWidth), Axis(frame.Height, canvasHeight));
+
+        int Axis(float frameSize, int canvasSize)
+        {
+            int factor = _prescale != AutoPrescale ? _prescale : (int)MathF.Ceiling(frameSize / canvasSize - 1e-4f);
+            return Math.Clamp(factor, 1, limit);
+        }
+    }
 
     /// <summary>
     /// The sampler of textures, atlases and font pages created without a filter of their own: the game's explicit default,
@@ -174,7 +217,9 @@ public sealed record Presentation
     /// Where the canvas lands in <paramref name="area"/> (the window, or its safe area on a phone), in window pixels: the
     /// largest scale that fits, rounded by <see cref="Rounding"/>, centred; with <paramref name="portrait"/> it sits at the
     /// top of the area instead (on-screen controls get the space below). With <see cref="AspectMode.Stretch"/> it covers
-    /// the whole area.
+    /// the whole area. The frame's size is whole pixels: at a scale that is not whole, each side is the nearest whole
+    /// size (480 × 270 in 1366 × 768 lands on 1365 × 768), so the frame of a whole area starts and ends on pixel
+    /// boundaries, with the odd pixel of letterbox on the right or at the bottom.
     /// </summary>
     /// <param name="area">The area available, in window pixels.</param>
     /// <param name="canvasWidth">The canvas's width in pixels.</param>
@@ -187,11 +232,18 @@ public sealed record Presentation
         if (Aspect == AspectMode.Stretch) return area;
         float scale = Scale(area, canvasWidth, canvasHeight);
         if (Aspect == AspectMode.Expand) (canvasWidth, canvasHeight) = CanvasSize(area, canvasWidth, canvasHeight);
-        float w = canvasWidth * scale, h = canvasHeight * scale;
+        float w = WholePixels(canvasWidth * scale, area.Width), h = WholePixels(canvasHeight * scale, area.Height);
         float x = MathF.Floor(area.X + (area.Width - w) / 2);
         float y = portrait ? area.Y : MathF.Floor(area.Y + (area.Height - h) / 2);
         return new RectF(x, y, w, h);
     }
+
+    /// <summary>
+    /// A frame's side as whole window pixels: the nearest whole size, at least one pixel and never more than the room
+    /// there is. A whole size is returned as it is, and so is any size when not even one pixel fits.
+    /// </summary>
+    private static float WholePixels(float size, float room) =>
+        room >= 1 ? Math.Clamp(MathF.Round(size, MidpointRounding.AwayFromZero), 1, MathF.Floor(room)) : size;
 
     /// <summary>
     /// Where the canvas lands in a window of <paramref name="window"/> pixels whose usable part is

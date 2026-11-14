@@ -1,4 +1,6 @@
 using MicroEngine.Core;
+using MicroEngine.Graphics;
+using MicroEngine.Graphics.Devices;
 using MicroEngine.Hosting;
 using NeonRift.Gameplay;
 
@@ -42,5 +44,24 @@ public sealed class LaunchOptionsTests
     {
         var options = LaunchOptions.From(name => name switch { "RIFT_STAGE" => "two", "RIFT_WEAPON" => "laser", "RIFT_GOD" => "yes", _ => null });
         Assert.AreEqual(new LaunchOptions(), options);
+    }
+
+    [TestMethod]
+    public void The_presentation_stays_pixel_art_unless_a_comparison_asks_for_another()
+    {
+        Assert.AreEqual(Presentation.PixelArt, Compose([]).Settings.Presentation, "what players get");
+        Assert.AreEqual(Presentation.PixelArt, Compose(new() { ["RIFT_PRESENT"] = "crt" }).Settings.Presentation, "an unknown word keeps the default");
+
+        var sharp = Compose(new() { ["RIFT_PRESENT"] = "sharp" }).Settings.Presentation;
+        Assert.AreEqual(ScaleRounding.Fractional, sharp.Rounding);
+        Assert.AreEqual(SamplerDescription.LinearClamp, sharp.Upscale);
+        Assert.AreEqual(Presentation.AutoPrescale, sharp.Prescale);
+        Assert.AreEqual(SamplerDescription.PointClamp, sharp.DefaultSampler, "the art itself stays nearest");
+
+        var smooth = Compose(new() { ["RIFT_PRESENT"] = "smooth" }).Settings.Presentation;
+        Assert.AreEqual((ScaleRounding.Fractional, SamplerDescription.LinearClamp, 1), (smooth.Rounding, smooth.Upscale, smooth.Prescale));
+        var nearest = Compose(new() { ["RIFT_PRESENT"] = "nearest" }).Settings.Presentation;
+        Assert.AreEqual((ScaleRounding.Fractional, SamplerDescription.PointClamp), (nearest.Rounding, nearest.Upscale));
+        Assert.AreEqual(ScaleRounding.Integer, Compose(new() { ["RIFT_PRESENT"] = "integer" }).Settings.Presentation.Rounding);
     }
 }

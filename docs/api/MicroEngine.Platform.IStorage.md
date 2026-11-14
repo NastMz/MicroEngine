@@ -14,6 +14,14 @@ page's localStorage in browsers, a cloud service). Failures surface as `IOExcept
 public interface IStorage
 ```
 
+## Remarks
+
+Which names a slot can have is the storage's to say, because only the storage knows what a name becomes: a file
+storage takes plain file names and keeps every slot inside its folder, a key-value storage may take any text. A
+storage refuses a name it cannot hold with `ArgumentException` from every member that takes a slot;
+that is a mistake in the calling code, not a failure of the medium. A plain name (letters, digits, <code>-</code>,
+<code>_</code>, a dot inside the name) is valid in every storage the engine provides.
+
 ## Properties
 
 ### <a id="MicroEngine_Platform_IStorage_Location"></a> Location
@@ -76,7 +84,7 @@ string? Read(string slot)
 
 ### <a id="MicroEngine_Platform_IStorage_SetAside_System_String_"></a> SetAside\(string\)
 
-Moves unreadable data out of the slot, keeping a copy; best effort, never throws.
+Moves unreadable data out of the slot, keeping a copy; best effort, never throws for a failure of the medium.
 
 ```csharp
 void SetAside(string slot)

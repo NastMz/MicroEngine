@@ -223,21 +223,35 @@ public sealed partial class InputMap
     }
 
     /// <summary>Writes every action's bindings to <paramref name="storage"/> (the slot <paramref name="slot"/>), for a rebinding screen.</summary>
+    /// <remarks>
+    /// The slot is handed to the storage as given, and the storage decides which names it can hold. The file storage
+    /// takes plain names only (<c>"input-bindings"</c>, <c>"bindings.player2"</c>), and a plain name is the same file
+    /// or key on every system.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="storage"/> or <paramref name="slot"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).</exception>
     /// <exception cref="IOException">The storage failed.</exception>
+    /// <exception cref="UnauthorizedAccessException">The storage refused access.</exception>
     public void SaveBindings(IStorage storage, string slot = BindingsSlot)
     {
         ArgumentNullException.ThrowIfNull(storage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slot);
         storage.Write(slot, ExportBindings().ToJson());
     }
 
     /// <summary>
     /// Reads bindings saved with <see cref="SaveBindings"/> and applies them (<see cref="ImportBindings"/>). Returns false
     /// and keeps the current bindings when nothing was saved or the data is unreadable (which is set aside, so the next
-    /// save does not destroy it).
+    /// save does not destroy it). A storage that cannot be read throws instead, and the current bindings stay.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="storage"/> or <paramref name="slot"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).</exception>
+    /// <exception cref="IOException">The storage failed.</exception>
+    /// <exception cref="UnauthorizedAccessException">The storage refused access.</exception>
     public bool LoadBindings(IStorage storage, string slot = BindingsSlot)
     {
         ArgumentNullException.ThrowIfNull(storage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slot);
         if (storage.Read(slot) is not { } text) return false;
         InputBindingSet set;
         try { set = InputBindingSet.FromJson(text); }

@@ -9,6 +9,12 @@ namespace MicroEngine.Platform;
 /// survive it. The page registers the "microengine" JavaScript module (its <c>storage.get</c>, <c>storage.set</c> and
 /// <c>storage.remove</c> functions) before the game starts; the browser host's page does.
 /// </summary>
+/// <remarks>
+/// A key is the game's prefix followed by the slot as given. localStorage keys are flat text with no folders, so a slot
+/// with <c>/</c> or <c>..</c> is one more key under the game's prefix and never another game's. Every member throws
+/// <see cref="ArgumentException"/> for a slot that is null or empty, which would be the prefix itself. Names are not
+/// otherwise restricted here: <c>SaveStore</c> is what keeps slots to names every system can store.
+/// </remarks>
 [SupportedOSPlatform("browser")]
 public sealed partial class BrowserStorage : IStorage
 {
@@ -26,26 +32,47 @@ public sealed partial class BrowserStorage : IStorage
     public string Location => "localStorage:" + _prefix;
 
     /// <inheritdoc/>
-    public string? Read(string slot) => Call(() => GetItem(_prefix + slot));
+    public string? Read(string slot)
+    {
+        var key = Key(_prefix, slot);
+        return Call(() => GetItem(key));
+    }
 
     /// <inheritdoc/>
-    public void Write(string slot, string text) => Call(() => { SetItem(_prefix + slot, text); return 0; });
+    public void Write(string slot, string text)
+    {
+        var key = Key(_prefix, slot);
+        Call(() => { SetItem(key, text); return 0; });
+    }
 
     /// <inheritdoc/>
     public bool Exists(string slot) => Read(slot) is not null;
 
     /// <inheritdoc/>
-    public void Delete(string slot) => Call(() => { RemoveItem(_prefix + slot); return 0; });
+    public void Delete(string slot)
+    {
+        var key = Key(_prefix, slot);
+        Call(() => { RemoveItem(key); return 0; });
+    }
 
     /// <inheritdoc/>
     public void SetAside(string slot)
     {
+        var key = Key(_prefix, slot);
         try
         {
-            if (GetItem(_prefix + slot) is { } text) SetItem(_prefix + slot + ".corrupt", text);
-            RemoveItem(_prefix + slot);
+            if (GetItem(key) is { } text) SetItem(key + ".corrupt", text);
+            RemoveItem(key);
         }
         catch (JSException) { /* Stays in place; callers that check Exists will not overwrite it. */ }
+    }
+
+    /// <summary>The localStorage key of a slot: the game's prefix and the slot, as given.</summary>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is null or empty.</exception>
+    internal static string Key(string prefix, string slot)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(slot);
+        return prefix + slot;
     }
 
     /// <summary>Storage failures (quota, privacy mode) surface as IOException, like a full disk.</summary>
