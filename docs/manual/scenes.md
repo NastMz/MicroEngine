@@ -192,7 +192,9 @@ Tweens.Add(1.2f, t => _revealed = t, Ease.Linear, () =>
 
 Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapScene.cs)
 
-Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene clears them as well.
+Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene clears them as well. A value that
+goes through more than two keys, several values moving together, or named moments along the way are a `Track<T>` and
+a `Timeline`: [Animation](../guide/animation.md).
 
 ## The scene world
 
