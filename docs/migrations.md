@@ -22,7 +22,7 @@ To update, declare the save types in a `JsonSerializerContext` and pass its meta
 
 `SaveStore.DefaultDirectory(gameId)`, and with it `SaveStore.DefaultStorage(gameId)` and `new SaveStore(gameId)`
 outside browsers, throw `ArgumentException` for an id that starts with `/` or `\`, starts with a drive (`C:`), or has
-a `.` or `..` segment. Before, such an id placed the save folder outside the user's `MicroEngine` data folder. Other
+a part made only of dots and spaces (`.`, `..`, `...`). Before, such an id placed the save folder outside the user's `MicroEngine` data folder. Other
 ids keep their folder, an id with a folder of its own (`"Studio/Game"`) included, and browser keys are unchanged.
 
 To update, pass the game's id (`com.example.mygame`). To keep saves in a folder of your choice, pass it as the

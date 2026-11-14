@@ -160,7 +160,7 @@ public static string DefaultDirectory(string gameId)
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
 <code class="paramref">gameId</code> is null, empty or white space, or is a path that leaves the data folder: one that starts
-with <code>/</code> or <code>\</code>, starts with a drive (<code>C:</code>), or has a <code>.</code> or <code>..</code> segment.
+with <code>/</code> or <code>\</code>, starts with a drive (<code>C:</code>), or has a part made only of dots and spaces (<code>.</code>, <code>..</code>, <code>...</code>).
 
 ### <a id="MicroEngine_Core_SaveStore_DefaultStorage_System_String_"></a> DefaultStorage\(string\)
 

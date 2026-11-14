@@ -91,7 +91,7 @@ public sealed class SaveStore
     /// </summary>
     /// <exception cref="ArgumentException">
     /// <paramref name="gameId"/> is null, empty or white space, or is a path that leaves the data folder: one that starts
-    /// with <c>/</c> or <c>\</c>, starts with a drive (<c>C:</c>), or has a <c>.</c> or <c>..</c> segment.
+    /// with <c>/</c> or <c>\</c>, starts with a drive (<c>C:</c>), or has a part made only of dots and spaces (<c>.</c>, <c>..</c>, <c>...</c>).
     /// </exception>
     public static string DefaultDirectory(string gameId)
     {
@@ -101,13 +101,16 @@ public sealed class SaveStore
         return Path.Combine(UserDataFolder(), "MicroEngine", gameId);
     }
 
-    /// <summary>Rooted, with a drive, or with a "." or ".." segment, by the rules of every system at once.</summary>
+    /// <summary>
+    /// Rooted, with a drive, or with a part made only of dots and spaces ("." and ".." among them, and the ones Windows
+    /// drops, such as "..."), by the rules of every system at once.
+    /// </summary>
     private static bool LeavesTheDataFolder(string gameId)
     {
         if (gameId[0] is '/' or '\\') return true;
         if (gameId.Length > 1 && gameId[1] == ':' && char.IsAsciiLetter(gameId[0])) return true;
         foreach (var segment in gameId.Split('/', '\\'))
-            if (segment is "." or "..") return true;
+            if (segment.Length > 0 && segment.AsSpan().Trim(". ").IsEmpty) return true;
         return false;
     }
 

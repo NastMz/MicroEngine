@@ -174,6 +174,8 @@ public sealed class StorageSlotContractTests
         [
             "..", ".", "../elsewhere", "..\\elsewhere", "..\\..\\elsewhere", "a/../../elsewhere", "a/./b", "studio/..", "/rooted", "\\rooted",
             "\\\\server\\share\\game", "//server/share/game", "C:\\Temp\\game", "C:game", "c:/game", Path.Combine(_root, "rooted"),
+            // Windows drops a last part made only of dots and spaces, which leaves the folder every game shares.
+            "...", ".. ", ". ", " ..", "studio/...", "studio/.. ",
         ];
         foreach (var id in refused)
         {
