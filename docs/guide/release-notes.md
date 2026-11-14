@@ -58,6 +58,12 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   slot that is `null` or empty (for the bindings calls, also white space) instead of handing it to the storage. Other
   names go to the storage as before, and each storage decides which names it holds
   ([Who checks the name](../manual/persistence.md#who-checks-the-name)).
+- Drawing a frame no longer allocates in proportion to what it draws. A graphics device records each frame into the
+  memory of the command list it executed before, and the 2D batcher keeps its lists between frames: a frame of 20,000
+  sprites in an SDL window allocates a few hundred bytes instead of about 8.5 MB, so a scene with many sprites, shapes
+  or particles no longer runs a full garbage collection every few frames. For code that drives a graphics device
+  directly: once `IGraphicsDevice.Submit` returns, the submitted `CommandList` holds nothing (`Commands` is empty and
+  `Payload` throws `InvalidOperationException`); a backend reads a list while it executes it, as before.
 
 **Fixed**
 

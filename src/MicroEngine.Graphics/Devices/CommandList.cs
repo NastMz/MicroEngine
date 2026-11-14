@@ -82,8 +82,29 @@ public readonly record struct Command(
 /// </summary>
 public sealed class CommandList
 {
-    private readonly List<Command> _commands = [];
-    private byte[] _payload = new byte[256];
+    /// <summary>
+    /// What a list records into: its commands, their data and its validation state. A device hands the storage of the
+    /// last list it executed to the next one (<see cref="GraphicsDeviceBase.BeginCommands"/>), so recording a frame
+    /// allocates nothing once the storage has grown to a frame's size.
+    /// </summary>
+    internal sealed class Storage
+    {
+        /// <summary>A payload larger than this is not kept for the next list, so a one-off upload does not pin its size.</summary>
+        public const int LargestKeptPayload = 16 * 1024 * 1024;
+
+        public readonly List<Command> Commands = [];
+        public byte[] Payload = new byte[256];
+        public readonly Dictionary<int, Texture> Textures = [];
+        public readonly HashSet<(ShaderStage, int)> Uniforms = [];
+    }
+
+    // What a submitted list reads once its storage went to the next list: nothing. Never written (a submitted list
+    // refuses to record).
+    private static readonly List<Command> Released = [];
+
+    private Storage? _storage;
+    private List<Command> _commands;
+    private byte[] _payload;
     private int _payloadLength;
 
     private bool _inPass;
@@ -92,11 +113,22 @@ public sealed class CommandList
     private GpuBuffer? _vertices;
     private GpuBuffer? _indices;
     private IndexSize _indexSize;
-    private readonly Dictionary<int, Texture> _textures = [];
-    private readonly HashSet<(ShaderStage, int)> _uniforms = [];
+    private readonly Dictionary<int, Texture> _textures;
+    private readonly HashSet<(ShaderStage, int)> _uniforms;
 
     /// <summary>Creates an empty list; backends call this from <see cref="IGraphicsDevice.BeginCommands"/>.</summary>
-    public CommandList(IGraphicsDevice device) => Device = device;
+    public CommandList(IGraphicsDevice device) : this(device, null) { }
+
+    /// <summary>Creates an empty list that records into <paramref name="storage"/> (already cleared), or into storage of its own.</summary>
+    internal CommandList(IGraphicsDevice device, Storage? storage)
+    {
+        Device = device;
+        _storage = storage ??= new Storage();
+        _commands = storage.Commands;
+        _payload = storage.Payload;
+        _textures = storage.Textures;
+        _uniforms = storage.Uniforms;
+    }
 
     /// <summary>The device the list records for.</summary>
     public IGraphicsDevice Device { get; }
@@ -111,7 +143,12 @@ public sealed class CommandList
     public ReadOnlySpan<Command> Commands => CollectionsMarshal.AsSpan(_commands);
 
     /// <summary>The data of an update or uniform command (backend-facing).</summary>
-    public ReadOnlySpan<byte> Payload(in Command command) => _payload.AsSpan(command.PayloadOffset, command.PayloadLength);
+    public ReadOnlySpan<byte> Payload(in Command command)
+    {
+        // Once the device has executed the list its storage belongs to the next list (Release): nothing to read here.
+        if (_storage is null) throw new InvalidOperationException("the command list was submitted; its data is released once Submit returns");
+        return _payload.AsSpan(command.PayloadOffset, command.PayloadLength);
+    }
 
     /// <summary>Begins a pass; resets bindings, viewport (whole target) and scissor (none).</summary>
     public void BeginPass(in PassDescription pass)
@@ -294,6 +331,25 @@ public sealed class CommandList
                 throw new ObjectDisposedException(nameof(RenderTarget), "a pass target was disposed (or the surface target expired) after it was recorded");
         }
         IsSubmitted = true;
+    }
+
+    /// <summary>
+    /// Core, once the backend has executed the list: gives up the storage, cleared, for the device's next list. The
+    /// list stays submitted and holds nothing (no commands, no data, no reference to the resources it recorded).
+    /// </summary>
+    internal Storage? Release()
+    {
+        var storage = _storage;
+        if (storage is null) return null;
+        _storage = null;
+        storage.Commands.Clear();
+        storage.Textures.Clear();
+        storage.Uniforms.Clear();
+        storage.Payload = _payload.Length <= Storage.LargestKeptPayload ? _payload : new byte[256];
+        _commands = Released;
+        _payload = [];
+        _payloadLength = 0;
+        return storage;
     }
 
     private Pipeline ReadyToDraw(int instances)

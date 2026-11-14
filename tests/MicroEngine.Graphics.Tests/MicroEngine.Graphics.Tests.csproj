@@ -19,6 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
+    <!-- The allocation check shared with the engine's and the games' test projects. -->
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
     <!-- The suite's custom shaders (HLSL in tests/Shared/Graphics/Shaders, compiled offline), read from shaders/ at run time. -->
     <None Include="../Shared/Graphics/Shaders/compiled/*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

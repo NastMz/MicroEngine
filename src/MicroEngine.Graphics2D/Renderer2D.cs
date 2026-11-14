@@ -120,6 +120,14 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     private readonly Stack<RenderState> _savedStates = new();
     private readonly List<Vertex2D> _scratchVertices = [];
     private readonly List<ushort> _scratchIndices = [];
+    // Kept between submissions like the lists above: a frame's runs and sorted items are laid out in memory that
+    // already has their size.
+    private readonly List<Run> _runs = [];
+    private readonly List<Item> _sorted = [];
+    private static readonly Comparison<Item> ByTexture = (a, b) =>
+        a.Texture.Handle.Index.CompareTo(b.Texture.Handle.Index) is var c and not 0 ? c : a.Order.CompareTo(b.Order);
+    private static readonly Comparison<Item> BackToFront = (a, b) => b.Depth.CompareTo(a.Depth) is var c and not 0 ? c : a.Order.CompareTo(b.Order);
+    private static readonly Comparison<Item> FrontToBack = (a, b) => a.Depth.CompareTo(b.Depth) is var c and not 0 ? c : a.Order.CompareTo(b.Order);
     private GpuBuffer? _vertexBuffer, _indexBuffer;
     private BatchSettings _settings;
     private Matrix3x2 _transform = Matrix3x2.Identity;
@@ -186,7 +194,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         _vertices.Add(new Vertex2D(Vector2.Transform(new Vector2(source.Width, source.Height), m), new Vector2(u1, v1), tint));
         _vertices.Add(new Vertex2D(Vector2.Transform(new Vector2(0, source.Height), m), new Vector2(u0, v1), tint));
         int indexStart = _indices.Count;
-        _indices.AddRange([0, 1, 2, 0, 2, 3]);
+        _indices.AddRange(QuadIndices);
         Record(texture, depth, start, 4, indexStart, 6);
     }
 
@@ -283,6 +291,9 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
 
     private Matrix3x2 View => _settings.View ?? Matrix3x2.Identity;
 
+    /// <summary>The two triangles of a quad whose corners were added clockwise from the top left.</summary>
+    private static ReadOnlySpan<ushort> QuadIndices => [0, 1, 2, 0, 2, 3];
+
     private void Record(Devices.Texture texture, float depth, int vertexStart, int vertexCount, int indexStart, int indexCount)
     {
         int state = _states.IndexOf(_state);
@@ -299,17 +310,26 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     private void Submit()
     {
         var target = _settings.Target;
-        IEnumerable<Item> ordered = _settings.Sort switch
+        // Sorted in place in a list kept between frames; the submission order breaks every tie, so the order is the
+        // stable one whatever the sort does with equal keys.
+        var ordered = _items;
+        if (_settings.Sort != SortMode.Deferred)
         {
-            SortMode.Texture => _items.OrderBy(i => i.Texture.Handle.Index).ThenBy(i => i.Order),
-            SortMode.BackToFront => _items.OrderByDescending(i => i.Depth).ThenBy(i => i.Order),
-            SortMode.FrontToBack => _items.OrderBy(i => i.Depth).ThenBy(i => i.Order),
-            _ => _items,
-        };
+            _sorted.Clear();
+            _sorted.AddRange(_items);
+            _sorted.Sort(_settings.Sort switch
+            {
+                SortMode.Texture => ByTexture,
+                SortMode.BackToFront => BackToFront,
+                _ => FrontToBack,
+            });
+            ordered = _sorted;
+        }
         // Lay the vertices out in draw order, grouped into runs that share texture and state and fit 16-bit indices.
         _scratchVertices.Clear();
         _scratchIndices.Clear();
-        var runs = new List<Run>();
+        var runs = _runs;
+        runs.Clear();
         foreach (var item in ordered)
         {
             bool join = runs.Count > 0 && ReferenceEquals(runs[^1].Texture, item.Texture) && runs[^1].State == item.State
