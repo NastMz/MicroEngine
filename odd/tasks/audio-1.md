@@ -32,6 +32,18 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta
   evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
   hipótesis y las diferencias perceptibles para el usuario."
+- S15 Suspension, research (L16): "Investiga cómo funciona la suspensión del audio en escritorio, navegador y demás
+  backends. Determina si el audio en segundo plano es configurable o tiene un comportamiento obligatorio."
+- S16 Stale transients (L16): "Los sonidos transitorios antiguos (disparos, impactos, etc.) no deberían reproducirse
+  acumulados al reanudar el dispositivo." "Conserva correctamente música, loops y sonidos persistentes."
+- S17 Three notions (L16): "Diferencia entre silenciar, pausar y suspender. No cambies sus contratos
+  indiscriminadamente." "Añade pruebas de suspensión y reanudación."
+- S18 Timing precision (L16): "Mide cuánto se adelantan los cambios de parámetros después de frames lentos." "Si
+  existe una desviación real, corrígela sin comprometer la reducción de latencia ya conseguida." "Conserva el
+  determinismo y evita asignaciones de memoria en el hilo de render." "Compara los resultados contra `main` y contra
+  el estado actual del lote."
+- S19 General (L16): "Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior."
+  "No introduzcas rediseños arquitectónicos innecesarios." "No hagas push, PR ni release sin mi autorización."
 
 ## Tasks
 
@@ -50,6 +62,10 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 | T11 Latency: measure both approaches, output latency and precision apart; implement if local | S9 S14 | inline | done | `3a66d01`; RED: 5 of 6 new tests failed; evaluation §5.2; 116 offline renders byte-identical |
 | T12 Manual, release notes, migration note, API reference, evaluation | S9 S13 | inline | done | this commit; `f3b1ffd` kept, its latency figures corrected to the measured ones |
 | T13 Correction of T11 and T10 after the second review: catch-up never moves the timeline back at any update rate; stall behaviour of `main` restored; check at every call; kept resume always sent | S9 S11 S14 | inline | done | evaluation §5.6; RED: 11 new test cases failed on `2a954f8` |
+| T14 Measure change timing on `main`, the batch and the result; fix | S18 S19 | inline | done | `25253e2`, `84bad18`; RED: 12 of 12 then 3 of 3 new cases failed; evaluation §7.3 |
+| T15 Suspension by backend: code and documentation | S15 | inline | done | evaluation §7.1 |
+| T16 An output that stops: skip what it did not play; tests | S16 S17 S19 | inline | done | `6207451`; RED: 10 of 18 new cases failed; evaluation §7.2, §7.4 |
+| T17 Manual, release notes, migration note, API reference, evaluation | S15 S16 S17 S18 | inline | done | this commit |
 
 ## Log
 
@@ -141,3 +157,47 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   check against the device runs at every sound or change, not once per step (a frame-phase call used it up), and a
   resume kept while the queue was full is sent even if the sound ended on the timeline. 116 offline renders still
   byte-identical. Evaluation §5.6.
+- L16 (2026-11-14) The owner's third request, verbatim:
+
+  ```
+  1. Audio suspendido
+
+  * Investiga cómo funciona la suspensión del audio en escritorio, navegador y demás backends. Determina si el audio en segundo plano es configurable o tiene un comportamiento obligatorio.
+  * Los sonidos transitorios antiguos (disparos, impactos, etc.) no deberían reproducirse acumulados al reanudar el dispositivo.
+  * Conserva correctamente música, loops y sonidos persistentes.
+  * Diferencia entre silenciar, pausar y suspender. No cambies sus contratos indiscriminadamente.
+  * Añade pruebas de suspensión y reanudación.
+
+  2. Precisión temporal del audio
+
+  * Mide cuánto se adelantan los cambios de parámetros después de frames lentos.
+  * Si existe una desviación real, corrígela sin comprometer la reducción de latencia ya conseguida.
+  * Conserva el determinismo y evita asignaciones de memoria en el hilo de render.
+  * Compara los resultados contra `main` y contra el estado actual del lote.
+
+  Criterios generales
+  * Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior.
+  * No introduzcas rediseños arquitectónicos innecesarios.
+  * No hagas push, PR ni release sin mi autorización.
+  ```
+- L17 (2026-11-14) Change timing. Measured on `main`, `a066d9b` and the result with a simulated real-time sink: on
+  `main` every change was 37 to 120 ms early; on the batch none in steady play and up to 67 ms for 1.2 s after a slow
+  frame, with up to 16 of 620 changes never heard. Decision: eight waiting changes per voice and eight waiting
+  volumes per bus in the render state, each for its frame; beyond eight the two oldest merge at the later frame.
+  Buses had the same defect and got the same fix. 138 of 162 offline renders byte-identical; the 24 others carry
+  the fix (evaluation §7.3). L10 is closed by this.
+- L18 (2026-11-14) Suspension. No backend has a background-audio setting; where the platform suspends the game,
+  sound and game stop together. The output stops while the game goes on in a visible page whose context is not
+  running and when a desktop device stops taking audio (evaluation §7.1). Decision: the timeline never waits for a
+  stopped output; after a quarter of a second of updates without a render, over several host frames, the frames it
+  did not play are skipped, so ended one-shots are never heard, sounds within their length, loops and clip music go
+  on where the game is, streams stay where they stopped. One counter from the main thread to the render function,
+  no new command, no contract change; `AudioEngine.SkippedFrames` is the only new member. The one-second wait of L15
+  is gone with the two tests that pinned it. Measured: after a 30 s stop the following second held 61.7 one-shots at
+  a peak of 7.75 on the batch (35.1 and 7.25 on `main`), 10.0 and 0.50 now.
+- L19 (2026-11-14) For the owner (evaluation §7.5): Android may keep voices sounding in the background (hypothesis
+  from code, the fix is outside this work's files); no background-audio setting exists on desktop; clip music
+  advances over a stop while streamed music holds. Nothing run in a browser, on raylib, Android or iOS.
+- L20 (2026-11-14) Scratch (outside the repository, not deleted): the session's temporary folder named in the
+  hand-off, with the snapshots of `main` and the batch, the measuring program, its outputs and the offline renders.
+

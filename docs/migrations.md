@@ -26,10 +26,17 @@ deterministic run, are unchanged.
 What can need a change: a game that delayed its pictures or shifted its timing windows to match the sound (a rhythm
 game's audio offset) was compensating for the longer delay; reduce that offset by about 55 ms on the SDL platform.
 
-When the output stops taking audio for longer than a second (a page whose sound the browser holds suspended) and
-then resumes, the sounds played meanwhile are still heard within the following second, and more of them can now
-start at the same instant than before. A game that keeps playing sounds while its output is suspended hears a denser
-burst on resume; skip one-shot sounds while the game knows it is suspended to avoid it.
+### An output that stops no longer plays what it missed
+
+When the output stops taking audio while the game goes on (a page whose sound the browser holds suspended, a device
+that went away) and then plays again, it plays what the game is at. Sounds that ended meanwhile are not heard; a
+sound still within its length, a loop and music from a clip go on from where the game is; streamed music goes on
+from where it stopped. The sounds played meanwhile used to be kept and heard together within a second of the output
+playing again, and sounds played after it stayed late by up to the length of the stop.
+
+What can need a change: nothing in most games. A game that relied on a sound played into a silent output being heard
+later (a jingle played before the first click on a page) plays it when it knows the output is back, or loops it;
+`AudioEngine.SkippedFrames` grows while the output is stopped. Pausing, stopping and volumes behave as before.
 
 ## 0.6.0-alpha.1
 

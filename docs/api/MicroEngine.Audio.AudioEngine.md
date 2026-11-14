@@ -36,9 +36,10 @@ In real time (not [Deterministic](MicroEngine.Audio.AudioEngine.md#MicroEngine_A
 has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
 after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
 timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
-back by a sixteenth of a step per host frame until it is within one step again. Neither moves it back: sounds of
-consecutive steps keep their order. Only a sink that renders nothing for a second of steps, over several host
-frames, is waited for where it is.
+back by a sixteenth of a step per host frame until it is within one step again. Nothing moves it back: sounds of
+consecutive steps keep their order. A sink that renders nothing for a quarter of a second of steps, over several
+host frames, has stopped: the timeline goes on without it and the frames it did not play are skipped
+([SkippedFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_SkippedFrames)), so when it renders again it plays what the game is at, not what it missed.
 </p>
 <p>
 Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
@@ -226,6 +227,23 @@ Frames rendered so far (read from any thread).
 
 ```csharp
 public long RenderedFrames { get; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+### <a id="MicroEngine_Audio_AudioEngine_SkippedFrames"></a> SkippedFrames
+
+Frames the output did not play and the mixer skipped. In real time, a sink that renders nothing during a quarter
+of a second of steps, over several host frames, has stopped (a browser holding its audio suspended, a device
+that went away): from then on the sounds go on with the game, unheard, and when the sink renders again it joins
+them where they are. A sound that ended meanwhile is never heard, one still within its length goes on from where
+the game is, loops stay in step; streams, which are not decoded while nobody hears them, go on from where they
+stopped. Always 0 in [Deterministic](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Deterministic) runs.
+
+```csharp
+public long SkippedFrames { get; }
 ```
 
 #### Property Value

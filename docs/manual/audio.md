@@ -205,7 +205,7 @@ play.
 | `Play(clip, parameters)` | Plays a clip; returns a `VoiceHandle`, or `VoiceHandle.None` when the voice policy refused it (or the output stopped taking audio, see below) |
 | `Play(stream, parameters)` | Plays an `IAudioStream` (music decoded while it plays); several streams play side by side |
 | `Stop(voice, fadeSeconds)`, `Set(voice, volume, pan)`, `SetPitch(voice, pitch)`, `Pause(voice, paused)` | Control a playing sound; a stale handle does nothing and returns `false` |
-| `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds`, `DroppedCommands` | What plays now; calls made while the output took no audio |
+| `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds`, `DroppedCommands`, `SkippedFrames` | What plays now; calls made while the output took no audio; frames the output did not play |
 | `Bus(name)`, `AddBus(name, parent)`, `AudioBus.Volume` | Named buses under `master` (`sfx` and `music` exist); a bus is created under a parent that exists, so buses never form a cycle |
 | `MaxVoices` (32 by default), `DelayFrames` | The voice limit; the delay between a step and the sounds it starts |
 
@@ -234,10 +234,38 @@ When the output stops taking audio while the game goes on (a page whose sound th
 or click), nothing the game asks for is lost: stops, pauses, and the latest volume, pan and pitch of each sound and
 the volume of each bus apply when the output plays again. Once the calls waiting for it fill the mixer's queue
 (4096), a new sound is refused (`VoiceHandle.None`) until then; `AudioEngine.DroppedCommands` counts the calls that
-had to wait or were refused. Sounds played while the output took no audio are not dropped: the ones of the last
-second before it resumes are heard, with their spacing, during the second after; a longer wait folds its earlier
-sounds onto that same second, so a game that keeps firing sounds at a suspended page is heard as a short burst when
-the page resumes.
+had to wait or were refused.
+
+### Muting, pausing and an output that stops
+
+Three things silence a sound, and they are not the same:
+
+| | Who asks | The sound meanwhile | Afterwards |
+| --- | --- | --- | --- |
+| **Muting**: a volume of 0 (`Set`, `SfxVolume`, `MusicVolume`, a bus's `Volume`) | The game | Goes on, unheard | Is heard from where it has got to |
+| **Pausing**: `Pause(voice, true)`, `PauseMusic` | The game | Holds its position and keeps its voice | Resumes at the frame it was paused at |
+| **An output that stops**: the device or the page takes no audio | Nobody | Goes on with the game, unheard | The output plays what the game is at |
+
+The output stops when a browser holds the page's sound suspended while the page is visible, or when a device goes
+away. The mixer takes it as stopped once it has rendered nothing for a quarter of a second of updates, and from then
+on skips the frames that were not played (`AudioEngine.SkippedFrames` counts them), so the game's audio time never
+waits. When the output plays again:
+
+- a sound that ended meanwhile is not heard, and its handle has ended (`IsPlaying` is false, `Stop` returns false):
+  the shots and hits of a silent stretch are never played late or together;
+- a sound still within its length goes on from where the game is, not from its start; a loop and music from a clip
+  (a `Song`, a WAV) are where they would be had the output played;
+- a fade-out asked for meanwhile has run its time; a sound the game paused is still paused, at the same position;
+- streamed music (OGG, MP3), which is not decoded while nobody hears it, goes on from where it stopped;
+- a sound played from then on starts in the next audio to be rendered, as always.
+
+A gap shorter than a quarter of a second is not a stop: nothing is skipped, and the sounds played during it are heard
+after it, late by its length. Deterministic runs and recordings never skip.
+
+A game that goes to the background is a different case. On a phone and in a hidden browser page the game itself is
+suspended: no update runs, the music track pauses, and everything resumes where it was. On a desktop a game whose
+window is minimized or behind another keeps running and keeps sounding; a game that wants silence there lowers a
+bus in its handler of `Lifecycle.FocusChanged`.
 
 ## Sound and music files
 
@@ -312,6 +340,8 @@ sound and resumes it when shown again.
   and 100 ms in browsers. On the SDL platform a sound reaches the device about 65 ms after the update that played it
   at 60 or more frames per second and about 75 ms at 30, before the device's own buffer; a slow frame adds up to its
   catch-up updates to that for about a second.
-- Changes to one sound in consecutive updates (a pause, then a volume change in the next update) can take effect a
-  few milliseconds before their update's point in the sound when the timing runs ahead of the device, as it does
-  just after a slow frame. Changes made in the same update always apply together.
+- A sound or a bus keeps the changes of eight updates waiting for their points in the sound. That is more than a
+  slow frame leaves behind; with an `AudioEngineSettings.DelayFrames` longer than eight updates, the oldest waiting
+  change takes effect together with the next one, later than its own point and never earlier.
+- There is no setting for sound in the background: a suspended game is silent, a desktop game behind another window
+  sounds unless the game lowers its buses.

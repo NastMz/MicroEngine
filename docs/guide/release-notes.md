@@ -39,6 +39,16 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   mixer's queue filled and further calls were lost: a looping sound stopped then played on with no handle once the
   output resumed. Stops, pauses and the latest values of each sound and bus now apply when the output plays again,
   and a sound that cannot be queued is refused (`VoiceHandle.None`).
+- An output that stopped and plays again no longer plays what it missed: the shots and hits of the silent stretch
+  were heard together within a second (after 30 seconds, some sixty sounds at once), and sounds played afterwards
+  stayed up to half a second late. The sounds now go on with the game while the output is stopped, so it comes back
+  to what the game is at: ended sounds are not heard, long sounds, loops and music from clips are where the game is,
+  streamed music goes on from where it stopped. `AudioEngine.SkippedFrames` counts the frames that were not played
+  ([Muting, pausing and an output that stops](../manual/audio.md#muting-pausing-and-an-output-that-stops),
+  [migration notes](../migrations.md#an-output-that-stops-no-longer-plays-what-it-missed)).
+- Changes to a playing sound or to a bus volume made in consecutive updates each take effect at their own update's
+  point in the sound. Just after a slow frame they took effect up to 67 ms early for about a second, and some were
+  never heard; with a `DelayFrames` longer than an update they were always early.
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

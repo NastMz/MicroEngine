@@ -424,17 +424,140 @@ Also from that review:
 
 Nothing here blocks the batch.
 
-0. **Sounds played into a stalled output** are all heard within a second of its resuming, as on `main` (§5.6). A
-   game that fires many sounds at a page waiting for its first click is heard as a burst. Dropping the one-shot
-   sounds of a stall longer than a second (keeping loops and music) would remove it; it changes what a suspended page
-   plays on resume, so it was not made.
+0. **Sounds played into a stalled output**: done on 2026-11-14 at the owner's request (§7.2).
 
 1. **Measure in a browser** (and on raylib, Android and iOS): the latency after §5.2 and what is heard when a
    suspended page resumes are read from code only.
-2. **Changes in consecutive updates while the timeline is ahead** (§5.1, last point): a voice holds one waiting
-   change. Holding a few per voice in the render function would make every change exact after a slow frame too; it
-   is a larger change to the render path for a few milliseconds during about a second, so it was not made.
+2. **Changes in consecutive updates while the timeline is ahead** (§5.1, last point): done on 2026-11-14 (§7.3);
+   the deviation measured there is up to 67 ms, not a few milliseconds.
 
 Also not done: gain ramps for volume and pan changes (they step at the update's frame; small per-update changes are
 fine, large jumps can click), effects on buses, a pitch per bus, pitch for streamed music, and measurements in a
 browser, on raylib, Android and iOS.
+
+## 7. Suspension and change timing (2026-11-14)
+
+The owner's third request (record L16). Measured with a program outside the repository, built three times against
+`main` (`16af5af`), the batch as it stood (`a066d9b`) and the result: a simulated real-time sink (a 70 ms queue,
+rendering as the device plays, able to stop), the engine's default time policy (60 updates per second, at most five
+in a frame), no threads and no clock, so every figure is exact and repeatable. Nothing here was run in a browser, on
+raylib, Android or iOS.
+
+### 7.1 When an output stops, by backend
+
+Verified: read in the code at the location given, or in the documentation or source linked. Assumed: reasoned from
+those, not run.
+
+| Backend | When the sink stops rendering | Does the game stop too | Sound in the background |
+| --- | --- | --- | --- |
+| SDL, desktop | Verified: never by the engine. A feeder thread renders while SDL's stream holds less than 60 ms (`src/MicroEngine.Sdl/SdlFeederSink.cs`); the engine never calls `SDL_PauseAudioDevice`, and SDL devices start unpaused and pause only through it ([SDL_PauseAudioDevice](https://wiki.libsdl.org/SDL3/SDL_PauseAudioDevice)). Assumed: it stops if the device stops taking audio (unplugged, the system asleep) or the feeder thread is starved. | No. Losing focus releases the input and nothing else (`src/MicroEngine/Core/Game.cs:401`); a minimized window skips drawing (`SdlGpuDevice.cs:449`). | Always on, mandatory today: there is no setting. A game can lower a bus on `Lifecycle.FocusChanged`. |
+| raylib, desktop | Verified: a feeder thread refills each buffer raylib has played (`src/MicroEngine.Raylib/RaylibAudioDevice.cs`), nothing pauses it. Assumed: raylib does not pause its device when the window loses focus. | No. | As SDL. |
+| Browser | Verified: the sink renders only what the worklet's queue lacks (`BrowserAudioSink.Pump`), and the queue empties only while the `AudioContext` runs. A hidden page: the host suspends the context (`Hosts/web/wwwroot/main.js:279`) and browsers stop animation frames ([Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)). A visible page whose context the browser holds `suspended` (the autoplay policy, [Autoplay guide](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay)) or `interrupted` (a call, a closed lid, [state](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state)): the game runs and the sink renders nothing. | Hidden: yes (`Hosts/web/Program.cs:85`, `SdlPlatform.cs:533`), the music track pauses (`Game.cs:585`). Suspended or interrupted while visible: **no**, this is the case of §7.2. | Mandatory: a hidden page gets no frames. Not configurable. |
+| Android (SDL) | Verified in SDL's source: SDL pauses its audio devices on the way to the background only while it blocks its event loop ([SDL_androidevents.c](https://github.com/libsdl-org/SDL/blob/main/src/video/android/SDL_androidevents.c), `Android_OnPause`), and the engine turns that blocking off (`SdlPlatform.cs:160`). Assumed: the feeder therefore keeps rendering in the background. | Yes: no update runs while suspended (`SdlPlatform.cs:541`), and the music track pauses. | Assumed, see §7.5: voices other than the music track keep sounding. |
+| iOS (SDL) | Verified in SDL's source: an audio session interruption stops SDL's queue ([SDL_coreaudio.m](https://github.com/libsdl-org/SDL/blob/main/src/audio/coreaudio/SDL_coreaudio.m), `InterruptionBegin`); the host declares no background audio (`Hosts/ios/Info.plist`). Assumed: the system suspends the process in the background. | Yes. | Mandatory off. |
+
+So the engine has no background-audio setting anywhere; where the platform suspends the game, sound and game stop
+together and nothing is skipped. The one case where the output stops and the game goes on is a visible page whose
+context is not running, and a desktop device that stops taking audio.
+
+### 7.2 What is heard when the output plays again
+
+**Demonstrated failure.** A one-shot of 200 ms played ten times a second, a one-second loop, the sink stopped for
+0.5, 2 and 30 s, then rendering again:
+
+| The second after the output is back | `main` | Batch (`a066d9b`) | Now |
+| --- | --- | --- | --- |
+| 0.5 s stop: one-shots heard (10 in a normal second) / peak (0.50 normally) | 3.2 / 0.50 | 3.9 / 0.50 | 10.0 / 0.50 |
+| 0.5 s stop: how late a sound played afterwards is | 553 ms, for good | 471 ms, back within a step after 7.3 s | 8 ms |
+| 2 s stop: one-shots heard / peak | 3.2 / 0.50 | 15.3 / 1.50 | 10.0 / 0.50 |
+| 2 s stop: how late a sound played afterwards is | 1037 ms, for good | 8 ms | 8 ms |
+| 30 s stop: one-shots heard / peak | 35.1 / 7.25 | 61.7 / 7.75 | 10.0 / 0.50 |
+| 30 s stop: voices busy at its end (of 32) | 31 | 31 | 2 |
+| The timeline went back (2 s / 30 s) | 1 / 29 times | 2 / 30 times | never |
+| The loop | resumes where it stopped | resumes where it stopped | is where the game is (within 21 ms of the stop's length) |
+
+**User-perceptible difference.** Before, a stop of more than a second folded every second of its sounds onto the
+second after it (the batch more densely than `main`: up to 15 sounds on one frame), and a shorter stop left every
+later sound late by its length, for good on `main` and for seconds on the batch.
+
+**The rule.** Once the sink has rendered nothing for a quarter of a second of updates, over at least two host
+frames, the output has stopped: the timeline goes on and the frames the output did not play are skipped, at that
+update and at each one until it renders again. The main thread only adds to a counter; the render function, when it
+next runs, first takes everything queued (each command carries its frame) and then passes the skipped frames without
+mixing: sounds start, change, stop and end at their frames, a clip moves on by the frames it would have played.
+
+| Sound | Outcome | Why |
+| --- | --- | --- |
+| One-shot whose length has passed | Dropped, handle ended | It would have been heard whole had the output played |
+| One-shot still within its length | Advanced: goes on from where the game is | Its remainder belongs to the present |
+| Loop, music from a clip | Advanced: in step with the game | Same rule; a loop has no end to reach |
+| Streamed music | Kept where it stopped, its end moved later | Passing frames of a stream means decoding them, on the main thread, for nobody |
+| Sound paused by the game | Kept paused at its position | Pausing is the game's own request |
+| Stop with a fade | The fade runs on the game's time | A stop is a point in the game |
+
+Stale handles end by themselves: the mixer's own timeline was never moved, so a sound's end comes when its length
+has passed. A quarter of a second, not the second the wait used: the wait moved the timeline back, which catch-up
+updates must never trigger, and is gone; the skip covers the whole gap whenever it is noticed, so the threshold only
+decides which gaps are stops, and a half-second stop left untreated is the 471 ms row above. The check that several
+host frames went by is kept, so the catch-up updates of one slow frame never count, at any update rate.
+
+**Alternative not taken**: hold everything that lasts (loops and clip music resume where they stopped, as streams
+do) and drop only one-shots. It needs a rule for which clips are "music", and a fade-out asked for during the stop
+would then be heard after it. Taking it instead is a change inside `Skip` in `AudioEngine.cs`.
+
+### 7.3 When a change takes effect
+
+**Demonstrated failure.** A voice held one waiting change and a bus one waiting volume, so a change still waiting
+when the next update's arrived was applied at once. One change per update on one sound; error between the frame it
+took effect and the frame it was issued for:
+
+| Early by, median / p95 / max (ms); changes never heard | `main` | Batch | Now |
+| --- | --- | --- | --- |
+| Steady 30 fps | 53.3 / 53.3 / 53.3; 299 of 600 | 0 | 0 |
+| Steady 60 fps | 36.7 / 36.7 / 36.7; 0 | 0 | 0 |
+| Steady 144 fps | 39.4 / 42.2 / 42.2; 0 | 0 | 0 |
+| 60 fps, a 40 ms frame every 2 s | 53.3 / 70.0 / 70.0; 5 of 605 | 0 / 0 / 16.7; 1, for 317 ms | 0 |
+| 60 fps, a 120 ms frame every 2 s | 120 / 120 / 120; 19 of 620 | 0 / 61.5 / 66.7; 16, for 1167 ms | 0 |
+| 60 fps, a 500 ms frame every 2 s | 120 / 120 / 120; 16 of 620 | 0 / 61.5 / 66.7; 16, for 1167 ms | 0 |
+
+Volume, pan and pitch give the same figures (pitch does not exist on `main`). On `main` every change was early,
+because every sound started more than an update after its call; the batch's latency change removed that in steady
+play and left the second after each slow frame. **User-perceptible difference**: after a slow frame, three or four
+of its updates' values were skipped and one applied at once (a fade of half a second jumps 13 % of its range instead
+of 3 %), then each change came up to 67 ms before the sounds started in the same update, for about a second. A pitch
+glide ran ahead by the same amount.
+
+**Fix.** Each voice keeps eight waiting changes inside its render state, oldest first, each applied at its frame;
+each bus keeps eight waiting volumes the same way. Nothing is allocated and nothing is locked. With more than eight
+(a `DelayFrames` over eight updates), the two oldest become one at the later frame: late, never early. The start of
+sounds and the timeline are untouched, so the latency of §5.2 is as it was.
+
+Offline renders (the second review's program, 162 files): 138 are byte-identical to the batch. The 24 that differ
+all have a delay and either changes to one sound or bus in consecutive updates with a delay over one update, or two
+volumes of one bus in one update (the first was heard for the length of the delay; it no longer is). Of the 98
+renders with a delay that have a twin without, 12 were not that twin moved by the delay before, and 4 are not now:
+the same 4 as before (`steal_priorities` and `two_streams`), which no change here touches.
+
+### 7.4 Tests
+
+`AudioEngineChangeTimingTests` (15 cases, all failing before the fixes) and `AudioEngineSuspensionTests` (18 cases:
+10 failed before the fix; the other 8 pin what must not change: pausing, muting, streams, short gaps, slow frames,
+deterministic runs). Each asserts that the render function allocated nothing. Two tests of the wait that the skip
+replaces were removed from `AudioEngineTimelineTests`.
+
+### 7.5 For the owner
+
+1. **Android in the background (hypothesis, from code and SDL's source, not run on a device).** The engine turns
+   off SDL's blocking on pause so that it sees the suspension, and SDL pauses its audio devices only when it blocks.
+   The game's suspension pauses the music track only (`Game.Suspend`), so looping voices, music voices and the
+   tails of sounds would keep sounding with the app in the background. Scope if confirmed: either `Game.Suspend`
+   and `Resume` pause and resume the output (a `Suspend`/`Resume` pair on `IAudioSink`, a contract change, SDL's
+   being `SDL_PauseAudioDevice`), or they pause every voice through the mixer (no contract change, in
+   `src/MicroEngine/Core/Game.cs`). Both are outside this work's files.
+2. **A background-audio setting on desktop** does not exist. If wanted, it is the same pair on the sink driven by
+   `FocusChanged`, with a setting; today a game does it with a bus volume.
+3. **Clip music after a stop** is where the game is, streamed music where it stopped (§7.2). Making both hold is
+   the alternative described there.
+4. **Hypothesis, not measured**: at a page's start the worklet's module loads asynchronously while the game already
+   renders into a pending list (`main.js`, `audio.write`), so the first sounds would be late by the load time.
+
