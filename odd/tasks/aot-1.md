@@ -68,6 +68,15 @@ Achievements and "no toolchains installed"):
   evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
   hipótesis y las diferencias perceptibles para el usuario."
 
+Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
+
+- S23 "Diseña e incorpora una comprobación real de publicación y ejecución NativeAOT."
+- S24 "Respeta nuestra estrategia de optimización de CI: evitar matrices redundantes, compilaciones innecesarias y
+  ejecuciones costosas en cada PR." "Prioriza ejecución en release y disparo selectivo o manual cuando sea útil."
+  "Reutiliza infraestructura y cachés existentes cuando corresponda."
+- S25 "Comprueba que el workflow realmente valida el ejecutable, no solamente que compila."
+- S26 "No introduzcas rediseños arquitectónicos innecesarios." "No hagas push, PR ni release sin mi autorización."
+
 ## Tasks
 
 | Task | Specs | Route | Status | Commit / evidence |
@@ -83,6 +92,7 @@ Achievements and "no toolchains installed"):
 | T9 Achievements without reflection, file byte-identical | S18 S11 S12 | delegated (same worker) | done | `0d21b94`; pin: `AchievementSaveFormatTests` 4/4 before and after; RED: `trimmed.mjs` typed publish `IL2026` in `AchievementTracker`, and the run threw `InvalidOperationException`; GREEN: all checks; evaluation §4.1 |
 | T10 ADR 0054 checked against the code and accepted | S19 | delegated (same worker) | done | the commit that closes this pass; corrections in L10 |
 | T11 NativeAOT toolchain on this machine: real publish and run | S21 S14 S17 | delegated (same worker) | done | nothing to install (L9); `trimmed.mjs --aot` 8 of 8; `HelloEngine` and `PhysicsSubstitution` published and run as NativeAOT executables; evaluation §1.3, §5.3 |
+| T12 NativeAOT in CI: the `trimmed` job of `sdk.yml` (Linux daily; Linux and Windows in validate and before a release), the executable validated, a windowed game | S23 S24 S25 S26 | delegated (one bounded worker, branch `feat/aot-1-ci`) | done locally; the workflows have not run (nothing pushed) | the commits of `feat/aot-1-ci`; `trimmed.mjs --aot` 12 of 12 on Windows x64; three negative runs exit 1; `actionlint` clean; evaluation §8, `docs/ci.md` "NativeAOT" |
 
 ## Log
 
@@ -153,3 +163,30 @@ Achievements and "no toolchains installed"):
   (saves and achievements), `HelloEngine` (capture inspected) and `PhysicsSubstitution`'s tile scenario run; Box2D did
   not run (`box2d: no Box2D native library for this runtime.`). Not covered: S15, and S17 beyond Windows x64. No issue
   was created and no CI file was touched.
+- L12 (2026-11-14) The owner's request for the third pass, verbatim:
+
+  ```
+  5. NativeAOT en CI
+
+  * Diseña e incorpora una comprobación real de publicación y ejecución NativeAOT.
+  * Respeta nuestra estrategia de optimización de CI: evitar matrices redundantes, compilaciones innecesarias y ejecuciones costosas en cada PR.
+  * Prioriza ejecución en release y disparo selectivo o manual cuando sea útil.
+  * Reutiliza infraestructura y cachés existentes cuando corresponda.
+  * Comprueba que el workflow realmente valida el ejecutable, no solamente que compila.
+
+  Criterios generales
+  * No introduzcas rediseños arquitectónicos innecesarios.
+  * No hagas push, PR ni release sin mi autorización.
+  ```
+
+  Specs S23-S26; task T12.
+- L13 (2026-11-14) Third pass, observed (branch `feat/aot-1-ci`). Design: one job, `trimmed`, in `sdk.yml`, on the
+  feed the `pack` job already makes; the planner's existing `sdk` check decides when a pull request runs it, its
+  evidence makes it once per content, and `sdk.yml`'s result gates daily CI, validate and the release draft. Linux in
+  daily CI; Linux and Windows elsewhere; no macOS, no Box2D, no new workflow, permission, secret or cache. The script
+  now also publishes a game with a window with NativeAOT and plays it, and requires a native executable. Found and
+  fixed in the script: on Windows, without `--keep`, removing the scratch folder failed with `EPERM` and decided the
+  exit code. Run on Windows x64: 12 of 12 checks, exit 0, 63 s; three negative runs on scratch copies (a wrong
+  expected line, a program returning 3, a game drawing off screen) each `FAIL` and exit 1; `actionlint` 1.7.7 clean.
+  Not run: the workflows themselves and NativeAOT on Linux (nothing is pushed). Nothing was pushed, opened, released
+  or dispatched.

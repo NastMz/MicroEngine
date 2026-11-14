@@ -365,10 +365,58 @@ accepted, and the NativeAOT publish and run on this machine (1.3, 4, 5.3), for w
 
 Open, not started, no issue created:
 
-1. **CI.** `node sdk/tests/trimmed.mjs --feed <feed>` (and `--aot`, which the Linux runner's clang can link) is not
-   wired into CI; CI files were outside this work's surface.
+1. **CI.** Wired in the third pass (section 8); not run yet.
 2. **Box2D under NativeAOT** needs the Box2D native libraries; untested.
 3. **Hosts.** The web, Android and iOS hosts keep `TrimMode=partial` and the reflection switch. Moving them to full
    trimming would make every game declare its saved types: a breaking change for games, not proposed.
 4. **`BrowserStorage` and `InputMap.SaveBindings`** used without a `SaveStore` do not check slot names themselves
    (4.2); no failure was demonstrated there.
+
+## 8. NativeAOT in CI (third pass, 2026-11-14)
+
+The owner's request is in the task record (L12). Design, triggers and what each check proves:
+[CI, NativeAOT](../ci.md#nativeaot).
+
+**What changed.**
+
+- `sdk.yml` has a `trimmed` job beside the external project: it downloads the feed the `pack` job made and runs
+  `node sdk/tests/trimmed.mjs --feed sdk-feed --aot`. Linux in daily CI (`ci.yml` passes `daily: true`); Linux and
+  Windows in validate, by hand, and in the **Check** of `sdk-release.yml`, whose draft needs it. The `sdk` evidence
+  needs the job too. No new workflow, trigger, permission, secret or cache.
+- `sdk/tests/trimmed.mjs --aot` also publishes and plays a game with a window (below), requires a NativeAOT publish to
+  leave a native executable and no managed assembly of the game, builds without build servers and no longer lets a
+  failed removal of its scratch folder decide its exit code.
+
+**Demonstrated failure, fixed (the script, on Windows).** Run without `--keep`, the script ended with
+`Error: EPERM, Permission denied` from `fs.rmSync` on its scratch folder after printing its checks, and exit code 1
+with no summary line (seen on three runs here, each with failing checks; **hypothesis** for the cause: a build server started
+by `dotnet` still held the folder). On a Windows runner that could report a failed check for a run whose checks all
+passed. Now `dotnet` runs with `--disable-build-servers`, the removal retries and, if it still fails, prints
+`left behind` and leaves the result alone. Observed after the change, on four runs: the folder is removed and the
+exit code is the checks'.
+
+**The game with a window.** `samples/HelloEngine` was published and run by hand in the second pass (5.3). The check
+uses a game of the same kind written inside the script (`MicroEngine.Desktop` from the feed: an image made in code, an
+atlas, a synthesized sound, a scene moved by input, text) instead of copying the sample, because `samples/` is not an
+input of the `sdk` check: a copied sample could change without the check running. It is played with
+`--platform sdl-software --hidden --mute --script play.script --captures <dir>`.
+
+**Run here** (Windows x64, .NET SDK 11.0.100, packages packed from this branch, the short `PATH` of 1.3, the command
+the workflow runs):
+
+| Run | Result |
+| --- | --- |
+| `node sdk/tests/trimmed.mjs --feed <feed> --aot` | 12 `PASS`, `all checks passed`, exit code 0, 63 s; scratch folder removed |
+| the capture `after.png` of the windowed NativeAOT executable, looked at | the title text and the sprite, moved right of the centre |
+| negative 1: a scratch copy of the script expecting `old: 7 Pip 1` | `FAIL` for the trimmed and for the NativeAOT program, `2 check(s) failed`, exit code 1 |
+| negative 2: a scratch copy whose typed program returns 3 after printing the right lines | the same two `FAIL`, exit code 1 |
+| negative 3: a scratch copy whose windowed game draws off screen | `FAIL windowed game: its captures hold a drawn frame ...: 1 different rows`, `1 check(s) failed`, exit code 1 |
+| the step's shell lines (`... \| tee trimmed.log \|\| status=$?`, then `exit "$status"`) under `bash -eo pipefail`, with a command that fails and one that passes | exit code 1 and 0; the summary lines are written in both cases |
+| `actionlint` 1.7.7 (the version `ci.yml` runs) over `.github/workflows` | no finding |
+| `node --test .github/scripts/*.test.mjs` | 59 of 59 |
+
+**Not run.** The workflows: nothing is pushed. So these are **hypotheses** until the first run: that `ubuntu-latest`
+links with its clang (the job installs `clang zlib1g-dev` by name, so a missing toolchain fails there and not in the
+link), that `windows-latest` links with its Visual Studio tools without the `PATH` problem of 1.3, that the windowed
+NativeAOT executable runs under Xvfb on Linux as the packaged games of the external project already do, and the job's
+duration. Linux NativeAOT has not been run anywhere by this work.
