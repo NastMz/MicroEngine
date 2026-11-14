@@ -207,6 +207,124 @@ public sealed class AudioEngineChangeTimingTests
             Assert.AreEqual(f >= paused && f < resumed ? 0f : 0.5f, sink.Samples[(int)f * 2], $"frame {f} (paused from {paused} to {resumed})");
     }
 
+    // ---- More changes waiting than a voice or a bus keeps apart
+
+    /// <summary>The volume of change <paramref name="k"/>: every one of a run is different, so a sample says which change is heard.</summary>
+    private static float Level(int k) => 0.2f + k * 0.002f;
+    private static int LevelIndex(float sample) => sample == 1f ? -1 : (int)MathF.Round((sample - 0.2f) / 0.002f);
+
+    private static void SetLevel(AudioEngine engine, VoiceHandle voice, string kind, int k)
+    {
+        if (kind == "bus") engine.Bus(AudioEngine.SfxBus).Volume = Level(k);
+        else Assert.IsTrue(engine.Set(voice, volume: Level(k)));
+    }
+
+    /// <summary>
+    /// What is heard against what was asked for, frame by frame from <paramref name="from"/>: never a change before its
+    /// frame; the change heard is at most <paramref name="lagSteps"/> changes behind the newest one that is due; the last
+    /// change arrives at its own frame and stays.
+    /// </summary>
+    private static void AssertFollowed(IReadOnlyList<float> left, long from, List<long> frames, int lagSteps, string what)
+    {
+        int due = -1, worst = 0;
+        for (long f = from; f < left.Count; f++)
+        {
+            while (due + 1 < frames.Count && frames[due + 1] <= f) due++;
+            int heard = LevelIndex(left[(int)f]);
+            Assert.IsTrue(heard <= due, $"{what}, frame {f}: change {heard} is heard before its frame {(heard >= 0 ? frames[heard] : 0)}");
+            worst = Math.Max(worst, due - heard);
+            Assert.IsTrue(due - heard <= lagSteps, $"{what}, frame {f}: change {heard} is heard while change {due} is due, more than {lagSteps} behind");
+        }
+        long last = frames[^1];
+        Assert.IsTrue(last < left.Count, "the test rendered past the last change");
+        Assert.AreEqual(frames.Count - 1, LevelIndex(left[(int)last]), $"{what}: the last change arrives at its frame {last}");
+        Assert.AreNotEqual(frames.Count - 1, LevelIndex(left[(int)last - 1]), $"{what}: and not a frame before");
+        Assert.AreEqual(frames.Count - 1, LevelIndex(left[^1]), $"{what}: and stays");
+        if (lagSteps == 0) Assert.AreEqual(0, worst);
+    }
+
+    /// <summary>How far behind the newest due change the one heard may be with <paramref name="waiting"/> steps of changes waiting at once.</summary>
+    private static int LagBound(int waiting) => waiting < 8 ? 0 : (waiting + 3) / 4;
+
+    [TestMethod]
+    [DataRow("volume", 1)]
+    [DataRow("volume", 8)]
+    [DataRow("volume", 9)]
+    [DataRow("volume", 16)]
+    [DataRow("volume", 64)]
+    [DataRow("bus", 1)]
+    [DataRow("bus", 8)]
+    [DataRow("bus", 9)]
+    [DataRow("bus", 16)]
+    [DataRow("bus", 64)]
+    public void A_change_every_step_is_followed_however_many_steps_the_delay_is(string kind, int delaySteps)
+    {
+        int delay = delaySteps * StepFrames;
+        var sink = new OfflineAudioSink(Stereo, Steps, blockFrames: 256);
+        var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps, DelayFrames = delay }) { Deterministic = true };
+        var voice = engine.Play(Constant(1f, 4800), new PlayParameters { Loop = true, Pan = 0f });
+        var frames = new List<long>();
+        for (int k = 0; k < 300; k++)
+        {
+            frames.Add(engine.Now);
+            SetLevel(engine, voice, kind, k);
+            engine.Advance();
+            engine.Pump();
+        }
+        for (int i = 0; i < delaySteps + 10; i++) { engine.Advance(); engine.Pump(); }
+        var left = new List<float>();
+        for (int i = 0; i < sink.Samples.Count; i += 2) left.Add(sink.Samples[i]);
+        AssertFollowed(left, delay, frames, LagBound(delaySteps), $"{kind}, {delaySteps} steps of delay");
+        int more = 300;
+        AssertRendersWithoutAllocating(engine, () =>
+        {
+            SetLevel(engine, voice, kind, more++ % 300);
+            engine.Advance();
+            engine.Pump();
+        });
+    }
+
+    [TestMethod]
+    [DataRow("volume", 1)]
+    [DataRow("volume", 2)]
+    [DataRow("volume", 5)]
+    [DataRow("volume", 10)]
+    [DataRow("volume", 20)]
+    [DataRow("volume", 40)]
+    [DataRow("bus", 5)]
+    [DataRow("bus", 10)]
+    [DataRow("bus", 20)]
+    [DataRow("bus", 40)]
+    public void A_change_every_step_is_followed_however_many_steps_a_slow_frame_runs(string kind, int stepsPerSlowFrame)
+    {
+        var sink = new RecordingSink(Queue);
+        var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps });
+        sink.Play(Queue);
+        var voice = engine.Play(Constant(1f, 4800), new PlayParameters { Loop = true, Pan = 0f });
+        var frames = new List<long>();
+        void Frame(int steps, bool change)
+        {
+            sink.Play(steps * StepFrames);
+            for (int s = 0; s < steps; s++)
+            {
+                if (change && frames.Count < 300)
+                {
+                    SetLevel(engine, voice, kind, frames.Count);
+                    frames.Add(engine.Now);
+                }
+                engine.Advance();
+            }
+            engine.Pump();
+        }
+        for (int i = 0; i < 60; i++) Frame(1, change: false);
+        long from = sink.Left.Count;
+        // A slow frame every two seconds, made up with that many steps at once (a game whose time policy allows them).
+        for (int i = 0; frames.Count < 300; i++) Frame(i % 120 == 30 ? stepsPerSlowFrame : 1, change: true);
+        for (int i = 0; i < 2 * stepsPerSlowFrame + 30; i++) Frame(1, change: false);
+        for (int i = 1; i < frames.Count; i++) Assert.IsTrue(frames[i] > frames[i - 1], "each step's change is for a later frame");
+        AssertFollowed(sink.Left, from, frames, LagBound(stepsPerSlowFrame + 1), $"{kind}, slow frames of {stepsPerSlowFrame} steps");
+    }
+
     [TestMethod]
     public void More_waiting_changes_than_a_voice_holds_are_never_early_and_end_at_the_latest_value()
     {

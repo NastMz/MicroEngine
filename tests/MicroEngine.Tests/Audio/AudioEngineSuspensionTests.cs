@@ -20,9 +20,11 @@ public sealed class AudioEngineSuspensionTests
     private sealed class StallingSink : IAudioSink
     {
         private AudioRender? _render;
-        private readonly float[] _block = new float[256 * 2];
+        private readonly float[] _block = new float[Rate * 2];
         public readonly List<float> Left = [], Right = [];
         public bool Stalled;
+        /// <summary>The frames it asks the mixer for at once.</summary>
+        public int Block = 256;
         public AudioFormat Format => Stereo;
         // Rendered on the test's thread: counted as a pumped sink, so that the allocation count is the render function's
         // alone and not what the test allocates between two renders.
@@ -36,9 +38,9 @@ public sealed class AudioEngineSuspensionTests
         public void Play(int frames)
         {
             if (Stalled) return;
-            for (; frames > 0; frames -= 256)
+            for (; frames > 0; frames -= Block)
             {
-                var block = _block.AsSpan(0, Math.Min(256, frames) * 2);
+                var block = _block.AsSpan(0, Math.Min(Block, frames) * 2);
                 _render!(block);
                 for (int i = 0; i < block.Length; i += 2) { Left.Add(block[i]); Right.Add(block[i + 1]); }
             }
@@ -403,6 +405,32 @@ public sealed class AudioEngineSuspensionTests
             host.Frame(() => host.Engine.Play(Shot, new PlayParameters()));
         }
         Assert.AreEqual(0, host.Engine.SkippedFrames);
+    }
+
+    [TestMethod]
+    [DataRow(4096)]
+    [DataRow(16384)]
+    [DataRow(48000)]
+    public void A_sink_that_renders_in_blocks_longer_than_a_quarter_of_a_second_has_not_stopped(int blockFrames)
+    {
+        var host = new Host();
+        host.Sink.Block = blockFrames;
+        host.Sink.Play(blockFrames); // its first block, as it starts
+        var voice = host.Engine.Play(Ramp(1), new PlayParameters { Loop = true, Pan = 0f });
+        // The sink asks for a whole block each time the device has played one.
+        int owed = 0;
+        for (int i = 0; i < 600; i++)
+        {
+            owed += StepFrames;
+            host.Sink.Stalled = true;
+            if (owed >= blockFrames) { host.Sink.Stalled = false; host.Sink.Play(blockFrames); owed -= blockFrames; host.Sink.Stalled = true; }
+            host.Frame();
+        }
+        Assert.AreEqual(0, host.Engine.SkippedFrames, "nothing is skipped while the sink keeps rendering, however large its blocks");
+        // And when it does stop, it is noticed.
+        for (int i = 0; i < 600; i++) host.Frame();
+        Assert.IsTrue(host.Engine.SkippedFrames > 5 * Rate, $"a real stop is still skipped ({host.Engine.SkippedFrames} frames)");
+        Assert.IsTrue(host.Engine.IsPlaying(voice));
     }
 
     [TestMethod]

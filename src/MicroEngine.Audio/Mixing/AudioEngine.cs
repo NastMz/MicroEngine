@@ -170,7 +170,8 @@ public sealed class AudioEngine : IDisposable
     private long _step, _offset, _played, _position;
     // Frames the output did not play: the main thread adds to _skipped, the sink's thread follows it with _skew.
     private long _skipped, _skew;
-    private readonly int _stallSteps;
+    // The largest block the sink has asked for (written by its thread): a sink is not taken as stopped between two blocks.
+    private int _largestBlock;
     // Real time: the sink's latency, the smallest lead of the timeline over the device in the steps of the current host
     // frame, whether a host frame ended since, and when the sink last rendered anything: what it had rendered, the step
     // that saw it, and the host frames ended since.
@@ -197,7 +198,6 @@ public sealed class AudioEngine : IDisposable
         (_channels, _rate, _updateRate) = (Format.Channels, Format.SampleRate, settings.UpdateRate);
         MaxVoices = settings.MaxVoices;
         _sinkLatency = Math.Max(0, sink.LatencyFrames);
-        _stallSteps = Math.Max(2, (settings.UpdateRate + 3) / 4);
         DelayFrames = Math.Max(_sinkLatency, settings.DelayFrames ?? 0);
         StreamAheadFrames = Math.Max(1024, (int)(settings.StreamAheadSeconds * _rate));
         _logical = new Logical[MaxVoices];
@@ -282,7 +282,8 @@ public sealed class AudioEngine : IDisposable
     public long RenderedFrames => Volatile.Read(ref _position);
     /// <summary>
     /// Frames the output did not play and the mixer skipped. In real time, a sink that renders nothing during a quarter
-    /// of a second of steps, over several host frames, has stopped (a browser holding its audio suspended, a device
+    /// of a second of steps (or twice the time of its largest block, if that is longer), over several host frames, has
+    /// stopped (a browser holding its audio suspended, a device
     /// that went away): from then on the sounds go on with the game, unheard, and when the sink renders again it joins
     /// them where they are. A sound that ended meanwhile is never heard, one still within its length goes on from where
     /// the game is, loops stay in step; streams, which are not decoded while nobody hears them, go on from where they
@@ -556,14 +557,16 @@ public sealed class AudioEngine : IDisposable
             _offset -= lead;
             lead = 0;
         }
-        else if (_progressPumps >= 2 && _step - _progressStep >= _stallSteps && lead > stepFrames / 2)
+        else if (_progressPumps >= 2 && _step - _progressStep >= 2 && lead > stepFrames / 2
+            && StepFrame(_step) - StepFrame(_progressStep) >= Math.Max(_rate / 4, 2L * Volatile.Read(ref _largestBlock)))
         {
-            // The sink rendered nothing during a quarter of a second of steps spread over several host frames: it has
-            // not started or it stopped (a page whose audio is suspended, a device that went away). The timeline does
-            // not wait for it: the frames it did not play are skipped, at this step and at each one until it renders
-            // again, so it then plays what the game is at, half a step ahead, and nothing of what it missed. The
-            // catch-up steps of one slow frame never get here, however many they are and however long a step is: they
-            // are steps of a single host frame.
+            // The sink rendered nothing during a quarter of a second of steps (and twice the time of the largest block
+            // it ever asked for, so a sink that renders in long blocks is not stopped between two of them), spread
+            // over several host frames: it has not started or it stopped (a page whose audio is suspended, a device
+            // that went away). The timeline does not wait for it: the frames it did not play are skipped, at this step
+            // and at each one until it renders again, so it then plays what the game is at, half a step ahead, and
+            // nothing of what it missed. The catch-up steps of one slow frame never get here, however many they are
+            // and however long a step is: they are steps of a single host frame.
             SkipOutput(lead - stepFrames / 2);
             lead = stepFrames / 2;
         }
@@ -723,6 +726,7 @@ public sealed class AudioEngine : IDisposable
         // stamped with its frame, and is passed with them.
         long skipped = Volatile.Read(ref _skipped);
         long rendered = _position, start = rendered + _skew;
+        if (frames > _largestBlock) Volatile.Write(ref _largestBlock, frames);
         Drain(start);
         if (skipped != _skew)
         {
@@ -885,31 +889,59 @@ public sealed class AudioEngine : IDisposable
     /// The waiting change of <paramref name="voice"/> for frame <paramref name="at"/>: the newest one when it is for that
     /// frame (a step's volume, pan, pitch and pause wait together), or a new one after it. Each waits for its own frame,
     /// so the changes of several steps can wait at once (a delay longer than a step, the steps after a slow frame).
-    /// A voice keeps <see cref="WaitingChanges"/> apart: with more, the two oldest become one, at the later of their
-    /// frames, so a change is late rather than early and the values asked for last are the ones that stay.
+    /// A voice keeps <see cref="WaitingChanges"/> apart; with more, one of them joins the one after it
+    /// (<see cref="Thin"/>).
     /// </summary>
     private static ref Change Waiting(ref Voice voice, long at)
     {
+        Span<Change> pending = voice.Pending;
         if (voice.Changes > 0)
         {
-            ref var newest = ref voice.Pending[voice.Changes - 1];
+            ref var newest = ref pending[voice.Changes - 1];
             // Frames only go forward; a change for an earlier frame than the newest joins it.
             if (at <= newest.At) return ref newest;
             if (voice.Changes == WaitingChanges)
             {
-                ref var oldest = ref voice.Pending[0];
-                ref var second = ref voice.Pending[1];
-                if (second.Volume < 0) second.Volume = oldest.Volume;
-                if (second.Left < 0) (second.Left, second.Right) = (oldest.Left, oldest.Right);
-                if (second.Pause == 0) second.Pause = oldest.Pause;
-                if (second.Step <= 0) second.Step = oldest.Step;
+                int join = Thin(pending, at);
+                // The newest joins the new change: it keeps its values, which the new one's replace, and moves to its frame.
+                if (join == WaitingChanges - 1)
+                {
+                    newest.At = at;
+                    return ref newest;
+                }
+                ref var from = ref pending[join];
+                ref var into = ref pending[join + 1];
+                if (into.Volume < 0) into.Volume = from.Volume;
+                if (into.Left < 0) (into.Left, into.Right) = (from.Left, from.Right);
+                if (into.Pause == 0) into.Pause = from.Pause;
+                if (into.Step <= 0) into.Step = from.Step;
                 voice.Changes--;
-                for (int i = 0; i < voice.Changes; i++) voice.Pending[i] = voice.Pending[i + 1];
+                for (int k = join; k < voice.Changes; k++) pending[k] = pending[k + 1];
             }
         }
-        ref var added = ref voice.Pending[voice.Changes++];
+        ref var added = ref pending[voice.Changes++];
         added = new Change { At = at, Volume = -1, Left = -1 };
         return ref added;
+    }
+
+    /// <summary>
+    /// With <see cref="WaitingChanges"/> changes waiting and one more for frame <paramref name="at"/>: which of them
+    /// joins the one after it (the new one, for the last), taking effect at that later frame. Never the oldest, which
+    /// always takes effect at its own frame, so changes that keep arriving cannot hold the others back; and the one
+    /// whose neighbours are closest, so the frames left stay spread over the whole wait: what is heard is then never
+    /// more than about a quarter of the wait behind what was asked for, never ahead of it, and the last change asked
+    /// for keeps its frame.
+    /// </summary>
+    private static int Thin(ReadOnlySpan<Change> waiting, long at)
+    {
+        int join = 1;
+        long closest = long.MaxValue;
+        for (int i = 1; i < waiting.Length; i++)
+        {
+            long span = (i + 1 < waiting.Length ? waiting[i + 1].At : at) - waiting[i - 1].At;
+            if (span < closest) (closest, join) = (span, i);
+        }
+        return join;
     }
 
     private void Drain(long blockStart)
@@ -959,12 +991,17 @@ public sealed class AudioEngine : IDisposable
                     break;
                 case Op.Bus:
                     // As for a voice: the volumes of several steps wait each for its frame; beyond what a bus keeps
-                    // apart, the oldest gives way to the one after it.
+                    // apart, one of them gives way to the one after it, never the oldest (Thin).
                     int waiting = _busChanges[c.Slot], first = c.Slot * WaitingChanges;
                     if (waiting > 0 && at <= _busWaiting[first + waiting - 1].At) _busWaiting[first + waiting - 1].Volume = c.Volume;
                     else
                     {
-                        if (waiting == WaitingChanges) Array.Copy(_busWaiting, first + 1, _busWaiting, first, --waiting);
+                        if (waiting == WaitingChanges)
+                        {
+                            int gone = first + Thin(_busWaiting.AsSpan(first, WaitingChanges), at);
+                            waiting--;
+                            Array.Copy(_busWaiting, gone + 1, _busWaiting, gone, first + waiting - gone);
+                        }
                         _busWaiting[first + waiting] = new Change { At = at, Volume = c.Volume };
                         _busChanges[c.Slot] = waiting + 1;
                     }
