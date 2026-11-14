@@ -53,6 +53,10 @@ public sealed class AudioEngineChangeTimingTests
                 float volume = 0.25f + k % 97 * 0.005f;
                 Assert.IsTrue(engine.Set(voice, volume: volume));
                 return volume;
+            case "bus":
+                float gain = 0.25f + k % 97 * 0.005f;
+                engine.Bus(AudioEngine.SfxBus).Volume = gain;
+                return gain;
             case "pan":
                 float pan = 0.5f + k % 97 * 0.004f;
                 Assert.IsTrue(engine.Set(voice, pan: pan));
@@ -116,6 +120,8 @@ public sealed class AudioEngineChangeTimingTests
     [DataRow("pitch", 1000)]
     [DataRow("volume", 2000)]
     [DataRow("pitch", 4000)]
+    [DataRow("bus", 1000)]
+    [DataRow("bus", 4000)]
     public void With_a_delay_longer_than_a_step_each_steps_change_is_heard_at_its_frame(string kind, int delayFrames)
     {
         var sink = new OfflineAudioSink(Stereo, Steps, blockFrames: 256);
@@ -147,6 +153,7 @@ public sealed class AudioEngineChangeTimingTests
     [DataRow("pan", 120)]
     [DataRow("pitch", 120)]
     [DataRow("pitch", 500)]
+    [DataRow("bus", 120)]
     public void After_a_slow_frame_each_steps_change_is_heard_at_its_frame(string kind, int slowMilliseconds)
     {
         var sink = new RecordingSink(Queue);

@@ -145,7 +145,7 @@ public sealed class AudioEngine : IDisposable
     /// <summary>The bus music plays through.</summary>
     public const string MusicBus = "music";
     private const int MaxBuses = 32, QueueSize = 4096;
-    /// <summary>Changes to one sound that can wait for their frames at once, each for its own.</summary>
+    /// <summary>Changes to one sound, or volumes of one bus, that can wait for their frames at once, each for its own.</summary>
     private const int WaitingChanges = 8;
 
     private readonly IAudioSink _sink;
@@ -153,8 +153,9 @@ public sealed class AudioEngine : IDisposable
     private readonly Logical[] _logical;
     private readonly Voice[] _voices, _incoming;
     private readonly bool[] _hasIncoming;
-    private readonly long[] _busPendingAt = new long[MaxBuses];
-    private readonly float[] _busPendingVolume = new float[MaxBuses];
+    // The sink's thread: the volumes waiting for their frames, WaitingChanges for each bus, oldest first.
+    private readonly Change[] _busWaiting = new Change[MaxBuses * WaitingChanges];
+    private readonly int[] _busChanges = new int[MaxBuses];
     // Main thread: buses whose volume the queue had no room for, and how many voices and buses wait to be sent.
     private readonly bool[] _busUnsent = new bool[MaxBuses];
     private int _unsent;
@@ -198,7 +199,6 @@ public sealed class AudioEngine : IDisposable
         _voices = new Voice[MaxVoices];
         _incoming = new Voice[MaxVoices];
         _hasIncoming = new bool[MaxVoices];
-        Array.Fill(_busPendingAt, long.MaxValue);
         CreateBus(MasterBus, null);
         CreateBus(SfxBus, _buses[0]);
         CreateBus(MusicBus, _buses[0]);
@@ -694,14 +694,13 @@ public sealed class AudioEngine : IDisposable
             long segmentStart = start + done, segmentEnd = start + frames;
             for (int b = 0; b < MaxBuses; b++)
             {
-                long at = _busPendingAt[b];
-                if (at == long.MaxValue) continue;
-                if (at <= segmentStart)
+                int first = b * WaitingChanges;
+                while (_busChanges[b] > 0 && _busWaiting[first].At <= segmentStart)
                 {
-                    _busVolume[b] = _busPendingVolume[b];
-                    _busPendingAt[b] = long.MaxValue;
+                    _busVolume[b] = _busWaiting[first].Volume;
+                    Array.Copy(_busWaiting, first + 1, _busWaiting, first, --_busChanges[b]);
                 }
-                else segmentEnd = Math.Min(segmentEnd, at);
+                if (_busChanges[b] > 0) segmentEnd = Math.Min(segmentEnd, _busWaiting[first].At);
             }
             for (int b = 0; b < MaxBuses; b++)
                 _busGain[b] = _busVolume[b] * (_busParent[b] >= 0 ? _busGain[_busParent[b]] : 1);
@@ -880,9 +879,16 @@ public sealed class AudioEngine : IDisposable
                     else change.Pause = c.Paused ? 1 : -1;
                     break;
                 case Op.Bus:
-                    if (_busPendingAt[c.Slot] != long.MaxValue) _busVolume[c.Slot] = _busPendingVolume[c.Slot];
-                    _busPendingAt[c.Slot] = at;
-                    _busPendingVolume[c.Slot] = c.Volume;
+                    // As for a voice: the volumes of several steps wait each for its frame; beyond what a bus keeps
+                    // apart, the oldest gives way to the one after it.
+                    int waiting = _busChanges[c.Slot], first = c.Slot * WaitingChanges;
+                    if (waiting > 0 && at <= _busWaiting[first + waiting - 1].At) _busWaiting[first + waiting - 1].Volume = c.Volume;
+                    else
+                    {
+                        if (waiting == WaitingChanges) Array.Copy(_busWaiting, first + 1, _busWaiting, first, --waiting);
+                        _busWaiting[first + waiting] = new Change { At = at, Volume = c.Volume };
+                        _busChanges[c.Slot] = waiting + 1;
+                    }
                     break;
             }
             c.Clip = null;
