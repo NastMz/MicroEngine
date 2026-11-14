@@ -23,11 +23,17 @@ public readonly record struct PlayParameters
 {
     /// <summary>Creates the defaults: full volume, original pitch, centred, once, priority 0, on the "sfx" bus.</summary>
     public PlayParameters() { }
-    /// <summary>Volume, 0..1 (clamped).</summary>
+    /// <summary>Volume, 0..1 (clamped); a value that is not a number counts as 1.</summary>
     public float Volume { get; init; } = 1;
-    /// <summary>Playback speed factor, 1 for the original pitch (clamped to 0.01..100). Streams play at their own pitch.</summary>
+    /// <summary>
+    /// Playback speed factor, 1 for the original pitch (clamped to 0.01..100; a value that is not a number counts as 1).
+    /// Streams play at their own pitch.
+    /// </summary>
     public float Pitch { get; init; } = 1;
-    /// <summary>Stereo position, 0 (left) to 1 (right); 0.5 is centred. Balance panning: the far side is attenuated.</summary>
+    /// <summary>
+    /// Stereo position, 0 (left) to 1 (right); 0.5 is centred, as is a value that is not a number. Balance panning: the
+    /// far side is attenuated.
+    /// </summary>
     public float Pan { get; init; } = 0.5f;
     /// <summary>Whether the sound restarts when it reaches its end.</summary>
     public bool Loop { get; init; }
@@ -88,12 +94,16 @@ public sealed class AudioBus
     public string Name { get; }
     /// <summary>The bus it plays into; null for "master".</summary>
     public AudioBus? Parent { get; }
-    /// <summary>Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step.</summary>
+    /// <summary>
+    /// Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step. A value that is not
+    /// a number is ignored.
+    /// </summary>
     public float Volume
     {
         get => _volume;
         set
         {
+            if (float.IsNaN(value)) return;
             _volume = Math.Clamp(value, 0, 4);
             _engine.SetBusVolume(Index, _volume);
         }
@@ -271,8 +281,7 @@ public sealed class AudioEngine : IDisposable
     public VoiceHandle Play(AudioClip clip, in PlayParameters parameters)
     {
         ArgumentNullException.ThrowIfNull(clip);
-        float pitch = Math.Clamp(parameters.Pitch, 0.01f, 100f);
-        double step = (double)clip.SampleRate / _rate * pitch;
+        double step = (double)clip.SampleRate / _rate * Speed(parameters.Pitch);
         long frames = clip.Samples.Length / clip.Channels;
         long length = parameters.Loop || frames == 0 ? (frames == 0 ? 0 : long.MaxValue) : (long)Math.Ceiling(frames / step);
         return Start(parameters, length, clip, null, step);
@@ -325,7 +334,7 @@ public sealed class AudioEngine : IDisposable
         Post(new Command
         {
             Op = Op.Start, Slot = slot, Frame = at, Clip = clip, Feed = feed, Step = step, Loop = p.Loop, Bus = bus.Index,
-            Volume = Math.Clamp(p.Volume, 0, 1), Left = left, Right = right,
+            Volume = float.IsNaN(p.Volume) ? 1 : Math.Clamp(p.Volume, 0, 1), Left = left, Right = right,
         });
         return new VoiceHandle(slot, l.Generation);
     }
@@ -344,9 +353,12 @@ public sealed class AudioEngine : IDisposable
         return _logical[victim].Priority <= priority ? victim : -1;
     }
 
+    /// <summary>The speed factor of a pitch: clamped, and 1 for a value that is not a number (which no clamp catches).</summary>
+    private static float Speed(float pitch) => float.IsNaN(pitch) ? 1 : Math.Clamp(pitch, 0.01f, 100f);
+
     private static (float Left, float Right) Balance(float pan)
     {
-        pan = Math.Clamp(pan, 0, 1);
+        pan = float.IsNaN(pan) ? 0.5f : Math.Clamp(pan, 0, 1);
         return (Math.Min(1, 2 * (1 - pan)), Math.Min(1, 2 * pan));
     }
 
@@ -371,20 +383,26 @@ public sealed class AudioEngine : IDisposable
         return true;
     }
 
-    /// <summary>Changes the volume (0..1) and pan (0..1) of <paramref name="voice"/> from the current step's frame; null keeps a value.</summary>
+    /// <summary>
+    /// Changes the volume (0..1) and pan (0..1) of <paramref name="voice"/> from the current step's frame; null, or a
+    /// value that is not a number, keeps a value.
+    /// </summary>
     /// <returns>Whether it was playing.</returns>
     public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
     {
         if (!IsPlaying(voice)) return false;
-        var (left, right) = pan is { } p ? Balance(p) : (-1f, -1f);
-        Post(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = volume is { } v ? Math.Clamp(v, 0, 1) : -1, Left = left, Right = right });
+        var (left, right) = pan is { } p && !float.IsNaN(p) ? Balance(p) : (-1f, -1f);
+        float gain = volume is { } v && !float.IsNaN(v) ? Math.Clamp(v, 0, 1) : -1;
+        if (gain < 0 && left < 0) return true;
+        Post(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right });
         return true;
     }
 
     /// <summary>
     /// Changes the pitch of <paramref name="voice"/> from the current step's frame: the playback speed factor, 1 for the
     /// clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
-    /// mixer's timeline moves its end accordingly. Streams play at their own pitch.
+    /// mixer's timeline moves its end accordingly. Streams play at their own pitch. A pitch that is not a number
+    /// changes nothing.
     /// </summary>
     /// <returns>Whether it was playing and is a clip; false for a stale handle or a stream.</returns>
     public bool SetPitch(VoiceHandle voice, float pitch)
@@ -392,11 +410,12 @@ public sealed class AudioEngine : IDisposable
         if (!IsPlaying(voice)) return false;
         ref var l = ref _logical[voice.Index];
         if (l.Feed is not null) return false;
+        if (float.IsNaN(pitch)) return true;
         long now = Now;
         // Where the sound is on the timeline: it advanced at the old speed since the last change, unless paused.
         if (!l.Paused) l.Position += (now - l.PositionFrame) * l.Step;
         l.PositionFrame = now;
-        l.Step = l.Rate * Math.Clamp(pitch, 0.01f, 100f);
+        l.Step = l.Rate * Speed(pitch);
         if (!l.Loop && l.Frames > 0)
         {
             long left = Math.Max(0, (long)Math.Ceiling((l.Frames - l.Position) / l.Step));

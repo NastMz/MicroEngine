@@ -231,10 +231,26 @@ public sealed class AudioMixer
 
     /// <summary>The audio device the mixer plays through.</summary>
     public IAudioDevice Device => _device;
-    /// <summary>Volume multiplier for sound effects, 0..1 (default 0.8). Each played volume is multiplied by it and clamped to 0..1.</summary>
-    public float SfxVolume { get; set; } = 0.8f;
-    /// <summary>Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade.</summary>
-    public float MusicVolume { get => _musicVolume; set { _musicVolume = Math.Clamp(value, 0, 1); Apply(); } }
+    /// <summary>
+    /// Volume multiplier for sound effects, 0..1 (default 0.8). Each played volume is multiplied by it and clamped to
+    /// 0..1. A value that is not a number is ignored.
+    /// </summary>
+    public float SfxVolume { get => _sfxVolume; set { if (!float.IsNaN(value)) _sfxVolume = value; } }
+    private float _sfxVolume = 0.8f;
+    /// <summary>
+    /// Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade. A
+    /// value that is not a number is ignored.
+    /// </summary>
+    public float MusicVolume
+    {
+        get => _musicVolume;
+        set
+        {
+            if (float.IsNaN(value)) return;
+            _musicVolume = Math.Clamp(value, 0, 1);
+            Apply();
+        }
+    }
     /// <summary>Name of the music playing (also while it fades out, and while a song asked for still renders in slices), or null. It follows the game's requests and the music's end on the simulation's timeline, never rendering speed.</summary>
     public string? CurrentMusic => _waiting?.Name ?? _device.CurrentMusic?.Name;
 
@@ -414,8 +430,9 @@ public sealed class AudioMixer
     public bool Pause(VoiceHandle voice, bool paused) => Engine?.Pause(voice, paused) ?? false;
 
     /// <summary>
-    /// Changes a playing voice from this update on; null keeps a value. Called every update it follows something that
-    /// moves: the pan and volume of a sound source crossing the screen, the pitch of an engine.
+    /// Changes a playing voice from this update on; null, or a value that is not a number, keeps a value. Called every
+    /// update it follows something that moves: the pan and volume of a sound source crossing the screen, the pitch of
+    /// an engine.
     /// </summary>
     /// <param name="voice">A handle from <see cref="PlayVoice"/> or <see cref="PlayMusicVoice"/>.</param>
     /// <param name="volume">Volume, 0..1.</param>
@@ -482,14 +499,15 @@ public sealed class AudioMixer
     /// <summary>
     /// Sets the volume of everything playing through bus <paramref name="name"/> and the buses under it, clamped to
     /// 0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of <see cref="Play"/> too,
-    /// on top of <see cref="SfxVolume"/>), "music" for the music track and the voices played on it.
+    /// on top of <see cref="SfxVolume"/>), "music" for the music track and the voices played on it. A value that is
+    /// not a number is ignored.
     /// </summary>
     /// <exception cref="KeyNotFoundException">No such bus.</exception>
     public void SetBusVolume(string name, float volume)
     {
         if (Engine is { } engine) { engine.Bus(name).Volume = volume; return; }
         RequireBus(name);
-        SilentBuses[name] = Math.Clamp(volume, 0, 4);
+        if (!float.IsNaN(volume)) SilentBuses[name] = Math.Clamp(volume, 0, 4);
     }
 
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
