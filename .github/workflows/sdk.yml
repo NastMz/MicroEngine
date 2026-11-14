@@ -4,6 +4,10 @@
 #             MicroEngine.Physics.Box2D with those natives; the feed is an artifact
 #   external  sdk/tests/external.mjs on Windows, Linux and macOS: install microengine and the template from that feed into
 #             a folder outside the repository, create, build, run and package a game, check expected failures
+#   trimmed   sdk/tests/trimmed.mjs --aot beside the external project, on the same feed: a game with its own save types
+#             and achievements published trimmed and with NativeAOT, and a game with a window published with NativeAOT;
+#             every published executable is run and must do its work (saves read back, a scripted run that draws).
+#             Linux in daily CI; Windows too in validate, a release and a manual run (docs/ci.md, "NativeAOT")
 #   evidence  with `evidence` on, the run that passed records evidence-sdk-<key> (.github/scripts/evidence.mjs)
 # Called by ci.yml when a package input changed (so the required CI result covers it, once per content) and by
 # sdk-release.yml before a release, whose draft holds exactly this run's feed. It never publishes anything. No
@@ -28,6 +32,10 @@ on:
         default: ''
       release:
         description: A release pack, which must carry every Box2D runtime (macOS and iOS included)
+        type: boolean
+        default: false
+      daily:
+        description: Daily CI, which publishes the NativeAOT programs on Linux only (every other run adds Windows)
         type: boolean
         default: false
 
@@ -152,9 +160,61 @@ jobs:
           if [ "${{ matrix.os }}" = Linux ]; then xvfb-run -a "${run[@]}"; else "${run[@]}"; fi | tee external.log
           { echo "### External project on ${{ matrix.os }}"; echo '```'; grep -E '^(PASS|FAIL|skip)' external.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+  # Trimmed and NativeAOT programs made from the feed, published and run (docs/ci.md, "NativeAOT"). A job beside the
+  # external project, so it adds no time to the check; it packs nothing and needs no workload. Daily CI publishes on
+  # Linux, the fastest runner to start; a release, validate and a manual run add Windows, whose NativeAOT programs are
+  # linked by another toolchain (MSVC instead of clang) against another system's libraries.
+  trimmed:
+    name: Trimmed and NativeAOT (${{ matrix.os }})
+    needs: pack
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.daily
+          && '[{"os":"Linux","runner":"ubuntu-latest"}]'
+          || '[{"os":"Linux","runner":"ubuntu-latest"},{"os":"Windows","runner":"windows-latest"}]') }}
+    defaults:
+      run:
+        shell: bash # with pipefail, so `| tee` keeps a failure
+    steps:
+      # The script, global.json and Directory.Build.props (the version to ask the feed for); nothing else is read.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          sparse-checkout: sdk/tests
+      # The projects live outside the repository: the newest installed SDK builds them, the one the external project uses.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdk-feed
+          path: sdk-feed
+      # NativeAOT links with the system's toolchain: clang and zlib on Linux (named here so that a runner image without
+      # them fails in this step, not in the link); the Windows runner's Visual Studio C++ tools. Xvfb is the display of
+      # the game with a window.
+      - name: Native toolchain and a display
+        if: matrix.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang zlib1g-dev xvfb > /dev/null
+      # The script exits with 1 when any check fails: a publish with a warning, a link that fails, a published
+      # executable that does not start, exits with an error, prints anything but the expected lines or draws nothing.
+      - name: Publish and run (trimmed and NativeAOT)
+        run: |
+          run=(node sdk/tests/trimmed.mjs --feed "$PWD/sdk-feed" --aot)
+          if [ "${{ matrix.os }}" = Linux ]; then run=(xvfb-run -a "${run[@]}"); fi
+          status=0
+          "${run[@]}" | tee trimmed.log || status=$?
+          { echo "### Trimmed and NativeAOT programs on ${{ matrix.os }}"; echo '```'; grep -E '^(PASS|FAIL)' trimmed.log | cut -c1-200; tail -n 1 trimmed.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
   evidence:
     name: Evidence
-    needs: [pack, external]
+    needs: [pack, external, trimmed]
     if: inputs.evidence && inputs.key != ''
     runs-on: ubuntu-latest
     steps:
