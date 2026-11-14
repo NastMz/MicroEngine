@@ -621,16 +621,3 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
     /// <inheritdoc/>
     public void Stop() => _text = false;
 }
-
-/// <summary>The system clipboard through raylib (GLFW).</summary>
-internal sealed class RaylibClipboard : IClipboard
-{
-    public string? GetText() => Rl.GetClipboardText_() is { Length: > 0 } text ? text : null;
-
-    public bool SetText(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        Rl.SetClipboardText(text);
-        return true;
-    }
-}
