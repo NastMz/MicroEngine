@@ -127,9 +127,10 @@ public sealed class AudioBus
 /// has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
 /// after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
 /// timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
-/// back by a sixteenth of a step per host frame until it is within one step again. Neither moves it back: sounds of
-/// consecutive steps keep their order. Only a sink that renders nothing for a second of steps, over several host
-/// frames, is waited for where it is.
+/// back by a sixteenth of a step per host frame until it is within one step again. Nothing moves it back: sounds of
+/// consecutive steps keep their order. A sink that renders nothing for a quarter of a second of steps, over several
+/// host frames, has stopped: the timeline goes on without it and the frames it did not play are skipped
+/// (<see cref="SkippedFrames"/>), so when it renders again it plays what the game is at, not what it missed.
 /// </para>
 /// <para>
 /// Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
@@ -167,6 +168,9 @@ public sealed class AudioEngine : IDisposable
     private readonly float[] _busVolume = new float[MaxBuses], _busGain = new float[MaxBuses];
     private readonly List<StreamFeed> _feeds = [];
     private long _step, _offset, _played, _position;
+    // Frames the output did not play: the main thread adds to _skipped, the sink's thread follows it with _skew.
+    private long _skipped, _skew;
+    private readonly int _stallSteps;
     // Real time: the sink's latency, the smallest lead of the timeline over the device in the steps of the current host
     // frame, whether a host frame ended since, and when the sink last rendered anything: what it had rendered, the step
     // that saw it, and the host frames ended since.
@@ -193,6 +197,7 @@ public sealed class AudioEngine : IDisposable
         (_channels, _rate, _updateRate) = (Format.Channels, Format.SampleRate, settings.UpdateRate);
         MaxVoices = settings.MaxVoices;
         _sinkLatency = Math.Max(0, sink.LatencyFrames);
+        _stallSteps = Math.Max(2, (settings.UpdateRate + 3) / 4);
         DelayFrames = Math.Max(_sinkLatency, settings.DelayFrames ?? 0);
         StreamAheadFrames = Math.Max(1024, (int)(settings.StreamAheadSeconds * _rate));
         _logical = new Logical[MaxVoices];
@@ -258,7 +263,7 @@ public sealed class AudioEngine : IDisposable
     private void Anchor()
     {
         if (Deterministic) return;
-        long behind = RenderedFrames - _sinkLatency - (StepFrame(_step) + _offset);
+        long behind = RenderedFrames + _skipped - _sinkLatency - (StepFrame(_step) + _offset);
         if (behind > 0) _offset += behind;
     }
     /// <summary>Sounds playing now on the mixer's timeline.</summary>
@@ -275,6 +280,15 @@ public sealed class AudioEngine : IDisposable
     public int RefusedSounds { get; private set; }
     /// <summary>Frames rendered so far (read from any thread).</summary>
     public long RenderedFrames => Volatile.Read(ref _position);
+    /// <summary>
+    /// Frames the output did not play and the mixer skipped. In real time, a sink that renders nothing during a quarter
+    /// of a second of steps, over several host frames, has stopped (a browser holding its audio suspended, a device
+    /// that went away): from then on the sounds go on with the game, unheard, and when the sink renders again it joins
+    /// them where they are. A sound that ended meanwhile is never heard, one still within its length goes on from where
+    /// the game is, loops stay in step; streams, which are not decoded while nobody hears them, go on from where they
+    /// stopped. Always 0 in <see cref="Deterministic"/> runs.
+    /// </summary>
+    public long SkippedFrames => Volatile.Read(ref _skipped);
     /// <summary>The buses, "master", "sfx" and "music" first.</summary>
     public IReadOnlyList<AudioBus> Buses => _buses;
 
@@ -536,22 +550,22 @@ public sealed class AudioEngine : IDisposable
         long rendered = RenderedFrames;
         if (rendered != _progressRendered) (_progressRendered, _progressStep, _progressPumps) = (rendered, _step, 0);
         // How far ahead of the device the step that ends was. Behind it (the game fell behind): catch up.
-        long lead = StepFrame(_step) + _offset - (rendered - _sinkLatency);
+        long lead = StepFrame(_step) + _offset - (rendered + _skipped - _sinkLatency);
         if (lead < 0)
         {
             _offset -= lead;
             lead = 0;
         }
-        else if (_progressPumps >= 2 && _step - _progressStep >= _updateRate)
+        else if (_progressPumps >= 2 && _step - _progressStep >= _stallSteps && lead > stepFrames / 2)
         {
-            // The sink rendered nothing during a second of steps spread over several host frames: it has not started
-            // or it stopped (a suspended page). The timeline waits for it where it is, the only time it goes back;
-            // sounds already scheduled keep their frames. The catch-up steps of one slow frame never get here, however
-            // many they are and however long a step is: they are steps of a single host frame. It waits half a step
-            // ahead, so the sounds of the second it starts fall between those of the second it leaves, not on them.
-            _offset -= lead - stepFrames / 2;
+            // The sink rendered nothing during a quarter of a second of steps spread over several host frames: it has
+            // not started or it stopped (a page whose audio is suspended, a device that went away). The timeline does
+            // not wait for it: the frames it did not play are skipped, at this step and at each one until it renders
+            // again, so it then plays what the game is at, half a step ahead, and nothing of what it missed. The
+            // catch-up steps of one slow frame never get here, however many they are and however long a step is: they
+            // are steps of a single host frame.
+            SkipOutput(lead - stepFrames / 2);
             lead = stepFrames / 2;
-            _progressStep = _step;
         }
         if (_pumped)
         {
@@ -565,6 +579,26 @@ public sealed class AudioEngine : IDisposable
             _pumped = false;
         }
         _frameLead = Math.Min(_frameLead, lead);
+    }
+
+    /// <summary>
+    /// Skips <paramref name="frames"/> the output did not play: the render function passes them without mixing
+    /// (<see cref="Skip"/>). Streams are not decoded for frames nobody hears, so they stay where they are and last
+    /// that much longer on the timeline.
+    /// </summary>
+    private void SkipOutput(long frames)
+    {
+        long from = RenderedFrames + _skipped;
+        for (int i = 0; i < _logical.Length; i++)
+        {
+            ref var l = ref _logical[i];
+            if (!l.Active || l.Feed is null || l.Paused) continue;
+            long held = frames - Math.Max(0, l.Start - from);
+            if (held <= 0) continue;
+            l.Start += held;
+            if (l.End != long.MaxValue) l.End = Math.Min(l.End + held, l.Limit);
+        }
+        Volatile.Write(ref _skipped, _skipped + frames);
     }
 
     /// <summary>
@@ -685,8 +719,17 @@ public sealed class AudioEngine : IDisposable
     {
         buffer.Clear();
         int frames = buffer.Length / _channels;
-        long start = _position;
+        // Read before the queue: everything the game asked for before it skipped frames is then in the queue already,
+        // stamped with its frame, and is passed with them.
+        long skipped = Volatile.Read(ref _skipped);
+        long rendered = _position, start = rendered + _skew;
         Drain(start);
+        if (skipped != _skew)
+        {
+            long to = start + (skipped - _skew);
+            Skip(start, to);
+            (start, _skew) = (to, skipped);
+        }
         // Bus volumes change at their exact frames: the block is mixed in segments between those frames.
         int done = 0;
         while (done < frames)
@@ -710,7 +753,43 @@ public sealed class AudioEngine : IDisposable
                 if (_voices[v].Active || _hasIncoming[v]) Mix(v, segment, segmentStart, count);
             done += count;
         }
-        Volatile.Write(ref _position, start + frames);
+        Volatile.Write(ref _position, rendered + frames);
+    }
+
+    /// <summary>
+    /// Passes the frames from <paramref name="from"/> to <paramref name="to"/> without mixing them (the output did not
+    /// play them): every voice ends up as if they had been rendered. Sounds that start, change, stop or end in them do
+    /// so at their frames; a clip moves on by the frames it would have played; a stream stays where it is.
+    /// </summary>
+    private void Skip(long from, long to)
+    {
+        for (int slot = 0; slot < _voices.Length; slot++)
+        {
+            ref var voice = ref _voices[slot];
+            if (_hasIncoming[slot] && _incoming[slot].Start < to)
+            {
+                voice = _incoming[slot];
+                _hasIncoming[slot] = false;
+                _incoming[slot] = default;
+            }
+            long pos = Math.Max(from, voice.Start);
+            while (voice.Active && pos < to)
+            {
+                while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
+                long end = voice.StopAt == long.MaxValue ? long.MaxValue : voice.StopAt + voice.Fade;
+                if (pos >= end) { Silence(ref voice); break; }
+                long next = Math.Min(to, end);
+                if (voice.Changes > 0) next = Math.Min(next, voice.Pending[0].At);
+                if (!voice.Paused && voice.Clip is { } clip)
+                {
+                    int length = clip.Samples.Length / clip.Channels;
+                    voice.Position += (next - pos) * voice.Step;
+                    if (voice.Loop && length > 0) voice.Position %= length;
+                    else if (voice.Position >= length) { Silence(ref voice); break; }
+                }
+                pos = next;
+            }
+        }
     }
 
     /// <summary>The newest sound of a voice: the one waiting for its start frame, if any.</summary>
