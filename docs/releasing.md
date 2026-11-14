@@ -100,6 +100,12 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
    documented version is public, also from nuget.org at that version. The nuget.org build is only reported while the
    release notes list changes under `## Next release`, or while the documented version predates breaking changes the
    samples already use ([CI, documentation checks](ci.md#documentation-checks)).
+4. **Trimmed and NativeAOT programs** (`sdk/tests/trimmed.mjs --aot`, the `trimmed` job beside the external
+   project, on the same feed): outside the repository, a game with its own save types and achievements is published
+   trimmed and with NativeAOT with every warning an error, and a game with a window is published with NativeAOT;
+   each published executable is then run and must do its work. Linux in daily CI; Linux and Windows in validate and
+   before a release ([CI, NativeAOT](ci.md#nativeaot)). Locally: `node sdk/tests/trimmed.mjs --feed <feed> --aot`
+   (a feed packed without `-p:MicroEngineRelease=true` is enough), under `xvfb-run -a` on Linux.
 
 The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
 scenario on each system ([packaging/](../packaging/README.md)).
@@ -143,7 +149,8 @@ For every release, **one pull request and one approval**:
 2. Merge it. From then until the packages are public, production keeps its deployment (the documentation of `main`
    presents a version nobody can install yet); previews still deploy.
 3. When ci passes on `main`, **sdk-release** starts on its own: it checks the commit again with `sdk.yml` (Windows,
-   Linux, macOS), drafts the GitHub prerelease `sdk-v<version>` with the checked packages and `SHA256SUMS`, and waits
+   Linux, macOS; the trimmed and NativeAOT programs published and run on Linux and Windows; a failure there, as in
+   any job of the check, leaves no draft and nothing to approve), drafts the GitHub prerelease `sdk-v<version>` with the checked packages and `SHA256SUMS`, and waits
    at **Publish to nuget.org** for the `nuget` environment.
 4. Review the draft (GitHub → Releases) and approve the deployment (the run's page → Review deployments). The run
    pushes exactly the draft's files, verified against `SHA256SUMS`, engine packages first; publishes the GitHub

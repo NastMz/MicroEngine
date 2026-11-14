@@ -196,6 +196,8 @@ jobs:
       ref: ${{ github.sha }}
       evidence: ${{ needs.plan.outputs.fork != 'true' }}
       key: ${{ fromJSON(needs.plan.outputs.keys).sdk }}
+      # NativeAOT programs on Linux only; validate and a release also publish and run them on Windows.
+      daily: true
 
   # The Box2D natives for every runtime identifier, tested and compared (sdk.yml packs the optional SDK package).
   box2d:

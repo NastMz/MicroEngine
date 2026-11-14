@@ -79,6 +79,12 @@ Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
   contrato público de almacenamiento, documenta las alternativas y no hagas ese rediseño sin aprobación."
 - S27 "Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior." "No introduzcas
   rediseños arquitectónicos innecesarios." "No hagas push, PR ni release sin mi autorización."
+- S28 "Diseña e incorpora una comprobación real de publicación y ejecución NativeAOT."
+- S29 "Respeta nuestra estrategia de optimización de CI: evitar matrices redundantes, compilaciones innecesarias y
+  ejecuciones costosas en cada PR." "Prioriza ejecución en release y disparo selectivo o manual cuando sea útil."
+  "Reutiliza infraestructura y cachés existentes cuando corresponda."
+- S30 "Comprueba que el workflow realmente valida el ejecutable, no solamente que compila."
+- S31 "No introduzcas rediseños arquitectónicos innecesarios." "No hagas push, PR ni release sin mi autorización."
 
 ## Tasks
 
@@ -101,6 +107,7 @@ Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
 | T15 Alternatives for what needs the storage contract changed; manual, release notes, migration, API reference | S26 | delegated (same worker) | done | evaluation §4.3 "Needs owner decision" (four); the documentation commit of this pass |
 | T16 Refuse a slot that ends with the set-aside suffix | S26 S27 | delegated (same worker) | done | RED: `SettingASlotAsideNeverReplacesAnotherSlot`, no exception; GREEN; evaluation §4.3 |
 | T17 Refuse a game id that is a path out of the data folder | S26 S27 | delegated (same worker) | done | RED: `AGameIdThatIsAPathOutOfTheDataFolderIsRefusedWhereTheFolderIsComputed`, no exception; GREEN; evaluation §4.3 |
+| T18 NativeAOT in CI: the `trimmed` job of `sdk.yml` (Linux daily; Linux and Windows in validate and before a release), the executable validated, a windowed game | S28 S29 S30 S31 | delegated (one bounded worker, branch `feat/aot-1-ci`) | done locally; the workflows have not run (nothing pushed) | the commits of `feat/aot-1-ci`; `trimmed.mjs --aot` 12 of 12 on Windows x64; three negative runs exit 1; `actionlint` clean; evaluation §8, `docs/ci.md` "NativeAOT" |
 
 ## Log
 
@@ -185,9 +192,21 @@ Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
   * Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior.
   * No introduzcas rediseños arquitectónicos innecesarios.
   * No hagas push, PR ni release sin mi autorización.
+
+  5. NativeAOT en CI
+
+  * Diseña e incorpora una comprobación real de publicación y ejecución NativeAOT.
+  * Respeta nuestra estrategia de optimización de CI: evitar matrices redundantes, compilaciones innecesarias y ejecuciones costosas en cada PR.
+  * Prioriza ejecución en release y disparo selectivo o manual cuando sea útil.
+  * Reutiliza infraestructura y cachés existentes cuando corresponda.
+  * Comprueba que el workflow realmente valida el ejecutable, no solamente que compila.
+
+  Criterios generales
+  * No introduzcas rediseños arquitectónicos innecesarios.
+  * No hagas push, PR ni release sin mi autorización.
   ```
 
-  Specs S23-S27; tasks T12-T15.
+  Specs S23-S27 (storage) and S28-S31 (NativeAOT in CI); tasks T12-T17 and T18.
 - L13 (2026-11-14) Third pass, observed. The storage is the layer that keeps a slot inside the save location
   (`FileSaveStorage` in every member; a browser key cannot leave the game's prefix); `SaveStore` is the layer that keeps
   names portable, over any storage; the rule is not imposed on `IStorage`. Fixed (`b9f6638`): the bindings calls and
@@ -197,3 +216,14 @@ Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
   game id with `..` or a rooted path leaves the `MicroEngine` data folder. `IStorage`'s documentation now says a
   storage refuses a name it cannot hold with `ArgumentException`: it describes what `FileSaveStorage` does since
   `d7e6f06`, adds no member and changes no signature. Not run: a browser, Linux, macOS.
+  Specs S28-S31; task T18.
+- L15 (2026-11-14) Third pass, observed (branch `feat/aot-1-ci`). Design: one job, `trimmed`, in `sdk.yml`, on the
+  feed the `pack` job already makes; the planner's existing `sdk` check decides when a pull request runs it, its
+  evidence makes it once per content, and `sdk.yml`'s result gates daily CI, validate and the release draft. Linux in
+  daily CI; Linux and Windows elsewhere; no macOS, no Box2D, no new workflow, permission, secret or cache. The script
+  now also publishes a game with a window with NativeAOT and plays it, and requires a native executable. Found and
+  fixed in the script: on Windows, without `--keep`, removing the scratch folder failed with `EPERM` and decided the
+  exit code. Run on Windows x64: 12 of 12 checks, exit 0, 63 s; three negative runs on scratch copies (a wrong
+  expected line, a program returning 3, a game drawing off screen) each `FAIL` and exit 1; `actionlint` 1.7.7 clean.
+  Not run: the workflows themselves and NativeAOT on Linux (nothing is pushed). Nothing was pushed, opened, released
+  or dispatched.

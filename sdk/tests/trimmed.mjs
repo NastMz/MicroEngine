@@ -12,10 +12,16 @@
 //    name those two calls (IL2026, IL3050) in the game's own file, and the trimmed program must fail in them.
 // 3. --aot: the typed game is also published with NativeAOT and run. NativeAOT needs the platform's native linker
 //    (Visual Studio's C++ tools, clang or Xcode); without it this step fails, and that says nothing about the SDK.
+// 4. --aot: "windowed", a game with a window (MicroEngine.Desktop: a sprite, text, a synthesized sound, a scene), is
+//    published with NativeAOT and played by a script in a hidden window on SDL's CPU renderer: it must reach the
+//    script's end and write captures with a picture in them. On Linux it needs a display (xvfb-run).
+// Every program is started by its published executable, never through `dotnet`, and a NativeAOT publish must leave no
+// managed assembly of the game beside it. Any FAIL line makes the exit code 1; a missing feed makes it 2.
 // NuGet sees only the feed and nuget.org, with its own package cache, so nothing comes from this repository's build.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -46,7 +52,7 @@ const run = (command, list, cwd) => {
 };
 const diagnostics = text => [...new Set(text.split(/\r?\n/).filter(line => /(warning|error) (IL|CS|NETSDK|MSB)\d+/.test(line)).map(line => line.replace(/\s*\[[^\]]*\]\s*$/, '').trim()))];
 
-const project = `<Project Sdk="Microsoft.NET.Sdk">
+const project = packageId => `<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -56,7 +62,7 @@ const project = `<Project Sdk="Microsoft.NET.Sdk">
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MicroEngine" Version="${version}" />
+    <PackageReference Include="${packageId}" Version="${version}" />
   </ItemGroup>
 </Project>
 `;
@@ -150,20 +156,88 @@ const expected = ['missing: True', 'save: True', 'load: 3 Ada 2 Hard 1200 5 cell
   'achievements: True True {"Version":1,"Entries":{"ten":{"Progress":3,"Unlocked":false},"first":{"Progress":1,"Unlocked":true}}}',
   'achievements again: True 3 False', 'achievements earlier: False 7 True True'];
 
-function game(name, save, load) {
+// The windowed game: what the smallest game does (an image made in code, an atlas, a sound, a scene that moves a
+// sprite by input, text), so the NativeAOT program opens a window, loads, updates, draws and captures frames.
+const windowed = `using System.Numerics;
+using MicroEngine;
+using MicroEngine.Audio;
+using MicroEngine.Audio.Retro;
+using MicroEngine.Core;
+using MicroEngine.Graphics;
+using MicroEngine.Desktop;
+using MicroEngine.Scenes;
+
+return DesktopLauncher.Run(new WindowedGame(), args);
+
+internal sealed class WindowedGame : Game
+{
+    public override GameSettings Settings { get; } = new("Windowed") { Background = Color.Hex("1d2b53") };
+    public SpriteAtlas Atlas { get; private set; } = null!;
+
+    protected override void Load()
+    {
+        var star = PixelImage.FromMap(Art.Palette("o=#000000", "y=#ffec27"), "..o..", ".oyo.", "oyyyo", ".oyo.", "..o..");
+        Atlas = new SpriteAtlasBuilder().Add("star", star, new Vector2(2.5f, 2.5f)).Build(Graphics);
+        Audio.AddSound("ding", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 880, Sustain = 0.05f, Decay = 0.2f }));
+        Scenes.Push(new WindowedScene(this));
+    }
+
+    protected override void Unload() => Atlas.Dispose();
+}
+
+internal sealed class WindowedScene(WindowedGame game) : Scene
+{
+    private Vector2 _position = new(160, 100);
+
+    public override void Update(float dt)
+    {
+        _position += new Vector2(Input.Axis("left", "right"), Input.Axis("up", "down")) * 90 * dt;
+        if (Input.Pressed("confirm")) Audio.Play("ding");
+    }
+
+    public override void Draw(IRenderer r)
+    {
+        Font.DrawCentered(r, "Hello, NativeAOT!", new Vector2(160, 40), Color.Hex("fff1e8"), 2, Color.Hex("000000"));
+        r.Draw(game.Atlas["star"], _position);
+    }
+}
+`;
+const windowedScript = ['10 capture before.png', '20 hold right 30', '60 press confirm', '64 capture after.png', '70 quit', ''].join('\n');
+
+function folder(name, packageId, files) {
   const dir = path.join(work, name);
   fs.mkdirSync(dir);
-  fs.writeFileSync(path.join(dir, `${name}.csproj`), project);
+  fs.writeFileSync(path.join(dir, `${name}.csproj`), project(packageId));
   fs.writeFileSync(path.join(dir, 'nuget.config'), nugetConfig);
-  fs.writeFileSync(path.join(dir, 'Model.cs'), model);
-  fs.writeFileSync(path.join(dir, 'Program.cs'), program(save, load));
+  for (const [file, text] of Object.entries(files)) fs.writeFileSync(path.join(dir, file), text);
   return dir;
 }
+const game = (name, save, load) => folder(name, 'MicroEngine', { 'Model.cs': model, 'Program.cs': program(save, load) });
 const published = (dir, name, out, extra) => {
-  const result = run('dotnet', ['publish', `${name}.csproj`, '-c', 'Release', '-r', rid, '-o', path.join(dir, out), ...extra], dir);
+  const result = run('dotnet', ['publish', `${name}.csproj`, '-c', 'Release', '-r', rid, '-o', path.join(dir, out), '--disable-build-servers', ...extra], dir);
   return { ...result, found: diagnostics(result.text), program: path.join(dir, out, name + exe) };
 };
 const sameLines = (text, lines) => JSON.stringify(text.trim().split(/\r?\n/)) === JSON.stringify(lines);
+// A NativeAOT publish: the executable is there and the game's managed assembly is not, so what runs is native code.
+const native = (result, dir, name) => fs.existsSync(result.program) && !fs.existsSync(path.join(dir, 'out-aot', `${name}.dll`));
+const linkErrors = result => result.code === 0 ? '' : result.text.trim().split(/\r?\n/).filter(l => /error/.test(l)).slice(-2).join(' | ').slice(0, 400);
+// How many different rows a PNG has (0 when it is not one): a frame with text and a sprite on it has many, an empty
+// or single-colour frame has one.
+function pictureRows(file) {
+  if (!fs.existsSync(file)) return 0;
+  const png = fs.readFileSync(file);
+  if (png.length < 33 || png.readUInt32BE(0) !== 0x89504e47) return 0;
+  const height = png.readUInt32BE(20), data = [];
+  for (let at = 8; at + 8 <= png.length; at += 12 + png.readUInt32BE(at)) {
+    if (png.toString('latin1', at + 4, at + 8) === 'IDAT') data.push(png.subarray(at + 8, at + 8 + png.readUInt32BE(at)));
+  }
+  let raw;
+  try { raw = zlib.inflateSync(Buffer.concat(data)); } catch { return 0; }
+  const stride = raw.length / height, rows = new Set();
+  if (!Number.isInteger(stride)) return 0;
+  for (let y = 0; y < height; y++) rows.add(raw.toString('latin1', y * stride, (y + 1) * stride));
+  return rows.size;
+}
 
 console.log(`trimmed saves: MicroEngine ${version} from ${feed}, ${rid}, .NET SDK ${run('dotnet', ['--version'], work).text.trim()}, in ${work}`);
 
@@ -177,7 +251,7 @@ if (check('typed game: trimmed publish without warnings', trimmed.code === 0 && 
 
 // 2. The plain game: the analyzers name the two reflection calls in the game's file, and the trimmed program fails there.
 const plain = game('plain', (slot, data) => `store.Save(${slot}, ${data})`, slot => `store.Load<Progress>(${slot})`);
-const analyzed = run('dotnet', ['build', 'plain.csproj', '-c', 'Release', '-p:PublishAot=true'], plain);
+const analyzed = run('dotnet', ['build', 'plain.csproj', '-c', 'Release', '-p:PublishAot=true', '--disable-build-servers'], plain);
 const inProgram = diagnostics(analyzed.text).filter(line => /Program\.cs\(\d+,\d+\): warning IL(2026|3050)/.test(line));
 check('plain game: the build names the reflection calls in Program.cs (IL2026 and IL3050)',
   analyzed.code === 0 && inProgram.some(l => l.includes('IL2026')) && inProgram.some(l => l.includes('IL3050')) && inProgram.every(l => /SaveStore\.(Save|Load)/.test(l)),
@@ -193,13 +267,33 @@ if (args.includes('--aot')) {
   const aot = published(typed, 'typed', 'out-aot', ['-p:PublishAot=true', '-warnaserror']);
   const analysis = aot.found.filter(l => /IL\d+/.test(l));
   check('typed game: NativeAOT compilation reports no trim or AOT warnings', analysis.length === 0, analysis.join(' | '));
-  if (check('typed game: NativeAOT publish links', aot.code === 0, aot.code === 0 ? '' : aot.text.trim().split(/\r?\n/).filter(l => /error/.test(l)).slice(-2).join(' | ').slice(0, 400))) {
+  if (check('typed game: NativeAOT publish links a native executable', aot.code === 0 && native(aot, typed, 'typed'), linkErrors(aot))) {
     const ran = run(aot.program, [], typed);
     check('typed game: the NativeAOT program saves and loads its own types and its achievements', ran.code === 0 && sameLines(ran.text, expected), ran.text.trim().replace(/\r?\n/g, ' | '));
+  }
+
+  // 4. A game with a window, as a NativeAOT executable, played by a script.
+  const window = folder('windowed', 'MicroEngine.Desktop', { 'Program.cs': windowed, 'play.script': windowedScript });
+  const windowAot = published(window, 'windowed', 'out-aot', ['-p:PublishAot=true', '-warnaserror']);
+  const windowAnalysis = windowAot.found.filter(l => /IL\d+/.test(l));
+  check('windowed game: NativeAOT compilation reports no trim or AOT warnings', windowAnalysis.length === 0, windowAnalysis.join(' | '));
+  if (check('windowed game: NativeAOT publish links a native executable', windowAot.code === 0 && native(windowAot, window, 'windowed'), linkErrors(windowAot))) {
+    const captures = path.join(window, 'captures');
+    const ran = run(windowAot.program, ['--platform', 'sdl-software', '--hidden', '--mute', '--script', path.join(window, 'play.script'), '--captures', captures], window);
+    const before = path.join(captures, 'before.png'), after = path.join(captures, 'after.png');
+    const rows = pictureRows(after);
+    const moved = rows > 0 && pictureRows(before) > 0 && !fs.readFileSync(before).equals(fs.readFileSync(after));
+    check('windowed game: the NativeAOT program plays its script to the end', ran.code === 0 && /done: 70 updates/.test(ran.text), ran.text.trim().split(/\r?\n/).slice(-2).join(' | ').slice(0, 300));
+    check('windowed game: its captures hold a drawn frame, and scripted input moved the sprite', rows >= 8 && moved, `${rows} different rows${moved ? '' : ', captures equal or missing'}`);
   }
 }
 
 if (args.includes('--keep')) console.log(`kept: ${work}`);
-else fs.rmSync(work, { recursive: true, force: true });
+else {
+  // The folder is scratch: failing to remove it (a build process still holding a file on Windows) is reported, and
+  // never changes the result of the checks.
+  try { fs.rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 }); }
+  catch (error) { console.log(`left behind (${error.code}): ${work}`); }
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
