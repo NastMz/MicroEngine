@@ -45,7 +45,8 @@ A slot is a name such as "settings" or "progress"; with file storage it becomes 
 A slot is a plain name, never a path, and the same names are valid on every system, so a save can move between
 them: letters, digits, spaces and punctuation such as <code>-</code>, <code>_</code> and <code>.</code> ("profile.v2"). Every call
 that takes a slot throws `ArgumentException` for a name that is empty or white space, contains
-<code>/ \ : * ? " &lt; &gt; |</code> or a control character, ends with a dot or a space (which includes "." and ".."), or
+<code>/ \ : * ? " &lt; &gt; |</code> or a control character, ends with a dot or a space (which includes "." and ".."),
+ends with ".corrupt" in any letter case (the name a slot's unreadable data is set aside under), or
 is a Windows device name ("CON", "PRN", "AUX", "NUL", "COM1", "LPT1" and the like, with or without an extension).
 </p>
 <p>

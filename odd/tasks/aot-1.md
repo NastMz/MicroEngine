@@ -99,6 +99,7 @@ Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
 | T13 Security, systems and exception contracts, by test and by probe | S25 | delegated (same worker) | done | `StorageSlotContractTests` (7); Windows probe (set-aside collision, case, normalization, length, game id), evaluation §4.3. Browser, Linux and macOS behaviour is read, not run |
 | T14 Localized fixes with their regression tests | S26 S27 | delegated (same worker) | done | `b9f6638`; RED: 2 of 7 (`slot` reported as `key` and written; `BrowserStorage` reached the page call); GREEN 7/7 |
 | T15 Alternatives for what needs the storage contract changed; manual, release notes, migration, API reference | S26 | delegated (same worker) | done | evaluation §4.3 "Needs owner decision" (four); the documentation commit of this pass |
+| T16 Refuse a slot that ends with the set-aside suffix | S26 S27 | delegated (same worker) | done | RED: `SettingASlotAsideNeverReplacesAnotherSlot`, no exception; GREEN; evaluation §4.3 |
 
 ## Log
 

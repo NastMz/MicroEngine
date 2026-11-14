@@ -362,6 +362,12 @@ the manual):
   nested folder. A save folder with `:` in its name makes `Save` return `false` on Windows. The id is the game's own
   constant, not player data.
 
+**Fixed after the owner's answer (2026-11-14).** The set-aside collision, by decision 2A: `SlotName` refuses a slot
+that ends with `.corrupt` in any letter case, in `SaveStore` and in `FileSaveStorage`, so a set-aside file is never a
+slot (`SettingASlotAsideNeverReplacesAnotherSlot`, RED: no exception). No persisted name changes; a file an earlier
+version wrote as `x.corrupt.json` stays on disk. Setting aside again replaces the earlier copy, as before
+(`SettingAsideAgainReplacesTheEarlierCopy`).
+
 **User-perceptible differences of this pass.** `SaveBindings` and `LoadBindings` with a `null`, empty or white-space
 slot, and `BrowserStorage` with a `null` or empty one, throw where they read or wrote something. Nothing else
 changes: same files, same browser keys.

@@ -53,6 +53,8 @@ the members of `FileSaveStorage`) throws `ArgumentException`, naming the slot, w
   folders, drive letters and absolute paths (`"saves/1"`, `"../other"`, `"C:\save"`);
 - contains half of a surrogate pair;
 - ends with a dot or a space, which includes `"."` and `".."`;
+- ends with `.corrupt`, in any letter case: that is the name a slot's unreadable data is set aside under
+  ([Failure handling](#failure-handling)), so a set-aside copy is never a slot;
 - is a Windows device name, with or without an extension: `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, `COM0` to
   `COM9`, `LPT0` to `LPT9` and their superscript-digit forms (`"NUL"`, `"con.v2"`), in any letter case.
 
@@ -66,8 +68,6 @@ Names that pass the rule can still meet in one file, so keep them apart yourself
 - **Accented letters.** A letter typed as one character (`é`) and as a letter plus a combining accent are the same
   file on macOS and different files and keys elsewhere. Write slot names as constants in the code rather than
   building them from text the player types.
-- **`.corrupt`.** Unreadable data of the slot `"save"` is set aside under the name `"save.corrupt"`
-  ([Failure handling](#failure-handling)), replacing whatever is there. Do not name a slot `<another slot>.corrupt`.
 - **Length.** A file name holds about 240 characters, fewer when the name has letters outside ASCII. A longer slot is
   not an error: `Save` returns `false`, `Load` returns `null` and `Exists` returns `false`. Keep slot names short.
 
@@ -318,7 +318,7 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
   ([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)).
 - A slot is a plain name; folders inside the save folder are not supported ([Slot names](#slot-names)).
 - Two slots whose names differ only by letter case, or only by how an accented letter is encoded, are the same file on
-  some systems; a slot named `<another slot>.corrupt` is replaced when that other slot's unreadable data is set aside.
+  some systems.
 - `gameId` names the save folder as given: use the game's id (`com.example.mygame`), not text with `/`, `\`, `..` or
   `:`.
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).

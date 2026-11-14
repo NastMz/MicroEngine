@@ -131,6 +131,41 @@ public sealed class StorageSlotContractTests
         Assert.IsTrue(new SaveStore("game", _saves).Exists(InputMap.BindingsSlot), "a store over the same folder accepts the name");
     }
 
+    public sealed class Data { public int Level { get; set; } }
+
+    [TestMethod]
+    public void SettingASlotAsideNeverReplacesAnotherSlot()
+    {
+        // "<slot>.corrupt.json" is where unreadable data of <slot> goes, so no slot may have that file.
+        var store = new SaveStore("game", _saves);
+        Assert.ThrowsExactly<ArgumentException>(() => store.Save("save.corrupt", new Data { Level = 9 }));
+        Assert.ThrowsExactly<ArgumentException>(() => new FileSaveStorage(_saves).Write("save.Corrupt", "{}"));
+        Assert.AreEqual(0, Directory.GetFileSystemEntries(_saves).Length);
+
+        // A file an earlier version wrote under such a name stays where it is until the slot beside it is set aside.
+        var earlier = Path.Combine(_saves, "other.corrupt.json");
+        File.WriteAllText(earlier, "{\"Level\":9}");
+        Assert.ThrowsExactly<ArgumentException>(() => store.Load<Data>("other.corrupt"));
+        Assert.ThrowsExactly<ArgumentException>(() => store.Delete("other.corrupt"));
+        Assert.AreEqual("{\"Level\":9}", File.ReadAllText(earlier));
+    }
+
+    [TestMethod]
+    public void SettingAsideAgainReplacesTheEarlierCopy()
+    {
+        var store = new SaveStore("game", _saves);
+        var slot = Path.Combine(_saves, "save.json");
+        var aside = Path.Combine(_saves, "save.corrupt.json");
+        File.WriteAllText(slot, "{ first");
+        Assert.IsNull(store.Load<Data>("save"));
+        Assert.AreEqual("{ first", File.ReadAllText(aside));
+        File.WriteAllText(slot, "{ second");
+        Assert.IsNull(store.Load<Data>("save"));
+        Assert.AreEqual("{ second", File.ReadAllText(aside), "the latest unreadable data is the copy kept");
+        Assert.IsFalse(File.Exists(slot));
+        CollectionAssert.AreEqual(new[] { aside }, Directory.GetFiles(_saves));
+    }
+
 #pragma warning disable CA1416 // BrowserStorage is for browsers; only what it does before it calls the page is run here.
     [TestMethod]
     public void BrowserStorageRefusesASlotWithNoNameBeforeItCallsThePage()

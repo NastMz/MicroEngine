@@ -24,7 +24,8 @@ namespace MicroEngine.Core;
 /// A slot is a plain name, never a path, and the same names are valid on every system, so a save can move between
 /// them: letters, digits, spaces and punctuation such as <c>-</c>, <c>_</c> and <c>.</c> ("profile.v2"). Every call
 /// that takes a slot throws <see cref="ArgumentException"/> for a name that is empty or white space, contains
-/// <c>/ \ : * ? " &lt; &gt; |</c> or a control character, ends with a dot or a space (which includes "." and ".."), or
+/// <c>/ \ : * ? " &lt; &gt; |</c> or a control character, ends with a dot or a space (which includes "." and ".."),
+/// ends with ".corrupt" in any letter case (the name a slot's unreadable data is set aside under), or
 /// is a Windows device name ("CON", "PRN", "AUX", "NUL", "COM1", "LPT1" and the like, with or without an extension).
 /// </para>
 /// <para>
@@ -270,6 +271,9 @@ internal static class SlotName
         "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT¹", "LPT²", "LPT³",
     };
 
+    /// <summary>What a slot's unreadable data is set aside under, after the slot's name; no slot may end with it.</summary>
+    public const string SetAsideSuffix = ".corrupt";
+
     /// <summary>Returns <paramref name="slot"/> when it is a valid slot name; throws otherwise.</summary>
     public static string Checked(string slot)
     {
@@ -298,6 +302,8 @@ internal static class SlotName
             else if (char.IsSurrogate(c)) return "it contains half of a character";
         }
         if (slot[^1] is '.' or ' ') return "it ends with a dot or a space";
+        // "<slot>.corrupt" is where unreadable data of <slot> is set aside: as a slot it would be replaced by that copy.
+        if (slot.EndsWith(SetAsideSuffix, StringComparison.OrdinalIgnoreCase)) return "it ends with \".corrupt\", the name unreadable data is set aside under";
         int dot = slot.IndexOf('.');
         if (Devices.Contains((dot < 0 ? slot : slot[..dot]).TrimEnd(' '))) return "it is a device name on Windows";
         return null;
@@ -342,7 +348,7 @@ public sealed class FileSaveStorage(string directory) : ISaveStorage
     public void SetAside(string slot)
     {
         var path = PathFor(slot);
-        try { File.Move(path, Path.ChangeExtension(path, ".corrupt.json"), overwrite: true); }
+        try { File.Move(path, Path.ChangeExtension(path, SlotName.SetAsideSuffix + ".json"), overwrite: true); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { /* Stays in place; callers that check Exists will not overwrite it. */ }
     }
 }

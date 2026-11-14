@@ -65,12 +65,13 @@ public sealed partial class SaveSlotNameTests
         "", " ", "\t", "..", ".", "../up", "..\\up", "a/../../up", "sub/name", "sub\\name", "/rooted", "\\rooted", "C:\\Temp\\up", "C:up", "D:",
         "a:b", "a*b", "a?b", "a\"b", "a<b", "a>b", "a|b", "a\nb", "a\0b", "name.", "name ", "name..",
         "CON", "con", "NUL", "PRN", "AUX", "COM1", "com9", "LPT1", "COM\u00b9", "CONIN$", "CONOUT$", "NUL.txt", "con.backup.v2", "aux .x",
+        "save.corrupt", "save.CORRUPT", "profile.v2.Corrupt", ".corrupt",
         "\ud800",
     ];
 
     private static readonly string[] Valid =
     [
-        "progress", "adventure", "record", "achievements", "input-bindings", "example", "profile", "profile.v0", "profile.v12", "slot_1", "Slot 2", " lead", "save.corrupt",
+        "progress", "adventure", "record", "achievements", "input-bindings", "example", "profile", "profile.v0", "profile.v12", "slot_1", "Slot 2", " lead", "corrupt", "save.corrupted", "corrupt.save",
         "partida-ñ", "セーブ", ".hidden", "a..b", "console", "COM10", "LPT", "nul1", "com", "CONSOLE.v1", "a'b", "a(b)", "a+b,c;d=e@f#g$h%i&j!k~l`m^n{o}p[q]r",
     ];
 
