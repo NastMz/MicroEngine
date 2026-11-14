@@ -22,8 +22,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   `VoiceHandle` for a looping or one-shot sound on any bus with a priority; `Set(voice, volume, pan, pitch)`,
   `Pause`, `Stop(voice, fadeSeconds)` and `IsPlaying` control it; `AddBus`, `SetBusVolume`, `BusVolume` and `HasBus`
   group sounds under one volume; `PlayMusicVoice` plays registered music beside the music track. The pitch of a
-  playing sound changes with `AudioEngine.SetPitch`, and the volume, pan and pitch set in one update take effect at
-  the same instant. The Examples sample has a looping sound that follows a moving source.
+  playing sound changes with `AudioEngine.SetPitch`, and the changes made to one sound in one update (volume, pan,
+  pitch, pause, resume) take effect at the same instant, which moves the first of them slightly later than before
+  ([migration notes](../migrations.md#several-changes-to-one-sound-in-the-same-update-apply-at-the-same-instant)). The Examples sample has a looping sound that follows a moving source.
 
 **Fixed**
 

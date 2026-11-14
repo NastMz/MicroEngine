@@ -4,6 +4,18 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next release
+
+### Several changes to one sound in the same update apply at the same instant
+
+Two or more changes to one playing sound in a single update (volume, pan, pitch, pause or resume) take effect together
+at that update's point in the audio, where the first of them used to take effect up to the output delay earlier. A
+single change per update, `Set(volume, pan)` in one call, stopping, fades and bus volumes sound as before.
+
+What can sound different: a sound paused and resumed, or paused and changed, in the same update continues from a
+position up to the output delay later than before; and `PauseMusic` or `MusicVolume` during a music fade applies at
+the fade's current point instead of slightly ahead of it. No code needs to change.
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components
