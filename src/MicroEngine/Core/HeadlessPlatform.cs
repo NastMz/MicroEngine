@@ -315,7 +315,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
         var world = capture.CaptureWorld();
         if (capture.CaptureUi() is not { } ui) return world;
         var view = (IScreenView)this;
-        return ScreenCapture.Compose(world, ui, view.ScreenPixels, view.WorldFrame, Letterbox, Presentation.Upscale);
+        return ScreenCapture.Compose(world, ui, view.ScreenPixels, view.WorldFrame, Letterbox, Presentation);
     }
 
     void IViewCapture.SaveWorldScreenshot(string path) => Write(path, ((IViewCapture)this).CaptureWorld());

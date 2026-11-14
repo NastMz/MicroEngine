@@ -81,6 +81,7 @@ variables on desktop), read in the game's `Configure`:
 | `RIFT_GOD=1` | Shots and contact do not kill (pits and lava still do) |
 | `RIFT_AUTO=1` | The test autopilot plays |
 | `RIFT_SAVE_DIR` | Separate folder for achievements and the high score (capture runs) |
+| `RIFT_PRESENT` | How the canvas reaches the window, for comparisons: `integer`, `nearest`, `smooth` or `sharp` (pixel art by default) |
 
 Full-stage capture tour used for the screenshots:
 

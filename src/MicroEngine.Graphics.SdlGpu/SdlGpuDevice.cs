@@ -422,9 +422,20 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
     }
 
     /// <inheritdoc />
-    protected override ReadbackRequest ReadPixelsCore(RenderTarget target, RectI region)
+    protected override ReadbackRequest ReadPixelsCore(RenderTarget target, RectI region) =>
+        Download(((GpuRenderTarget)target).NativeColor, region, target.ColorFormat);
+
+    /// <summary>
+    /// Reads back the window's picture as it was last composed: the device's own surface texture, which
+    /// <see cref="IGraphicsDevice.Present"/> copies to the swapchain pixel for pixel, in the swapchain's format. Null
+    /// before the first frame. For tests and captures of what a window shows.
+    /// </summary>
+    internal ReadbackRequest? ReadPresented() =>
+        _backBuffer == null ? null : Download(_backBuffer, new RectI(0, 0, _backBufferSize.W, _backBufferSize.H), _surfaceFormat);
+
+    private ReadbackRequest Download(SDL_GPUTexture* texture, RectI region, TextureFormat format)
     {
-        var size = (uint)TextureFormats.ByteCount(target.ColorFormat, region.Width, region.Height);
+        var size = (uint)TextureFormats.ByteCount(format, region.Width, region.Height);
         var info = new SDL_GPUTransferBufferCreateInfo { usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD, size = size };
         var transfer = SDL_CreateGPUTransferBuffer(_device, &info);
         if (transfer == null) throw new InvalidOperationException($"SDL_CreateGPUTransferBuffer: {SDL_GetError()}");
@@ -432,7 +443,7 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         var copy = SDL_BeginGPUCopyPass(cmd);
         var source = new SDL_GPUTextureRegion
         {
-            texture = ((GpuRenderTarget)target).NativeColor,
+            texture = texture,
             x = (uint)region.X, y = (uint)region.Y, w = (uint)region.Width, h = (uint)region.Height, d = 1,
         };
         var destination = new SDL_GPUTextureTransferInfo { transfer_buffer = transfer };
@@ -440,7 +451,7 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         SDL_EndGPUCopyPass(copy);
         var fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
         if (fence == null) throw new InvalidOperationException($"SDL_SubmitGPUCommandBufferAndAcquireFence: {SDL_GetError()}");
-        return new GpuReadback(this, region, target.ColorFormat, fence, transfer, (int)size);
+        return new GpuReadback(this, region, format, fence, transfer, (int)size);
     }
 
     /// <inheritdoc />

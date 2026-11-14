@@ -307,6 +307,7 @@ public sealed class DeviceCanvas : IDisposable
 {
     private readonly Renderer2D _batcher;
     private readonly Renderer2D _composer;
+    private CanvasPresenter? _presenter;
     private readonly Renderer2D _uiBatcher;
     private DeviceRenderer _renderer;
     private Dev.RenderTarget? _ui;
@@ -408,12 +409,20 @@ public sealed class DeviceCanvas : IDisposable
     /// <summary>
     /// Draws the canvas into the window's target: the window cleared to <paramref name="letterbox"/> (opaque), then the
     /// canvas copied (its alpha ignored, so a translucent canvas never darkens) into <paramref name="frame"/> with the
-    /// presentation's upscale sampler. Returns false, drawing nothing, when the window has no target this frame
-    /// (minimised); the caller then skips presenting.
+    /// presentation's upscale sampler, enlarged first by its prescale when it has one (<see cref="Presentation.Prescale"/>,
+    /// through a <see cref="CanvasPresenter"/>), and the frame's UI view over everything. Returns false, drawing nothing,
+    /// when the window has no target this frame (minimised); the caller then skips presenting.
     /// </summary>
     public bool Compose(Presentation presentation, RectF frame, Color letterbox)
     {
         ArgumentNullException.ThrowIfNull(presentation);
+        if (presentation.Prescale != 1)
+        {
+            _presenter ??= new CanvasPresenter(Device);
+            bool presented = _presenter.Present(presentation, Target, _uiReady ? _ui : null, frame, letterbox);
+            if (presented) _uiReady = false;
+            return presented;
+        }
         if (!Device.TryAcquireSurfaceTarget(out var surface)) return false;
         _composer.Begin(new BatchSettings(surface, Blend: Dev.BlendState.Opaque, Sampler: presentation.Upscale,
             Clear: Dev.PremultipliedColor.FromStraight(letterbox with { A = 255 })));
@@ -472,6 +481,7 @@ public sealed class DeviceCanvas : IDisposable
         Graphics.DisposeAll();
         _batcher.Dispose();
         _composer.Dispose();
+        _presenter?.Dispose();
         _uiBatcher.Dispose();
         _ui?.Dispose();
         Target.Dispose();

@@ -53,6 +53,15 @@ and the members of `BrowserStorage` for one that is `null` or empty. They pass e
 with `FileSaveStorage` a bindings slot that is not a plain name throws `ArgumentException` as above, where it threw
 `IOException` or wrote outside the folder before. To update, pass a plain name, or leave the default
 (`"input-bindings"`).
+### `Presentation.Fit` returns whole pixels
+
+The frame `Presentation.Fit` returns has a whole width and height at every window size, where a scale that is not
+whole gave fractions (1365.33 × 768 for a 480 × 270 canvas in 1366 × 768). It differs from the earlier frame by less
+than a pixel on each side, and at a whole scale it is the same frame. Pictures, pointer positions and the frame the
+virtual controls use follow it.
+
+What can need a change: code or a test that compared the frame with a fractional size compares it with the whole
+one, and a game that rounded the frame itself can use it as returned.
 
 ## 0.6.0-alpha.1
 
