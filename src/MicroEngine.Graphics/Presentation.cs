@@ -217,7 +217,9 @@ public sealed record Presentation
     /// Where the canvas lands in <paramref name="area"/> (the window, or its safe area on a phone), in window pixels: the
     /// largest scale that fits, rounded by <see cref="Rounding"/>, centred; with <paramref name="portrait"/> it sits at the
     /// top of the area instead (on-screen controls get the space below). With <see cref="AspectMode.Stretch"/> it covers
-    /// the whole area.
+    /// the whole area. The frame's size is whole pixels: at a scale that is not whole, each side is the nearest whole
+    /// size (480 × 270 in 1366 × 768 lands on 1365 × 768), so the frame of a whole area starts and ends on pixel
+    /// boundaries, with the odd pixel of letterbox on the right or at the bottom.
     /// </summary>
     /// <param name="area">The area available, in window pixels.</param>
     /// <param name="canvasWidth">The canvas's width in pixels.</param>
@@ -230,11 +232,18 @@ public sealed record Presentation
         if (Aspect == AspectMode.Stretch) return area;
         float scale = Scale(area, canvasWidth, canvasHeight);
         if (Aspect == AspectMode.Expand) (canvasWidth, canvasHeight) = CanvasSize(area, canvasWidth, canvasHeight);
-        float w = canvasWidth * scale, h = canvasHeight * scale;
+        float w = WholePixels(canvasWidth * scale, area.Width), h = WholePixels(canvasHeight * scale, area.Height);
         float x = MathF.Floor(area.X + (area.Width - w) / 2);
         float y = portrait ? area.Y : MathF.Floor(area.Y + (area.Height - h) / 2);
         return new RectF(x, y, w, h);
     }
+
+    /// <summary>
+    /// A frame's side as whole window pixels: the nearest whole size, at least one pixel and never more than the room
+    /// there is. A whole size is returned as it is, and so is any size when not even one pixel fits.
+    /// </summary>
+    private static float WholePixels(float size, float room) =>
+        room >= 1 ? Math.Clamp(MathF.Round(size, MidpointRounding.AwayFromZero), 1, MathF.Floor(room)) : size;
 
     /// <summary>
     /// Where the canvas lands in a window of <paramref name="window"/> pixels whose usable part is

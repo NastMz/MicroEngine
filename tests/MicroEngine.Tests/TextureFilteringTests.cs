@@ -77,12 +77,12 @@ public sealed class TextureFilteringTests
         // 320×180 on 1366×768: 4.27 fits; 4 is within 80 %, so pixel scaling takes it.
         Assert.AreEqual(new Vector2(1280, 720), FrameLayout.Fit(window, safe, 320, 180).Size);
         var smooth = FrameLayout.Fit(window, safe, 320, 180, Presentation.HighResolution2D);
-        Assert.AreEqual(1365.33f, smooth.Width, 0.01f);
-        Assert.AreEqual(768, smooth.Height, 0.01f);
+        Assert.AreEqual(1365, smooth.Width, "1365.33 in whole pixels");
+        Assert.AreEqual(768, smooth.Height);
         // An HD canvas shrinks into a smaller window in both modes.
         var hd = FrameLayout.Fit(window, safe, 1920, 1080, Presentation.HighResolution2D);
-        Assert.AreEqual(1365.33f, hd.Width, 0.01f);
-        Assert.AreEqual(768, hd.Height, 0.01f);
+        Assert.AreEqual(1365, hd.Width);
+        Assert.AreEqual(768, hd.Height);
     }
 
     [TestMethod]

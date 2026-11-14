@@ -133,6 +133,26 @@ public sealed class CanvasPresenterTests
     }
 
     [TestMethod]
+    public void TheFrameOfAWindow_IsPaintedPixelForPixel_WithEvenLetterbox()
+    {
+        // 480x270 in 1366x700 scales by 2.59: 1244.44 pixels wide. A device paints the pixels whose centres a quad covers,
+        // so a frame of that width starting at 60 painted 1244 columns with 60 of letterbox on its left and 62 on its
+        // right; the frame Fit gives is whole, and what is painted is exactly it.
+        var canvas = Enumerable.Repeat(Red, 480).ToArray();
+        var nearest = Presentation.PixelArt with { Rounding = ScaleRounding.Fractional };
+        static (int Left, int Painted, int Right) Columns(uint[] row) =>
+            (Array.FindIndex(row, p => p == Red), row.Count(p => p == Red), row.Length - 1 - Array.FindLastIndex(row, p => p == Red));
+
+        Assert.AreEqual((60, 1244, 62), Columns(PresentRow(nearest, canvas, 1366, frame: new RectF(60, 0, 1244.4445f, 1))), "a fraction of a pixel: uneven letterbox");
+
+        var fit = nearest.Fit(new RectF(0, 0, 1366, 700), 480, 270);
+        var row = PresentRow(nearest, canvas, 1366, frame: new RectF(fit.X, 0, fit.Width, 1));
+        Assert.AreEqual(((int)fit.X, (int)fit.Width, 1366 - (int)fit.Right), Columns(row), "painted exactly where Fit says");
+        Assert.AreEqual((61, 1244, 61), Columns(row));
+        Assert.IsTrue(row.All(p => p is Red or Grey), "no blended pixel at the frame's edges");
+    }
+
+    [TestMethod]
     public void PresentsNothing_WhenTheWindowHasNoTarget()
     {
         using var device = new ReferenceGraphicsDevice(); // no surface
