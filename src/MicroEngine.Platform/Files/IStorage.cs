@@ -5,6 +5,13 @@ namespace MicroEngine.Platform;
 /// page's localStorage in browsers, a cloud service). Failures surface as <see cref="IOException"/> or
 /// <see cref="UnauthorizedAccessException"/>.
 /// </summary>
+/// <remarks>
+/// Which names a slot can have is the storage's to say, because only the storage knows what a name becomes: a file
+/// storage takes plain file names and keeps every slot inside its folder, a key-value storage may take any text. A
+/// storage refuses a name it cannot hold with <see cref="ArgumentException"/> from every member that takes a slot;
+/// that is a mistake in the calling code, not a failure of the medium. A plain name (letters, digits, <c>-</c>,
+/// <c>_</c>, a dot inside the name) is valid in every storage the engine provides.
+/// </remarks>
 public interface IStorage
 {
     /// <summary>The save folder, or a description of the medium for diagnostics.</summary>
@@ -17,6 +24,6 @@ public interface IStorage
     bool Exists(string slot);
     /// <summary>Removes the slot; does nothing when it does not exist.</summary>
     void Delete(string slot);
-    /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws.</summary>
+    /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws for a failure of the medium.</summary>
     void SetAside(string slot);
 }

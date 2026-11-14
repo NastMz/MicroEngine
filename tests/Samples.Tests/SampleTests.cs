@@ -61,6 +61,30 @@ public sealed class ExampleTests
         Assert.HasCount(1, saved.Visited);
         Directory.Delete(saves, true);
     }
+
+    [TestMethod]
+    public void TheDeclaredSaveTypesReadAndWriteTheSameSlot()
+    {
+        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
+        var store = new SaveStore("MicroEngineExamples", saves);
+        Assert.AreEqual(0, TypedSaves.Load(store).Coins, "no save yet: a new progress");
+        // A slot the example wrote without the declared types loads with them.
+        Assert.IsTrue(store.Save("example", new SaveExample.Progress { Coins = 2, Visited = ["room 1"] }));
+        string written = File.ReadAllText(Path.Combine(saves, "example.json"));
+        var loaded = TypedSaves.Load(store);
+        Assert.AreEqual(2, loaded.Coins);
+        Assert.HasCount(1, loaded.Visited);
+        // And saving with them writes the same file, which the example reads back.
+        Assert.IsTrue(TypedSaves.Save(store, loaded));
+        Assert.AreEqual(written, File.ReadAllText(Path.Combine(saves, "example.json")));
+        Assert.AreEqual(2, store.Load<SaveExample.Progress>("example")!.Coins);
+        // The other declared types: a versioned profile, and a slot read as JSON for upgrades.
+        Assert.IsTrue(store.Save(ProfileSaves.Slot, new Profile { Version = ProfileSaves.CurrentVersion, Gold = 5 }, SaveTypes.Default.Profile));
+        Assert.AreEqual(5, store.Load(ProfileSaves.Slot, SaveTypes.Default.JsonObject)!["Gold"]!.GetValue<int>());
+        Assert.AreEqual(5, ProfileSaves.Load(store, out var check)!.Gold);
+        Assert.AreEqual(SaveCheck.Current, check);
+        Directory.Delete(saves, true);
+    }
 }
 
 [TestClass]

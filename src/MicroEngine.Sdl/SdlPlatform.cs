@@ -732,7 +732,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
-        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation.Upscale);
+        // A prescaled canvas is sampled from its enlargement, as the window's frame was.
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation, _device.Capabilities.Limits.MaxRenderTargetSize);
     }
     void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 

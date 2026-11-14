@@ -56,8 +56,8 @@ public sealed class PresentationTests
     {
         // 480x270 in 732x412: 1.53 fits, 1 would fill 65 %: fractional.
         var frame = Presentation.PixelArt.Fit(new RectF(0, 0, 732, 412), 480, 270);
-        Assert.AreEqual(732f, frame.Width, 1e-3f);
-        Assert.AreEqual(270f * 732 / 480, frame.Height, 1e-3f);
+        Assert.AreEqual(732f, frame.Width);
+        Assert.AreEqual(412f, frame.Height, "411.75 in whole pixels");
     }
 
     [TestMethod]
@@ -73,9 +73,115 @@ public sealed class PresentationTests
     public void Fit_Fractional_FillsTheLargestSizeOfTheCanvasShape()
     {
         var laptop = Presentation.HighResolution2D.Fit(new RectF(0, 0, 1366, 768), 1280, 720);
-        Assert.AreEqual(768f, laptop.Height, 1e-3f);
-        Assert.AreEqual(1280f * 768 / 720, laptop.Width, 1e-3f);
+        Assert.AreEqual(768f, laptop.Height);
+        Assert.AreEqual(1365f, laptop.Width, "1365.33 in whole pixels");
         Assert.AreEqual(new RectF(0, 0, 1920, 1080), Presentation.HighResolution2D.Fit(Window1080, 1280, 720));
+    }
+
+    private static readonly Presentation Fractional = Presentation.PixelArt with { Rounding = ScaleRounding.Fractional };
+    private static readonly Presentation Integer = Presentation.PixelArt with { Rounding = ScaleRounding.Integer };
+
+    private static readonly (int Width, int Height)[] OddWindows =
+    [
+        (1366, 768), (1365, 767), (1367, 769), (1366, 700), (1001, 563), (733, 411), (915, 412), (390, 844), (411, 731),
+        (1919, 1079), (2561, 1441), (641, 359), (479, 269), (161, 90), (7, 5), (3, 2), (1, 1), (1366, 1), (1, 768),
+    ];
+
+    private static readonly (int Width, int Height)[] FitCanvases = [(480, 270), (320, 180), (256, 224), (1280, 720), (1920, 1080), (3, 2)];
+
+    private static IEnumerable<(Presentation Presentation, string Name)> Roundings() =>
+    [
+        (Presentation.PixelArt, "pixel art"), (Integer, "integer"), (Fractional, "fractional"), (Presentation.HighResolution2D, "high resolution"),
+        (Fractional with { Aspect = AspectMode.Expand }, "expand"),
+    ];
+
+    [TestMethod]
+    public void Fit_AWholeWindow_GetsAWholePixelFrameInsideIt_WhateverItsSize()
+    {
+        foreach (var (window, height) in OddWindows)
+            foreach (var (cw, ch) in FitCanvases)
+                foreach (var (presentation, name) in Roundings())
+                    foreach (bool portrait in new[] { false, true })
+                    {
+                        var area = new RectF(0, 0, window, height);
+                        var frame = presentation.Fit(area, cw, ch, portrait);
+                        string where = $"{cw}x{ch} in {window}x{height}, {name}{(portrait ? ", portrait" : "")}: {frame}";
+                        Assert.AreEqual(MathF.Round(frame.X), frame.X, where);
+                        Assert.AreEqual(MathF.Round(frame.Y), frame.Y, where);
+                        Assert.AreEqual(MathF.Round(frame.Width), frame.Width, where);
+                        Assert.AreEqual(MathF.Round(frame.Height), frame.Height, where);
+                        Assert.IsTrue(frame.Width >= 1 && frame.Height >= 1, $"at least one pixel: {where}");
+                        Assert.IsTrue(frame.X >= 0 && frame.Y >= 0 && frame.Right <= window && frame.Bottom <= height, $"never outside the window: {where}");
+                    }
+    }
+
+    [TestMethod]
+    public void Fit_CentresTheFrame_TheOddPixelOfLetterboxGoesToTheRightAndBottom()
+    {
+        foreach (var (window, height) in OddWindows)
+            foreach (var (cw, ch) in FitCanvases)
+                foreach (var (presentation, name) in Roundings())
+                {
+                    var frame = presentation.Fit(new RectF(0, 0, window, height), cw, ch);
+                    float left = frame.X, right = window - frame.Right, top = frame.Y, bottom = height - frame.Bottom;
+                    string where = $"{cw}x{ch} in {window}x{height}, {name}: {frame}";
+                    Assert.IsTrue(right - left is 0 or 1, $"left {left}, right {right}: {where}");
+                    Assert.IsTrue(bottom - top is 0 or 1, $"top {top}, bottom {bottom}: {where}");
+                }
+        // A safe area that does not start at the window's corner: centred in the area, not in the window.
+        Assert.AreEqual(new RectF(121, 11, 1244, 700), Fractional.Fit(new RectF(60, 11, 1366, 700), 480, 270));
+    }
+
+    [TestMethod]
+    public void Fit_AFractionalScaleKeepsTheCanvasShapeToThePixel_AndTouchesTheWindowsEdges()
+    {
+        foreach (var (window, height) in OddWindows)
+            foreach (var (cw, ch) in FitCanvases)
+                foreach (var presentation in new[] { Fractional, Presentation.HighResolution2D })
+                {
+                    var frame = presentation.Fit(new RectF(0, 0, window, height), cw, ch);
+                    float scale = MathF.Min((float)window / cw, (float)height / ch);
+                    string where = $"{cw}x{ch} in {window}x{height}: {frame}";
+                    Assert.AreEqual(MathF.Max(1, cw * scale), frame.Width, 0.5f, $"the nearest whole width: {where}");
+                    Assert.AreEqual(MathF.Max(1, ch * scale), frame.Height, 0.5f, $"the nearest whole height: {where}");
+                    Assert.IsTrue(frame.Width == window || frame.Height == height, $"the limiting side is filled exactly: {where}");
+                }
+        // 480x270 in 1366x768: 2.844x. The height fills the window; the width is 1365 of the 1365.33 that would fit.
+        Assert.AreEqual(new RectF(0, 0, 1365, 768), Fractional.Fit(new RectF(0, 0, 1366, 768), 480, 270));
+        // In 1366x700 the letterbox is 61 pixels on each side.
+        Assert.AreEqual(new RectF(61, 0, 1244, 700), Fractional.Fit(new RectF(0, 0, 1366, 700), 480, 270));
+        // A portrait phone: the frame fills the width at the top.
+        Assert.AreEqual(new RectF(0, 0, 390, 219), Fractional.Fit(new RectF(0, 0, 390, 844), 480, 270, portrait: true));
+    }
+
+    [TestMethod]
+    public void Fit_AtWholeFactors_TheFrameIsExactlyTheCanvasTimesTheFactor()
+    {
+        foreach (var (cw, ch) in FitCanvases)
+            for (int factor = 1; factor <= 8; factor++)
+                foreach (var (presentation, name) in Roundings())
+                {
+                    string where = $"{cw}x{ch} at {factor}x, {name}";
+                    Assert.AreEqual(new RectF(0, 0, cw * factor, ch * factor), presentation.Fit(new RectF(0, 0, cw * factor, ch * factor), cw, ch), where);
+                    // The same window with room to spare on one side: a centred frame of the same size.
+                    var keep = presentation with { Aspect = AspectMode.Keep };
+                    Assert.AreEqual(new RectF(3, 0, cw * factor, ch * factor), keep.Fit(new RectF(0, 0, cw * factor + 7, ch * factor), cw, ch), where);
+                    Assert.AreEqual(new RectF(0, 2, cw * factor, ch * factor), keep.Fit(new RectF(0, 0, cw * factor, ch * factor + 5), cw, ch), where);
+                }
+        Assert.AreEqual(new RectF(80, 45, 2400, 1350), Presentation.PixelArt.Fit(new RectF(0, 0, 2560, 1440), 480, 270), "5x with a border");
+        Assert.AreEqual(new RectF(43, 24, 1280, 720), Presentation.PixelArt.Fit(new RectF(0, 0, 1366, 768), 320, 180), "4x with a border");
+    }
+
+    [TestMethod]
+    public void Fit_AtTheEdges_AWindowSmallerThanTheCanvasShrinksIt_AndAnEmptyAreaGivesAnEmptyFrame()
+    {
+        Assert.AreEqual(new RectF(0, 0, 160, 90), Presentation.PixelArt.Fit(new RectF(0, 0, 160, 90), 320, 180), "half the canvas");
+        Assert.AreEqual(new RectF(0, 0, 160, 90), Integer.Fit(new RectF(0, 0, 161, 90), 320, 180), "the odd column is letterbox");
+        Assert.AreEqual(new RectF(0, 0, 1, 1), Presentation.PixelArt.Fit(new RectF(0, 0, 1, 1), 480, 270), "a window of one pixel");
+        Assert.AreEqual(new RectF(682, 0, 2, 1), Fractional.Fit(new RectF(0, 0, 1366, 1), 480, 270), "one row: 1.78 columns round to 2");
+        Assert.AreEqual(new RectF(0, 383, 1, 1), Fractional.Fit(new RectF(0, 0, 1, 768), 480, 270), "one column");
+        Assert.AreEqual(new RectF(5, 7, 0, 0), Presentation.PixelArt.Fit(new RectF(5, 7, 0, 0), 320, 180), "nothing to draw into");
+        Assert.AreEqual(new RectF(0, 0, 1366, 768), Presentation.PixelArt.Fit(new Vector2(1366, 768), new RectF(0, 0, -4, 10), 1366, 768), "an impossible safe area means the whole window");
     }
 
     [TestMethod]

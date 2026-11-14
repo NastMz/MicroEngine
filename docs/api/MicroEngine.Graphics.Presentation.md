@@ -8,7 +8,7 @@ Guide: [Presentation](../manual/rendering.md#presentation-one-choice-per-field)
 
 How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
 ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)), what happens to the window's other shape ([Aspect](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Aspect)), how it is sampled when it is
-scaled ([Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale)), the sampler textures get when they choose none ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)), the size
+scaled ([Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale)), the whole factor it is enlarged by first ([Prescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Prescale)), the sampler textures get when they choose none ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)), the size
 factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)), whether desktop windows open at whole factors
 ([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)) and whether 2D cameras snap to whole pixels by default
 ([CameraPixelSnap](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CameraPixelSnap)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
@@ -34,6 +34,20 @@ public sealed record Presentation : IEquatable<Presentation>
 ```csharp
 public Presentation()
 ```
+
+## Fields
+
+### <a id="MicroEngine_Graphics_Presentation_AutoPrescale"></a> AutoPrescale
+
+The value of [Prescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Prescale) that follows the window: the smallest whole factor that covers the frame.
+
+```csharp
+public const int AutoPrescale = 0
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Properties
 
@@ -120,6 +134,30 @@ public static Presentation PixelArt { get; }
 #### Property Value
 
  [Presentation](MicroEngine.Graphics.Presentation.md)
+
+### <a id="MicroEngine_Graphics_Presentation_Prescale"></a> Prescale
+
+The whole factor the canvas is enlarged by, with nearest sampling, before [Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale) samples it into the
+window. 1 (the default) enlarges nothing: [Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale) samples the canvas itself. With a linear
+[Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale) and [AutoPrescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_AutoPrescale), a canvas drawn at a scale that is not whole keeps every pixel
+the same size, with one blended window pixel at its edges instead of pixels of two widths (nearest) or a blurred
+picture (linear alone); at a whole scale the picture is exactly the nearest one. A fixed factor (2, 3...) below
+the scale gives softer edges. It has no effect with a nearest [Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale) or on a canvas drawn smaller
+than its size. [PrescaleFor](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PrescaleFor_MicroEngine_RectF_System_Int32_System_Int32_System_Int32_) gives the factors a frame gets.
+
+```csharp
+public int Prescale { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The value is negative.
 
 ### <a id="MicroEngine_Graphics_Presentation_Rounding"></a> Rounding
 
@@ -271,7 +309,9 @@ public bool Equals(Presentation? other)
 Where the canvas lands in <code class="paramref">area</code> (the window, or its safe area on a phone), in window pixels: the
 largest scale that fits, rounded by [Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding), centred; with <code class="paramref">portrait</code> it sits at the
 top of the area instead (on-screen controls get the space below). With [Stretch](MicroEngine.Graphics.AspectMode.md) it covers
-the whole area.
+the whole area. The frame's size is whole pixels: at a scale that is not whole, each side is the nearest whole
+size (480 × 270 in 1366 × 768 lands on 1365 × 768), so the frame of a whole area starts and ends on pixel
+boundaries, with the odd pixel of letterbox on the right or at the bottom.
 
 ```csharp
 public RectF Fit(RectF area, int canvasWidth, int canvasHeight, bool portrait = false)
@@ -339,6 +379,38 @@ public override int GetHashCode()
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Graphics_Presentation_PrescaleFor_MicroEngine_RectF_System_Int32_System_Int32_System_Int32_"></a> PrescaleFor\(RectF, int, int, int\)
+
+The whole factors (one per axis; they differ only with [Stretch](MicroEngine.Graphics.AspectMode.md)) a canvas of
+<code class="paramref">canvasWidth</code> × <code class="paramref">canvasHeight</code> pixels is enlarged by before it is sampled into
+<code class="paramref">frame</code>: [Prescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Prescale), or with [AutoPrescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_AutoPrescale) the smallest factor that
+covers the frame, limited so the enlarged canvas is at most <code class="paramref">maxSize</code> pixels on a side (a device's
+largest render target). (1, 1), nothing to enlarge, with a nearest [Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale).
+
+```csharp
+public (int X, int Y) PrescaleFor(RectF frame, int canvasWidth, int canvasHeight, int maxSize = 2147483647)
+```
+
+#### Parameters
+
+`frame` [RectF](MicroEngine.RectF.md)
+
+`canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`canvasHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`maxSize` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ \([int](https://learn.microsoft.com/dotnet/api/system.int32) [X](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.x), [int](https://learn.microsoft.com/dotnet/api/system.int32) [Y](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.y)\)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The canvas size is not positive.
 
 ### <a id="MicroEngine_Graphics_Presentation_ToCanvas_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_"></a> ToCanvas\(Vector2, RectF, int, int\)
 

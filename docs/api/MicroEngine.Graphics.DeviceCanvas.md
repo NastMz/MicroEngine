@@ -185,8 +185,9 @@ public PixelImage? CaptureUi()
 
 Draws the canvas into the window's target: the window cleared to <code class="paramref">letterbox</code> (opaque), then the
 canvas copied (its alpha ignored, so a translucent canvas never darkens) into <code class="paramref">frame</code> with the
-presentation's upscale sampler. Returns false, drawing nothing, when the window has no target this frame
-(minimised); the caller then skips presenting.
+presentation's upscale sampler, enlarged first by its prescale when it has one ([Prescale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Prescale),
+through a [CanvasPresenter](MicroEngine.Graphics.CanvasPresenter.md)), and the frame's UI view over everything. Returns false, drawing nothing,
+when the window has no target this frame (minimised); the caller then skips presenting.
 
 ```csharp
 public bool Compose(Presentation presentation, RectF frame, Color letterbox)

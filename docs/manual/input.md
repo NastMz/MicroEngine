@@ -243,7 +243,8 @@ The same key in a menu action and in a gameplay action is not a conflict. Here `
 each is read in its own scenes.
 
 Bindings are saved by name (`"Q"`, `"RightTrigger+"`), so they stay valid when the engine adds keys. `SaveBindings`
-writes every action and throws when the medium refuses; the change then lasts until the game quits:
+writes every action and throws `IOException` or `UnauthorizedAccessException` when the medium refuses; the change then
+lasts until the game quits:
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#save -->
 ```csharp
@@ -265,8 +266,8 @@ private void Save(string done)
 | --- | --- |
 | `InputSystem.ListenForPress(pressed)` | Hands the next key-down or button-down to `pressed`, once, and keeps it (and its release) from everything else; dispose the result to stop listening |
 | `BindFrom(action, press, replace)` | Binds the press's key or button; `replace` swaps the action's keys (for a key) or buttons (for a button) |
-| `SaveBindings(storage, slot)` | Writes every action's bindings to an `IStorage` slot (`input-bindings` by default) |
-| `LoadBindings(storage, slot)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back); false and the defaults stay when nothing was saved or the data is unreadable, which is set aside |
+| `SaveBindings(storage, slot)` | Writes every action's bindings to an `IStorage` slot (`input-bindings` by default; a plain name, see [Slot names](persistence.md#slot-names)). Throws `IOException` or `UnauthorizedAccessException` when the storage fails |
+| `LoadBindings(storage, slot)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back); false and the defaults stay when nothing was saved or the data is unreadable, which is set aside. A storage that cannot be read throws (`IOException`, `UnauthorizedAccessException`) and the current bindings stay |
 | `ExportBindings()`, `ImportBindings(set)` | The same data as an `InputBindingSet`, to keep inside a save of your own (`SaveStore.Save("bindings", Input.ExportBindings())`) |
 
 ## Querying actions

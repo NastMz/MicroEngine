@@ -72,6 +72,7 @@ const guidePages = [
   { source: 'docs/manual/lifecycle.md', slug: 'docs/manual/lifecycle', group: 'manual', label: 'Game lifecycle and time' },
   { source: 'docs/manual/scenes.md', slug: 'docs/manual/scenes', group: 'manual', label: 'Scenes' },
   { source: 'docs/manual/rendering.md', slug: 'docs/manual/rendering', group: 'manual', label: 'Graphics' },
+  { source: 'docs/guide/animation.md', slug: 'docs/animation', group: 'manual', label: 'Animation' },
   { source: 'docs/manual/text.md', slug: 'docs/manual/text', group: 'manual', label: 'Text' },
   { source: 'docs/manual/input.md', slug: 'docs/manual/input', group: 'manual', label: 'Input' },
   { source: 'docs/manual/audio.md', slug: 'docs/manual/audio', group: 'manual', label: 'Audio' },
