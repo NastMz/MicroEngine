@@ -24,6 +24,13 @@ public sealed class BrowserStorage : IStorage
 
 [IStorage](MicroEngine.Platform.IStorage.md)
 
+## Remarks
+
+A key is the game's prefix followed by the slot as given. localStorage keys are flat text with no folders, so a slot
+with <code>/</code> or <code>..</code> is one more key under the game's prefix and never another game's. Every member throws
+`ArgumentException` for a slot that is null or empty, which would be the prefix itself. Names are not
+otherwise restricted here: <code>SaveStore</code> is what keeps slots to names every system can store.
+
 ## Constructors
 
 ### <a id="MicroEngine_Platform_BrowserStorage__ctor_System_String_"></a> BrowserStorage\(string\)
@@ -106,7 +113,7 @@ public string? Read(string slot)
 
 ### <a id="MicroEngine_Platform_BrowserStorage_SetAside_System_String_"></a> SetAside\(string\)
 
-Moves unreadable data out of the slot, keeping a copy; best effort, never throws.
+Moves unreadable data out of the slot, keeping a copy; best effort, never throws for a failure of the medium.
 
 ```csharp
 public void SetAside(string slot)

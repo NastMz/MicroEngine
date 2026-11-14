@@ -612,7 +612,7 @@ public bool IsConsumed(string action)
 
 Reads bindings saved with [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_) and applies them ([ImportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_)). Returns false
 and keeps the current bindings when nothing was saved or the data is unreadable (which is set aside, so the next
-save does not destroy it).
+save does not destroy it). A storage that cannot be read throws instead, and the current bindings stay.
 
 ```csharp
 public bool LoadBindings(IStorage storage, string slot = "input-bindings")
@@ -627,6 +627,24 @@ public bool LoadBindings(IStorage storage, string slot = "input-bindings")
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">storage</code> or <code class="paramref">slot</code> is null.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).
+
+ [IOException](https://learn.microsoft.com/dotnet/api/system.io.ioexception)
+
+The storage failed.
+
+ [UnauthorizedAccessException](https://learn.microsoft.com/dotnet/api/system.unauthorizedaccessexception)
+
+The storage refused access.
 
 ### <a id="MicroEngine_Input_InputMap_Pressed_System_String_"></a> Pressed\(string\)
 
@@ -710,11 +728,29 @@ public void SaveBindings(IStorage storage, string slot = "input-bindings")
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+#### Remarks
+
+The slot is handed to the storage as given, and the storage decides which names it can hold. The file storage
+takes plain names only (<code>"input-bindings"</code>, <code>"bindings.player2"</code>), and a plain name is the same file
+or key on every system.
+
 #### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">storage</code> or <code class="paramref">slot</code> is null.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).
 
  [IOException](https://learn.microsoft.com/dotnet/api/system.io.ioexception)
 
 The storage failed.
+
+ [UnauthorizedAccessException](https://learn.microsoft.com/dotnet/api/system.unauthorizedaccessexception)
+
+The storage refused access.
 
 ### <a id="MicroEngine_Input_InputMap_SetForced_System_String_System_Boolean_"></a> SetForced\(string, bool\)
 

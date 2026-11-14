@@ -31,6 +31,10 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, or is
   a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file
   ([Slot names](../manual/persistence.md#slot-names), [migration](../migrations.md#slot-names-that-are-not-plain-names-are-refused)).
+- `InputMap.SaveBindings` and `LoadBindings`, and every member of `BrowserStorage`, throw `ArgumentException` for a
+  slot that is `null` or empty (for the bindings calls, also white space) instead of handing it to the storage. Other
+  names go to the storage as before, and each storage decides which names it holds
+  ([Who checks the name](../manual/persistence.md#who-checks-the-name)).
 
 **Fixed**
 
@@ -39,6 +43,8 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   existing achievement files load as before.
 - A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
   an empty slot wrote a file named `.json`.
+- `BrowserStorage` used with a `null` or empty slot read and wrote the key `microengine/<gameId>/`, the prefix of the
+  game's slots.
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

@@ -59,6 +59,35 @@ the members of `FileSaveStorage`) throws `ArgumentException`, naming the slot, w
 A slot never reaches a file outside the save folder. To group saves, put the group in the name (`"profile1.progress"`)
 or give each group its own store over its own directory.
 
+Names that pass the rule can still meet in one file, so keep them apart yourself:
+
+- **Letter case.** `"Progress"` and `"progress"` are one file on Windows and macOS and two files on Linux and two
+  keys in a browser. Use one spelling per slot, and never two slots that differ only by case.
+- **Accented letters.** A letter typed as one character (`é`) and as a letter plus a combining accent are the same
+  file on macOS and different files and keys elsewhere. Write slot names as constants in the code rather than
+  building them from text the player types.
+- **`.corrupt`.** Unreadable data of the slot `"save"` is set aside under the name `"save.corrupt"`
+  ([Failure handling](#failure-handling)), replacing whatever is there. Do not name a slot `<another slot>.corrupt`.
+- **Length.** A file name holds about 240 characters, fewer when the name has letters outside ASCII. A longer slot is
+  not an error: `Save` returns `false`, `Load` returns `null` and `Exists` returns `false`. Keep slot names short.
+
+A game that lets the player name a save keeps that name inside the saved data and uses its own slot names
+(`"profile1"`, `"profile2"`).
+
+### Who checks the name
+
+| Called | What it accepts |
+| --- | --- |
+| `SaveStore` (every call that takes a slot) | Plain names only, over any storage: files, the browser or a storage of your own. It checks before it touches the storage |
+| `FileSaveStorage` (every member) | Plain names only, also when it is used without a store, so no slot reaches a file outside its folder |
+| `BrowserStorage` (every member) | Any name that is not `null` or empty. A key is `microengine/<gameId>/` followed by the slot as given; keys are flat text, so a slot with `/` or `..` is one more key of the same game |
+| A storage of your own | Whatever it decides. It throws `ArgumentException` for a name it cannot hold |
+| `InputMap.SaveBindings`, `LoadBindings` | Any name that is not `null`, empty or white space; the storage they are given then applies its own rule ([A rebinding screen](input.md#a-rebinding-screen)) |
+
+`ArgumentNullException` and `ArgumentException` mean the calling code passed a wrong name, and they are thrown on
+every system. `IOException` and `UnauthorizedAccessException` mean the medium failed; `SaveStore` turns those into
+`false` and `null` ([Failure handling](#failure-handling)).
+
 ## Where saves live
 
 ```csharp
@@ -106,7 +135,7 @@ public interface ISaveStorage
     void Write(string slot, string text);
     bool Exists(string slot);
     void Delete(string slot);
-    /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws.</summary>
+    /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws for a failure of the medium.</summary>
     void SetAside(string slot);
 }
 ```
@@ -114,7 +143,8 @@ public interface ISaveStorage
 Source: [`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveStore.cs)
 
 Implementations report failures as `IOException` or `UnauthorizedAccessException`; the browser storage converts
-JavaScript storage errors (quota, privacy mode) into `IOException`. A new medium (a cloud service, a console save
+JavaScript storage errors (quota, privacy mode) into `IOException`. Each storage decides which slot names it can
+hold and throws `ArgumentException` for the others ([Who checks the name](#who-checks-the-name)). A new medium (a cloud service, a console save
 API) would implement this interface and be installed through the composition's `host.Storage` or the
 `SaveStore(ISaveStorage)` constructor.
 No such implementation exists today.
@@ -287,4 +317,8 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
   (`Save(slot, data, typeInfo)`, `Load(slot, typeInfo)`), reading and writing the same slots
   ([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)).
 - A slot is a plain name; folders inside the save folder are not supported ([Slot names](#slot-names)).
+- Two slots whose names differ only by letter case, or only by how an accented letter is encoded, are the same file on
+  some systems; a slot named `<another slot>.corrupt` is replaced when that other slot's unreadable data is set aside.
+- `gameId` names the save folder as given: use the game's id (`com.example.mygame`), not text with `/`, `\`, `..` or
+  `:`.
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).

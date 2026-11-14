@@ -38,6 +38,12 @@ A file that an earlier version wrote under a name that is now refused (`"name."`
 slot renames the file once at startup, before it opens its store, with `File.Move` from the old file name to the new
 slot's (`name.json`).
 
+`InputMap.SaveBindings` and `LoadBindings` throw `ArgumentException` for a slot that is `null`, empty or white space,
+and the members of `BrowserStorage` for one that is `null` or empty. They pass every other name to the storage, so
+with `FileSaveStorage` a bindings slot that is not a plain name throws `ArgumentException` as above, where it threw
+`IOException` or wrote outside the folder before. To update, pass a plain name, or leave the default
+(`"input-bindings"`).
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components

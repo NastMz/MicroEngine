@@ -291,9 +291,105 @@ happened to exist. The full test suite passes with the rule in place.
 - `FileSaveStorage.SetAside` documents "never throws" for storage failures; with a refused name it now throws
   `ArgumentException`, like its other members. The store never calls it with one.
 
-**Not changed.** `BrowserStorage` and `InputMap.SaveBindings(IStorage, slot)` used without a `SaveStore` do not check
-the name themselves (`MicroEngine.Platform` and `MicroEngine.Input` are outside this work's surface). With the default
-file medium the check in `FileSaveStorage` covers them; browser keys cannot leave the game's prefix.
+**Not changed in the second pass.** `BrowserStorage` and `InputMap.SaveBindings(IStorage, slot)` used without a
+`SaveStore` did not check the name themselves. The third pass (4.3) reviews them.
+
+### 4.3 Storage: who owns a slot name (third pass, 2026-11-14)
+
+**Responsibilities**, as the code stands after this pass:
+
+| Piece | What a slot is to it | Who passes the slot | Bad name | Medium failure |
+| --- | --- | --- | --- | --- |
+| `IStorage` (`src/MicroEngine.Platform/Files/IStorage.cs`) | "Named slots of text that are written whole"; the contract gave names no rule. Documented now: the storage decides which names it holds | Any caller | Documented now: `ArgumentException` from every member | `IOException`, `UnauthorizedAccessException`; `SetAside` never throws for those |
+| `SaveStore` (`src/MicroEngine.Saves/SaveStore.cs`) | A plain, portable name (`SlotName`), checked before the storage is touched, over any storage | The game (a constant in every game, sample and template of the repository); `AchievementTracker` passes the constant `"achievements"` and offers no other slot | `ArgumentNullException`, `ArgumentException` (documented and actual) | `Save` returns `false`, `Load` returns `null`; `Exists` and `Delete` let the storage's exception through (undocumented, unchanged) |
+| `FileSaveStorage` (same file) | `<directory>/<slot>.json`; `SlotName` again in `PathFor`, so the rule holds without a store | `SaveStore`, the game directly, or `InputMap` | `ArgumentException` from every member, `SetAside` included | `IOException`, `UnauthorizedAccessException`; `SetAside` swallows them |
+| `BrowserStorage` (`src/MicroEngine.Platform/Files/BrowserStorage.cs`) | The localStorage key `microengine/<gameId>/` + slot, by concatenation | `SaveStore` (already checked), the game directly, or `InputMap` | Before: no check. Now `ArgumentException` for `null` or empty | `JSException` becomes `IOException`; `SetAside` swallows it |
+| `InputMap.SaveBindings`, `LoadBindings` (`src/MicroEngine.Input/Bindings.cs`) | A name handed to the storage as given; the default is the constant `"input-bindings"` | The game | Before: documented `IOException` only, actual whatever the storage threw. Now `ArgumentNullException` or `ArgumentException` for a slot with no name, then the storage's own `ArgumentException`; all documented | `IOException`, `UnauthorizedAccessException` pass through (documented now; `LoadBindings` documented none before) |
+| `HostBuilder.Storage`, `host.SaveStore(gameId)` | Not a slot: a game id chooses the medium | The game or the host (a constant) | No check | - |
+
+No engine code passes a player-typed string as a slot: every slot in `src`, `games`, `samples` and `templates` is a
+constant. A game can pass one; it then reaches `SaveStore` (checked there), or an `IStorage` directly or through
+`InputMap` (checked by the storage).
+
+**Where validation belongs.**
+
+- *"A slot never reaches outside the save location"* belongs to the **storage**: only the storage knows what a name
+  becomes and what "outside" means, and it can be called without a store. `FileSaveStorage` enforces it in every
+  member. `BrowserStorage` needs no rule for it: a key is flat text, nothing interprets `/` or `..`, and every key
+  starts with the game's prefix (read in the code and in the host page's `main.js`; the key construction is
+  unit-tested, a browser was not run).
+- *"The same names are valid on every system"* belongs to **`SaveStore`**: it is the layer that promises a save can
+  move between systems, and it applies the rule over any storage. It is not imposed on `IStorage`: a game's own
+  storage (a cloud service, a key-value store) may use names the file medium refuses, and `InputMap` over such a
+  storage keeps them (`BindingsKeepTheNamesAGamesOwnStorageUnderstands`).
+- `InputMap` cannot reach `SlotName`: `MicroEngine.Input` references only the kernel and the platform contracts, and
+  the rule lives in `MicroEngine.Saves`. It refuses only a slot with no name. Sharing the rule means moving it between
+  assemblies: an owner's decision, below.
+
+**Demonstrated failures, fixed** (`StorageSlotContractTests`, RED before the fix):
+
+1. `InputMap.SaveBindings(storage, null)` and `LoadBindings(storage, null)` reached the storage: over a
+   dictionary-backed storage the exception named the dictionary's parameter (`key`), not `slot`, and an empty or
+   white-space slot was written. Fixed: `ArgumentNullException` or `ArgumentException` for `slot` before the storage
+   is touched.
+2. `BrowserStorage` with a `null` or empty slot built the key `microengine/<gameId>/`, the prefix itself. The key is
+   known by reading (`prefix + slot`); what was run, on the desktop, is that every member reached the page call
+   (`PlatformNotSupportedException`) instead of refusing. Fixed: `ArgumentException` before the page is called. The
+   keys of every other name are unchanged (`BrowserStorageKeepsEachGamesSlotsUnderItsOwnKeyPrefix`).
+3. Exception contracts that contradicted the documentation: `SaveBindings` documented `IOException` only and threw
+   `ArgumentException` over `FileSaveStorage` for a refused name; `LoadBindings` documented no exception and lets
+   `IOException` and `UnauthorizedAccessException` through; `IStorage.SetAside` said "never throws" while
+   `FileSaveStorage.SetAside` throws `ArgumentException` for a refused name. The documentation now states the
+   behaviour and the tests pin it. No escape exists through the bindings calls over the file medium
+   (`BindingsOverTheFileMediumNeverReachOutsideTheSaveFolderAndReportTheNameAsAnArgumentError`, which passed before
+   the change: the storage already guaranteed it).
+
+**Demonstrated, not fixed** (run on Windows 11 with a scratch probe; each is a decision below or a limit stated in
+the manual):
+
+- **Set-aside collision.** `Save("save.corrupt", data)`, then a corrupt `save.json`, then `Load("save")`: the store
+  sets `save.json` aside as `save.corrupt.json` and so replaces the slot `"save.corrupt"`, whose data is lost; the
+  next `Load("save.corrupt")` returns `null` and moves the file to `save.corrupt.corrupt.json`. The browser key
+  `<slot>.corrupt` collides the same way (read).
+- **Letter case.** After `Save("Progress")`, `Exists("progress")` is true and `Save("progress")` replaces the file on
+  Windows. On Linux and in a browser they are two slots (read).
+- **Unicode normalization.** A precomposed and a decomposed spelling of one name are two files on Windows (run); on
+  macOS they are one (**hypothesis**, not run).
+- **Length.** A slot of 246 ASCII characters saves; from 247, `Save` returns `false`, `Load` `null`, `Exists`
+  `false`, and `FileSaveStorage.Write` throws `IOException`. No crash.
+- **Game id.** `SaveStore.DefaultDirectory` with an id that starts with `..` segments, or with a rooted path, resolves
+  outside the `MicroEngine` data folder, and a store created with a rooted id saves there; `"Studio/Game"` makes a
+  nested folder. A save folder with `:` in its name makes `Save` return `false` on Windows. The id is the game's own
+  constant, not player data.
+
+**User-perceptible differences of this pass.** `SaveBindings` and `LoadBindings` with a `null`, empty or white-space
+slot, and `BrowserStorage` with a `null` or empty one, throw where they read or wrote something. Nothing else
+changes: same files, same browser keys.
+
+**Needs owner decision.**
+
+1. *One name rule for the bindings calls on every system.* Today `SaveBindings(storage, "a/b")` works over
+   `BrowserStorage` and throws over `FileSaveStorage`.
+   - A. Leave it: the storage owns its names, and the manual says to use a plain name. Breaks nothing; the difference
+     between systems stays for a game that uses such a name.
+   - B. Move the rule to `MicroEngine.Platform` as a public member and have `InputMap` (and `BrowserStorage`) apply
+     it. One behaviour everywhere; new public API; it refuses names a game's own storage accepts through `InputMap`,
+     and browser keys with `/` written directly become unreachable.
+   - C. Make the rule part of the `IStorage` contract. Breaks every storage with names of its own, and an interface
+     cannot enforce it.
+   - Recommendation: A. No failure was demonstrated that B would prevent, and B takes away a legitimate use.
+2. *The set-aside name.*
+   - A. Reserve the suffix: `SaveStore` refuses a slot that ends in `.corrupt`. Smallest change; a game with such a
+     slot renames it; direct `IStorage` use still collides.
+   - B. Set aside under a name no slot can have (`<slot>.json.corrupt` for files, a separate key prefix in browsers).
+     Fixes it in the storage; changes the documented file name, and earlier set-aside copies keep the old one.
+   - C. Leave it, documented (done in the manual).
+   - Recommendation: B for the file medium when a change to the persisted names is acceptable; until then C.
+3. *Game ids.* Refusing `..` segments and rooted ids in `DefaultDirectory` closes the escape; refusing separators
+   breaks ids such as `"Studio/Game"`. Not changed: the id is the developer's constant and no trust boundary is
+   crossed. Recommendation: refuse only `..` segments and rooted paths, with a migration note, if the owner wants it.
+4. *Slots that differ only by case or normalization.* Folding names would change which file existing slots use on
+   case-sensitive systems. Stated as a limit in the manual; no change recommended.
 
 ## 5. Audit of the rest of the SDK
 
@@ -370,5 +466,5 @@ Open, not started, no issue created:
 2. **Box2D under NativeAOT** needs the Box2D native libraries; untested.
 3. **Hosts.** The web, Android and iOS hosts keep `TrimMode=partial` and the reflection switch. Moving them to full
    trimming would make every game declare its saved types: a breaking change for games, not proposed.
-4. **`BrowserStorage` and `InputMap.SaveBindings`** used without a `SaveStore` do not check slot names themselves
-   (4.2); no failure was demonstrated there.
+4. **`BrowserStorage` and `InputMap.SaveBindings`** used without a `SaveStore`: reviewed in the third pass (4.3),
+   which fixes the slot with no name and leaves four decisions to the owner.

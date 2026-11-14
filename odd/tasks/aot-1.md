@@ -68,6 +68,18 @@ Achievements and "no toolchains installed"):
   evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
   hipótesis y las diferencias perceptibles para el usuario."
 
+Third pass, the owner's request of 2026-11-14 (L12, verbatim there):
+
+- S23 "Revisa a fondo las responsabilidades de `SaveStore`, `IStorage`, `BrowserStorage` e
+  `InputMap.SaveBindings/LoadBindings`."
+- S24 "Determina dónde corresponde validar nombres y rutas. No apliques las restricciones de SaveStore a todo IStorage
+  si rompe usos legítimos."
+- S25 "Comprueba seguridad, compatibilidad entre plataformas y contratos de excepciones."
+- S26 "Corrige los defectos demostrados que tengan una solución localizada. Si descubres que hace falta modificar el
+  contrato público de almacenamiento, documenta las alternativas y no hagas ese rediseño sin aprobación."
+- S27 "Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior." "No introduzcas
+  rediseños arquitectónicos innecesarios." "No hagas push, PR ni release sin mi autorización."
+
 ## Tasks
 
 | Task | Specs | Route | Status | Commit / evidence |
@@ -83,6 +95,10 @@ Achievements and "no toolchains installed"):
 | T9 Achievements without reflection, file byte-identical | S18 S11 S12 | delegated (same worker) | done | `0d21b94`; pin: `AchievementSaveFormatTests` 4/4 before and after; RED: `trimmed.mjs` typed publish `IL2026` in `AchievementTracker`, and the run threw `InvalidOperationException`; GREEN: all checks; evaluation §4.1 |
 | T10 ADR 0054 checked against the code and accepted | S19 | delegated (same worker) | done | the commit that closes this pass; corrections in L10 |
 | T11 NativeAOT toolchain on this machine: real publish and run | S21 S14 S17 | delegated (same worker) | done | nothing to install (L9); `trimmed.mjs --aot` 8 of 8; `HelloEngine` and `PhysicsSubstitution` published and run as NativeAOT executables; evaluation §1.3, §5.3 |
+| T12 Responsibilities of the store, the storage contract, the browser storage and the bindings calls; where names are checked | S23 S24 | delegated (one bounded worker, the whole third pass) | done | evaluation §4.3 (table and reasons) |
+| T13 Security, systems and exception contracts, by test and by probe | S25 | delegated (same worker) | done | `StorageSlotContractTests` (7); Windows probe (set-aside collision, case, normalization, length, game id), evaluation §4.3. Browser, Linux and macOS behaviour is read, not run |
+| T14 Localized fixes with their regression tests | S26 S27 | delegated (same worker) | done | `b9f6638`; RED: 2 of 7 (`slot` reported as `key` and written; `BrowserStorage` reached the page call); GREEN 7/7 |
+| T15 Alternatives for what needs the storage contract changed; manual, release notes, migration, API reference | S26 | delegated (same worker) | done | evaluation §4.3 "Needs owner decision" (four); the documentation commit of this pass |
 
 ## Log
 
@@ -153,3 +169,29 @@ Achievements and "no toolchains installed"):
   (saves and achievements), `HelloEngine` (capture inspected) and `PhysicsSubstitution`'s tile scenario run; Box2D did
   not run (`box2d: no Box2D native library for this runtime.`). Not covered: S15, and S17 beyond Windows x64. No issue
   was created and no CI file was touched.
+- L12 (2026-11-14) The owner's request for the third pass, verbatim:
+
+  ```
+  3. Almacenamiento
+
+  * Revisa a fondo las responsabilidades de `SaveStore`, `IStorage`, `BrowserStorage` e `InputMap.SaveBindings/LoadBindings`.
+  * Determina dónde corresponde validar nombres y rutas. No apliques las restricciones de SaveStore a todo IStorage si rompe usos legítimos.
+  * Comprueba seguridad, compatibilidad entre plataformas y contratos de excepciones.
+  * Corrige los defectos demostrados que tengan una solución localizada. Si descubres que hace falta modificar el contrato público de almacenamiento, documenta las alternativas y no hagas ese rediseño sin aprobación.
+
+  Criterios generales
+  * Cada defecto corregido debe tener una prueba de regresión que demuestre el problema anterior.
+  * No introduzcas rediseños arquitectónicos innecesarios.
+  * No hagas push, PR ni release sin mi autorización.
+  ```
+
+  Specs S23-S27; tasks T12-T15.
+- L13 (2026-11-14) Third pass, observed. The storage is the layer that keeps a slot inside the save location
+  (`FileSaveStorage` in every member; a browser key cannot leave the game's prefix); `SaveStore` is the layer that keeps
+  names portable, over any storage; the rule is not imposed on `IStorage`. Fixed (`b9f6638`): the bindings calls and
+  `BrowserStorage` accepted a slot with no name; the exception documentation of `SaveBindings`, `LoadBindings` and
+  `IStorage` contradicted the code. Demonstrated on Windows and left for the owner (evaluation §4.3): a slot named
+  `<other>.corrupt` is replaced when the other slot is set aside; two slots that differ only by case are one file; a
+  game id with `..` or a rooted path leaves the `MicroEngine` data folder. `IStorage`'s documentation now says a
+  storage refuses a name it cannot hold with `ArgumentException`: it describes what `FileSaveStorage` does since
+  `d7e6f06`, adds no member and changes no signature. Not run: a browser, Linux, macOS.
