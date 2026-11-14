@@ -50,6 +50,10 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Right-to-left text (shaping)", g => new ShapingExample()),
         ("Tracks and timelines", g => new TimelineExample()),
         ("A sound that follows (voices)", g => new VoicesExample()),
+        ("Light behind walls (render targets)", g => new OccludedLightExample()),
+        ("Masks (render targets)", g => new MaskExample()),
+        ("Water (a shader of your own)", g => new WaterExample()),
+        ("Post-processing (shader passes)", g => new PostProcessExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

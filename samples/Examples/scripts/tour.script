@@ -163,4 +163,23 @@
 3050 hold down 30
 3150 capture 27-voices.png
 3156 press pause
-3170 quit
+3170 press down
+3180 press confirm
+3210 hold right 40
+3270 capture 28-light.png
+3276 press pause
+3290 press down
+3300 press confirm
+3330 hold right 30
+3380 capture 29-mask.png
+3386 press pause
+3400 press down
+3410 press confirm
+3440 hold right 30
+3500 capture 30-water.png
+3506 press pause
+3520 press down
+3530 press confirm
+3600 capture 31-post.png
+3606 press pause
+3620 quit
