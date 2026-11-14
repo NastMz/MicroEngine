@@ -309,7 +309,9 @@ public bool Equals(Presentation? other)
 Where the canvas lands in <code class="paramref">area</code> (the window, or its safe area on a phone), in window pixels: the
 largest scale that fits, rounded by [Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding), centred; with <code class="paramref">portrait</code> it sits at the
 top of the area instead (on-screen controls get the space below). With [Stretch](MicroEngine.Graphics.AspectMode.md) it covers
-the whole area.
+the whole area. The frame's size is whole pixels: at a scale that is not whole, each side is the nearest whole
+size (480 × 270 in 1366 × 768 lands on 1365 × 768), so the frame of a whole area starts and ends on pixel
+boundaries, with the odd pixel of letterbox on the right or at the bottom.
 
 ```csharp
 public RectF Fit(RectF area, int canvasWidth, int canvasHeight, bool portrait = false)

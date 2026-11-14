@@ -44,11 +44,11 @@ Evaluation: [`docs/evaluations/graphics-2.md`](../../docs/evaluations/graphics-2
 | T3 `Presentation.Prescale`, `PrescaleFor`, `CanvasPresenter`, the SDL platform, tests | S6 S7 | inline | done | `f01e2f1`; RED: the tests did not compile without the API; `CanvasPresenterTests` 9/9, `SdlPrescaleTests` 1/1 |
 | T4 `RIFT_PRESENT` on Neon Rift for the comparison | S6 | inline | done | `ac20064`; RED: `sharp` gave the default; `LaunchOptionsTests` 4/4 |
 | T5 Evaluation, release notes, architecture table, API reference | S6 | inline | done | this branch |
-| T6 Pin Neon Rift's default presentation | S8 | inline | pending | |
-| T7 `Presentation.Fit` returns whole-pixel frames (own commit) | S10 S12 | inline | pending | |
-| T8 Prescale in `DeviceCanvas.Compose`, the headless `ScreenCapture.Compose` and raylib; manual row; release note | S11 | inline | pending | |
-| T9 Captures of the presented image from the real device, three options at two window sizes, same frame | S9 S12 | inline | pending | |
-| T10 Evaluation updated: demonstrated failures, hypotheses, perceptible differences | S12 | inline | pending | |
+| T6 Pin Neon Rift's default presentation | S8 | inline | done | already pinned by `LaunchOptionsTests` (`ac20064`); the default's presented picture equals nearest at both sizes (L7) |
+| T7 `Presentation.Fit` returns whole-pixel frames (own commit) | S10 S12 | inline | done | `c40ef78`; RED: 4 of the 5 new `Fit` tests failed (the whole-factor one passed before and after) |
+| T8 Prescale in `DeviceCanvas.Compose`, the headless `ScreenCapture.Compose` and raylib; manual row; release note | S11 | inline | done | `35f31da`; RED: device canvas `E6001A` for red, headless blended, raylib 170 for 212 |
+| T9 Captures of the presented image from the real device, three options at two window sizes, same frame | S9 S12 | inline | done | `a36bfde` (readback and its test); pictures outside the repository (L7) |
+| T10 Evaluation updated: demonstrated failures, hypotheses, perceptible differences | S12 | inline | done | evaluation §5 |
 
 ## Log
 
@@ -100,3 +100,16 @@ Evaluation: [`docs/evaluations/graphics-2.md`](../../docs/evaluations/graphics-2
 
   Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
   ```
+- L6 (2026-11-13) `Fit`: its consumers (SDL and raylib frame and pointer mapping, headless `WorldFrame`, touch layout)
+  use the frame as a continuous rectangle, so the fix is local: the size in whole pixels, the position rule as it
+  was. Demonstrated on the reference device: a 1244.44-wide frame painted 1244 columns with 60 and 62 of letterbox;
+  no blending at the edge (the earlier note in the evaluation was wrong). Prescale: `DeviceCanvas.Compose` delegates
+  to `CanvasPresenter` only when `Prescale != 1`, `ScreenCapture.Compose` takes the presentation; the rows presented
+  without a prescale were recorded before the change and pinned.
+- L7 (2026-11-13) Real captures: `SdlGpuDevice.ReadPresented` (internal) reads the surface texture `Present` copies
+  to the swapchain. Eight runs of Neon Rift stage 1 under the autopilot, deterministic, seed 1, update 750, hidden
+  borderless window: canvas SHA-256 `A023601C12E93E34` in all. Default = nearest at both sizes, sharp = nearest at
+  1920 x 1080 byte for byte; at 1366 x 768 nearest has strokes of 2 and 3 pixels, smooth is soft, sharp is even with
+  a one-pixel soft edge. All pictures and 4x crops were looked at. Not captured: the SDL renderer device (the
+  desktop default), a raylib window, motion. The release note keeps to the presentation entry (the `Fit` change is
+  written there); a line under Fixed and `docs/migrations.md` are outside this change's surface.

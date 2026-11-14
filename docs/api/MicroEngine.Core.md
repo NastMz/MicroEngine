@@ -341,7 +341,7 @@ throwing, so a full disk or browser storage quota leaves the game running with i
 
  [ScreenCapture](MicroEngine.Core.ScreenCapture.md)
 
-Builds the image the player sees from the two views, as the platforms compose a frame.
+Builds the image the player sees from the two views, as the platforms compose a frame, prescale included.
 
  [StartScreen](MicroEngine.Core.StartScreen.md)
 
