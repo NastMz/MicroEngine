@@ -214,6 +214,24 @@ public abstract class InputConformance
     }
 
     [TestMethod]
+    public void A_window_opens_after_the_clipboard_was_busy()
+    {
+        using var turn = SystemClipboard.Exclusive();
+        using (var rig = new Rig(this))
+        {
+            rig.Frames(1);
+            Assert.IsTrue(rig.Host.TryGetCapability<IClipboard>(out var clipboard), "the host offers the system clipboard");
+            var held = SystemClipboard.Hold(TimeSpan.FromMilliseconds(40));
+            Skip(held is not null, "have its clipboard kept open by another program");
+            _ = clipboard.GetText(); // a read that has to wait: what it gives is another test's
+            held!.Wait();
+        }
+        // The failed read must leave nothing behind that the next window takes for its own failure.
+        using var next = new Rig(this);
+        Assert.IsTrue(next.Frames(1).Count >= 0);
+    }
+
+    [TestMethod]
     public void Losing_the_focus_releases_held_keys()
     {
         using var rig = new Rig(this);

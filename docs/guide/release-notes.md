@@ -30,6 +30,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   download managers and remote desktops read it after every change): `IClipboard.GetText` gave null with raylib and
   an empty text with SDL, and `SetText` with raylib reported as taken a text that never reached the clipboard. Both
   hosts now wait for the clipboard, up to 100 ms, and `SetText` returns false when the text was not taken.
+- With raylib on Windows, a clipboard read or write that found the clipboard open by another program made the next
+  window opened in the same process end it (`PLATFORM: Failed to initialize graphics device`). The raylib host now
+  uses the Windows clipboard directly, which leaves nothing behind for the next window.
 
 ## 0.6.0-alpha.1
 
