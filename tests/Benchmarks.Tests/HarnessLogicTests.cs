@@ -76,6 +76,23 @@ public class HarnessLogicTests
     }
 
     [TestMethod]
+    public void A_suite_isolates_its_runs_and_a_run_does_not_unless_asked()
+    {
+        Assert.IsTrue(StressOptions.Parse(["suite"]).Isolate);
+        Assert.IsFalse(StressOptions.Parse(["suite", "--no-isolate"]).Isolate);
+        Assert.IsFalse(StressOptions.Parse(["run", "--scenario", "sprites"]).Isolate);
+        Assert.IsTrue(StressOptions.Parse(["sweep", "--scenario", "sprites", "--isolate"]).Isolate);
+
+        // What an isolated run passes on parses back to the same single run, not isolated again.
+        var asked = StressOptions.Parse(["suite", "--frames", "90", "--warmup", "7", "--seed", "5", "--repeat", "2", "--backend", "box2d"]);
+        var child = StressOptions.Parse([.. Harness.ChildArguments("physics", 321, RunMode.Render, asked, "one.json")]);
+        Assert.AreEqual("run", child.Command);
+        CollectionAssert.AreEqual(new[] { "physics" }, child.Scenarios.ToArray());
+        CollectionAssert.AreEqual(new[] { RunMode.Render }, child.Modes.ToArray());
+        Assert.AreEqual((321, 90, 7, 5, 2, "box2d", "one.json", false), (child.Load, child.Frames, child.Warmup, child.Seed, child.Repeat, child.Backend, child.Out, child.Isolate));
+    }
+
+    [TestMethod]
     public void Sweep_and_compare_options()
     {
         var sweep = StressOptions.Parse(["sweep", "--scenario", "physics", "--budget-ms", "8.33", "--metric", "p50", "--start", "500", "--max-load", "64000"]);

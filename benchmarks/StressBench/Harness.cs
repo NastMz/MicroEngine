@@ -196,6 +196,42 @@ public static class Harness
         return best!;
     }
 
+    /// <summary>The arguments that make another StressBench process measure one scenario and mode as <paramref name="options"/> asks.</summary>
+    public static IReadOnlyList<string> ChildArguments(string scenario, int load, RunMode mode, StressOptions options, string output) =>
+    [
+        "run", "--scenario", scenario, "--mode", StressOptions.NameOf(mode), "--load", load.ToString(CultureInfo.InvariantCulture),
+        "--frames", options.Frames.ToString(CultureInfo.InvariantCulture), "--warmup", options.Warmup.ToString(CultureInfo.InvariantCulture),
+        "--seed", options.Seed.ToString(CultureInfo.InvariantCulture), "--repeat", options.Repeat.ToString(CultureInfo.InvariantCulture),
+        "--backend", options.Backend, "--no-isolate", "--out", output,
+    ];
+
+    /// <summary>
+    /// <see cref="RunBest"/> in a new process of this program, so the run's memory, collections and compiled code are
+    /// its own and not what earlier scenarios left behind.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The process could not start or failed; the message carries what it wrote.</exception>
+    public static RunRecord RunIsolated(string scenario, int load, RunMode mode, StressOptions options)
+    {
+        string program = Environment.ProcessPath ?? throw new InvalidOperationException("The path of this program is unknown; run with --no-isolate.");
+        string output = Path.Combine(Path.GetTempPath(), $"stressbench-{Environment.ProcessId}-{scenario}-{StressOptions.NameOf(mode)}.json");
+        try
+        {
+            var start = new ProcessStartInfo(program) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+            // Started through the dotnet host (dotnet StressBench.dll), the program is the host and its first argument the assembly.
+            if (Path.GetFileNameWithoutExtension(program).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) start.ArgumentList.Add(Environment.GetCommandLineArgs()[0]);
+            foreach (string argument in ChildArguments(scenario, load, mode, options, output)) start.ArgumentList.Add(argument);
+            using var child = Process.Start(start) ?? throw new InvalidOperationException($"{program} did not start.");
+            var written = child.StandardOutput.ReadToEndAsync();
+            string errors = child.StandardError.ReadToEnd();
+            child.WaitForExit();
+            written.Wait();
+            if (child.ExitCode != 0 || !File.Exists(output))
+                throw new InvalidOperationException($"{scenario} ({StressOptions.NameOf(mode)}) failed in its own process (exit code {child.ExitCode}): {errors.Trim()}");
+            return ResultSet.FromJson(File.ReadAllText(output)).Runs[0];
+        }
+        finally { File.Delete(output); }
+    }
+
     /// <summary>Where and how the process measures: machine, system, runtime, compilation and collector.</summary>
     public static SortedDictionary<string, string> DescribeEnvironment(StressOptions options)
     {

@@ -22,6 +22,7 @@ public sealed record StressOptions
           --seed N         seed of the workload (1)       --repeat N   runs per scenario; the fastest median is kept (1)
           --backend tiles|box2d   physics backend of the physics scenarios (tiles)
           --out FILE       write the results as JSON      --label TEXT, --commit HASH   recorded in the file
+          --isolate, --no-isolate   run each scenario and mode in a process of its own (suite: on; run: off)
         Options of sweep:
           --budget-ms MS   the budget (16.667: one 60 Hz update)   --metric mean|p50|p95|p99|p99.9|max of the CPU work (p99)
           --start N        first load tried (the scenario's default / 8)   --max-load N   largest load tried (4000000)
@@ -48,6 +49,8 @@ public sealed record StressOptions
     public double TolerancePercent { get; init; } = 25;
     public string? BaselinePath { get; init; }
     public string? CurrentPath { get; init; }
+    /// <summary>Whether each scenario and mode runs in a process of its own, so its memory and collections are its alone.</summary>
+    public bool Isolate { get; init; }
 
     /// <summary>Reads the command line.</summary>
     /// <exception cref="ArgumentException">Something is missing, unknown or out of range; the message says what.</exception>
@@ -58,7 +61,7 @@ public sealed record StressOptions
         var o = new StressOptions { Command = args[0] };
         if (o.Command is not ("run" or "suite" or "sweep" or "compare" or "list" or "help"))
             throw new ArgumentException($"Unknown command '{o.Command}': run, suite, sweep, compare or list.");
-        if (o.Command == "suite") o = o with { Scenarios = StressBench.Scenarios.Names };
+        if (o.Command == "suite") o = o with { Scenarios = StressBench.Scenarios.Names, Isolate = true };
         var files = new List<string>();
         for (int i = 1; i < args.Count; i++)
         {
@@ -102,6 +105,8 @@ public sealed record StressOptions
                 case "--start": o = o with { Start = Int(1) }; break;
                 case "--max-load": o = o with { MaxLoad = Int(1) }; break;
                 case "--tolerance": o = o with { TolerancePercent = Number() }; break;
+                case "--isolate": o = o with { Isolate = true }; break;
+                case "--no-isolate": o = o with { Isolate = false }; break;
                 default:
                     if (flag.StartsWith("--", StringComparison.Ordinal) || o.Command != "compare") throw new ArgumentException($"Unknown option '{flag}'.");
                     files.Add(flag);

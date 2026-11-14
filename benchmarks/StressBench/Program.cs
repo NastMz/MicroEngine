@@ -64,7 +64,7 @@ static SortedDictionary<string, string> Describe(StressOptions options)
 static int Measure(StressOptions options)
 {
     var environment = Describe(options);
-    Console.WriteLine($"{options.Frames} frames after {options.Warmup} of warm-up, seed {options.Seed}, best of {options.Repeat}. Times in ms; work = events + update + draw submission.");
+    Console.WriteLine($"{options.Frames} frames after {options.Warmup} of warm-up, seed {options.Seed}, best of {options.Repeat}{(options.Isolate ? ", each run in a process of its own" : "")}. Times in ms; work = events + update + draw submission.");
     Console.WriteLine();
     Console.WriteLine("| Scenario | Mode | Load | Work p50 | p95 | p99 | p99.9 | max | Update p50 | Draw p50 | Present p50 | Alloc B/frame | GC 0/1/2 | Pause total / max | Draws | State changes | Managed MB | Native MB |");
     Console.WriteLine("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: |");
@@ -72,7 +72,8 @@ static int Measure(StressOptions options)
     foreach (string scenario in options.Scenarios)
         foreach (var mode in options.Modes)
         {
-            var r = Harness.RunBest(scenario, options.Load ?? Scenarios.DefaultLoad(scenario), mode, options);
+            int load = options.Load ?? Scenarios.DefaultLoad(scenario);
+            var r = options.Isolate ? Harness.RunIsolated(scenario, load, mode, options) : Harness.RunBest(scenario, load, mode, options);
             runs.Add(r);
             Console.WriteLine($"| {r.Scenario} | {r.Mode} | {r.Load:N0} | {r.Work.P50:0.000} | {r.Work.P95:0.000} | {r.Work.P99:0.000} | {r.Work.P999:0.000} | {r.Work.Max:0.000} | {r.Update.P50:0.000} | {r.Render.P50:0.000} | {r.Present.P50:0.000} | {r.AllocatedPerFrame:N0} | {r.Gen0}/{r.Gen1}/{r.Gen2} | {r.PauseTotalMs:0.00} / {r.PauseMaxMs:0.00} | {r.DrawsPerFrame:N0} | {r.StateChangesPerFrame:N0} | {r.ManagedBytes / 1048576.0:0.0} | {r.NativeBytes / 1048576.0:0.0} |");
         }
@@ -105,7 +106,7 @@ static int Sweep(StressOptions options)
         int start = options.Start ?? Math.Max(1, Scenarios.DefaultLoad(scenario) / 8);
         var limit = LimitSearch.Find(load =>
         {
-            var r = Harness.RunBest(scenario, load, mode, options);
+            var r = options.Isolate ? Harness.RunIsolated(scenario, load, mode, options) : Harness.RunBest(scenario, load, mode, options);
             measured[load] = r;
             return r.Work.At(options.Metric);
         }, start, options.BudgetMs, Math.Max(start, options.MaxLoad), refinements: 3);
