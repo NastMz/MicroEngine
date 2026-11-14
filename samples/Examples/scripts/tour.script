@@ -158,4 +158,9 @@
 2932 capture 26-timeline.png
 2990 capture 26-timeline-rest.png
 2996 press pause
-3010 quit
+3010 press down
+3020 press confirm
+3050 hold down 30
+3150 capture 27-voices.png
+3156 press pause
+3170 quit

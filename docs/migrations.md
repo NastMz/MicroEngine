@@ -53,6 +53,27 @@ and the members of `BrowserStorage` for one that is `null` or empty. They pass e
 with `FileSaveStorage` a bindings slot that is not a plain name throws `ArgumentException` as above, where it threw
 `IOException` or wrote outside the folder before. To update, pass a plain name, or leave the default
 (`"input-bindings"`).
+
+### Several changes to one sound in the same update apply at the same instant
+
+Two or more changes to one playing sound in a single update (volume, pan, pitch, pause or resume) take effect together
+at that update's point in the audio, where the first of them used to take effect up to the output delay earlier. A
+single change per update, `Set(volume, pan)` in one call, stopping, fades and bus volumes sound as before.
+
+What can sound different: a sound paused and resumed, or paused and changed, in the same update continues from a
+position up to the output delay later than before; and `PauseMusic` or `MusicVolume` during a music fade applies at
+the fade's current point instead of slightly ahead of it. No code needs to change.
+
+### Sounds are heard sooner
+
+On the SDL platform a sound reaches the device about 65 ms after the update that played it, where it took about
+120 ms; the same rule applies in browsers, whose output queue is 100 ms. Sounds played in consecutive updates are
+still exactly one update apart. Recordings made with `CaptureAudioDevice` or `--audio-capture`, and every
+deterministic run, are unchanged.
+
+What can need a change: a game that delayed its pictures or shifted its timing windows to match the sound (a rhythm
+game's audio offset) was compensating for the longer delay; reduce that offset by about 55 ms on the SDL platform.
+
 ### `Presentation.Fit` returns whole pixels
 
 The frame `Presentation.Fit` returns has a whole width and height at every window size, where a scale that is not
@@ -62,6 +83,18 @@ virtual controls use follow it.
 
 What can need a change: code or a test that compared the frame with a fractional size compares it with the whole
 one, and a game that rounded the frame itself can use it as returned.
+
+### An output that stops no longer plays what it missed
+
+When the output stops taking audio while the game goes on (a page whose sound the browser holds suspended, a device
+that went away) and then plays again, it plays what the game is at. Sounds that ended meanwhile are not heard; a
+sound still within its length, a loop and music from a clip go on from where the game is; streamed music goes on
+from where it stopped. The sounds played meanwhile used to be kept and heard together within a second of the output
+playing again, and sounds played after it stayed late by up to the length of the stop.
+
+What can need a change: nothing in most games. A game that relied on a sound played into a silent output being heard
+later (a jingle played before the first click on a page) plays it when it knows the output is back, or loops it;
+`AudioEngine.SkippedFrames` grows while the output is stopped. Pausing, stopping and volumes behave as before.
 
 ## 0.6.0-alpha.1
 

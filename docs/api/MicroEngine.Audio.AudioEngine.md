@@ -32,6 +32,16 @@ on the block sizes the sink asks for. The voice policy runs on the main thread, 
 what the sink has rendered: which sound plays is the same on every backend and in every run.
 </p>
 <p>
+In real time (not [Deterministic](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Deterministic)) the steps' frames follow what the device is playing: what the sink
+has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
+after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
+timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
+back by a sixteenth of a step per host frame until it is within one step again. Nothing moves it back: sounds of
+consecutive steps keep their order. A sink that renders nothing for a quarter of a second of steps, over several
+host frames, has stopped: the timeline goes on without it and the frames it did not play are skipped
+([SkippedFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_SkippedFrames)), so when it renders again it plays what the game is at, not what it missed.
+</p>
+<p>
 Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
 locks or reads files. Music streams are decoded ahead in [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump), outside the simulation step.
 </p>
@@ -149,7 +159,10 @@ public bool Deterministic { get; set; }
 
 ### <a id="MicroEngine_Audio_AudioEngine_DroppedCommands"></a> DroppedCommands
 
-Commands lost because the sink stopped reading them (its queue was full).
+Calls that could not be queued for the render function because the sink had stopped reading (the queue was
+full). No change is lost: the latest volume, pan and pitch of a sound, its pause and its stop, and bus volumes
+are sent when the sink reads again. A sound that could not be queued was refused
+([None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None)).
 
 ```csharp
 public int DroppedCommands { get; }
@@ -185,7 +198,8 @@ public int MaxVoices { get; }
 
 ### <a id="MicroEngine_Audio_AudioEngine_Now"></a> Now
 
-The output frame the current step's sounds start at (the step's frame plus [DelayFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DelayFrames)).
+The output frame the current step's sounds start at (the step's frame plus [DelayFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DelayFrames)). In real
+time, a sound or change moves it forward when the sink has already rendered past it.
 
 ```csharp
 public long Now { get; }
@@ -213,6 +227,24 @@ Frames rendered so far (read from any thread).
 
 ```csharp
 public long RenderedFrames { get; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+### <a id="MicroEngine_Audio_AudioEngine_SkippedFrames"></a> SkippedFrames
+
+Frames the output did not play and the mixer skipped. In real time, a sink that renders nothing during a quarter
+of a second of steps (or twice the time of its largest block, if that is longer), over several host frames, has
+stopped (a browser holding its audio suspended, a device
+that went away): from then on the sounds go on with the game, unheard, and when the sink renders again it joins
+them where they are. A sound that ended meanwhile is never heard, one still within its length goes on from where
+the game is, loops stay in step; streams, which are not decoded while nobody hears them, go on from where they
+stopped. Always 0 in [Deterministic](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Deterministic) runs.
+
+```csharp
+public long SkippedFrames { get; }
 ```
 
 #### Property Value
@@ -353,7 +385,8 @@ Whether it was playing.
 
 ### <a id="MicroEngine_Audio_AudioEngine_Play_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__"></a> Play\(AudioClip, in PlayParameters\)
 
-Plays <code class="paramref">clip</code> from the current step's frame; returns its handle, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when the voice policy refused it.
+Plays <code class="paramref">clip</code> from the current step's frame; returns its handle, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None)
+when the voice policy refused it or the sink stopped reading ([DroppedCommands](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DroppedCommands)).
 
 ```csharp
 public VoiceHandle Play(AudioClip clip, in PlayParameters parameters)
@@ -422,7 +455,8 @@ public void Render(Span<float> buffer)
 
 ### <a id="MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__"></a> Set\(VoiceHandle, float?, float?\)
 
-Changes the volume (0..1) and pan (0..1) of <code class="paramref">voice</code> from the current step's frame; null keeps a value.
+Changes the volume (0..1) and pan (0..1) of <code class="paramref">voice</code> from the current step's frame; null, or a
+value that is not a number, keeps a value.
 
 ```csharp
 public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
@@ -441,6 +475,29 @@ public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 Whether it was playing.
+
+### <a id="MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_"></a> SetPitch\(VoiceHandle, float\)
+
+Changes the pitch of <code class="paramref">voice</code> from the current step's frame: the playback speed factor, 1 for the
+clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
+mixer's timeline moves its end accordingly. Streams play at their own pitch. A pitch that is not a number
+changes nothing.
+
+```csharp
+public bool SetPitch(VoiceHandle voice, float pitch)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it was playing and is a clip; false for a stale handle or a stream.
 
 ### <a id="MicroEngine_Audio_AudioEngine_StepFrame_System_Int64_"></a> StepFrame\(long\)
 

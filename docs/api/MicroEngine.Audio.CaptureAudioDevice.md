@@ -32,6 +32,8 @@ public sealed class CaptureAudioDevice : MixerAudioDevice, IAudioDevice, IDispos
 [MixerAudioDevice.LoadMusic\(string, AudioClip, bool\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_LoadMusic\_System\_String\_MicroEngine\_Audio\_AudioClip\_System\_Boolean\_), 
 [MixerAudioDevice.LoadMusicStream\(string, byte\[\], string, bool\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_LoadMusicStream\_System\_String\_System\_Byte\_\_\_System\_String\_System\_Boolean\_), 
 [MixerAudioDevice.Play\(SoundHandle, float, float, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_Play\_MicroEngine\_Audio\_SoundHandle\_System\_Single\_System\_Single\_System\_Single\_), 
+[MixerAudioDevice.PlayVoice\(SoundHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayVoice\_MicroEngine\_Audio\_SoundHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
+[MixerAudioDevice.PlayMusicVoice\(MusicHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusicVoice\_MicroEngine\_Audio\_MusicHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayMusic\(MusicHandle, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusic\_MicroEngine\_Audio\_MusicHandle\_System\_Single\_), 
 [MixerAudioDevice.StopMusic\(\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_StopMusic), 
 [MixerAudioDevice.SetMusicVolume\(float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_SetMusicVolume\_System\_Single\_), 
@@ -163,6 +165,24 @@ public override void Play(SoundHandle sound, float volume = 1, float pitch = 1, 
 `pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 `pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Audio_CaptureAudioDevice_PlayVoice_MicroEngine_Audio_SoundHandle_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(SoundHandle, in PlayParameters\)
+
+Plays the sound as a voice and records it in [Played](MicroEngine.Audio.CaptureAudioDevice.md#MicroEngine_Audio_CaptureAudioDevice_Played).
+
+```csharp
+public override VoiceHandle PlayVoice(SoundHandle sound, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`sound` [SoundHandle](MicroEngine.Audio.SoundHandle.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
 
 ### <a id="MicroEngine_Audio_CaptureAudioDevice_Pump"></a> Pump\(\)
 

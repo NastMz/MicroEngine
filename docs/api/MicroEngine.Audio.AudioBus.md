@@ -46,7 +46,8 @@ public AudioBus? Parent { get; }
 
 ### <a id="MicroEngine_Audio_AudioBus_Volume"></a> Volume
 
-Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step.
+Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step. A value that is not
+a number is ignored.
 
 ```csharp
 public float Volume { get; set; }

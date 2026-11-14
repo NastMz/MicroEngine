@@ -17,19 +17,6 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
-- Keyframe animation: `Track<T>` holds a value through keys in time, each with the easing curve of the way to it
-  (`Track.Float`, `Track.Vector2`, `Track.Color`, `Track.Step<T>`, or any type with its own blend), and `Timeline`
-  plays several tracks from one playhead with looping, speed, `Seek` and named events (`At`, `Reached`) that fire once
-  per pass, in order, also across a long frame. `Seek` raises no events and finishes a timeline moved to its end;
-  time only goes forwards, so `Update` refuses a negative or non-finite step ([Animation](animation.md)). The "Tracks
-  and timelines" example shows them.
-- `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
-  the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
-  NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's
-  slots. The calls without metadata keep working and are reported by the build in a project that turns on trimming
-  or NativeAOT analysis: `IL2026` with `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` with
-  `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer`
-  ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
 - `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples
   it into the window. With a linear `Upscale` and `Presentation.AutoPrescale`, a pixel-art canvas shown at a scale
   that is not whole (a 480 × 270 game on a 1366 × 768 screen) keeps every pixel the same size with antialiased edges,
@@ -37,6 +24,28 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   1, the default, changes nothing. `Presentation.PrescaleFor` gives the factors of a frame and `CanvasPresenter`
   composes the window; SDL and raylib windows apply it, and captures of the window show it on every platform, the
   headless one included (`ScreenCapture.Compose` takes the presentation)
+  ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
+- `SaveStore.Save(slot, data, typeInfo)` and `SaveStore.Load(slot, typeInfo)` save and load a game's own types with
+  the metadata of its `JsonSerializerContext`, without reflection: the way to save in a game published trimmed or with
+  NativeAOT. They write the same JSON as `Save(slot, data)` and `Load<T>(slot)`, and either pair reads the other's
+  slots. The calls without metadata keep working and are reported by the build in a project that turns on trimming
+  or NativeAOT analysis: `IL2026` with `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` with
+  `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer`
+  ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
+- Keyframe animation: `Track<T>` holds a value through keys in time, each with the easing curve of the way to it
+  (`Track.Float`, `Track.Vector2`, `Track.Color`, `Track.Step<T>`, or any type with its own blend), and `Timeline`
+  plays several tracks from one playhead with looping, speed, `Seek` and named events (`At`, `Reached`) that fire once
+  per pass, in order, also across a long frame. `Seek` raises no events and finishes a timeline moved to its end;
+  time only goes forwards, so `Update` refuses a negative or non-finite step ([Animation](animation.md)). The "Tracks
+  and timelines" example shows them.
+- `Game.Audio` plays sounds that keep playing and change while they play
+  ([Sounds that keep playing](../manual/audio.md#sounds-that-keep-playing)): `PlayVoice(name, parameters)` returns a
+  `VoiceHandle` for a looping or one-shot sound on any bus with a priority; `Set(voice, volume, pan, pitch)`,
+  `Pause`, `Stop(voice, fadeSeconds)` and `IsPlaying` control it; `AddBus`, `SetBusVolume`, `BusVolume` and `HasBus`
+  group sounds under one volume; `PlayMusicVoice` plays registered music beside the music track. The pitch of a
+  playing sound changes with `AudioEngine.SetPitch`, and the changes made to one sound in one update (volume, pan,
+  pitch, pause, resume) take effect at the same instant, which moves the first of them slightly later than before
+  ([migration notes](../migrations.md#several-changes-to-one-sound-in-the-same-update-apply-at-the-same-instant)). The Examples sample has a looping sound that follows a moving source.
   ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
 
 **Changed**
@@ -57,6 +66,21 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   existing achievement files load as before.
 - A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
   an empty slot wrote a file named `.json`.
+- Sounds are heard about 55 ms sooner on the SDL platform: a sound reaches the device about 65 ms after the update
+  that played it instead of about 120 ms, and no longer stays later after a slow frame. The output queue was waited
+  for twice; in browsers, whose queue is 100 ms, the same rule applies
+  ([migration notes](../migrations.md#sounds-are-heard-sooner)).
+- A value that is not a number (`float.NaN`) no longer reaches the sound: `AudioEngine.SetPitch` with it ended the
+  handle while the sound played on, and as a volume, pan, pitch or bus volume it silenced or corrupted the output.
+  `Play` uses the default for such a value; `Set`, `SetPitch`, bus volumes, `MusicVolume` and `SfxVolume` ignore it.
+- When the output stopped taking audio while the game went on (a page whose sound the browser holds suspended), the
+  mixer's queue filled and further calls were lost: a looping sound stopped then played on with no handle once the
+  output resumed. Stops, pauses and the latest values of each sound and bus now apply when the output plays again,
+  and a sound that cannot be queued is refused (`VoiceHandle.None`).
+- `Presentation.Fit` places the frame on whole window pixels at every scale: 480 × 270 in 1366 × 768 is 1365 × 768,
+  centred, where it was 1365.33 wide and painted with letterbox bars of unequal width. Each side is the nearest whole
+  size, at least one pixel and never larger than the area; at a whole scale the frame is the one it was
+  ([migration notes](../migrations.md#presentationfit-returns-whole-pixels)).
 - A game id such as `"../other"` or an absolute path put the save folder outside the user's `MicroEngine` data
   folder. `SaveStore.DefaultDirectory` now throws `ArgumentException` for an id that starts with `/` or `\`, starts
   with a drive, or has a part made only of dots and spaces (`.`, `..`, `...`) ([migration](../migrations.md#game-ids-that-are-paths-out-of-the-data-folder-are-refused)).
@@ -64,10 +88,16 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   and was set aside.
 - `BrowserStorage` used with a `null` or empty slot read and wrote the key `microengine/<gameId>/`, the prefix of the
   game's slots.
-- `Presentation.Fit` places the frame on whole window pixels at every scale: 480 × 270 in 1366 × 768 is 1365 × 768,
-  centred, where it was 1365.33 wide and painted with letterbox bars of unequal width. Each side is the nearest whole
-  size, at least one pixel and never larger than the area; at a whole scale the frame is the one it was
-  ([migration notes](../migrations.md#presentationfit-returns-whole-pixels)).
+- An output that stopped and plays again no longer plays what it missed: the shots and hits of the silent stretch
+  were heard together within a second (after 30 seconds, some sixty sounds at once), and sounds played afterwards
+  stayed up to half a second late. The sounds now go on with the game while the output is stopped, so it comes back
+  to what the game is at: ended sounds are not heard, long sounds, loops and music from clips are where the game is,
+  streamed music goes on from where it stopped. `AudioEngine.SkippedFrames` counts the frames that were not played
+  ([Muting, pausing and an output that stops](../manual/audio.md#muting-pausing-and-an-output-that-stops),
+  [migration notes](../migrations.md#an-output-that-stops-no-longer-plays-what-it-missed)).
+- Changes to a playing sound or to a bus volume made in consecutive updates each take effect at their own update's
+  point in the sound. Just after a slow frame they took effect up to 67 ms early for about a second, and some were
+  never heard; with a `DelayFrames` longer than an update they were always early.
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
 - `microengine package windows`, `linux` and `macos` stopped with `NETSDK1004` ("assets file not found") for a game

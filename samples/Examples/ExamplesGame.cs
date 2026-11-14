@@ -49,6 +49,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Text entry and clipboard", g => new TextEntryExample()),
         ("Right-to-left text (shaping)", g => new ShapingExample()),
         ("Tracks and timelines", g => new TimelineExample()),
+        ("A sound that follows (voices)", g => new VoicesExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

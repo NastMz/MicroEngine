@@ -269,6 +269,61 @@ public void PlayMusic(MusicHandle music, float volume = 1)
 
 `volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Audio_MixerAudioDevice_PlayMusicVoice_MicroEngine_Audio_MusicHandle_MicroEngine_Audio_PlayParameters__"></a> PlayMusicVoice\(MusicHandle, in PlayParameters\)
+
+Plays loaded music as one more voice of the mixer, beside the track [PlayMusic](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_) plays (which it does
+not replace): ambience under the music, layers of one piece. It loops when <code class="paramref">parameters</code> say so,
+whatever the music was loaded with. Streamed music keeps its own pitch.
+
+```csharp
+public virtual VoiceHandle PlayMusicVoice(MusicHandle music, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`music` [MusicHandle](MicroEngine.Audio.MusicHandle.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+Its handle, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when the voice policy refused it.
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The bus does not exist.
+
+### <a id="MicroEngine_Audio_MixerAudioDevice_PlayVoice_MicroEngine_Audio_SoundHandle_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(SoundHandle, in PlayParameters\)
+
+Plays a loaded sound as a voice of the mixer, exactly as <code class="paramref">parameters</code> say (loop, bus and
+priority included), and returns its handle for the engine's [Stop](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Stop_MicroEngine_Audio_VoiceHandle_System_Double_),
+[Set](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__), [SetPitch](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_) and [Pause](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pause_MicroEngine_Audio_VoiceHandle_System_Boolean_);
+[None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when the voice policy refused it.
+
+```csharp
+public virtual VoiceHandle PlayVoice(SoundHandle sound, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`sound` [SoundHandle](MicroEngine.Audio.SoundHandle.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The bus does not exist.
+
 ### <a id="MicroEngine_Audio_MixerAudioDevice_Pump"></a> Pump\(\)
 
 The host frame's audio work: decodes streamed music ahead and pumps the sink.
