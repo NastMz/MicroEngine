@@ -38,6 +38,7 @@
     <Project Path="benchmarks/MapBench/MapBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
     <Project Path="benchmarks/PhysicsBench/PhysicsBench.csproj" />
+    <Project Path="benchmarks/StressBench/StressBench.csproj" />
     <Project Path="benchmarks/WorldBench/WorldBench.csproj" />
   </Folder>
   <Folder Name="/samples/">
@@ -65,6 +66,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
+    <Project Path="tests/Benchmarks.Tests/Benchmarks.Tests.csproj" />
     <Project Path="tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj" />
     <Project Path="tests/MicroEngine.Tiled.Tests/MicroEngine.Tiled.Tests.csproj" />
     <Project Path="tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj" />

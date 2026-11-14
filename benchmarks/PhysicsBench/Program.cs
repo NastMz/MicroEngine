@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using Benchmarks;
 using MicroEngine;
 using MicroEngine.Physics;
 using MicroEngine.Physics.Box2D;
@@ -16,7 +17,8 @@ using MicroEngine.World;
 // Prints the mean, median and 95th percentile time per step of each run (after one warm-up run) and the bytes
 // allocated per step on this thread; for the tile backend, also the TileMotion façade's time for the same moves.
 // Box2D has no tile geometry, so its level is the same grid as boxes: one per horizontal run of solid or one-way
-// cells. It needs the native library of this machine (src/MicroEngine.Physics.Box2D/native/build.sh).
+// cells (benchmarks/Shared/PhysicsLevel.cs, the world StressBench also runs). It needs the native library of this
+// machine (src/MicroEngine.Physics.Box2D/native/build.sh).
 int bodies = 200, steps = 600, runs = 3;
 string backend = "tiles";
 for (int i = 0; i < args.Length; i++)
@@ -34,82 +36,17 @@ if (backend == "box2d" && !Box2DPhysicsWorld2D.IsSupported)
     return 1;
 }
 
-const int Tile = 16, Width = 64, Height = 36;
-var layer = new TileLayer(Width, Height);
-for (int x = 0; x < Width; x++) { layer[x, Height - 1] = 1; layer[x, 0] = 1; }
-for (int y = 0; y < Height; y++) { layer[0, y] = 1; layer[Width - 1, y] = 1; }
-for (int p = 0; p < 12; p++)
-for (int x = 0; x < 6; x++) layer[4 + p * 5 % 54 + x, 6 + p * 7 % 26] = 2;
-var grid = new TileGrid(layer, Tile, new Dictionary<int, TileFlags> { [1] = TileFlags.Solid, [2] = TileFlags.OneWay });
+const float Dt = PhysicsLevel.Dt;
+var grid = PhysicsLevel.Grid;
+(IPhysicsWorld2D World, BodyId[] Bodies, Vector2[] Velocity) Build() => PhysicsLevel.Build(backend, bodies);
 
-// The level as boxes, for a backend without tile geometry: one box per horizontal run of cells with the same flag.
-void AddLevelBoxes(IPhysicsWorld2D world)
-{
-    for (int y = 0; y < Height; y++)
-        for (int x = 0; x < Width;)
-        {
-            int id = layer[x, y];
-            if (id == 0) { x++; continue; }
-            int start = x;
-            while (x < Width && layer[x, y] == id) x++;
-            var center = new Vector2((start + x) * Tile / 2f, (y + 0.5f) * Tile);
-            var body = world.CreateBody(default, BodyDescription.Static(center));
-            world.AddShape(body, ShapeDescription.Box(new Vector2((x - start) * Tile, Tile)) with { OneWay = id == 2 });
-        }
-}
-
-(IPhysicsWorld2D World, BodyId[] Bodies, Vector2[] Velocity) Build()
-{
-    IPhysicsWorld2D world;
-    if (backend == "tiles")
-    {
-        var tiles = new TilePhysicsWorld2D();
-        tiles.AddTiles(tiles.CreateBody(default, BodyDescription.Static()), grid);
-        world = tiles;
-    }
-    else
-    {
-        // A tile to the metre, y down: the engine's pixel space, as the PhysicsSubstitution sample sets it.
-        world = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = Tile, YDown = true });
-        AddLevelBoxes(world);
-    }
-    for (int i = 0; i < 32; i++)
-    {
-        var box = world.CreateBody(default, BodyDescription.Static(new Vector2(64 + i * 29 % 900, 120 + i * 53 % 400)));
-        world.AddShape(box, ShapeDescription.Box(new Vector2(24, 8)));
-    }
-    for (int i = 0; i < 16; i++)
-    {
-        var sensor = world.CreateBody(default, BodyDescription.Static(new Vector2(80 + i * 61 % 880, 100 + i * 37 % 420)));
-        world.AddShape(sensor, ShapeDescription.Sensor(new Vector2(32, 32)));
-    }
-    var ids = new BodyId[bodies];
-    var velocity = new Vector2[bodies];
-    for (int i = 0; i < bodies; i++)
-    {
-        ids[i] = world.CreateBody(new EntityId((uint)i, 1), BodyDescription.Kinematic(new Vector2(32 + i * 37 % 960, 32 + i * 13 % 480)));
-        world.AddShape(ids[i], ShapeDescription.Box(new Vector2(12, 14)));
-        velocity[i] = new Vector2(i % 2 == 0 ? 60 : -60, 0);
-    }
-    return (world, ids, velocity);
-}
-
-const float Dt = 1 / 60f;
 void Simulate(IPhysicsWorld2D world, BodyId[] ids, Vector2[] velocity, double[] times)
 {
     var clock = new Stopwatch();
     for (int s = 0; s < steps; s++)
     {
         clock.Restart();
-        for (int i = 0; i < ids.Length; i++)
-        {
-            ref var v = ref velocity[i];
-            v.Y = MathF.Min(v.Y + 900 * Dt, 420);
-            var r = world.Move(ids[i], v * Dt);
-            if (r.OnGround || r.HitCeiling) v.Y = r.OnGround && s % 90 == i % 90 ? -300 : 0;
-            if (r.HitWall) v.X = -v.X;
-        }
-        world.Step(Dt);
+        PhysicsLevel.Step(world, ids, velocity, s);
         times[s] = clock.Elapsed.TotalMilliseconds;
     }
 }
