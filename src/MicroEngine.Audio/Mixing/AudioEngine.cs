@@ -144,6 +144,9 @@ public sealed class AudioEngine : IDisposable
     private readonly bool[] _hasIncoming;
     private readonly long[] _busPendingAt = new long[MaxBuses];
     private readonly float[] _busPendingVolume = new float[MaxBuses];
+    // Main thread: buses whose volume the queue had no room for, and how many voices and buses wait to be sent.
+    private readonly bool[] _busUnsent = new bool[MaxBuses];
+    private int _unsent;
     private readonly Command[] _queue = new Command[QueueSize];
     private int _head, _tail;
     private readonly List<AudioBus> _buses = [];
@@ -272,11 +275,20 @@ public sealed class AudioEngine : IDisposable
         return bus;
     }
 
-    internal void SetBusVolume(int bus, float volume) => Post(new Command { Op = Op.Bus, Slot = bus, Volume = volume, Frame = Now });
+    internal void SetBusVolume(int bus, float volume)
+    {
+        if (Flush() && TryPost(new Command { Op = Op.Bus, Slot = bus, Volume = volume, Frame = Now })) return;
+        DroppedCommands++;
+        if (!_busUnsent[bus]) _unsent++;
+        _busUnsent[bus] = true;
+    }
 
     // ---- Playing
 
-    /// <summary>Plays <paramref name="clip"/> from the current step's frame; returns its handle, or <see cref="VoiceHandle.None"/> when the voice policy refused it.</summary>
+    /// <summary>
+    /// Plays <paramref name="clip"/> from the current step's frame; returns its handle, or <see cref="VoiceHandle.None"/>
+    /// when the voice policy refused it or the sink stopped reading (<see cref="DroppedCommands"/>).
+    /// </summary>
     /// <exception cref="KeyNotFoundException">The bus does not exist.</exception>
     public VoiceHandle Play(AudioClip clip, in PlayParameters parameters)
     {
@@ -306,6 +318,13 @@ public sealed class AudioEngine : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var bus = Bus(p.Bus ?? SfxBus);
+        // A sound takes a voice only when the render function will hear of it: with the queue full it is refused, so no
+        // handle ever names a sound that is not there (its calls would reach whatever still sounds in that voice).
+        if (!Flush() || Full)
+        {
+            DroppedCommands++;
+            return VoiceHandle.None;
+        }
         long at = Now;
         int slot = Choose(at, p.Priority);
         if (slot < 0)
@@ -330,11 +349,12 @@ public sealed class AudioEngine : IDisposable
         l.Position = 0;
         l.PositionFrame = at;
         l.Limit = long.MaxValue;
-        var (left, right) = Balance(p.Pan);
-        Post(new Command
+        l.Volume = float.IsNaN(p.Volume) ? 1 : Math.Clamp(p.Volume, 0, 1);
+        (l.Left, l.Right) = Balance(p.Pan);
+        TryPost(new Command
         {
             Op = Op.Start, Slot = slot, Frame = at, Clip = clip, Feed = feed, Step = step, Loop = p.Loop, Bus = bus.Index,
-            Volume = float.IsNaN(p.Volume) ? 1 : Math.Clamp(p.Volume, 0, 1), Left = left, Right = right,
+            Volume = l.Volume, Left = l.Left, Right = l.Right,
         });
         return new VoiceHandle(slot, l.Generation);
     }
@@ -378,8 +398,9 @@ public sealed class AudioEngine : IDisposable
         ref var l = ref _logical[voice.Index];
         l.Limit = Math.Min(l.Limit, Now + fade);
         l.End = Math.Min(l.End, l.Limit);
+        (l.StopFrame, l.StopFade) = (Now, fade);
         if (fade == 0) Release(voice.Index);
-        Post(new Command { Op = Op.Stop, Slot = voice.Index, Frame = Now, Fade = fade });
+        Send(new Command { Op = Op.Stop, Slot = voice.Index, Frame = Now, Fade = fade }, Unsent.Stop);
         return true;
     }
 
@@ -394,7 +415,10 @@ public sealed class AudioEngine : IDisposable
         var (left, right) = pan is { } p && !float.IsNaN(p) ? Balance(p) : (-1f, -1f);
         float gain = volume is { } v && !float.IsNaN(v) ? Math.Clamp(v, 0, 1) : -1;
         if (gain < 0 && left < 0) return true;
-        Post(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right });
+        ref var l = ref _logical[voice.Index];
+        if (gain >= 0) l.Volume = gain;
+        if (left >= 0) (l.Left, l.Right) = (left, right);
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right }, Unsent.Values);
         return true;
     }
 
@@ -422,7 +446,7 @@ public sealed class AudioEngine : IDisposable
             if (l.Paused) l.Remaining = left;
             else l.End = Math.Min(now + left, l.Limit);
         }
-        Post(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = l.Step });
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = l.Step }, Unsent.Values);
         return true;
     }
 
@@ -443,7 +467,7 @@ public sealed class AudioEngine : IDisposable
         }
         else l.End = l.Remaining == long.MaxValue ? long.MaxValue : now + l.Remaining;
         l.Paused = paused;
-        Post(new Command { Op = Op.Pause, Slot = voice.Index, Frame = now, Paused = paused });
+        Send(new Command { Op = Op.Pause, Slot = voice.Index, Frame = now, Paused = paused }, Unsent.Pause);
         return true;
     }
 
@@ -452,6 +476,7 @@ public sealed class AudioEngine : IDisposable
     /// <summary>Ends a simulation step: sounds played from now on start one step later. The game calls it once per fixed step.</summary>
     public void Advance()
     {
+        Flush();
         _step++;
         if (Deterministic) return;
         // Real time: when the sink has already played past this step's frame (the game fell behind), catch up so sounds
@@ -468,6 +493,7 @@ public sealed class AudioEngine : IDisposable
     public void Pump()
     {
         if (_disposed) return;
+        Flush();
         for (int i = _feeds.Count - 1; i >= 0; i--)
         {
             var feed = _feeds[i];
@@ -492,19 +518,68 @@ public sealed class AudioEngine : IDisposable
         l.Feed = null;
     }
 
-    private void Post(in Command command)
+    private bool Full => (_head + 1) % QueueSize == Volatile.Read(ref _tail);
+
+    private bool TryPost(in Command command)
     {
-        int next = (_head + 1) % QueueSize;
-        if (next == Volatile.Read(ref _tail))
-        {
-            DroppedCommands++;
-            return;
-        }
+        if (Full) return false;
         _queue[_head] = command;
-        Volatile.Write(ref _head, next);
+        Volatile.Write(ref _head, (_head + 1) % QueueSize);
+        return true;
     }
 
-    /// <summary>Commands lost because the sink stopped reading them (its queue was full).</summary>
+    /// <summary>
+    /// Queues a change to a playing voice. When the queue is full (the sink stopped reading), the change is not lost:
+    /// the main thread keeps the voice's latest values, pause and stop, and <see cref="Flush"/> sends them once there is
+    /// room, so a sink that renders again plays what the game last asked for.
+    /// </summary>
+    private void Send(in Command command, Unsent kind)
+    {
+        if (Flush() && TryPost(command)) return;
+        DroppedCommands++;
+        ref var l = ref _logical[command.Slot];
+        if (l.Unsent == Unsent.None) _unsent++;
+        l.Unsent |= kind;
+    }
+
+    /// <summary>
+    /// Sends what could not be queued, oldest kind first for each voice (values, pause, stop), before anything newer is
+    /// queued; false while the queue is still full. Nothing to do, and nothing read, unless a call found the queue full.
+    /// </summary>
+    private bool Flush()
+    {
+        if (_unsent == 0) return true;
+        long now = Now;
+        for (int slot = 0; slot < _logical.Length; slot++)
+        {
+            ref var l = ref _logical[slot];
+            if (l.Unsent == Unsent.None) continue;
+            // A sound that ended or was stopped at once needs only its stop; its voice is taken again after it is sent.
+            if ((l.Unsent & Unsent.Values) != 0 && l.Active
+                && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is null ? l.Step : 0 })) return false;
+            l.Unsent &= ~Unsent.Values;
+            if ((l.Unsent & Unsent.Pause) != 0 && l.Active && !TryPost(new Command { Op = Op.Pause, Slot = slot, Frame = now, Paused = l.Paused })) return false;
+            l.Unsent &= ~Unsent.Pause;
+            if ((l.Unsent & Unsent.Stop) != 0 && !TryPost(new Command { Op = Op.Stop, Slot = slot, Frame = l.StopFrame, Fade = l.StopFade })) return false;
+            l.Unsent = Unsent.None;
+            _unsent--;
+        }
+        for (int bus = 0; bus < _buses.Count; bus++)
+        {
+            if (!_busUnsent[bus]) continue;
+            if (!TryPost(new Command { Op = Op.Bus, Slot = bus, Volume = _buses[bus].Volume, Frame = now })) return false;
+            _busUnsent[bus] = false;
+            _unsent--;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Calls that could not be queued for the render function because the sink had stopped reading (the queue was
+    /// full). No change is lost: the latest volume, pan and pitch of a sound, its pause and its stop, and bus volumes
+    /// are sent when the sink reads again. A sound that could not be queued was refused
+    /// (<see cref="VoiceHandle.None"/>).
+    /// </summary>
     public int DroppedCommands { get; private set; }
 
     /// <summary>Stops the sink (it no longer renders after this returns) and the streams.</summary>
@@ -704,6 +779,10 @@ public sealed class AudioEngine : IDisposable
 
     private enum Op : byte { Start, Stop, Set, Pause, Bus }
 
+    /// <summary>What of a voice the queue had no room for, kept on the main thread until it has.</summary>
+    [Flags]
+    private enum Unsent : byte { None = 0, Values = 1, Pause = 2, Stop = 4 }
+
     private struct Command
     {
         public Op Op;
@@ -743,6 +822,10 @@ public sealed class AudioEngine : IDisposable
         // Live pitch: the clip's frames, its rate over the output's, its speed now, and its position at PositionFrame.
         public long Frames, PositionFrame, Limit;
         public double Rate, Step, Position;
+        // What the render function was last asked for, to send again if the queue had no room for it.
+        public float Volume, Left, Right;
+        public long StopFrame, StopFade;
+        public Unsent Unsent;
     }
 }
 
