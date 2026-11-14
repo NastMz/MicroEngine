@@ -236,7 +236,8 @@ public long RenderedFrames { get; }
 ### <a id="MicroEngine_Audio_AudioEngine_SkippedFrames"></a> SkippedFrames
 
 Frames the output did not play and the mixer skipped. In real time, a sink that renders nothing during a quarter
-of a second of steps, over several host frames, has stopped (a browser holding its audio suspended, a device
+of a second of steps (or twice the time of its largest block, if that is longer), over several host frames, has
+stopped (a browser holding its audio suspended, a device
 that went away): from then on the sounds go on with the game, unheard, and when the sink renders again it joins
 them where they are. A sound that ended meanwhile is never heard, one still within its length goes on from where
 the game is, loops stay in step; streams, which are not decoded while nobody hears them, go on from where they

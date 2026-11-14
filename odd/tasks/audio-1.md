@@ -200,4 +200,14 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   advances over a stop while streamed music holds. Nothing run in a browser, on raylib, Android or iOS.
 - L20 (2026-11-14) Scratch (outside the repository, not deleted): the session's temporary folder named in the
   hand-off, with the snapshots of `main` and the batch, the measuring program, its outputs and the offline renders.
+- L21 (2026-11-14) Third review (independent verifier), one blocker in `25253e2` and `84bad18`: beyond eight waiting
+  changes the two oldest merged at the later frame, so with a change every update the oldest frame kept moving and
+  nothing applied (a delay of 8 updates: 8 of 300 changes reached the sound, stale for 4.9 s). Corrected: the oldest
+  waiting change always keeps its frame; the waiting change with the closest neighbours joins the one after it.
+  Bound held by tests for voices and buses: with `w` updates waiting, at most `(w + 3) / 4` updates behind, never
+  early, the last change on its frame; exact with fewer than eight waiting. RED: 14 of 20 new cases failed. Same
+  program afterwards: 17 ms behind at a delay of 8, 83 ms at 30; real time 17, 50 and 117 ms with slow frames of 10,
+  20 and 40 updates. 162 of 162 offline renders byte-identical to `052d4d9`. Also: a sink rendering in blocks longer
+  than a quarter of a second was taken as stopped; the threshold is now at least twice its largest block (RED: 2 of
+  3 cases). Evaluation §7.3.
 

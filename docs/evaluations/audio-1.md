@@ -538,6 +538,33 @@ volumes of one bus in one update (the first was heard for the length of the dela
 renders with a delay that have a twin without, 12 were not that twin moved by the delay before, and 4 are not now:
 the same 4 as before (`steal_priorities` and `two_streams`), which no change here touches.
 
+**Correction after the third review (2026-11-14).** The first overflow rule merged the two oldest waiting changes
+at the later frame, which moved the oldest frame one update later at every arrival: with a change every update and
+eight or more updates waiting, nothing was applied while changes kept arriving (**demonstrated failure**: a delay of
+eight updates, 300 changes, 8 reached the sound and the value was stale for 4.9 s). The oldest waiting change now
+always takes effect at its frame. When a ninth arrives, the waiting change whose two neighbours are closest (never
+the oldest) joins the one after it, so the eight frames kept stay spread over the wait.
+
+| One change per update (the review's program) | First rule | Now |
+| --- | --- | --- |
+| Delay of 8 updates, 300 changes | 8 reached the sound, stale for 4.9 s | at most 1 update (17 ms) behind, none early |
+| Delay of 30 updates | never caught up | at most 5 updates (83 ms) behind |
+| Real time, slow frames of 5 updates (120 ms) | exact, 619 of 619 | exact, 619 of 619 |
+| Real time, slow frames of 10 updates (170 ms) | stale for up to 496 ms | at most 1 update (17 ms) behind |
+| Real time, slow frames of 20 updates (340 ms) | stale for up to 7.2 s | at most 3 updates (50 ms) behind |
+| Real time, slow frames of 40 updates (700 ms) | not measured | at most 7 updates (117 ms) behind |
+
+The bound the tests hold, for voices and buses, at delays of 1, 8, 9, 16 and 64 updates and slow frames of 1 to 40:
+with fewer than eight updates waiting every change is on its frame; with `w` waiting the value heard is at most
+`(w + 3) / 4` updates behind, never ahead, and the last change arrives at its own frame. The capacity stays eight:
+the default time policy leaves six waiting at most, and what a larger one would buy is now a bounded lag rather
+than a stall. Offline renders against the previous commit: all 162 byte-identical (none of that program's
+scenarios has eight changes waiting).
+
+The stop detection of §7.2 counted a sink that renders in blocks longer than a quarter of a second (16384 frames)
+as stopped between two blocks. No shipped backend does that; the threshold is now also at least twice the time of
+the largest block the sink has asked for.
+
 ### 7.4 Tests
 
 `AudioEngineChangeTimingTests` (15 cases, all failing before the fixes) and `AudioEngineSuspensionTests` (18 cases:

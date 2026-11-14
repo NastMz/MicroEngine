@@ -247,8 +247,8 @@ Three things silence a sound, and they are not the same:
 | **An output that stops**: the device or the page takes no audio | Nobody | Goes on with the game, unheard | The output plays what the game is at |
 
 The output stops when a browser holds the page's sound suspended while the page is visible, or when a device goes
-away. The mixer takes it as stopped once it has rendered nothing for a quarter of a second of updates, and from then
-on skips the frames that were not played (`AudioEngine.SkippedFrames` counts them), so the game's audio time never
+away. The mixer takes it as stopped once it has rendered nothing for a quarter of a second of updates (or twice the length
+of the largest block the output asks for, if that is longer), and from then on skips the frames that were not played (`AudioEngine.SkippedFrames` counts them), so the game's audio time never
 waits. When the output plays again:
 
 - a sound that ended meanwhile is not heard, and its handle has ended (`IsPlaying` is false, `Stop` returns false):
@@ -340,8 +340,12 @@ sound and resumes it when shown again.
   and 100 ms in browsers. On the SDL platform a sound reaches the device about 65 ms after the update that played it
   at 60 or more frames per second and about 75 ms at 30, before the device's own buffer; a slow frame adds up to its
   catch-up updates to that for about a second.
-- A sound or a bus keeps the changes of eight updates waiting for their points in the sound. That is more than a
-  slow frame leaves behind; with an `AudioEngineSettings.DelayFrames` longer than eight updates, the oldest waiting
-  change takes effect together with the next one, later than its own point and never earlier.
+- A sound or a bus keeps the changes of eight updates waiting for their points in the sound, which covers a slow
+  frame made up with the default five updates. When more wait at once (an `AudioEngineSettings.DelayFrames` of
+  eight updates or more, or a `TimeSettings.MaxStepsPerFrame` raised to eight or more), eight of them still take
+  effect at their own points, spread over the wait, and each of the others takes effect together with the next one
+  kept. The value heard is then never ahead of the one asked for and never more than about a quarter of the wait
+  behind it (4 updates with 16 waiting, 16 with 64); the oldest waiting change and the last one asked for always
+  keep their points.
 - There is no setting for sound in the background: a suspended game is silent, a desktop game behind another window
   sounds unless the game lowers its buses.
