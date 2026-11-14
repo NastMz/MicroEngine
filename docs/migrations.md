@@ -26,6 +26,11 @@ deterministic run, are unchanged.
 What can need a change: a game that delayed its pictures or shifted its timing windows to match the sound (a rhythm
 game's audio offset) was compensating for the longer delay; reduce that offset by about 55 ms on the SDL platform.
 
+When the output stops taking audio for longer than a second (a page whose sound the browser holds suspended) and
+then resumes, the sounds played meanwhile are still heard within the following second, and more of them can now
+start at the same instant than before. A game that keeps playing sounds while its output is suspended hears a denser
+burst on resume; skip one-shot sounds while the game knows it is suspended to avoid it.
+
 ## 0.6.0-alpha.1
 
 ### Removed UI components
