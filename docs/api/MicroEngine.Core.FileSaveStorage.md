@@ -6,7 +6,9 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.Saves.dll  
 Guide: [Saving data](../manual/persistence.md)  
 
-One JSON file per slot in a directory (desktop and tests).
+One JSON file per slot in a directory (desktop and tests). A slot is a plain name (see [SaveStore](MicroEngine.Core.SaveStore.md)):
+every member that takes one throws `ArgumentException` for a name that is not, so no slot reaches a file
+outside the directory.
 
 ```csharp
 public sealed class FileSaveStorage : ISaveStorage, IStorage
@@ -26,7 +28,9 @@ public sealed class FileSaveStorage : ISaveStorage, IStorage
 
 ### <a id="MicroEngine_Core_FileSaveStorage__ctor_System_String_"></a> FileSaveStorage\(string\)
 
-One JSON file per slot in a directory (desktop and tests).
+One JSON file per slot in a directory (desktop and tests). A slot is a plain name (see [SaveStore](MicroEngine.Core.SaveStore.md)):
+every member that takes one throws `ArgumentException` for a name that is not, so no slot reaches a file
+outside the directory.
 
 ```csharp
 public FileSaveStorage(string directory)

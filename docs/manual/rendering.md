@@ -15,7 +15,9 @@ smaller than the canvas it scales down (never crops). On desktop F11 or Alt+Ente
 fullscreen; in a browser the page owns fullscreen ([Embedding](../examples/embedding.md#the-iframe)).
 
 The rule is shared by every platform (`FrameLayout.Fit`): the largest whole factor, or a fractional one when whole
-factors would waste a fifth of a small screen.
+factors would waste a fifth of a small screen. The frame is always whole window pixels: at a fractional scale each
+side is the nearest whole size (480 × 270 in a 1366 × 768 window lands on 1365 × 768), centred, with the odd pixel of
+letterbox on the right or at the bottom.
 
 ### HD canvases and smooth scaling
 
@@ -49,6 +51,7 @@ capture scale, camera snapping), and the two presets are just values of those fi
 | `Rounding`: how the scale to the window is rounded | `IntegerUnlessWasteful`: whole factors unless they fill less than `WastefulThreshold` (80 %) of what fits | `Fractional`: the largest size that fits |
 | `Aspect`: the window's other shape | `Keep` (letterbox) | `Keep` |
 | `Upscale`: how the canvas is sampled when scaled | `SamplerDescription.PointClamp` (nearest) | `SamplerDescription.LinearClamp` |
+| `Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples it | 1 (none) | 1 (none) |
 | `DefaultSampler`: textures created without a filter | nearest | linear |
 | `CaptureScale`: size factor of captures | 3 | 1 |
 | `WholeFactorWindows`: windows open at whole factors | yes | no |
@@ -75,6 +78,28 @@ along the window's free side so a wider (or taller) window shows more of the wor
 (`Presentation.CanvasSize`; the configured size is the minimum, and `IRenderer.Width`/`Height` report the canvas's current
 size). `TextureFilter`, when set, still wins over `DefaultSampler`. The on-screen touch controls place the frame by the
 same presentation (`FrameLayout.Fit` and `VirtualControls.Frame` take it), so touches land where the canvas is drawn. `SamplerDescription` lives in `MicroEngine.Graphics.Devices`.
+
+`Prescale` is for pixel art that fills a window whose scale is not whole (a 480 × 270 game on a 1366 × 768 screen,
+2.84×). Nearest sampling gives canvas pixels of two and three window pixels there, and linear sampling alone blurs the
+picture. With a linear `Upscale` and `Prescale = Presentation.AutoPrescale` the canvas is first enlarged with nearest
+sampling by the smallest whole factor that covers the frame, and that enlargement is sampled linearly: every canvas
+pixel keeps the same size, with one blended window pixel where two meet. At a whole scale the picture is exactly the
+nearest one, so the setting costs nothing where pixels were already even; at other scales it draws the canvas one more
+time per frame.
+
+```csharp
+Presentation = Presentation.PixelArt with
+{
+    Rounding = ScaleRounding.Fractional,          // fill the window
+    Upscale = SamplerDescription.LinearClamp,
+    Prescale = Presentation.AutoPrescale,         // even pixels at any scale
+},
+```
+
+A fixed factor (2, 3...) below the scale gives softer edges; a prescale changes nothing with a nearest `Upscale` or
+on a canvas drawn smaller than its size. `Presentation.PrescaleFor` gives the factors a frame gets. The SDL and raylib
+windows are composed this way, and a capture of the window (`IViewCapture.CaptureScreen`, the headless platform's
+included) samples the same enlargement.
 
 ### Filtering: nearest or linear
 
@@ -209,7 +234,8 @@ called while drawing. Duplicate names and unknown names throw.
 frame. `Animator` plays named clips: `Add(name, clip)`, `Play(name, restart = false)` (playing the current clip
 again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-looping clips). Source:
 [`src/MicroEngine.Graphics2D/Legacy/Animation.cs`](../../src/MicroEngine.Graphics2D/Legacy/Animation.cs). Games may equally pick
-frames themselves from `atlas.Frames(...)` and a timer.
+frames themselves from `atlas.Frames(...)` and a timer. Values that move through several keys, and moments the game
+reacts to during a clip (a footstep, the frame a swing lands), are tracks and timelines: [Animation](../guide/animation.md).
 
 ## Camera
 
@@ -369,8 +395,8 @@ platforms offer the UI view (`IScreenView`); a platform without one draws `DrawU
 canvas pixels. The UI view starts with the first thing a scene draws in it.
 
 Captures (`--captures`) record what the player sees. A frame whose scenes drew an interface is captured as the window:
-the letterbox, the world scaled into its frame with the presentation's filter, and the UI view over both, at the
-window's size. A frame without one is captured as the canvas, at the presentation's capture scale. Tests that need the
+the letterbox, the world scaled into its frame with the presentation's filter and prescale, and the UI view over both,
+at the window's size. A frame without one is captured as the canvas, at the presentation's capture scale. Tests that need the
 world alone read it from the platform's `IViewCapture` capability (`CaptureWorld`, `SaveWorldScreenshot`), which also
 gives the UI view (`CaptureUi`) and the composite (`CaptureScreen`); the headless platform draws its UI view when it
 rasterizes.

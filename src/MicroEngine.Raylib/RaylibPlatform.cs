@@ -266,7 +266,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     {
         _canvas.EndFrame();
         Rl.BeginDrawing();
-        // The canvas into the window as the presentation says (copied opaque: its alpha never darkens it).
+        // The canvas into the window as the presentation says, prescale included (copied opaque: its alpha never darkens it).
         if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
         {
             // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
@@ -305,7 +305,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     {
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
-        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation.Upscale);
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation, _device.Capabilities.Limits.MaxRenderTargetSize);
     }
     void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 

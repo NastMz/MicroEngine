@@ -95,6 +95,33 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     public virtual void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan = 0.5f) =>
         Engine.Play(_sounds[sound.Id], new PlayParameters { Volume = volume, Pitch = pitch, Pan = pan });
 
+    /// <summary>
+    /// Plays a loaded sound as a voice of the mixer, exactly as <paramref name="parameters"/> say (loop, bus and
+    /// priority included), and returns its handle for the engine's <see cref="AudioEngine.Stop"/>,
+    /// <see cref="AudioEngine.Set"/>, <see cref="AudioEngine.SetPitch"/> and <see cref="AudioEngine.Pause"/>;
+    /// <see cref="VoiceHandle.None"/> when the voice policy refused it.
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">The bus does not exist.</exception>
+    public virtual VoiceHandle PlayVoice(SoundHandle sound, in PlayParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(sound);
+        return Engine.Play(_sounds[sound.Id], parameters);
+    }
+
+    /// <summary>
+    /// Plays loaded music as one more voice of the mixer, beside the track <see cref="PlayMusic"/> plays (which it does
+    /// not replace): ambience under the music, layers of one piece. It loops when <paramref name="parameters"/> say so,
+    /// whatever the music was loaded with. Streamed music keeps its own pitch.
+    /// </summary>
+    /// <returns>Its handle, or <see cref="VoiceHandle.None"/> when the voice policy refused it.</returns>
+    /// <exception cref="KeyNotFoundException">The bus does not exist.</exception>
+    public virtual VoiceHandle PlayMusicVoice(MusicHandle music, in PlayParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(music);
+        var track = _music[music.Id];
+        return track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
+    }
+
     /// <inheritdoc/>
     public void PlayMusic(MusicHandle music, float volume = 1)
     {

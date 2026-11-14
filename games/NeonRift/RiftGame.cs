@@ -4,6 +4,8 @@ using NeonRift.Scenes;
 using MicroEngine;
 using MicroEngine.Content;
 using MicroEngine.Core;
+using MicroEngine.Graphics;
+using MicroEngine.Graphics.Devices;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
 
@@ -13,7 +15,25 @@ namespace NeonRift;
 public sealed record LaunchOptions(string Start = "title", int Stage = 1, int Checkpoint = 0, WeaponKind Weapon = WeaponKind.Pulse, bool God = false, bool Auto = false)
 {
     /// <summary>
-    /// Reads RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT, RIFT_WEAPON, RIFT_GOD=1 and RIFT_AUTO=1 through
+    /// <summary>
+    /// How the canvas reaches the window: pixel art (whole factors, nearest) for players. RIFT_PRESENT chooses another for
+    /// comparisons at window sizes that are not a whole factor of the canvas: <c>integer</c> (whole factors only),
+    /// <c>nearest</c> (fills the window, nearest), <c>smooth</c> (fills the window, linear) or <c>sharp</c> (fills the
+    /// window, enlarged by a whole factor first and then linear: even pixels with antialiased edges).
+    /// </summary>
+    public Presentation Presentation { get; init; } = Presentation.PixelArt;
+
+    private static Presentation PresentationFor(string? word) => word switch
+    {
+        "integer" => Presentation.PixelArt with { Rounding = ScaleRounding.Integer },
+        "nearest" => Presentation.PixelArt with { Rounding = ScaleRounding.Fractional },
+        "smooth" => Presentation.PixelArt with { Rounding = ScaleRounding.Fractional, Upscale = SamplerDescription.LinearClamp },
+        "sharp" => Presentation.PixelArt with { Rounding = ScaleRounding.Fractional, Upscale = SamplerDescription.LinearClamp, Prescale = Presentation.AutoPrescale },
+        _ => Presentation.PixelArt,
+    };
+
+    /// <summary>
+    /// Reads RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT, RIFT_WEAPON, RIFT_GOD=1, RIFT_AUTO=1 and RIFT_PRESENT through
     /// <paramref name="variable"/> (the composition passes the host's <c>HostEnvironment.Variable</c>: environment
     /// variables on desktop, a phone test's <c>--env</c> values); unset or unreadable ones keep their defaults.
     /// </summary>
@@ -26,7 +46,7 @@ public sealed record LaunchOptions(string Start = "title", int Stage = 1, int Ch
         var weapon = Enum.TryParse<WeaponKind>(variable("RIFT_WEAPON"), true, out var w) ? w : WeaponKind.Pulse;
         bool god = variable("RIFT_GOD") == "1";
         bool auto = variable("RIFT_AUTO") == "1";
-        return new LaunchOptions(start, stage, cp, weapon, god, auto);
+        return new LaunchOptions(start, stage, cp, weapon, god, auto) { Presentation = PresentationFor(variable("RIFT_PRESENT")) };
     }
 }
 
@@ -41,7 +61,11 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
 {
     private readonly LaunchOptions _launch = launch ?? new LaunchOptions();
 
-    public override GameSettings Settings { get; } = new("Neon Rift", 480, 270, 3) { Background = Color.Hex("0d0b1a") };
+    public override GameSettings Settings { get; } = new("Neon Rift", 480, 270, 3)
+    {
+        Background = Color.Hex("0d0b1a"),
+        Presentation = (launch ?? new LaunchOptions()).Presentation,
+    };
     internal Assets Art { get; private set; } = null!;
     public Session Session { get; private set; } = new();
     /// <summary>Sound names requested but not registered (should stay empty; checked by tests).</summary>

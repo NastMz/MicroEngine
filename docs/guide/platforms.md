@@ -87,3 +87,47 @@ for automated tests of your game ([Testing](../examples/testing.md)); `--headles
 A new platform implements `IPlatform` and its four device interfaces (`IRenderer`, `IGraphicsDevice`,
 `IAudioDevice`, `IInputSource`) and is registered as a profile in a catalog; no game code changes
 ([Backends and platforms](../manual/backends.md), [Contracts](../reference/contracts.md#iplatform)).
+
+## Trimmed and NativeAOT publishing
+
+A game project can also be published with .NET's own `PublishTrimmed` or `PublishAot` properties. Those builds have
+no reflection-based JSON serialization, so a game that saves declares its saved types once and lets the compiler
+write how to read and write them:
+
+<!-- code: samples/Examples/SaveTypes.cs#types -->
+```csharp
+/// <summary>
+/// The game's saved types, declared once. The compiler writes how to read and write each of them and the types they
+/// hold, so saving needs no reflection: what a game published trimmed or with NativeAOT requires.
+/// </summary>
+[JsonSerializable(typeof(SaveExample.Progress))]
+[JsonSerializable(typeof(Profile))]
+[JsonSerializable(typeof(JsonObject))]   // a slot read as JSON, to upgrade old saves
+public partial class SaveTypes : JsonSerializerContext;
+```
+
+and passes that metadata when it saves and loads:
+
+<!-- code: samples/Examples/SaveTypes.cs#use -->
+```csharp
+public static SaveExample.Progress Load(SaveStore store) =>
+    store.Load("example", SaveTypes.Default.Progress) ?? new SaveExample.Progress();   // null: no save yet, or unreadable
+
+public static bool Save(SaveStore store, SaveExample.Progress progress) =>
+    store.Save("example", progress, SaveTypes.Default.Progress);                        // false: the medium refused
+```
+
+The slot is the same JSON either way: a save written with `Save(slot, data)` loads with
+`Load(slot, SaveTypes.Default.Progress)` and the reverse, so a game can adopt the declared types without losing its
+players' saves ([Saving data](../manual/persistence.md)). What to expect in these builds:
+
+- Saving and loading with declared types works, including nested objects, collections, enums, derived types declared
+  with `JsonDerivedType`, and `JsonObject` for upgrading old saves.
+- `Save(slot, data)` and `Load<T>(slot)` without metadata throw `InvalidOperationException` when the slot is written
+  or read. The build reports each such call in the game's code: warning `IL2026` once the project sets
+  `PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer`, and also `IL3050` once it sets `PublishAot`,
+  `IsAotCompatible` or `EnableAotAnalyzer`.
+- Achievements persist as in any other build: `AchievementTracker` reads and writes its slot without reflection, and
+  the game declares nothing for it.
+- NativeAOT is not one of the targets above: `microengine package` does not build it, and the SDK makes no promise
+  about a game compiled that way beyond what this section states.

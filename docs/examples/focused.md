@@ -472,6 +472,33 @@ private IEnumerator Countdown()
 
 Both belong to the scene: they stop when the scene leaves the stack. Manual: [Scenes](../manual/scenes.md#coroutines).
 
+## Tracks and timelines
+
+A figure that strikes an anvil when you confirm: one timeline moves the arm's angle, the anvil's colour and the pose's
+name through their keys, and a named event at the moment of the hit counts it; a second, looping timeline makes the
+figure breathe underneath. Source: [`TimelineExample.cs`](../../samples/Examples/Examples/TimelineExample.cs).
+
+<!-- code: samples/Examples/Examples/TimelineExample.cs#timeline -->
+```csharp
+private readonly Timeline _strike = new(0.9f);
+private readonly Timeline _breath = new(1.6f, loop: true);
+
+public override void Enter()
+{
+    _strike
+        .Add(Swing, angle => Arm = angle)        // each update: the track's value at the playhead
+        .Add(Glow, colour => _anvil = colour)
+        .Add(Poses, pose => Pose = pose)
+        .At(0.5f, "hit");                        // a named moment the game reacts to
+    _strike.Reached += name => { if (name == "hit") Hits++; };
+    _strike.Seek(_strike.Duration);              // starts finished, at rest
+
+    _breath.Add(Breath, y => Bob = y);           // another timeline over another value: a layer
+}
+```
+
+Guide: [Animation](../guide/animation.md).
+
 ## Dialogue
 
 A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter with a sound per

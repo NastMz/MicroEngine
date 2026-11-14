@@ -54,6 +54,16 @@ Standard easing curves mapping 0..1 to 0..1 (some overshoot).
 
 Small numeric helpers that games repeatedly need for feel and motion.
 
+ [Track<T\>](MicroEngine.Track\-1.md)
+
+An immutable value that changes over time through keys: `At` gives the value at any time, blended
+between the two keys around it. It holds no playhead, so one track can be shared by everything that moves the same
+way; a <code>Timeline</code> plays tracks, or call `At` with a time of your own.
+
+ [Track](MicroEngine.Track.md)
+
+Creates the usual kinds of `Track`1`.
+
 ### Structs
 
  [ColorF](MicroEngine.ColorF.md)
@@ -65,6 +75,10 @@ to store and name colours; convert with [FromSrgb](MicroEngine.ColorF.md#MicroEn
  [Color](MicroEngine.Color.md)
 
 An 8-bit-per-channel, non-premultiplied RGBA color.
+
+ [Keyframe<T\>](MicroEngine.Keyframe\-1.md)
+
+One key of a `Track`1`: the value the track has at a time.
 
  [RectF](MicroEngine.RectF.md)
 

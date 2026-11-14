@@ -89,6 +89,25 @@ public sealed class PresentationSettingsTests
         return new RectF(x, y, w, h);
     }
 
+    /// <summary>
+    /// Where the old rule gave a frame of whole pixels, <paramref name="now"/> is exactly that frame; where it gave a
+    /// fraction of a pixel (a scale that is not whole), the same frame with its size in whole pixels. Returns whether the
+    /// frame is exactly the old one.
+    /// </summary>
+    private static bool AssertAsTheOldRule(RectF old, RectF now, string where)
+    {
+        if (old.Width == MathF.Round(old.Width) && old.Height == MathF.Round(old.Height))
+        {
+            Assert.AreEqual(old, now, where);
+            return true;
+        }
+        Assert.AreEqual(MathF.Round(now.Width), now.Width, $"a whole width: {where}");
+        Assert.AreEqual(MathF.Round(now.Height), now.Height, $"a whole height: {where}");
+        Assert.IsTrue(MathF.Abs(now.Width - old.Width) < 1 && MathF.Abs(now.Height - old.Height) < 1, $"less than a pixel from {old}: {now}, {where}");
+        Assert.IsTrue(MathF.Abs(now.X - old.X) <= 1 && MathF.Abs(now.Y - old.Y) <= 1, $"placed within a pixel of {old}: {now}, {where}");
+        return false;
+    }
+
     private static readonly Vector2[] Windows =
     [
         new(1366, 768), new(1920, 1080), new(732, 412), new(915, 412), new(1080, 1920), new(1080, 2400), new(2400, 1080),
@@ -107,7 +126,7 @@ public sealed class PresentationSettingsTests
     [TestMethod]
     public void The_Presets_Place_The_Frame_Exactly_As_The_Old_Switch_Did()
     {
-        int compared = 0;
+        int compared = 0, exact = 0;
         foreach (var window in Windows)
             foreach (var safe in SafeAreas(window))
                 foreach (var (w, h) in Canvases)
@@ -115,14 +134,15 @@ public sealed class PresentationSettingsTests
                     string where = $"{w}x{h} in {window} safe {safe}";
                     var pixel = OldFit(window, safe, w, h, pixel: true);
                     var smooth = OldFit(window, safe, w, h, pixel: false);
-                    Assert.AreEqual(pixel, Presentation.PixelArt.Fit(window, safe, w, h), $"pixel art: {where}");
-                    Assert.AreEqual(pixel, FrameLayout.Fit(window, safe, w, h, Presentation.PixelArt), $"FrameLayout, pixel art: {where}");
-                    Assert.AreEqual(pixel, FrameLayout.Fit(window, safe, w, h), $"FrameLayout's default is pixel art: {where}");
-                    Assert.AreEqual(smooth, Presentation.HighResolution2D.Fit(window, safe, w, h), $"high resolution: {where}");
-                    Assert.AreEqual(smooth, FrameLayout.Fit(window, safe, w, h, Presentation.HighResolution2D), $"FrameLayout, high resolution: {where}");
+                    if (AssertAsTheOldRule(pixel, Presentation.PixelArt.Fit(window, safe, w, h), $"pixel art: {where}")) exact++;
+                    Assert.AreEqual(Presentation.PixelArt.Fit(window, safe, w, h), FrameLayout.Fit(window, safe, w, h, Presentation.PixelArt), $"FrameLayout, pixel art: {where}");
+                    Assert.AreEqual(Presentation.PixelArt.Fit(window, safe, w, h), FrameLayout.Fit(window, safe, w, h), $"FrameLayout's default is pixel art: {where}");
+                    if (AssertAsTheOldRule(smooth, Presentation.HighResolution2D.Fit(window, safe, w, h), $"high resolution: {where}")) exact++;
+                    Assert.AreEqual(Presentation.HighResolution2D.Fit(window, safe, w, h), FrameLayout.Fit(window, safe, w, h, Presentation.HighResolution2D), $"FrameLayout, high resolution: {where}");
                     compared++;
                 }
         Assert.AreEqual(Windows.Length * 3 * Canvases.Length, compared);
+        Assert.AreEqual(164, exact, "the frames the old rule already gave in whole pixels are untouched");
     }
 
     [TestMethod]
@@ -132,9 +152,9 @@ public sealed class PresentationSettingsTests
         foreach (var window in Windows)
             foreach (var safe in SafeAreas(window))
             {
-                Assert.AreEqual(OldFit(window, safe, 320, 180, pixel: true), controls.Frame(window, safe, 320, 180, Presentation.PixelArt), $"pixel art in {window}");
-                Assert.AreEqual(OldFit(window, safe, 320, 180, pixel: true), ((ITouchOverlay)controls).Frame(window, safe, 320, 180), $"default in {window}");
-                Assert.AreEqual(OldFit(window, safe, 1280, 720, pixel: false), controls.Frame(window, safe, 1280, 720, Presentation.HighResolution2D), $"high resolution in {window}");
+                AssertAsTheOldRule(OldFit(window, safe, 320, 180, pixel: true), controls.Frame(window, safe, 320, 180, Presentation.PixelArt), $"pixel art in {window}");
+                AssertAsTheOldRule(OldFit(window, safe, 320, 180, pixel: true), ((ITouchOverlay)controls).Frame(window, safe, 320, 180), $"default in {window}");
+                AssertAsTheOldRule(OldFit(window, safe, 1280, 720, pixel: false), controls.Frame(window, safe, 1280, 720, Presentation.HighResolution2D), $"high resolution in {window}");
             }
     }
 

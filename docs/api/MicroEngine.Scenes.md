@@ -41,6 +41,12 @@ A screen of the game (title, level, battle, pause menu...). Scenes live on a sta
 an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
 Each scene owns its coroutines and tweens, which stop when it leaves the stack.
 
+ [Timeline](MicroEngine.Scenes.Timeline.md)
+
+A playhead that drives several `Track`1`s together and raises named events at set times: a sequence
+of movements with the moments the game reacts to (a footstep, the frame a swing lands). Advance it with
+[Update](MicroEngine.Scenes.Timeline.md#MicroEngine_Scenes_Timeline_Update_System_Single_), like an <code>Animator</code>; several timelines over different values play as layers.
+
  [Transition](MicroEngine.Scenes.Transition.md)
 
 A full-screen effect that covers the old scene (progress 0..0.5), swaps scenes at 0.5 and

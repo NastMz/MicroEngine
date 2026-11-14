@@ -85,7 +85,9 @@ A display (monitor) as the system reports it.
 
  [FileSaveStorage](MicroEngine.Core.FileSaveStorage.md)
 
-One JSON file per slot in a directory (desktop and tests).
+One JSON file per slot in a directory (desktop and tests). A slot is a plain name (see [SaveStore](MicroEngine.Core.SaveStore.md)):
+every member that takes one throws `ArgumentException` for a name that is not, so no slot reaches a file
+outside the directory.
 
  [FrameProfiler](MicroEngine.Core.FrameProfiler.md)
 
@@ -341,7 +343,7 @@ throwing, so a full disk or browser storage quota leaves the game running with i
 
  [ScreenCapture](MicroEngine.Core.ScreenCapture.md)
 
-Builds the image the player sees from the two views, as the platforms compose a frame.
+Builds the image the player sees from the two views, as the platforms compose a frame, prescale included.
 
  [StartScreen](MicroEngine.Core.StartScreen.md)
 
