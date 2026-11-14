@@ -17,8 +17,21 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   level saved by Tiled.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
+- `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples
+  it into the window. With a linear `Upscale` and `Presentation.AutoPrescale`, a pixel-art canvas shown at a scale
+  that is not whole (a 480 × 270 game on a 1366 × 768 screen) keeps every pixel the same size with antialiased edges,
+  instead of pixels of two widths or a blurred picture, and at a whole scale the picture is exactly the nearest one.
+  1, the default, changes nothing. `Presentation.PrescaleFor` gives the factors of a frame and `CanvasPresenter`
+  composes the window; SDL and raylib windows apply it, and captures of the window show it on every platform, the
+  headless one included (`ScreenCapture.Compose` takes the presentation)
+  ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
 
 **Fixed**
+
+- `Presentation.Fit` places the frame on whole window pixels at every scale: 480 × 270 in 1366 × 768 is 1365 × 768,
+  centred, where it was 1365.33 wide and painted with letterbox bars of unequal width. Each side is the nearest whole
+  size, at least one pixel and never larger than the area; at a whole scale the frame is the one it was
+  ([migration notes](../migrations.md#presentationfit-returns-whole-pixels)).
 
 - `TileRenderer` skipped the tiles a zoomed-out or rotated camera shows beyond its unzoomed view: it now culls with
   `Camera2D.VisibleBounds`.
