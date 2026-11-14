@@ -53,8 +53,8 @@ public sealed class AudioEngineQueueTests
     }
 
     /// <summary>
-    /// The sink renders again. While it did not, the mixer's timeline went up to a second ahead of it, so what the game
-    /// asked for in those steps is due within the next second of sound: this renders past it and returns the last step.
+    /// The sink renders again. While it did not, the mixer's timeline went ahead of it (up to a quarter second), so what
+    /// the game asked for in those steps is due a little later in the sound: this renders past it and returns the last step.
     /// </summary>
     private static float[] Resume(AudioEngine engine, StalledSink sink)
     {
@@ -149,7 +149,7 @@ public sealed class AudioEngineQueueTests
         Assert.AreEqual(dropped + 1, engine.DroppedCommands);
         Assert.AreEqual(active, engine.ActiveVoices, "it took no voice");
         Step(engine, sink);
-        var played = engine.Play(Constant(0.5f, Rate), new PlayParameters());
+        var played = engine.Play(Constant(0.5f, Rate), new PlayParameters { Loop = true });
         Assert.IsFalse(played.IsNone, "the sink reads again: sounds play");
         Assert.AreEqual(0.5f, Resume(engine, sink)[10]);
     }

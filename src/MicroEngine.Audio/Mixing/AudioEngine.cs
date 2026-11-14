@@ -123,6 +123,13 @@ public sealed class AudioBus
 /// what the sink has rendered: which sound plays is the same on every backend and in every run.
 /// </para>
 /// <para>
+/// In real time (not <see cref="Deterministic"/>) the steps' frames follow what the device is playing: what the sink
+/// has rendered, less its latency. A step's sounds therefore start in the frames the sink renders next, one step
+/// after the previous step's, and are heard one sink latency after their update. A step that runs late moves the
+/// timeline forward to what can still be rendered; after a slow frame, whose catch-up steps leave it ahead, it comes
+/// back by a sixteenth of a step per host frame until it is within one step again.
+/// </para>
+/// <para>
 /// Commands reach the render function through a single-producer, single-consumer queue; rendering never allocates,
 /// locks or reads files. Music streams are decoded ahead in <see cref="Pump"/>, outside the simulation step.
 /// </para>
@@ -155,6 +162,11 @@ public sealed class AudioEngine : IDisposable
     private readonly float[] _busVolume = new float[MaxBuses], _busGain = new float[MaxBuses];
     private readonly List<StreamFeed> _feeds = [];
     private long _step, _offset, _played, _position;
+    // Real time: the sink's latency, whether the current step's frame was checked against the sink, the smallest lead of
+    // the timeline over the device in the steps of the current host frame, and whether a host frame ended since.
+    private readonly int _sinkLatency;
+    private bool _anchored, _pumped;
+    private long _frameLead = long.MaxValue;
     private bool _disposed;
     // RenderAllocations: written by the rendering thread only.
     private readonly bool _sinkThread;
@@ -173,7 +185,8 @@ public sealed class AudioEngine : IDisposable
         ArgumentOutOfRangeException.ThrowIfLessThan(settings.UpdateRate, 1);
         (_channels, _rate, _updateRate) = (Format.Channels, Format.SampleRate, settings.UpdateRate);
         MaxVoices = settings.MaxVoices;
-        DelayFrames = Math.Max(Math.Max(0, sink.LatencyFrames), settings.DelayFrames ?? 0);
+        _sinkLatency = Math.Max(0, sink.LatencyFrames);
+        DelayFrames = Math.Max(_sinkLatency, settings.DelayFrames ?? 0);
         StreamAheadFrames = Math.Max(1024, (int)(settings.StreamAheadSeconds * _rate));
         _logical = new Logical[MaxVoices];
         _voices = new Voice[MaxVoices];
@@ -224,8 +237,25 @@ public sealed class AudioEngine : IDisposable
     public bool Deterministic { get; set; }
     /// <summary>Simulation steps counted by <see cref="Advance"/>.</summary>
     public long Steps => _step;
-    /// <summary>The output frame the current step's sounds start at (the step's frame plus <see cref="DelayFrames"/>).</summary>
+    /// <summary>
+    /// The output frame the current step's sounds start at (the step's frame plus <see cref="DelayFrames"/>). In real
+    /// time, the step's first sound or change moves it forward when the sink has already rendered past it.
+    /// </summary>
     public long Now => StepFrame(_step) + _offset + DelayFrames;
+
+    /// <summary>
+    /// Real time, at a step's first sound or change: when the step runs later than the timeline expected (the device is
+    /// already past the step's frame), the timeline moves forward to the device, so the step's sounds start in the
+    /// frames the sink renders next instead of in frames it has rendered. Later calls of the step keep that frame.
+    /// </summary>
+    private void Anchor()
+    {
+        if (_anchored) return;
+        _anchored = true;
+        if (Deterministic) return;
+        long behind = RenderedFrames - _sinkLatency - (StepFrame(_step) + _offset);
+        if (behind > 0) _offset += behind;
+    }
     /// <summary>Sounds playing now on the mixer's timeline.</summary>
     public int ActiveVoices
     {
@@ -277,6 +307,7 @@ public sealed class AudioEngine : IDisposable
 
     internal void SetBusVolume(int bus, float volume)
     {
+        Anchor();
         if (Flush() && TryPost(new Command { Op = Op.Bus, Slot = bus, Volume = volume, Frame = Now })) return;
         DroppedCommands++;
         if (!_busUnsent[bus]) _unsent++;
@@ -318,6 +349,7 @@ public sealed class AudioEngine : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var bus = Bus(p.Bus ?? SfxBus);
+        Anchor();
         // A sound takes a voice only when the render function will hear of it: with the queue full it is refused, so no
         // handle ever names a sound that is not there (its calls would reach whatever still sounds in that voice).
         if (!Flush() || Full)
@@ -393,6 +425,7 @@ public sealed class AudioEngine : IDisposable
     /// <returns>Whether it was playing.</returns>
     public bool Stop(VoiceHandle voice, double fadeSeconds = 0)
     {
+        Anchor();
         if (!IsPlaying(voice)) return false;
         long fade = Math.Max(0, (long)Math.Round(fadeSeconds * _rate));
         ref var l = ref _logical[voice.Index];
@@ -411,6 +444,7 @@ public sealed class AudioEngine : IDisposable
     /// <returns>Whether it was playing.</returns>
     public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
     {
+        Anchor();
         if (!IsPlaying(voice)) return false;
         var (left, right) = pan is { } p && !float.IsNaN(p) ? Balance(p) : (-1f, -1f);
         float gain = volume is { } v && !float.IsNaN(v) ? Math.Clamp(v, 0, 1) : -1;
@@ -431,6 +465,7 @@ public sealed class AudioEngine : IDisposable
     /// <returns>Whether it was playing and is a clip; false for a stale handle or a stream.</returns>
     public bool SetPitch(VoiceHandle voice, float pitch)
     {
+        Anchor();
         if (!IsPlaying(voice)) return false;
         ref var l = ref _logical[voice.Index];
         if (l.Feed is not null) return false;
@@ -454,6 +489,7 @@ public sealed class AudioEngine : IDisposable
     /// <returns>Whether it was playing.</returns>
     public bool Pause(VoiceHandle voice, bool paused)
     {
+        Anchor();
         if (!IsPlaying(voice)) return false;
         ref var l = ref _logical[voice.Index];
         if (l.Paused == paused) return true;
@@ -477,13 +513,41 @@ public sealed class AudioEngine : IDisposable
     public void Advance()
     {
         Flush();
+        if (!Deterministic) Follow();
         _step++;
+        _anchored = false;
         if (Deterministic) return;
-        // Real time: when the sink has already played past this step's frame (the game fell behind), catch up so sounds
-        // keep their delay; when it is far behind (a sink that has not started), wait for it.
-        long rendered = RenderedFrames, frame = StepFrame(_step) + _offset;
-        if (frame < rendered || frame > rendered + _rate) _offset += rendered - frame;
         for (int i = 0; i < _logical.Length; i++) if (_logical[i].Active && _logical[i].End <= Now) Release(i);
+    }
+
+    /// <summary>
+    /// Real time, as a step ends: keeps the steps' frames on the device's position, which is what the sink has rendered
+    /// less its latency (what it renders now is heard that much later), so a step's sounds start in the frames the sink
+    /// renders next and the sink's latency is not waited for twice.
+    /// </summary>
+    private void Follow()
+    {
+        int stepFrames = _rate / _updateRate;
+        // How far ahead of the device the step that ends was. Behind it (the game fell behind): catch up. More than a
+        // quarter second ahead (a sink that has not started, or stopped rendering): wait for it.
+        long lead = StepFrame(_step) + _offset - (RenderedFrames - _sinkLatency);
+        if (lead < 0 || lead > _rate / 4)
+        {
+            _offset -= lead;
+            lead = 0;
+        }
+        if (_pumped)
+        {
+            // The first step of a host frame: the catch-up steps of a slow frame are legitimately ahead of the device,
+            // each by one more step, but the frames after it are not. While even the least advanced step of the last
+            // frame, and this one, are more than a step ahead, the timeline comes back a sixteenth of a step: steps
+            // stay in order and almost evenly spaced (about a millisecond closer at 60 steps per second).
+            long excess = Math.Min(lead, _frameLead) - stepFrames;
+            if (excess > 0) _offset -= Math.Min(excess, Math.Max(1, stepFrames / 16));
+            _frameLead = long.MaxValue;
+            _pumped = false;
+        }
+        _frameLead = Math.Min(_frameLead, lead);
     }
 
     /// <summary>
@@ -493,6 +557,7 @@ public sealed class AudioEngine : IDisposable
     public void Pump()
     {
         if (_disposed) return;
+        _pumped = true;
         Flush();
         for (int i = _feeds.Count - 1; i >= 0; i--)
         {
