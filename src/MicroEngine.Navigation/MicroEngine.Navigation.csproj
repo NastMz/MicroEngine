@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Navigation: shortest paths over grids and graphs (A*), grids read from tile maps or from a physics world,
+       straightened routes for agents with a size, and distance fields for many agents with one goal. An optional
+       package of the SDK (ADR 0056): managed code only, no dependency besides the engine. It decides no behaviour:
+       what an agent wants and how it moves is the game's. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Navigation</RootNamespace>
+    <Description>MicroEngine navigation: A* paths over tile grids and waypoint graphs, grids built from tile maps or a physics world, obstacles that change at run time, straightened routes for agents with a size, and distance fields for many agents with one goal. Managed only. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);pathfinding;navigation;astar;a-star;ai</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Navigation.Tests" />
+  </ItemGroup>
+</Project>

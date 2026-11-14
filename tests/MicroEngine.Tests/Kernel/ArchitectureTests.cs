@@ -15,7 +15,7 @@ public sealed class ArchitectureTests
     private const string Kernel = "MicroEngine.Kernel", Platform = "MicroEngine.Platform", Graphics = "MicroEngine.Graphics",
         Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input", InputTouch = "MicroEngine.Input.Touch",
         Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
-        TextShaping = "MicroEngine.Text.Shaping", Tiled = "MicroEngine.Tiled", UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
+        TextShaping = "MicroEngine.Text.Shaping", Tiled = "MicroEngine.Tiled", Navigation = "MicroEngine.Navigation", UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
         Testing = "MicroEngine.Testing",
         // The transitional entity adapter of the demo migrations, deleted: no project may reference it again.
         Migration = "MicroEngine.Migration.Entities",
@@ -48,6 +48,9 @@ public sealed class ArchitectureTests
         // Tiled maps (an optional package, ADR 0052): read through the content store into tile layers (the tile types) and
         // sprites (the 2D layer); like shaping, its package depends on MicroEngine. DotTiled is its only other reference.
         [Tiled] = [.. Abstractions, Graphics2D, PhysicsTiles, Core],
+        // Navigation (an optional package, ADR 0056): paths over grids read from the tile types or from a physics world;
+        // like Tiled, its package depends on MicroEngine. It has no other reference.
+        [Navigation] = [Kernel, Physics, PhysicsTiles, Core],
         [UI] = [Graphics2D, Text, Input, Graphics, Content, Kernel, Platform],
         [Saves] = [Kernel, Platform],
         // Progress persists through the save store (ADR 0006).
