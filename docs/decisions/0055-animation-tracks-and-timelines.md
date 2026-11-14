@@ -25,6 +25,12 @@ skeletal tool with a managed runtime (Spine) carries a licence condition on ever
 - **Timelines.** `Timeline` (beside `Tweener`) is a playhead the game holds and updates, like an `Animator`: it applies
   bound tracks through delegates (no reflection, safe for trimming and NativeAOT), loops, scales its speed, seeks, and
   raises named events once per pass in time order, none lost in a long update. It takes part in the state hash.
+- **Playhead rules** (`TimelineTests`, `TrackTests`). Time only goes forwards: `Update` and `Speed` refuse negative,
+  infinite and NaN values with an exception instead of ignoring them, as `Animator.Speed` does; `Animator.Update` and
+  `Tweener.Update` do not validate their step and are left as they are. `Seek` raises nothing, clamps to
+  0..`Duration` in both loop modes, and finishes a timeline that does not loop when it lands on the end, so
+  `Finished` and "a finished timeline does nothing" always agree. A looping playhead is in `[0, Duration)`. One update
+  raises the events of at most 1,000 passes, which bounds the work of a step far longer than the loop.
 - **Composition over features.** Layers are several timelines; a cross-fade is a `Lerp` of two `Track.At` reads; a
   cut-out rig is the scene world's hierarchy with tracks writing local transforms. The engine adds no layer mixer,
   blend tree or rig type.

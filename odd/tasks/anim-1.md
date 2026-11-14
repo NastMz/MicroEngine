@@ -24,6 +24,13 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 - S8 Owner gate (delegation brief): no third-party dependency, native library or new package; a worthwhile one is
   described under "Needs owner decision". Existing clip and tween behaviour stays identical.
 
+- S9 Site (L6): "Registrar la guía en el sitio."
+- S10 Semantics (L6): "Comprobar la semántica de seek, eventos y loops."
+- S11 Criterion (L6): "corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar
+  innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta
+  evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las
+  hipótesis y las diferencias perceptibles para el usuario."
+
 ## Tasks
 
 | Task | Specs | Route | Status | Commit / evidence |
@@ -34,6 +41,9 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
 | T4 `Timeline` (next to `Tweener`): bound tracks, named events, loop, speed, seek, state hash | S2 S7 | inline | done | `9a55183`; same tests |
 | T5 Example scene, guide page, release notes, API reference | S5 S7 | inline | done | L4; `TimelineExampleTests` 2/2; captures inspected |
 | T6 Evaluation `docs/evaluations/anim-1.md`, ADR 0055, architecture table | S1–S6 | inline | done | this branch |
+| T7 Register the guide in the site, link it from the manual and the examples page | S9 | inline | done | `261dd60`; L7 |
+| T8 Check seek, event and loop rules through tests; fix what fails; document the rest | S10 S11 | inline | done | `c118cef`; RED: 6 failing of 38; L8 |
+| T9 Examples tour: find why captures drift, fix it | S11 | inline | done | `26a2fa6`; RED: `ExamplesTourTests` 25 blocks for 26 entries; L9 |
 
 ## Log
 
@@ -76,3 +86,37 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`. Evaluation: [`docs/evalu
   needs a native `rive.dll`; MonoGame.Extended's tweener and Glide bind members through reflection. No dependency is
   proposed. The guide page `docs/guide/animation.md` is not registered in `site/src/lib/repo-docs.mjs` (outside this
   task's edit surface): owner follow-up.
+- L6 (2026-11-13) Owner's request, verbatim:
+
+  ```
+  ANIM-1
+
+  * Registrar la guía en el sitio.
+  * Comprobar la semántica de seek, eventos y loops.
+
+  Criterio general: corregir problemas reales dentro del lote cuando el alcance sea razonable. No ampliar innecesariamente la arquitectura ni crear issues preventivos. Si algo exige un rediseño considerable, presenta evidencia, alcance y alternativas antes de implementarlo. Distingue expresamente los fallos demostrados, las hipótesis y las diferencias perceptibles para el usuario.
+  ```
+
+- L7 (2026-11-13) Site. `docs/guide/animation.md` is the page `docs/animation`, in the manual group after Graphics;
+  linked from the manual's Animation and Tweens sections and from a new "Tracks and timelines" section of the focused
+  examples. `node site/scripts/snippets.mjs` covers its three quoted regions; `SITE_DEMOS=none npm run build` ended with
+  "dist: complete (537 documentation pages ...)".
+- L8 (2026-11-13) Semantics. 23 tests added (16 timeline, 7 track); 6 failed before the fix, each a demonstrated
+  failure: (1) a looping timeline given a step far longer than its duration never returned (`Update(1e9f)` on a 1 s
+  loop: subtracting one pass does not change the number in single precision); (2) `Seek(Duration)` on a timeline that
+  does not loop reported `Finished` and the next update still applied the tracks and raised the end event;
+  (3) `Seek(NaN)` left a NaN playhead; (4) a negative, NaN or infinite step was ignored without a word (an infinite one
+  on a loop hung as in 1); (5) `Track.Keys` returned the track's own array, writable through a cast; (6) a timeline
+  played to its end and one moved there hashed differently. Fixes: passes computed by division in double precision and
+  at most 1,000 raised per update; `Seek` finishes at the end; `Update`, `Speed` and `Seek` refuse values that are not
+  forward or not numbers; `Keys` is a read-only view. Decisions where the documents were silent (now in the XML
+  comments and the guide): refusing instead of ignoring a bad step (as `Speed` already did; `Animator.Update` and
+  `Tweener.Update` are not changed); the 1,000-pass bound; `Seek` clamps on a loop instead of wrapping; `Track.At(NaN)`
+  is the first key. The other rules were already right and are now pinned. `Reached` is an event, not a value that is
+  read and cleared: what is pinned is that every handler of one update sees the same playhead and values.
+- L9 (2026-11-13) Tour. Cause of the drift noted in L4: "Diagnostics and debug drawing" (11th entry) joined the list
+  without a block in `scripts/tour.script`, so `11-particles.png` showed Diagnostics and each later capture the example
+  before its name (seen in the captures); the extra key press before the timeline hid it. The block is added in its
+  place (`11-diagnostics.png`), every later line moves 120 frames and its capture one number, and the extra press is
+  gone. All 27 captures were looked at and show what their names say. `ExamplesTourTests` compares the number of blocks
+  with `ExamplesGame.All`. `ExamplesGame.cs` is unchanged.
