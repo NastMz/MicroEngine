@@ -59,7 +59,8 @@ flowchart LR
    daily CI never builds a release web package ([Demo packages](#demo-packages)).
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
-   input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
+   input changed: pack, check, a game made from the packages on Windows, Linux and macOS, and trimmed and NativeAOT
+   programs published and run on Linux ([NativeAOT](#nativeaot)). The **browser engine**
    suites run beside them too, one job per game the change reaches, after SDL for the web
    ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)). **Box2D**
    (`box2d.yml`) runs beside them when the native layer, the physics or what it builds on changed
@@ -199,7 +200,7 @@ fixed like any failed check, by a pull request.
 | .NET | .NET tests on Linux and Windows | supported |
 | Native Linux | SDL and raylib under Xvfb: native tests, scripted captures against each backend's Linux reference | supported |
 | Web | site; all browser suites in Chrome and Firefox; the browser engine suites on development packages of all four games | supported |
-| SDK | `sdk.yml`: the packages packed, checked and used from outside the repository on Windows, Linux and macOS | supported |
+| SDK | `sdk.yml`: the packages packed, checked and used from outside the repository on Windows, Linux and macOS; trimmed and NativeAOT programs published and run on Linux and Windows ([NativeAOT](#nativeaot)) | supported |
 | Packages | every missing native download built, checked as the file a player downloads (Linux packages also on other distributions) and stored | supported |
 | macOS | .NET tests, OpenGL probe, captures when a window can be opened | experimental |
 | Android | APK built with the NDK and played on an emulator | experimental |
@@ -257,7 +258,7 @@ cannot start.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | builds the Box2D natives (`box2d-natives.yml`, every runtime for a release) and packs every SDK package (with SDL for the web, and `MicroEngine.Physics.Box2D` with those natives), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
+| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | builds the Box2D natives (`box2d-natives.yml`, every runtime for a release) and packs every SDK package (with SDL for the web, and `MicroEngine.Physics.Box2D` with those natives), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`); beside it, publishes trimmed and NativeAOT programs from the feed and runs them (`sdk/tests/trimmed.mjs`, [NativeAOT](#nativeaot)) |
 | `sdk-release.yml` | after every ci run that passed for a push to `main`; by hand to resume | preflight (`sdk/version.mjs release-plan`) reads nuget.org and the GitHub release `sdk-v<version>`: nothing to do unless `main` documents a version nuget.org lacks; otherwise checks with `sdk.yml`, drafts, waits for the `nuget` environment's approval, pushes exactly the draft's packages with a one-hour Trusted Publishing key (GitHub OIDC), publishes the release, waits for nuget.org and builds a game and the documented samples from it, then deploys the site |
 
 ```mermaid
@@ -275,6 +276,65 @@ flowchart LR
 ```
 
 The procedure, the versions and recovery are in [Releasing](releasing.md). Nothing in daily CI publishes a package.
+
+### NativeAOT
+
+The SDK does not claim NativeAOT as a target ([AOT-1](evaluations/aot-1.md)); what it states is that saves with
+declared types and achievements work in trimmed and NativeAOT programs. This check keeps that true and notices when
+an engine change stops a NativeAOT game from starting, by publishing programs and **running the published
+executables**, not by compiling them.
+
+**Where.** The `trimmed` job of `sdk.yml` (`node sdk/tests/trimmed.mjs --feed sdk-feed --aot`), beside the external
+project. It is not a workflow of its own because everything it needs already exists there:
+
+| Reused | From |
+| --- | --- |
+| The packages | the `sdk-feed` artifact of the `pack` job; nothing is packed or built from source again |
+| When it runs on a pull request | the planner's `sdk` check: `src/` (so `MicroEngine.Saves`, `MicroEngine.Achievements` and every project that sets `IsAotCompatible`), `sdk/` (the script), build settings (`Directory.Build.props`) and the daily workflows; a change to a game, a test, a sample, the site or the documentation does not start it |
+| Once per content | the `sdk` evidence, which now also needs this job: a merge does not repeat what its pull request passed |
+| The gate | `sdk.yml`'s result: **CI result** in daily CI, **Report by platform** in validate, and the draft of `sdk-release.yml`, which needs the check |
+| The toolchains | the runners' own (clang on Linux, Visual Studio's C++ tools on Windows); no workload, no extra action |
+
+No NuGet cache: the script gives its projects a package folder of their own, so that nothing but the feed and nuget.org
+can supply a package; a shared cache would defeat that, as in the external project.
+
+**When and on what.**
+
+| Run | Systems | Why |
+| --- | --- | --- |
+| Daily CI (pull requests, pushes to `main`), when the `sdk` check is needed | Linux | one system is enough to catch a reflection call, a trim warning or a program that no longer starts; Linux runners start and install fastest, and have clang |
+| Full validation (nightly, or by hand with the SDK box), `sdk.yml` by hand | Linux and Windows | Windows links with another toolchain (MSVC) against another system's libraries, and runs the saves' file code (atomic replace, a corrupt slot set aside) on another file system; it is what most games ship for |
+| SDK release (`sdk-release.yml`, **Check**) | Linux and Windows | a release must not ship what only one system proved; the draft needs the check, so a failure leaves nothing to approve |
+
+`ci.yml` passes `daily: true` to `sdk.yml`; every other caller gets both systems. macOS is not included: it would need
+a third runner for a target the SDK does not claim, and no existing job has the feed and nothing else to do. Box2D is
+not included either (its natives do not exist for every runtime of this check).
+
+**Time.** The job runs beside the external project jobs and starts when they do, so the check grows only if this job
+outlasts them; they install workloads and package a game for every target, and are expected to take longer. The
+script itself took 63 s on a development machine (Windows x64, 12 checks: two trimmed publishes, one build, two
+NativeAOT publishes, four programs run); with the runner's start, the two set-up actions and the feed download,
+expect a few minutes. Measured only locally: the workflow has not run yet, so the first run's durations (and whether
+the Linux and Windows runners link as expected) are to be read from it.
+
+**What it checks** (each line is a `PASS` or `FAIL`; one `FAIL` makes the script exit with 1 and the step fail, with
+the lines in the job summary):
+
+1. The typed game (its own save types in a `JsonSerializerContext`, achievements) publishes trimmed with every warning
+   an error, and the published program prints exactly the expected eight lines: a missing slot, a save, a load, a slot
+   an earlier version wrote, a corrupt slot set aside, achievements unlocked, persisted and read from an earlier file.
+2. The plain game (the reflection calls) is told so by the analyzers in its own file, and its trimmed program fails
+   there.
+3. The typed game publishes with NativeAOT without a trim or AOT warning; the publish leaves a native executable and no
+   managed assembly of the game; that executable prints the same eight lines and exits with 0.
+4. A game with a window (`MicroEngine.Desktop`: an image made in code, an atlas, a synthesized sound, a scene, text)
+   publishes with NativeAOT without a warning; its executable plays a script in a hidden window on SDL's CPU renderer
+   to `done: 70 updates`; its two captures are pictures (a frame with many different rows, not one colour) and differ,
+   so scripted input moved the sprite. The game's source is in the script, not a sample: `samples/` is not an input of
+   the `sdk` check, so a copied sample could change without running it.
+
+Programs are started by their published executable, never through `dotnet`. The step keeps the script's exit code
+through `tee` (`shell: bash`, which sets `pipefail`).
 
 ## Releases
 

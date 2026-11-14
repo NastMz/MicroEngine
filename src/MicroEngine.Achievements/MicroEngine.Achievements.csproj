@@ -5,11 +5,14 @@
        their MicroEngine.Core namespace; MicroEngine.dll forwards them. It references the kernel, the platform contracts,
        saves (progress persists through SaveStore) and 2D graphics (an achievement's icon is a Sprite); the architecture
        test checks it. The banners and the list scene are UI and stay with the UI module. It is not a package of its own:
-       the MicroEngine package carries MicroEngine.Achievements.dll (src/MicroEngine/MicroEngine.csproj). -->
+       the MicroEngine package carries MicroEngine.Achievements.dll (src/MicroEngine/MicroEngine.csproj). Marked
+       AOT-compatible, so the analyzers check it: the tracker saves its own data type with compiler-generated metadata
+       (AchievementSaveTypes), never through the store's reflection calls. -->
   <PropertyGroup>
     <RootNamespace>MicroEngine.Achievements</RootNamespace>
     <Description>MicroEngine achievements: the catalog, the tracker that owns progress, unlocking and persistence, and the module that registers it with the engine. Shipped inside the MicroEngine package.</Description>
     <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />

@@ -42,6 +42,10 @@ Source: [`games/NeonRift/Gameplay/Achievements.cs`](../../games/NeonRift/Gamepla
 
 The tracker rejects empty ids, goals below 1 and duplicate ids at construction.
 
+The tracker reads and writes its slot without reflection, so achievements persist the same way in a game published
+with .NET's `PublishTrimmed` or `PublishAot`; the game declares nothing for them
+([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)).
+
 ## Turning it on
 
 Call `TrackAchievements(catalog, store)` before the engine is composed: from the game's constructor or from its

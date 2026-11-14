@@ -6,6 +6,53 @@ it. Newest first.
 
 ## Next release
 
+### Saves without metadata warn in trimmed and NativeAOT projects
+
+`SaveStore.Save(slot, data)` and `SaveStore.Load<T>(slot)` are marked as needing reflection. A project that sets
+`PublishTrimmed`, `IsTrimmable` or `EnableTrimAnalyzer` gets warning `IL2026` at each of those calls when it builds,
+and one that sets `PublishAot`, `IsAotCompatible` or `EnableAotAnalyzer` also gets `IL3050`. With
+`TreatWarningsAsErrors` the build fails there, and a `NoWarn` for `IL2104` does not cover it. A project with none of
+those settings builds as before.
+
+To update, declare the save types in a `JsonSerializerContext` and pass its metadata:
+`Save(slot, data, typeInfo)` and `Load(slot, typeInfo)` read and write the same files
+([Trimmed and NativeAOT publishing](guide/platforms.md#trimmed-and-nativeaot-publishing)).
+
+### Game ids that are paths out of the data folder are refused
+
+`SaveStore.DefaultDirectory(gameId)`, and with it `SaveStore.DefaultStorage(gameId)` and `new SaveStore(gameId)`
+outside browsers, throw `ArgumentException` for an id that starts with `/` or `\`, starts with a drive (`C:`), or has
+a part made only of dots and spaces (`.`, `..`, `...`). Before, such an id placed the save folder outside the user's `MicroEngine` data folder. Other
+ids keep their folder, an id with a folder of its own (`"Studio/Game"`) included, and browser keys are unchanged.
+
+To update, pass the game's id (`com.example.mygame`). To keep saves in a folder of your choice, pass it as the
+directory: `new SaveStore(gameId, directory)`.
+
+### Slot names that are not plain names are refused
+
+`SaveStore.Save`, `Load`, `Exists` and `Delete`, and the members of `FileSaveStorage`, throw `ArgumentException` for a
+slot that is `null`, empty or white space, contains `/`, `\`, `:`, `*`, `?`, `"`, `<`, `>`, `|` or a control
+character below U+0020, contains half of a surrogate pair, ends with a dot or a space, ends with `.corrupt` in any
+letter case, or is a Windows device name such as `CON` or `NUL`
+([Slot names](manual/persistence.md#slot-names)). Before, a slot such as `"../other"` or an absolute path read and
+wrote a file outside the save folder, an empty slot wrote a file named `.json`, and a slot with a folder
+(`"saves/1"`) was written by browser storage and refused by file storage unless the folder already existed. Names
+without those characters, dots inside the name included (`"profile.v2"`), keep the file they had.
+
+To update, pass a plain name. A game that used a slot with a folder renames it (`"saves.1"`); to keep reading the old
+data in a browser, read it once from the old key with `BrowserStorage` directly and save it under the new name. A game
+that grouped files in folders gives each group its own `SaveStore` over that directory.
+
+A file that an earlier version wrote under a name that is now refused (`"name."` wrote `name..json`, `"CON"` wrote
+`CON.json`, `"save.corrupt"` wrote `save.corrupt.json`) stays in the save folder, and `Load`, `Exists` and `Delete` no longer reach it. A game that used such a
+slot renames the file once at startup, before it opens its store, with `File.Move` from the old file name to the new
+slot's (`name.json`).
+
+`InputMap.SaveBindings` and `LoadBindings` throw `ArgumentException` for a slot that is `null`, empty or white space,
+and the members of `BrowserStorage` for one that is `null` or empty. They pass every other name to the storage, so
+with `FileSaveStorage` a bindings slot that is not a plain name throws `ArgumentException` as above, where it threw
+`IOException` or wrote outside the folder before. To update, pass a plain name, or leave the default
+(`"input-bindings"`).
 ### `Presentation.Fit` returns whole pixels
 
 The frame `Presentation.Fit` returns has a whole width and height at every window size, where a scale that is not
