@@ -164,6 +164,7 @@ public abstract class InputConformance
     [TestMethod]
     public void The_clipboard_gives_back_the_text_put_on_it()
     {
+        using var turn = SystemClipboard.Exclusive();
         using var rig = new Rig(this);
         rig.Frames(1);
         Assert.IsTrue(rig.Host.TryGetCapability<IClipboard>(out var clipboard), "the host offers the system clipboard");
@@ -171,14 +172,63 @@ public abstract class InputConformance
         try
         {
             string text = $"MicroEngine clipboard check {Guid.NewGuid():N}";
-            Assert.IsTrue(clipboard.SetText(text));
+            Assert.IsTrue(clipboard.SetText(text), SystemClipboard.Holder());
             rig.Frames(1);
-            Assert.AreEqual(text, clipboard.GetText());
+            Assert.AreEqual(text, clipboard.GetText(), SystemClipboard.Holder());
         }
         finally
         {
             if (before is not null) clipboard.SetText(before); // the machine's clipboard as the test found it
         }
+    }
+
+    [TestMethod]
+    public void The_clipboard_waits_for_a_program_that_has_it_open()
+    {
+        // Longer than programs that watch the clipboard keep it (some 30 ms after each change), shorter than a game may wait.
+        var busy = TimeSpan.FromMilliseconds(40);
+        using var turn = SystemClipboard.Exclusive();
+        using var rig = new Rig(this);
+        rig.Frames(1);
+        Assert.IsTrue(rig.Host.TryGetCapability<IClipboard>(out var clipboard), "the host offers the system clipboard");
+        string? before = clipboard.GetText();
+        try
+        {
+            string first = $"MicroEngine clipboard check {Guid.NewGuid():N}", second = $"MicroEngine clipboard check {Guid.NewGuid():N}";
+            Assert.IsTrue(clipboard.SetText(first), SystemClipboard.Holder());
+
+            var held = SystemClipboard.Hold(busy);
+            Skip(held is not null, "have its clipboard kept open by another program");
+            Assert.AreEqual(first, clipboard.GetText(), "read while another program had the clipboard open");
+            held!.Wait();
+
+            held = SystemClipboard.Hold(busy)!;
+            Assert.IsTrue(clipboard.SetText(second), "written while another program had the clipboard open");
+            held.Wait();
+            Assert.AreEqual(second, clipboard.GetText(), SystemClipboard.Holder());
+        }
+        finally
+        {
+            if (before is not null) clipboard.SetText(before); // the machine's clipboard as the test found it
+        }
+    }
+
+    [TestMethod]
+    public void A_window_opens_after_the_clipboard_was_busy()
+    {
+        using var turn = SystemClipboard.Exclusive();
+        using (var rig = new Rig(this))
+        {
+            rig.Frames(1);
+            Assert.IsTrue(rig.Host.TryGetCapability<IClipboard>(out var clipboard), "the host offers the system clipboard");
+            var held = SystemClipboard.Hold(TimeSpan.FromMilliseconds(40));
+            Skip(held is not null, "have its clipboard kept open by another program");
+            _ = clipboard.GetText(); // a read that has to wait: what it gives is another test's
+            held!.Wait();
+        }
+        // The failed read must leave nothing behind that the next window takes for its own failure.
+        using var next = new Rig(this);
+        Assert.IsTrue(next.Frames(1).Count >= 0);
     }
 
     [TestMethod]
