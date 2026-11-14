@@ -191,7 +191,7 @@ public sealed class StorageSlotContractTests
                 StringAssert.Contains(e.Message, id, $"{name}: the message names the id");
             }
         }
-        foreach (var id in new[] { "game", "com.example.mygame", "MicroEngineExamples", "Neon Rift", "My Game: Reloaded", "a..b", "...", ".hidden", "v1." })
+        foreach (var id in new[] { "game", "com.example.mygame", "MicroEngineExamples", "Neon Rift", "My Game: Reloaded", "a..b", "a...b", ".hidden", "v1." })
             Assert.AreEqual(Path.Combine(data, id), SaveStore.DefaultDirectory(id), id);
         Assert.AreEqual(Path.Combine(data, "Studio", "Game"), Path.GetFullPath(SaveStore.DefaultDirectory("Studio/Game")), "an id with a folder keeps its folder");
         Assert.AreEqual(_saves, new SaveStore("../ignored", _saves).Directory, "with a directory of its own the id names nothing");
