@@ -61,7 +61,7 @@ public sealed class SaveStore
     /// <summary>Creates a store for a game.</summary>
     /// <param name="gameId">The game's id, which names its save folder; must not be empty.</param>
     /// <param name="directory">The folder for the slot files; null uses the platform's default medium (<see cref="DefaultStorage(string)"/>).</param>
-    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>
+    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space, or, when it names the save folder, a path that leaves the data folder (<see cref="DefaultDirectory"/>).</exception>
     public SaveStore(string gameId, string? directory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
@@ -75,7 +75,7 @@ public sealed class SaveStore
     /// medium composes it (<c>HostBuilder.Storage</c>) and the game passes it to
     /// <see cref="SaveStore(Platform.IStorage)"/>.
     /// </summary>
-    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>
+    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space, or, outside browsers, a path that leaves the data folder (<see cref="DefaultDirectory"/>).</exception>
     public static Platform.IStorage DefaultStorage(string gameId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
@@ -89,10 +89,26 @@ public sealed class SaveStore
     /// on Android, and <c>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</c> (by default <c>~/.local/share</c>) on Linux and
     /// other Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
     /// </summary>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="gameId"/> is null, empty or white space, or is a path that leaves the data folder: one that starts
+    /// with <c>/</c> or <c>\</c>, starts with a drive (<c>C:</c>), or has a <c>.</c> or <c>..</c> segment.
+    /// </exception>
     public static string DefaultDirectory(string gameId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
+        if (LeavesTheDataFolder(gameId))
+            throw new ArgumentException($"\"{gameId}\" is not a valid game id: it is a path that leaves the save folder. A game id is a name such as \"com.example.mygame\".", nameof(gameId));
         return Path.Combine(UserDataFolder(), "MicroEngine", gameId);
+    }
+
+    /// <summary>Rooted, with a drive, or with a "." or ".." segment, by the rules of every system at once.</summary>
+    private static bool LeavesTheDataFolder(string gameId)
+    {
+        if (gameId[0] is '/' or '\\') return true;
+        if (gameId.Length > 1 && gameId[1] == ':' && char.IsAsciiLetter(gameId[0])) return true;
+        foreach (var segment in gameId.Split('/', '\\'))
+            if (segment is "." or "..") return true;
+        return false;
     }
 
     private static string UserDataFolder()

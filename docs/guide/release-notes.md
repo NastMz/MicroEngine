@@ -43,6 +43,9 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   existing achievement files load as before.
 - A slot such as `"../other"` or an absolute path read, wrote and deleted a file outside the game's save folder, and
   an empty slot wrote a file named `.json`.
+- A game id such as `"../other"` or an absolute path put the save folder outside the user's `MicroEngine` data
+  folder. `SaveStore.DefaultDirectory` now throws `ArgumentException` for an id that starts with `/` or `\`, starts
+  with a drive, or has a `.` or `..` segment ([migration](../migrations.md#game-ids-that-are-paths-out-of-the-data-folder-are-refused)).
 - A slot named `<another slot>.corrupt` was replaced, and its data lost, when that other slot held unreadable data
   and was set aside.
 - `BrowserStorage` used with a `null` or empty slot read and wrote the key `microengine/<gameId>/`, the prefix of the

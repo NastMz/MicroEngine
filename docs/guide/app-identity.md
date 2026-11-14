@@ -39,6 +39,8 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 - **Application id**: two or more dot-separated parts, each starting with a letter, made of letters, digits and
   underscores (`com.example.my_game`). Android and Apple reject hyphens. Use a domain you control; stores and phones
   identify the game by it, so it must never change once players have it.
+  An id of this form is also a valid game id for saves (`new SaveStore("com.example.my_game")`), where it names the
+  save folder; `SaveStore` refuses a game id that is a rooted path or has a `.` or `..` part.
 - **Icon**: a PNG, square, exactly 256, 512 or 1024 pixels (1024 is best: iOS asks for it, and pixel art is
   enlarged without blur when smaller). The tool writes each system's format from it: Windows `.ico`, macOS `.icns`,
   Android launcher icon, iOS asset catalog, browser favicon.

@@ -18,6 +18,16 @@ To update, declare the save types in a `JsonSerializerContext` and pass its meta
 `Save(slot, data, typeInfo)` and `Load(slot, typeInfo)` read and write the same files
 ([Trimmed and NativeAOT publishing](guide/platforms.md#trimmed-and-nativeaot-publishing)).
 
+### Game ids that are paths out of the data folder are refused
+
+`SaveStore.DefaultDirectory(gameId)`, and with it `SaveStore.DefaultStorage(gameId)` and `new SaveStore(gameId)`
+outside browsers, throw `ArgumentException` for an id that starts with `/` or `\`, starts with a drive (`C:`), or has
+a `.` or `..` segment. Before, such an id placed the save folder outside the user's `MicroEngine` data folder. Other
+ids keep their folder, an id with a folder of its own (`"Studio/Game"`) included, and browser keys are unchanged.
+
+To update, pass the game's id (`com.example.mygame`). To keep saves in a folder of your choice, pass it as the
+directory: `new SaveStore(gameId, directory)`.
+
 ### Slot names that are not plain names are refused
 
 `SaveStore.Save`, `Load`, `Exists` and `Delete`, and the members of `FileSaveStorage`, throw `ArgumentException` for a

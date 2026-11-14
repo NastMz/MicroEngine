@@ -368,6 +368,13 @@ slot (`SettingASlotAsideNeverReplacesAnotherSlot`, RED: no exception). No persis
 version wrote as `x.corrupt.json` stays on disk. Setting aside again replaces the earlier copy, as before
 (`SettingAsideAgainReplacesTheEarlierCopy`).
 
+The game id escape, by decision 3: `SaveStore.DefaultDirectory` (`src/MicroEngine.Saves/SaveStore.cs`, the one place
+the folder is built from the id) throws `ArgumentException` for an id that starts with `/` or `\`, starts with a
+drive, or has a `.` or `..` segment, by the rules of every system at once
+(`AGameIdThatIsAPathOutOfTheDataFolderIsRefusedWhereTheFolderIsComputed`, RED: no exception). `"Studio/Game"`, ids
+with `:` past the second character and every id used in the repository keep their folder; the browser key prefix is
+unchanged.
+
 **User-perceptible differences of this pass.** `SaveBindings` and `LoadBindings` with a `null`, empty or white-space
 slot, and `BrowserStorage` with a `null` or empty one, throw where they read or wrote something. Nothing else
 changes: same files, same browser keys.

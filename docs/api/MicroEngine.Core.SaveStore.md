@@ -81,7 +81,7 @@ The folder for the slot files; null uses the platform's default medium ([Default
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-<code class="paramref">gameId</code> is null, empty or white space.
+<code class="paramref">gameId</code> is null, empty or white space, or, when it names the save folder, a path that leaves the data folder ([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)).
 
 ### <a id="MicroEngine_Core_SaveStore__ctor_MicroEngine_Core_ISaveStorage_"></a> SaveStore\(ISaveStorage\)
 
@@ -155,6 +155,13 @@ public static string DefaultDirectory(string gameId)
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">gameId</code> is null, empty or white space, or is a path that leaves the data folder: one that starts
+with <code>/</code> or <code>\</code>, starts with a drive (<code>C:</code>), or has a <code>.</code> or <code>..</code> segment.
+
 ### <a id="MicroEngine_Core_SaveStore_DefaultStorage_System_String_"></a> DefaultStorage\(string\)
 
 The platform's default save medium for a game: the page's localStorage in browsers
@@ -179,7 +186,7 @@ public static IStorage DefaultStorage(string gameId)
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-<code class="paramref">gameId</code> is null, empty or white space.
+<code class="paramref">gameId</code> is null, empty or white space, or, outside browsers, a path that leaves the data folder ([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)).
 
 ### <a id="MicroEngine_Core_SaveStore_Delete_System_String_"></a> Delete\(string\)
 

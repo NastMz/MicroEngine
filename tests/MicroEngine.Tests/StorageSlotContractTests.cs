@@ -166,6 +166,35 @@ public sealed class StorageSlotContractTests
         CollectionAssert.AreEqual(new[] { aside }, Directory.GetFiles(_saves));
     }
 
+    [TestMethod]
+    public void AGameIdThatIsAPathOutOfTheDataFolderIsRefusedWhereTheFolderIsComputed()
+    {
+        var data = Path.GetDirectoryName(SaveStore.DefaultDirectory("game"))!;
+        string[] refused =
+        [
+            "..", ".", "../elsewhere", "..\\elsewhere", "..\\..\\elsewhere", "a/../../elsewhere", "a/./b", "studio/..", "/rooted", "\\rooted",
+            "\\\\server\\share\\game", "//server/share/game", "C:\\Temp\\game", "C:game", "c:/game", Path.Combine(_root, "rooted"),
+        ];
+        foreach (var id in refused)
+        {
+            foreach (var (name, call) in new (string, Action)[]
+            {
+                ("DefaultDirectory", () => SaveStore.DefaultDirectory(id)),
+                ("DefaultStorage", () => SaveStore.DefaultStorage(id)),
+                ("new SaveStore", () => _ = new SaveStore(id)),
+            })
+            {
+                var e = Assert.ThrowsExactly<ArgumentException>(call, $"{name} with id \"{id}\"");
+                Assert.AreEqual("gameId", e.ParamName, name);
+                StringAssert.Contains(e.Message, id, $"{name}: the message names the id");
+            }
+        }
+        foreach (var id in new[] { "game", "com.example.mygame", "MicroEngineExamples", "Neon Rift", "My Game: Reloaded", "a..b", "...", ".hidden", "v1." })
+            Assert.AreEqual(Path.Combine(data, id), SaveStore.DefaultDirectory(id), id);
+        Assert.AreEqual(Path.Combine(data, "Studio", "Game"), Path.GetFullPath(SaveStore.DefaultDirectory("Studio/Game")), "an id with a folder keeps its folder");
+        Assert.AreEqual(_saves, new SaveStore("../ignored", _saves).Directory, "with a directory of its own the id names nothing");
+    }
+
 #pragma warning disable CA1416 // BrowserStorage is for browsers; only what it does before it calls the page is run here.
     [TestMethod]
     public void BrowserStorageRefusesASlotWithNoNameBeforeItCallsThePage()

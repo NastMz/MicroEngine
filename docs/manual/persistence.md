@@ -319,6 +319,8 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
 - A slot is a plain name; folders inside the save folder are not supported ([Slot names](#slot-names)).
 - Two slots whose names differ only by letter case, or only by how an accented letter is encoded, are the same file on
   some systems.
-- `gameId` names the save folder as given: use the game's id (`com.example.mygame`), not text with `/`, `\`, `..` or
-  `:`.
+- `gameId` names the save folder as given: use the game's id (`com.example.mygame`). An id that is a path out of the
+  data folder (it starts with `/` or `\`, starts with a drive such as `C:`, or has a `.` or `..` segment) throws
+  `ArgumentException` when the folder is computed (`DefaultDirectory`, `DefaultStorage` and `new SaveStore(gameId)`
+  outside browsers).
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).
