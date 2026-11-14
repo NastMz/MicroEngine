@@ -19,6 +19,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { decodePng } from '../../web/tests/captures.mjs';
+import { quitBeforeFirstUpdate } from './launch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '../..');
@@ -41,6 +42,8 @@ function adb(...a) {
 }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const log = () => adb('logcat', '-d', '-v', 'brief', 'MicroEngine:I', 'AndroidRuntime:E', 'DEBUG:F', 'mono-rt:F', 'SDL:W', '*:S').out;
+// The game's lines with what the system says about its activity and window, for a launch the system closed.
+const systemLog = () => adb('logcat', '-d', '-v', 'threadtime', 'MicroEngine:I', 'SDL:V', 'ActivityManager:I', 'ActivityTaskManager:I', 'WindowManager:I', 'AndroidRuntime:E', '*:S').out;
 const crashed = text => /FATAL EXCEPTION|Fatal signal|FATAL UNHANDLED|Abort message/.test(text);
 
 const results = [];
@@ -117,7 +120,20 @@ for (const s of scenarios.filter(s => s.game === game)) {
     awake();
     launch();
   }
-  const text = await waitFor(/microengine: exit/, 240_000);
+  let text = await waitFor(/microengine: exit/, 240_000);
+  // The other way a freshly booted emulator loses a launch: the activity starts and the system closes it before the
+  // game's first update, so the run ends with no update and no error. It is launched once more, from cleared data;
+  // what the system logged about the activity is kept in <script>.closed.log, and the second run is judged as usual.
+  if (quitBeforeFirstUpdate(text) && !crashed(text)) {
+    console.log(`note ${name}: closed before its first update; launching it again`);
+    fs.writeFileSync(path.join(out, `${name}.closed.log`), systemLog());
+    adb('shell', 'am', 'force-stop', pkg);
+    adb('shell', 'pm', 'clear', pkg);
+    adb('logcat', '-c');
+    awake();
+    launch();
+    text = await waitFor(/microengine: exit/, 240_000);
+  }
   fs.writeFileSync(path.join(out, `${name}.log`), text);
   if (/microengine: start/.test(text)) started = true;
   const done = text.match(/microengine: done (\d+) updates, (\d+) frames, (\d+) captures, audio (\w+)/);
