@@ -58,9 +58,13 @@ public sealed class FrameGarbageTests
         long steady = BytesPerFrame(() => Frame(large, medium));
         Assert.IsTrue(steady < 1024, $"13 MB recorded every frame allocated {steady:N0} bytes per frame");
 
-        // After one large frame, small frames give the large storage up (one of them allocates a small one) and then allocate nothing.
-        Frame(small, small);
-        Frame(small, small);
+        // A frame is several lists: the scene's large one, then small ones (the canvas shown in the window, the UI).
+        // The small lists record into the large one's storage and hand it back for the next frame.
+        long mixed = BytesPerFrame(() => { Frame(large, medium); Frame(small, small); Frame(small, small); });
+        Assert.IsTrue(mixed < 1024, $"a large list and two small ones every frame allocated {mixed:N0} bytes per frame");
+
+        // After the last large frame, small frames give the large storage up (one of them allocates a small one) and then allocate nothing.
+        for (int i = 0; i < 100; i++) Frame(small, small);
         long before = GC.GetTotalMemory(forceFullCollection: true);
         long later = BytesPerFrame(() => Frame(small, small));
         Assert.IsTrue(later < 1024, $"small frames after a large one allocated {later:N0} bytes per frame");

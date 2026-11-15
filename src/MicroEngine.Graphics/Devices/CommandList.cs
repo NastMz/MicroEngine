@@ -89,12 +89,18 @@ public sealed class CommandList
     /// </summary>
     internal sealed class Storage
     {
-        /// <summary>
-        /// A payload larger than this is kept for the next list only when the list that gives it up filled at least an
-        /// eighth of it: frames that are always large keep their memory, and what a one-off upload grew is given up
-        /// by the first ordinary list after it.
-        /// </summary>
+        /// <summary>A payload up to this size is always kept for the next list.</summary>
         public const int AlwaysKeptPayload = 1024 * 1024;
+
+        /// <summary>
+        /// A larger payload is given up once this many lists in a row filled less than an eighth of it. A frame is
+        /// several lists (a large one for the scene, small ones to show it), so the large one keeps its memory; what a
+        /// one-off upload grew is given up within a second of ordinary frames.
+        /// </summary>
+        public const int UnderusedListsBeforeRelease = 64;
+
+        /// <summary>Lists in a row that filled less than an eighth of a payload larger than <see cref="AlwaysKeptPayload"/>.</summary>
+        public int Underused;
 
         public readonly List<Command> Commands = [];
         public byte[] Payload = new byte[256];
@@ -349,8 +355,11 @@ public sealed class CommandList
         storage.Commands.Clear();
         storage.Textures.Clear();
         storage.Uniforms.Clear();
-        bool keep = _payload.Length <= Storage.AlwaysKeptPayload || _payloadLength >= _payload.Length / 8;
+        if (_payload.Length <= Storage.AlwaysKeptPayload || _payloadLength >= _payload.Length / 8) storage.Underused = 0;
+        else storage.Underused++;
+        bool keep = storage.Underused < Storage.UnderusedListsBeforeRelease;
         storage.Payload = keep ? _payload : new byte[256];
+        if (!keep) storage.Underused = 0;
         _commands = Released;
         _payload = [];
         _payloadLength = 0;
