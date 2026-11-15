@@ -1,0 +1,1783 @@
+{
+  "format": "microengine-stressbench/1",
+  "environment": {
+    "architecture": "X64",
+    "commit": "52c0134",
+    "compilation": "jit",
+    "cpu": "AMD Ryzen 5 7600X 6-Core Processor",
+    "engine": "0.6.0.0",
+    "frames": "600",
+    "gc": "workstation, concurrent",
+    "gcLatency": "Interactive",
+    "label": "baseline",
+    "memoryGB": "31.2",
+    "os": "Microsoft Windows 10.0.26300",
+    "processors": "12",
+    "repeat": "3",
+    "runtime": ".NET 10.0.15",
+    "sdl.adapter": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "sdl.display": "1920x1080 @ 100 Hz, #0 primary \"LG FHD\", scale 1",
+    "sdl.renderer": "direct3d11",
+    "sdl.sdl": "3.5.0",
+    "sdl.videoDriver": "windows",
+    "sdl.vsync": "0",
+    "seed": "1",
+    "warmup": "120"
+  },
+  "runs": [
+    {
+      "scenario": "entity-churn",
+      "mode": "headless",
+      "load": 10000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 6173767038930159887,
+      "intervalMs": {
+        "mean": 0.2214,
+        "p50": 0.2131,
+        "p95": 0.2709,
+        "p99": 0.3933,
+        "p99_9": 0.5124,
+        "max": 0.5124
+      },
+      "workMs": {
+        "mean": 0.2212,
+        "p50": 0.2128,
+        "p95": 0.2684,
+        "p99": 0.3904,
+        "p99_9": 0.5116,
+        "max": 0.5116
+      },
+      "updateMs": {
+        "mean": 0.2209,
+        "p50": 0.2127,
+        "p95": 0.2681,
+        "p99": 0.3896,
+        "p99_9": 0.5106,
+        "max": 0.5106
+      },
+      "renderMs": {
+        "mean": 0.0002,
+        "p50": 0.0002,
+        "p95": 0.0004,
+        "p99": 0.0008,
+        "p99_9": 0.001,
+        "max": 0.001
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0001,
+        "p99": 0.0002,
+        "p99_9": 0.0002,
+        "max": 0.0002
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 12,
+      "drawsPerFrame": 0,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 6491168,
+      "heapCommittedBytes": 7770112,
+      "workingSetBytes": 44466176,
+      "privateBytes": 17661952,
+      "peakWorkingSetBytes": 44466176,
+      "resources": {
+        "entities": 10000,
+        "entitiesCreated": 730000
+      },
+      "sectionsMs": {
+        "create": {
+          "mean": 0.0478,
+          "p50": 0.0456,
+          "p95": 0.0624,
+          "p99": 0.089,
+          "p99_9": 0.1208,
+          "max": 0.1208
+        },
+        "destroy": {
+          "mean": 0.0463,
+          "p50": 0.0443,
+          "p95": 0.0584,
+          "p99": 0.0848,
+          "p99_9": 0.0991,
+          "max": 0.0991
+        }
+      }
+    },
+    {
+      "scenario": "entity-churn",
+      "mode": "render",
+      "load": 10000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 6173767038930159887,
+      "intervalMs": {
+        "mean": 0.2642,
+        "p50": 0.2423,
+        "p95": 0.3649,
+        "p99": 0.4677,
+        "p99_9": 0.7415,
+        "max": 0.7415
+      },
+      "workMs": {
+        "mean": 0.2084,
+        "p50": 0.1941,
+        "p95": 0.2839,
+        "p99": 0.3336,
+        "p99_9": 0.533,
+        "max": 0.533
+      },
+      "updateMs": {
+        "mean": 0.2051,
+        "p50": 0.1914,
+        "p95": 0.2765,
+        "p99": 0.3261,
+        "p99_9": 0.529,
+        "max": 0.529
+      },
+      "renderMs": {
+        "mean": 0.0009,
+        "p50": 0.0006,
+        "p95": 0.002,
+        "p99": 0.0026,
+        "p99_9": 0.0694,
+        "max": 0.0694
+      },
+      "presentMs": {
+        "mean": 0.0554,
+        "p50": 0.0458,
+        "p95": 0.113,
+        "p99": 0.1478,
+        "p99_9": 0.2079,
+        "max": 0.2079
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 34,
+      "drawsPerFrame": 0,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 6877976,
+      "heapCommittedBytes": 8167424,
+      "workingSetBytes": 100229120,
+      "privateBytes": 83181568,
+      "peakWorkingSetBytes": 100229120,
+      "resources": {
+        "entities": 10000,
+        "entitiesCreated": 730000
+      },
+      "sectionsMs": {
+        "create": {
+          "mean": 0.0508,
+          "p50": 0.0466,
+          "p95": 0.07,
+          "p99": 0.0788,
+          "p99_9": 0.2352,
+          "max": 0.2352
+        },
+        "destroy": {
+          "mean": 0.0284,
+          "p50": 0.0254,
+          "p95": 0.0404,
+          "p99": 0.0487,
+          "p99_9": 0.1222,
+          "max": 0.1222
+        }
+      }
+    },
+    {
+      "scenario": "world-iterate",
+      "mode": "headless",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -7322311341692861633,
+      "intervalMs": {
+        "mean": 0.3705,
+        "p50": 0.3481,
+        "p95": 0.4762,
+        "p99": 0.5748,
+        "p99_9": 0.6612,
+        "max": 0.6612
+      },
+      "workMs": {
+        "mean": 0.3701,
+        "p50": 0.3479,
+        "p95": 0.4737,
+        "p99": 0.5735,
+        "p99_9": 0.6603,
+        "max": 0.6603
+      },
+      "updateMs": {
+        "mean": 0.1257,
+        "p50": 0.1149,
+        "p95": 0.1686,
+        "p99": 0.2538,
+        "p99_9": 0.3181,
+        "max": 0.3181
+      },
+      "renderMs": {
+        "mean": 0.2444,
+        "p50": 0.2312,
+        "p95": 0.3104,
+        "p99": 0.3636,
+        "p99_9": 0.4207,
+        "max": 0.4207
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0002,
+        "p99": 0.0003,
+        "p99_9": 0.0004,
+        "max": 0.0004
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 15,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 8293920,
+      "heapCommittedBytes": 11202560,
+      "workingSetBytes": 50630656,
+      "privateBytes": 25100288,
+      "peakWorkingSetBytes": 50749440,
+      "resources": {
+        "entities": 20000
+      },
+      "sectionsMs": {
+        "iterate": {
+          "mean": 0.0684,
+          "p50": 0.0602,
+          "p95": 0.1061,
+          "p99": 0.126,
+          "p99_9": 0.2467,
+          "max": 0.2467
+        }
+      }
+    },
+    {
+      "scenario": "world-iterate",
+      "mode": "render",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -7322311341692861633,
+      "intervalMs": {
+        "mean": 2.8434,
+        "p50": 2.7636,
+        "p95": 3.4125,
+        "p99": 3.7314,
+        "p99_9": 4.2897,
+        "max": 4.2897
+      },
+      "workMs": {
+        "mean": 1.5674,
+        "p50": 1.4929,
+        "p95": 1.9343,
+        "p99": 2.1585,
+        "p99_9": 2.5542,
+        "max": 2.5542
+      },
+      "updateMs": {
+        "mean": 0.1696,
+        "p50": 0.1619,
+        "p95": 0.2348,
+        "p99": 0.354,
+        "p99_9": 0.535,
+        "max": 0.535
+      },
+      "renderMs": {
+        "mean": 1.388,
+        "p50": 1.3204,
+        "p95": 1.7098,
+        "p99": 1.9288,
+        "p99_9": 2.361,
+        "max": 2.361
+      },
+      "presentMs": {
+        "mean": 1.2746,
+        "p50": 1.2255,
+        "p95": 1.5974,
+        "p99": 1.7739,
+        "p99_9": 1.9802,
+        "max": 1.9802
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 2,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 27957544,
+      "heapCommittedBytes": 40427520,
+      "workingSetBytes": 172511232,
+      "privateBytes": 153137152,
+      "peakWorkingSetBytes": 172511232,
+      "resources": {
+        "entities": 20000
+      },
+      "sectionsMs": {
+        "iterate": {
+          "mean": 0.0932,
+          "p50": 0.0863,
+          "p95": 0.1351,
+          "p99": 0.2397,
+          "p99_9": 0.3562,
+          "max": 0.3562
+        }
+      }
+    },
+    {
+      "scenario": "spatial-query",
+      "mode": "headless",
+      "load": 8000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -2733664580711881709,
+      "intervalMs": {
+        "mean": 3.8154,
+        "p50": 3.7056,
+        "p95": 4.3133,
+        "p99": 4.6529,
+        "p99_9": 6.1156,
+        "max": 6.1156
+      },
+      "workMs": {
+        "mean": 3.8142,
+        "p50": 3.7046,
+        "p95": 4.3051,
+        "p99": 4.6409,
+        "p99_9": 6.1126,
+        "max": 6.1126
+      },
+      "updateMs": {
+        "mean": 3.8133,
+        "p50": 3.6992,
+        "p95": 4.3042,
+        "p99": 4.6396,
+        "p99_9": 6.1094,
+        "max": 6.1094
+      },
+      "renderMs": {
+        "mean": 0.0009,
+        "p50": 0.0007,
+        "p95": 0.002,
+        "p99": 0.0032,
+        "p99_9": 0.0433,
+        "max": 0.0433
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0003,
+        "p99": 0.0005,
+        "p99_9": 0.0007,
+        "max": 0.0007
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 1,
+      "drawsPerFrame": 0,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 5363856,
+      "heapCommittedBytes": 6119424,
+      "workingSetBytes": 47067136,
+      "privateBytes": 19738624,
+      "peakWorkingSetBytes": 47067136,
+      "resources": {
+        "bodies": 8000,
+        "overlapsFound": 7199640,
+        "queriesPerStep": 4000,
+        "rayHits": 1182982
+      },
+      "sectionsMs": {
+        "overlap": {
+          "mean": 1.618,
+          "p50": 1.55,
+          "p95": 1.9457,
+          "p99": 2.2425,
+          "p99_9": 2.8081,
+          "max": 2.8081
+        },
+        "raycast": {
+          "mean": 2.1919,
+          "p50": 2.1117,
+          "p95": 2.5675,
+          "p99": 2.8308,
+          "p99_9": 3.2951,
+          "max": 3.2951
+        }
+      }
+    },
+    {
+      "scenario": "spatial-query",
+      "mode": "render",
+      "load": 8000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -2733664580711881709,
+      "intervalMs": {
+        "mean": 3.9987,
+        "p50": 3.9226,
+        "p95": 4.6226,
+        "p99": 4.8689,
+        "p99_9": 5.4562,
+        "max": 5.4562
+      },
+      "workMs": {
+        "mean": 3.8563,
+        "p50": 3.7622,
+        "p95": 4.3725,
+        "p99": 4.6417,
+        "p99_9": 5.2191,
+        "max": 5.2191
+      },
+      "updateMs": {
+        "mean": 3.8476,
+        "p50": 3.754,
+        "p95": 4.363,
+        "p99": 4.6268,
+        "p99_9": 5.1991,
+        "max": 5.1991
+      },
+      "renderMs": {
+        "mean": 0.003,
+        "p50": 0.0028,
+        "p95": 0.0057,
+        "p99": 0.0079,
+        "p99_9": 0.0117,
+        "max": 0.0117
+      },
+      "presentMs": {
+        "mean": 0.142,
+        "p50": 0.0928,
+        "p95": 0.2911,
+        "p99": 0.4229,
+        "p99_9": 0.8526,
+        "max": 0.8526
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 0,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 5748328,
+      "heapCommittedBytes": 6643712,
+      "workingSetBytes": 99000320,
+      "privateBytes": 79273984,
+      "peakWorkingSetBytes": 99000320,
+      "resources": {
+        "bodies": 8000,
+        "overlapsFound": 7199640,
+        "queriesPerStep": 4000,
+        "rayHits": 1182982
+      },
+      "sectionsMs": {
+        "overlap": {
+          "mean": 1.6322,
+          "p50": 1.5662,
+          "p95": 1.9776,
+          "p99": 2.1679,
+          "p99_9": 2.4259,
+          "max": 2.4259
+        },
+        "raycast": {
+          "mean": 2.2108,
+          "p50": 2.1341,
+          "p95": 2.5865,
+          "p99": 2.9087,
+          "p99_9": 3.0848,
+          "max": 3.0848
+        }
+      }
+    },
+    {
+      "scenario": "physics",
+      "mode": "headless",
+      "load": 2000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -3316983986736985179,
+      "intervalMs": {
+        "mean": 6.0171,
+        "p50": 5.9764,
+        "p95": 6.6538,
+        "p99": 7.0801,
+        "p99_9": 7.6307,
+        "max": 7.6307
+      },
+      "workMs": {
+        "mean": 6.0169,
+        "p50": 5.9756,
+        "p95": 6.6517,
+        "p99": 6.9906,
+        "p99_9": 7.6279,
+        "max": 7.6279
+      },
+      "updateMs": {
+        "mean": 6.0104,
+        "p50": 5.9696,
+        "p95": 6.6435,
+        "p99": 6.9832,
+        "p99_9": 7.6172,
+        "max": 7.6172
+      },
+      "renderMs": {
+        "mean": 0.0065,
+        "p50": 0.0061,
+        "p95": 0.0094,
+        "p99": 0.0115,
+        "p99_9": 0.0204,
+        "max": 0.0204
+      },
+      "presentMs": {
+        "mean": 0.0002,
+        "p50": 0.0002,
+        "p95": 0.0005,
+        "p99": 0.0007,
+        "p99_9": 0.0011,
+        "max": 0.0011
+      },
+      "allocatedBytesPerFrame": 7,
+      "allocatedBytesMaxFrame": 560,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 2000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 2372112,
+      "heapCommittedBytes": 3104768,
+      "workingSetBytes": 41230336,
+      "privateBytes": 13037568,
+      "peakWorkingSetBytes": 44752896,
+      "resources": {
+        "bodies": 2049
+      },
+      "sectionsMs": {
+        "physics": {
+          "mean": 6.0062,
+          "p50": 5.9655,
+          "p95": 6.6354,
+          "p99": 6.9738,
+          "p99_9": 7.61,
+          "max": 7.61
+        }
+      }
+    },
+    {
+      "scenario": "physics",
+      "mode": "render",
+      "load": 2000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -3316983986736985179,
+      "intervalMs": {
+        "mean": 6.7016,
+        "p50": 6.689,
+        "p95": 7.7457,
+        "p99": 9.4889,
+        "p99_9": 10.0508,
+        "max": 10.0508
+      },
+      "workMs": {
+        "mean": 6.1693,
+        "p50": 6.1505,
+        "p95": 6.8406,
+        "p99": 7.1133,
+        "p99_9": 7.4714,
+        "max": 7.4714
+      },
+      "updateMs": {
+        "mean": 6.0414,
+        "p50": 6.0243,
+        "p95": 6.705,
+        "p99": 6.9831,
+        "p99_9": 7.2923,
+        "max": 7.2923
+      },
+      "renderMs": {
+        "mean": 0.1184,
+        "p50": 0.1132,
+        "p95": 0.1433,
+        "p99": 0.1863,
+        "p99_9": 0.253,
+        "max": 0.253
+      },
+      "presentMs": {
+        "mean": 0.5311,
+        "p50": 0.3926,
+        "p95": 0.9715,
+        "p99": 3.0269,
+        "p99_9": 3.5076,
+        "max": 3.5076
+      },
+      "allocatedBytesPerFrame": 439,
+      "allocatedBytesMaxFrame": 992,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 1,
+      "drawsPerFrame": 2000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 5153424,
+      "heapCommittedBytes": 6029312,
+      "workingSetBytes": 104009728,
+      "privateBytes": 83038208,
+      "peakWorkingSetBytes": 108908544,
+      "resources": {
+        "bodies": 2049
+      },
+      "sectionsMs": {
+        "physics": {
+          "mean": 6.0352,
+          "p50": 6.0186,
+          "p95": 6.6991,
+          "p99": 6.9734,
+          "p99_9": 7.2868,
+          "max": 7.2868
+        }
+      }
+    },
+    {
+      "scenario": "sprites",
+      "mode": "headless",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 9146398825762295413,
+      "intervalMs": {
+        "mean": 0.2666,
+        "p50": 0.2548,
+        "p95": 0.3286,
+        "p99": 0.4391,
+        "p99_9": 0.7639,
+        "max": 0.7639
+      },
+      "workMs": {
+        "mean": 0.2659,
+        "p50": 0.2542,
+        "p95": 0.3255,
+        "p99": 0.4266,
+        "p99_9": 0.7612,
+        "max": 0.7612
+      },
+      "updateMs": {
+        "mean": 0.0543,
+        "p50": 0.049,
+        "p95": 0.0763,
+        "p99": 0.1171,
+        "p99_9": 0.2421,
+        "max": 0.2421
+      },
+      "renderMs": {
+        "mean": 0.2116,
+        "p50": 0.2037,
+        "p95": 0.2543,
+        "p99": 0.2988,
+        "p99_9": 0.7127,
+        "max": 0.7127
+      },
+      "presentMs": {
+        "mean": 0.0002,
+        "p50": 0.0002,
+        "p95": 0.0005,
+        "p99": 0.0009,
+        "p99_9": 0.0148,
+        "max": 0.0148
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 11,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 1377416,
+      "heapCommittedBytes": 2211840,
+      "workingSetBytes": 37978112,
+      "privateBytes": 11595776,
+      "peakWorkingSetBytes": 38088704,
+      "resources": {
+        "sprites": 20000,
+        "textures": 1
+      },
+      "sectionsMs": {
+        "move": {
+          "mean": 0.0469,
+          "p50": 0.0431,
+          "p95": 0.0641,
+          "p99": 0.0952,
+          "p99_9": 0.1428,
+          "max": 0.1428
+        }
+      }
+    },
+    {
+      "scenario": "sprites",
+      "mode": "render",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 9146398825762295413,
+      "intervalMs": {
+        "mean": 2.6104,
+        "p50": 2.5621,
+        "p95": 3.0115,
+        "p99": 3.3927,
+        "p99_9": 3.7336,
+        "max": 3.7336
+      },
+      "workMs": {
+        "mean": 1.3733,
+        "p50": 1.3151,
+        "p95": 1.6245,
+        "p99": 1.866,
+        "p99_9": 2.0824,
+        "max": 2.0824
+      },
+      "updateMs": {
+        "mean": 0.0467,
+        "p50": 0.0438,
+        "p95": 0.0637,
+        "p99": 0.0825,
+        "p99_9": 0.129,
+        "max": 0.129
+      },
+      "renderMs": {
+        "mean": 1.3196,
+        "p50": 1.2638,
+        "p95": 1.5695,
+        "p99": 1.8046,
+        "p99_9": 1.9899,
+        "max": 1.9899
+      },
+      "presentMs": {
+        "mean": 1.2355,
+        "p50": 1.194,
+        "p95": 1.4938,
+        "p99": 1.6754,
+        "p99_9": 1.9651,
+        "max": 1.9651
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 27977504,
+      "heapCommittedBytes": 12439552,
+      "workingSetBytes": 156602368,
+      "privateBytes": 139235328,
+      "peakWorkingSetBytes": 156602368,
+      "resources": {
+        "sprites": 20000,
+        "textures": 1
+      },
+      "sectionsMs": {
+        "move": {
+          "mean": 0.0404,
+          "p50": 0.0372,
+          "p95": 0.0551,
+          "p99": 0.0769,
+          "p99_9": 0.1218,
+          "max": 0.1218
+        }
+      }
+    },
+    {
+      "scenario": "batch-breaks",
+      "mode": "headless",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 9146398825762295413,
+      "intervalMs": {
+        "mean": 0.174,
+        "p50": 0.1677,
+        "p95": 0.2085,
+        "p99": 0.2786,
+        "p99_9": 0.3339,
+        "max": 0.3339
+      },
+      "workMs": {
+        "mean": 0.1735,
+        "p50": 0.1673,
+        "p95": 0.2063,
+        "p99": 0.2666,
+        "p99_9": 0.3326,
+        "max": 0.3326
+      },
+      "updateMs": {
+        "mean": 0.0571,
+        "p50": 0.0541,
+        "p95": 0.0688,
+        "p99": 0.1018,
+        "p99_9": 0.1621,
+        "max": 0.1621
+      },
+      "renderMs": {
+        "mean": 0.1164,
+        "p50": 0.1124,
+        "p95": 0.1379,
+        "p99": 0.1651,
+        "p99_9": 0.2467,
+        "max": 0.2467
+      },
+      "presentMs": {
+        "mean": 0.0002,
+        "p50": 0.0002,
+        "p95": 0.0003,
+        "p99": 0.0007,
+        "p99_9": 0.0008,
+        "max": 0.0008
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 11,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 30000,
+      "managedBytes": 1377432,
+      "heapCommittedBytes": 2211840,
+      "workingSetBytes": 37629952,
+      "privateBytes": 11329536,
+      "peakWorkingSetBytes": 37744640,
+      "resources": {
+        "sprites": 20000,
+        "textures": 16
+      },
+      "sectionsMs": {
+        "move": {
+          "mean": 0.0462,
+          "p50": 0.0441,
+          "p95": 0.0547,
+          "p99": 0.0778,
+          "p99_9": 0.1518,
+          "max": 0.1518
+        }
+      }
+    },
+    {
+      "scenario": "batch-breaks",
+      "mode": "render",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 9146398825762295413,
+      "intervalMs": {
+        "mean": 9.7928,
+        "p50": 9.675,
+        "p95": 11.0779,
+        "p99": 12.7157,
+        "p99_9": 14.4821,
+        "max": 14.4821
+      },
+      "workMs": {
+        "mean": 1.5664,
+        "p50": 1.4762,
+        "p95": 2.0037,
+        "p99": 2.3206,
+        "p99_9": 3.0525,
+        "max": 3.0525
+      },
+      "updateMs": {
+        "mean": 0.0533,
+        "p50": 0.0469,
+        "p95": 0.0808,
+        "p99": 0.1293,
+        "p99_9": 0.1993,
+        "max": 0.1993
+      },
+      "renderMs": {
+        "mean": 1.4954,
+        "p50": 1.4088,
+        "p95": 1.9429,
+        "p99": 2.205,
+        "p99_9": 2.9876,
+        "max": 2.9876
+      },
+      "presentMs": {
+        "mean": 8.2257,
+        "p50": 8.0972,
+        "p95": 9.4669,
+        "p99": 10.7311,
+        "p99_9": 12.1216,
+        "max": 12.1216
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 20000,
+      "stateChangesPerFrame": 30000,
+      "managedBytes": 38590216,
+      "heapCommittedBytes": 30412800,
+      "workingSetBytes": 159887360,
+      "privateBytes": 150319104,
+      "peakWorkingSetBytes": 159887360,
+      "resources": {
+        "sprites": 20000,
+        "textures": 16
+      },
+      "sectionsMs": {
+        "move": {
+          "mean": 0.0418,
+          "p50": 0.0364,
+          "p95": 0.0659,
+          "p99": 0.1039,
+          "p99_9": 0.185,
+          "max": 0.185
+        }
+      }
+    },
+    {
+      "scenario": "shapes",
+      "mode": "headless",
+      "load": 5000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -6116616467258656989,
+      "intervalMs": {
+        "mean": 0.0691,
+        "p50": 0.0659,
+        "p95": 0.0839,
+        "p99": 0.1202,
+        "p99_9": 0.3008,
+        "max": 0.3008
+      },
+      "workMs": {
+        "mean": 0.0686,
+        "p50": 0.0655,
+        "p95": 0.0822,
+        "p99": 0.1159,
+        "p99_9": 0.2987,
+        "max": 0.2987
+      },
+      "updateMs": {
+        "mean": 0.0104,
+        "p50": 0.0097,
+        "p95": 0.0132,
+        "p99": 0.0209,
+        "p99_9": 0.1273,
+        "max": 0.1273
+      },
+      "renderMs": {
+        "mean": 0.0582,
+        "p50": 0.0558,
+        "p95": 0.0702,
+        "p99": 0.1006,
+        "p99_9": 0.1712,
+        "max": 0.1712
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0002,
+        "p99": 0.0005,
+        "p99_9": 0.0012,
+        "max": 0.0012
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 14,
+      "drawsPerFrame": 10000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 1091424,
+      "heapCommittedBytes": 2121728,
+      "workingSetBytes": 41635840,
+      "privateBytes": 15736832,
+      "peakWorkingSetBytes": 41635840,
+      "resources": {
+        "shapes": 10000
+      },
+      "sectionsMs": {}
+    },
+    {
+      "scenario": "shapes",
+      "mode": "render",
+      "load": 5000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -6116616467258656989,
+      "intervalMs": {
+        "mean": 6.4873,
+        "p50": 6.4067,
+        "p95": 7.4865,
+        "p99": 8.0712,
+        "p99_9": 9.4217,
+        "max": 9.4217
+      },
+      "workMs": {
+        "mean": 1.555,
+        "p50": 1.4456,
+        "p95": 2.0928,
+        "p99": 2.3977,
+        "p99_9": 2.983,
+        "max": 2.983
+      },
+      "updateMs": {
+        "mean": 0.0155,
+        "p50": 0.015,
+        "p95": 0.0238,
+        "p99": 0.0295,
+        "p99_9": 0.0653,
+        "max": 0.0653
+      },
+      "renderMs": {
+        "mean": 1.5186,
+        "p50": 1.4072,
+        "p95": 2.0449,
+        "p99": 2.3445,
+        "p99_9": 2.9575,
+        "max": 2.9575
+      },
+      "presentMs": {
+        "mean": 4.9279,
+        "p50": 4.8482,
+        "p95": 5.847,
+        "p99": 6.3154,
+        "p99_9": 6.8707,
+        "max": 6.8707
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 10000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 52354848,
+      "heapCommittedBytes": 40923136,
+      "workingSetBytes": 336240640,
+      "privateBytes": 341958656,
+      "peakWorkingSetBytes": 367063040,
+      "resources": {
+        "shapes": 10000
+      },
+      "sectionsMs": {}
+    },
+    {
+      "scenario": "text",
+      "mode": "headless",
+      "load": 500,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -5808925209549360305,
+      "intervalMs": {
+        "mean": 0.0509,
+        "p50": 0.0493,
+        "p95": 0.0565,
+        "p99": 0.0836,
+        "p99_9": 0.1489,
+        "max": 0.1489
+      },
+      "workMs": {
+        "mean": 0.0505,
+        "p50": 0.049,
+        "p95": 0.0558,
+        "p99": 0.0825,
+        "p99_9": 0.1457,
+        "max": 0.1457
+      },
+      "updateMs": {
+        "mean": 0.0078,
+        "p50": 0.0076,
+        "p95": 0.0096,
+        "p99": 0.0125,
+        "p99_9": 0.0265,
+        "max": 0.0265
+      },
+      "renderMs": {
+        "mean": 0.0427,
+        "p50": 0.0413,
+        "p95": 0.0468,
+        "p99": 0.0701,
+        "p99_9": 0.1354,
+        "max": 0.1354
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0002,
+        "p99": 0.0004,
+        "p99_9": 0.0013,
+        "max": 0.0013
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 15,
+      "drawsPerFrame": 10000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 1088368,
+      "heapCommittedBytes": 1990656,
+      "workingSetBytes": 37281792,
+      "privateBytes": 11268096,
+      "peakWorkingSetBytes": 37281792,
+      "resources": {
+        "characters": 12000,
+        "lines": 500
+      },
+      "sectionsMs": {}
+    },
+    {
+      "scenario": "text",
+      "mode": "render",
+      "load": 500,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -5808925209549360305,
+      "intervalMs": {
+        "mean": 1.3468,
+        "p50": 1.142,
+        "p95": 3.0692,
+        "p99": 3.6189,
+        "p99_9": 4.1945,
+        "max": 4.1945
+      },
+      "workMs": {
+        "mean": 0.7095,
+        "p50": 0.5256,
+        "p95": 2.4397,
+        "p99": 2.7928,
+        "p99_9": 3.3423,
+        "max": 3.3423
+      },
+      "updateMs": {
+        "mean": 0.0075,
+        "p50": 0.0038,
+        "p95": 0.0262,
+        "p99": 0.044,
+        "p99_9": 0.109,
+        "max": 0.109
+      },
+      "renderMs": {
+        "mean": 0.6977,
+        "p50": 0.5201,
+        "p95": 2.3984,
+        "p99": 2.751,
+        "p99_9": 3.3136,
+        "max": 3.3136
+      },
+      "presentMs": {
+        "mean": 0.636,
+        "p50": 0.5658,
+        "p95": 0.9254,
+        "p99": 1.0957,
+        "p99_9": 1.2162,
+        "max": 1.2162
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 67,
+      "drawsPerFrame": 10000,
+      "stateChangesPerFrame": 0,
+      "managedBytes": 11770992,
+      "heapCommittedBytes": 12238848,
+      "workingSetBytes": 122318848,
+      "privateBytes": 106971136,
+      "peakWorkingSetBytes": 122318848,
+      "resources": {
+        "characters": 12000,
+        "lines": 500
+      },
+      "sectionsMs": {}
+    },
+    {
+      "scenario": "particles",
+      "mode": "headless",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -5787149381752641450,
+      "intervalMs": {
+        "mean": 0.261,
+        "p50": 0.2519,
+        "p95": 0.3191,
+        "p99": 0.4335,
+        "p99_9": 0.5443,
+        "max": 0.5443
+      },
+      "workMs": {
+        "mean": 0.2605,
+        "p50": 0.2515,
+        "p95": 0.3144,
+        "p99": 0.4317,
+        "p99_9": 0.5432,
+        "max": 0.5432
+      },
+      "updateMs": {
+        "mean": 0.1254,
+        "p50": 0.1221,
+        "p95": 0.1367,
+        "p99": 0.1786,
+        "p99_9": 0.232,
+        "max": 0.232
+      },
+      "renderMs": {
+        "mean": 0.1351,
+        "p50": 0.1283,
+        "p95": 0.1636,
+        "p99": 0.2546,
+        "p99_9": 0.3508,
+        "max": 0.3508
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0002,
+        "p99": 0.0004,
+        "p99_9": 0.0006,
+        "max": 0.0006
+      },
+      "allocatedBytesPerFrame": 0,
+      "allocatedBytesMaxFrame": 0,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 10,
+      "drawsPerFrame": 19564,
+      "stateChangesPerFrame": 2,
+      "managedBytes": 1857752,
+      "heapCommittedBytes": 2691072,
+      "workingSetBytes": 39456768,
+      "privateBytes": 12439552,
+      "peakWorkingSetBytes": 40062976,
+      "resources": {
+        "particles": 19575
+      },
+      "sectionsMs": {
+        "particles": {
+          "mean": 0.1213,
+          "p50": 0.1185,
+          "p95": 0.1304,
+          "p99": 0.1701,
+          "p99_9": 0.2202,
+          "max": 0.2202
+        }
+      }
+    },
+    {
+      "scenario": "particles",
+      "mode": "render",
+      "load": 20000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -5787149381752641450,
+      "intervalMs": {
+        "mean": 3.9003,
+        "p50": 3.8208,
+        "p95": 4.542,
+        "p99": 5.827,
+        "p99_9": 7.1351,
+        "max": 7.1351
+      },
+      "workMs": {
+        "mean": 0.8625,
+        "p50": 0.8047,
+        "p95": 1.0901,
+        "p99": 1.2771,
+        "p99_9": 1.4255,
+        "max": 1.4255
+      },
+      "updateMs": {
+        "mean": 0.1387,
+        "p50": 0.1293,
+        "p95": 0.1705,
+        "p99": 0.2219,
+        "p99_9": 0.3465,
+        "max": 0.3465
+      },
+      "renderMs": {
+        "mean": 0.7133,
+        "p50": 0.6589,
+        "p95": 0.9032,
+        "p99": 1.062,
+        "p99_9": 1.1552,
+        "max": 1.1552
+      },
+      "presentMs": {
+        "mean": 3.0384,
+        "p50": 2.9565,
+        "p95": 3.6061,
+        "p99": 4.9709,
+        "p99_9": 6.1818,
+        "max": 6.1818
+      },
+      "allocatedBytesPerFrame": 432,
+      "allocatedBytesMaxFrame": 432,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 8,
+      "drawsPerFrame": 19564,
+      "stateChangesPerFrame": 2,
+      "managedBytes": 33046096,
+      "heapCommittedBytes": 34791424,
+      "workingSetBytes": 247795712,
+      "privateBytes": 220930048,
+      "peakWorkingSetBytes": 249733120,
+      "resources": {
+        "particles": 19575
+      },
+      "sectionsMs": {
+        "particles": {
+          "mean": 0.1316,
+          "p50": 0.1218,
+          "p95": 0.1598,
+          "p99": 0.2071,
+          "p99_9": 0.3304,
+          "max": 0.3304
+        }
+      }
+    },
+    {
+      "scenario": "asset-churn",
+      "mode": "headless",
+      "load": 4,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 1876316626154160225,
+      "intervalMs": {
+        "mean": 1.9167,
+        "p50": 1.8534,
+        "p95": 2.3079,
+        "p99": 2.6261,
+        "p99_9": 4.5195,
+        "max": 4.5195
+      },
+      "workMs": {
+        "mean": 1.9159,
+        "p50": 1.8521,
+        "p95": 2.2942,
+        "p99": 2.612,
+        "p99_9": 4.5186,
+        "max": 4.5186
+      },
+      "updateMs": {
+        "mean": 1.9151,
+        "p50": 1.8513,
+        "p95": 2.2932,
+        "p99": 2.6106,
+        "p99_9": 4.5172,
+        "max": 4.5172
+      },
+      "renderMs": {
+        "mean": 0.0008,
+        "p50": 0.0007,
+        "p95": 0.0011,
+        "p99": 0.0014,
+        "p99_9": 0.0018,
+        "max": 0.0018
+      },
+      "presentMs": {
+        "mean": 0.0001,
+        "p50": 0.0001,
+        "p95": 0.0002,
+        "p99": 0.0002,
+        "p99_9": 0.0004,
+        "max": 0.0004
+      },
+      "allocatedBytesPerFrame": 1920246.8267,
+      "allocatedBytesMaxFrame": 1920432,
+      "gen0": 104,
+      "gen1": 104,
+      "gen2": 104,
+      "pauseTotalMs": 33.727,
+      "pauseMaxMs": 0.511,
+      "hitches": 3,
+      "drawsPerFrame": 4,
+      "stateChangesPerFrame": 4,
+      "managedBytes": 7295432,
+      "heapCommittedBytes": 13762560,
+      "workingSetBytes": 58863616,
+      "privateBytes": 29331456,
+      "peakWorkingSetBytes": 59322368,
+      "resources": {
+        "textureBytesLive": 262144,
+        "texturesLive": 4,
+        "texturesLoaded": 2880
+      },
+      "sectionsMs": {
+        "load": {
+          "mean": 1.9118,
+          "p50": 1.8483,
+          "p95": 2.2889,
+          "p99": 2.6067,
+          "p99_9": 4.5129,
+          "max": 4.5129
+        },
+        "unload": {
+          "mean": 0.0006,
+          "p50": 0.0006,
+          "p95": 0.0008,
+          "p99": 0.0011,
+          "p99_9": 0.0077,
+          "max": 0.0077
+        }
+      }
+    },
+    {
+      "scenario": "asset-churn",
+      "mode": "render",
+      "load": 4,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": 1876316626154160225,
+      "intervalMs": {
+        "mean": 2.3496,
+        "p50": 2.2718,
+        "p95": 2.8698,
+        "p99": 3.1084,
+        "p99_9": 3.5169,
+        "max": 3.5169
+      },
+      "workMs": {
+        "mean": 2.2463,
+        "p50": 2.1596,
+        "p95": 2.691,
+        "p99": 2.9372,
+        "p99_9": 3.345,
+        "max": 3.345
+      },
+      "updateMs": {
+        "mean": 2.2389,
+        "p50": 2.1528,
+        "p95": 2.684,
+        "p99": 2.9282,
+        "p99_9": 3.3206,
+        "max": 3.3206
+      },
+      "renderMs": {
+        "mean": 0.0027,
+        "p50": 0.0024,
+        "p95": 0.0038,
+        "p99": 0.0054,
+        "p99_9": 0.0087,
+        "max": 0.0087
+      },
+      "presentMs": {
+        "mean": 0.1024,
+        "p50": 0.0765,
+        "p95": 0.1903,
+        "p99": 0.2723,
+        "p99_9": 0.4224,
+        "max": 0.4224
+      },
+      "allocatedBytesPerFrame": 2183312.4267,
+      "allocatedBytesMaxFrame": 2183696,
+      "gen0": 104,
+      "gen1": 104,
+      "gen2": 104,
+      "pauseTotalMs": 34.735,
+      "pauseMaxMs": 0.55,
+      "hitches": 2,
+      "drawsPerFrame": 4,
+      "stateChangesPerFrame": 4,
+      "managedBytes": 8273840,
+      "heapCommittedBytes": 16965632,
+      "workingSetBytes": 116850688,
+      "privateBytes": 97796096,
+      "peakWorkingSetBytes": 116850688,
+      "resources": {
+        "textureBytesLive": 262144,
+        "texturesLive": 4,
+        "texturesLoaded": 2880
+      },
+      "sectionsMs": {
+        "load": {
+          "mean": 2.231,
+          "p50": 2.1443,
+          "p95": 2.6739,
+          "p99": 2.9192,
+          "p99_9": 3.2856,
+          "max": 3.2856
+        },
+        "unload": {
+          "mean": 0.0047,
+          "p50": 0.0042,
+          "p95": 0.0065,
+          "p99": 0.0086,
+          "p99_9": 0.0303,
+          "max": 0.0303
+        }
+      }
+    },
+    {
+      "scenario": "integrated",
+      "mode": "headless",
+      "load": 5000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -3771539923525532118,
+      "intervalMs": {
+        "mean": 3.2465,
+        "p50": 3.2445,
+        "p95": 3.7549,
+        "p99": 3.9451,
+        "p99_9": 4.2355,
+        "max": 4.2355
+      },
+      "workMs": {
+        "mean": 3.2461,
+        "p50": 3.2437,
+        "p95": 3.7451,
+        "p99": 3.935,
+        "p99_9": 4.2328,
+        "max": 4.2328
+      },
+      "updateMs": {
+        "mean": 3.1425,
+        "p50": 3.1442,
+        "p95": 3.6428,
+        "p99": 3.8227,
+        "p99_9": 4.1073,
+        "max": 4.1073
+      },
+      "renderMs": {
+        "mean": 0.1036,
+        "p50": 0.0982,
+        "p95": 0.1345,
+        "p99": 0.1612,
+        "p99_9": 0.2467,
+        "max": 0.2467
+      },
+      "presentMs": {
+        "mean": 0.0002,
+        "p50": 0.0001,
+        "p95": 0.0003,
+        "p99": 0.0004,
+        "p99_9": 0.0006,
+        "max": 0.0006
+      },
+      "allocatedBytesPerFrame": 7.9733,
+      "allocatedBytesMaxFrame": 408,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 0,
+      "drawsPerFrame": 16126,
+      "stateChangesPerFrame": 7,
+      "managedBytes": 4533680,
+      "heapCommittedBytes": 5304320,
+      "workingSetBytes": 44363776,
+      "privateBytes": 15609856,
+      "peakWorkingSetBytes": 49471488,
+      "resources": {
+        "bodies": 1299,
+        "entities": 5000,
+        "particles": 9823
+      },
+      "sectionsMs": {
+        "churn": {
+          "mean": 0.0067,
+          "p50": 0.0063,
+          "p95": 0.0088,
+          "p99": 0.0108,
+          "p99_9": 0.0244,
+          "max": 0.0244
+        },
+        "particles": {
+          "mean": 0.0626,
+          "p50": 0.0603,
+          "p95": 0.0752,
+          "p99": 0.0824,
+          "p99_9": 0.2256,
+          "max": 0.2256
+        },
+        "physics": {
+          "mean": 3.0228,
+          "p50": 3.0297,
+          "p95": 3.5126,
+          "p99": 3.7054,
+          "p99_9": 3.9556,
+          "max": 3.9556
+        },
+        "world": {
+          "mean": 0.0169,
+          "p50": 0.0155,
+          "p95": 0.0225,
+          "p99": 0.0306,
+          "p99_9": 0.1631,
+          "max": 0.1631
+        }
+      }
+    },
+    {
+      "scenario": "integrated",
+      "mode": "render",
+      "load": 5000,
+      "backend": "tiles",
+      "frames": 600,
+      "checksum": -3771539923525532118,
+      "intervalMs": {
+        "mean": 6.754,
+        "p50": 6.6949,
+        "p95": 7.7959,
+        "p99": 9.4851,
+        "p99_9": 10.1713,
+        "max": 10.1713
+      },
+      "workMs": {
+        "mean": 3.994,
+        "p50": 3.9527,
+        "p95": 4.5276,
+        "p99": 4.8202,
+        "p99_9": 5.1141,
+        "max": 5.1141
+      },
+      "updateMs": {
+        "mean": 3.2271,
+        "p50": 3.2054,
+        "p95": 3.695,
+        "p99": 3.9154,
+        "p99_9": 4.2578,
+        "max": 4.2578
+      },
+      "renderMs": {
+        "mean": 0.7531,
+        "p50": 0.7176,
+        "p95": 0.9669,
+        "p99": 1.1248,
+        "p99_9": 1.5758,
+        "max": 1.5758
+      },
+      "presentMs": {
+        "mean": 2.7577,
+        "p50": 2.7348,
+        "p95": 3.2882,
+        "p99": 5.0544,
+        "p99_9": 5.5988,
+        "max": 5.5988
+      },
+      "allocatedBytesPerFrame": 439.9733,
+      "allocatedBytesMaxFrame": 840,
+      "gen0": 0,
+      "gen1": 0,
+      "gen2": 0,
+      "pauseTotalMs": 0,
+      "pauseMaxMs": 0,
+      "hitches": 1,
+      "drawsPerFrame": 16126,
+      "stateChangesPerFrame": 7,
+      "managedBytes": 21871656,
+      "heapCommittedBytes": 14618624,
+      "workingSetBytes": 192962560,
+      "privateBytes": 167837696,
+      "peakWorkingSetBytes": 196608000,
+      "resources": {
+        "bodies": 1299,
+        "entities": 5000,
+        "particles": 9823
+      },
+      "sectionsMs": {
+        "churn": {
+          "mean": 0.0091,
+          "p50": 0.0086,
+          "p95": 0.0123,
+          "p99": 0.015,
+          "p99_9": 0.0218,
+          "max": 0.0218
+        },
+        "particles": {
+          "mean": 0.0633,
+          "p50": 0.0609,
+          "p95": 0.0752,
+          "p99": 0.0966,
+          "p99_9": 0.1861,
+          "max": 0.1861
+        },
+        "physics": {
+          "mean": 3.0833,
+          "p50": 3.0632,
+          "p95": 3.5449,
+          "p99": 3.7537,
+          "p99_9": 4.1288,
+          "max": 4.1288
+        },
+        "world": {
+          "mean": 0.0225,
+          "p50": 0.0203,
+          "p95": 0.0343,
+          "p99": 0.0526,
+          "p99_9": 0.1706,
+          "max": 0.1706
+        }
+      }
+    }
+  ]
+}

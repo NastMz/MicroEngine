@@ -25,8 +25,10 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/tile-1.md`](odd/tasks/tile-1.md) (maps from the Tiled editor, the optional `MicroEngine.Tiled` package, ADR 0052),
   [`odd/tasks/graphics-2.md`](odd/tasks/graphics-2.md) (canvas prescale and whole-pixel presentation),
   [`odd/tasks/aot-1.md`](odd/tasks/aot-1.md) (saves without reflection for trimmed builds, the NativeAOT and trimming audit, ADR 0054),
-  [`odd/tasks/anim-1.md`](odd/tasks/anim-1.md) (keyframe tracks and timelines, ADR 0055) and
-  [`odd/tasks/audio-1.md`](odd/tasks/audio-1.md) (voices, buses and live pitch on `Game.Audio`, output latency).
+  [`odd/tasks/anim-1.md`](odd/tasks/anim-1.md) (keyframe tracks and timelines, ADR 0055),
+  [`odd/tasks/audio-1.md`](odd/tasks/audio-1.md) (voices, buses and live pitch on `Game.Audio`, output latency) and
+  [`odd/tasks/perf-3.md`](odd/tasks/perf-3.md) (the stress harness `benchmarks/StressBench`, measured limits, a
+  baseline to compare later runs against).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
