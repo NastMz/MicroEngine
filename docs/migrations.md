@@ -6,6 +6,17 @@ it. Newest first.
 
 ## Next release
 
+### A submitted command list holds nothing
+
+Once `IGraphicsDevice.Submit(commands)` returns, the `CommandList` is empty: `Commands` has no commands and `Payload`
+throws `InvalidOperationException`. The device records its next list into the same memory, so drawing a frame no
+longer allocates in proportion to what it draws. Before, a submitted list kept its commands and their data for as long
+as it was referenced. Games that draw through `IRenderer2D`, the drawing API or a `CommandList` they record and submit
+are unaffected, and a backend reads a list while it executes it, as before.
+
+To update, code that inspects a list (a test, a capture tool) reads `Commands` and `Payload` before submitting it and
+keeps a copy of what it needs.
+
 ### Saves without metadata warn in trimmed and NativeAOT projects
 
 `SaveStore.Save(slot, data)` and `SaveStore.Load<T>(slot)` are marked as needing reflection. A project that sets

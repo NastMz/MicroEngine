@@ -44,7 +44,7 @@ public CommandList(IGraphicsDevice device)
 
 ### <a id="MicroEngine_Graphics_Devices_CommandList_Commands"></a> Commands
 
-The recorded commands (backend-facing).
+The recorded commands (backend-facing); empty once [Submit](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_) has returned.
 
 ```csharp
 public ReadOnlySpan<Command> Commands { get; }
@@ -150,7 +150,7 @@ public void EndPass()
 
 ### <a id="MicroEngine_Graphics_Devices_CommandList_Payload_MicroEngine_Graphics_Devices_Command__"></a> Payload\(in Command\)
 
-The data of an update or uniform command (backend-facing).
+The data of an update or uniform command (backend-facing), readable until [Submit](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_) returns.
 
 ```csharp
 public ReadOnlySpan<byte> Payload(in Command command)
@@ -163,6 +163,12 @@ public ReadOnlySpan<byte> Payload(in Command command)
 #### Returns
 
  [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[byte](https://learn.microsoft.com/dotnet/api/system.byte)\>
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The list was submitted and the device has executed it.
 
 ### <a id="MicroEngine_Graphics_Devices_CommandList_SetIndices_MicroEngine_Graphics_Devices_GpuBuffer_MicroEngine_Graphics_Devices_IndexSize_"></a> SetIndices\(GpuBuffer, IndexSize\)
 

@@ -149,10 +149,11 @@ public sealed class CommandList
     /// <summary>True between <see cref="BeginPass"/> and <see cref="EndPass"/>.</summary>
     public bool IsInPass => _inPass;
 
-    /// <summary>The recorded commands (backend-facing).</summary>
+    /// <summary>The recorded commands (backend-facing); empty once <see cref="IGraphicsDevice.Submit"/> has returned.</summary>
     public ReadOnlySpan<Command> Commands => CollectionsMarshal.AsSpan(_commands);
 
-    /// <summary>The data of an update or uniform command (backend-facing).</summary>
+    /// <summary>The data of an update or uniform command (backend-facing), readable until <see cref="IGraphicsDevice.Submit"/> returns.</summary>
+    /// <exception cref="InvalidOperationException">The list was submitted and the device has executed it.</exception>
     public ReadOnlySpan<byte> Payload(in Command command)
     {
         // Once the device has executed the list its storage belongs to the next list (Release): nothing to read here.
