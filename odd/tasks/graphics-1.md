@@ -80,3 +80,10 @@ Decision: [ADR 0057](../../docs/decisions/0057-materials-on-the-2d-batcher.md). 
   (`src/MicroEngine.Sdl`, outside the surface). `docs/manual/rendering.md` still says no shaders are exposed through
   `IRenderer`, which stays true; a link from it to the new guide is outside the surface. Not run: Metal, Linux,
   phones, frame times, the site build (`site/node_modules` is absent here).
+- L6 (2026-11-14) Full `dotnet test MicroEngine.slnx -c Release`: every project passed except
+  `MicroEngine.Desktop.Tests` (690 passed, 2 failed, 16 skipped of 708; no host abort). One failure was this change's
+  `RenderingExamplesTests` on `sdl-gpu`: its capture showed the list of examples, not the example (it opened the
+  examples through the list with scripted presses, and passed three times alone). Rewritten to run each example as the
+  only scene of a game and read the canvas back, with no input. The other, `Losing_the_focus_releases_held_keys`
+  ("time went back at AxisMoved"), is an existing keyboard test this change does not touch; it passed three times
+  alone.
