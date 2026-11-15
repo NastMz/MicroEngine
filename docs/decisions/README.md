@@ -55,6 +55,7 @@ maintainer's archive, not in the public history.
 | [0052](0052-tiled-maps-optional-package.md) | Tiled maps through an optional `MicroEngine.Tiled` package over DotTiled, with a public API in engine types only (amends 0019) | Accepted |
 | [0054](0054-saves-without-reflection.md) | Saves without reflection through the game's `JsonTypeInfo<T>`, same JSON slots; the reflection calls stay and announce themselves to trim and AOT analyzers; the engine's own saved types (achievements) use the same path; NativeAOT is not a claimed target | Accepted |
 | [0055](0055-animation-tracks-and-timelines.md) | Animation beyond sprite clips as keyframe tracks (`Track<T>`) and timelines with named events (`Timeline`); layers, cross-fades and rigs by composition; skeletal runtimes and state machines stay out of the engine | Accepted |
+| [0056](0056-navigation-optional-package.md) | Navigation as an optional `MicroEngine.Navigation` package of the engine's own managed code: A* over grids and graphs, distance fields; navmeshes, generated platformer links and crowds wait (amends 0019) | Proposed |
 
 Each number is used once. The numbers missing from the table:
 

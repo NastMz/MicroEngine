@@ -82,6 +82,8 @@ kernel, those that touch the host also the platform contracts, and the core refe
 `MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
 package carries the tier-1 device. Text shaping (`MicroEngine.Text.Shaping`) is an optional package of its own, with
 HarfBuzz, and so is the Box2D backend (`MicroEngine.Physics.Box2D`), with Box2D's native library for each runtime.
+Navigation (`MicroEngine.Navigation`) is an optional package too, of managed code over the tile types and the physics
+contract; no engine assembly references it.
 The 3D path (`MicroEngine.Graphics3D`) is not in the SDK packages: it is in the repository only.
 
 The kernel is its own assembly,
@@ -281,6 +283,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
 | `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package |
+| `MicroEngine.Navigation` | `MicroEngine.Navigation` | `PathFinder` (A* over `INavGraph`), `NavGrid` (cells read from tile grids or a physics world), `NavGraph` (waypoints with directed tagged links), `DistanceField`; an optional package ([Navigation](guide/navigation.md)) |
 | `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, the platform of every browser build) |
 | `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform |
 | `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |
