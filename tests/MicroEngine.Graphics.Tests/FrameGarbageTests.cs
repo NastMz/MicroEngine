@@ -38,6 +38,37 @@ public sealed class FrameGarbageTests
     }
 
     [TestMethod]
+    public void Frames_that_are_always_large_keep_their_storage_and_a_single_large_one_does_not_pin_it()
+    {
+        using var device = new ReferenceGraphicsDevice();
+        var vertices = device.CreateBuffer(new BufferDescription(12 << 20, BufferUsage.Vertex));
+        var indices = device.CreateBuffer(new BufferDescription(1 << 20, BufferUsage.Index));
+        var target = device.CreateRenderTarget(new RenderTargetDescription(8, 8));
+        byte[] large = new byte[12 << 20], medium = new byte[1 << 20], small = new byte[64];
+        void Frame(byte[] first, byte[] second)
+        {
+            var commands = device.BeginCommands();
+            commands.UpdateBuffer(vertices, 0, first);
+            commands.UpdateBuffer(indices, 0, second);
+            commands.BeginPass(new PassDescription(new ColorAttachment(target, LoadOp.Load, StoreOp.Store, default)));
+            commands.EndPass();
+            device.Submit(commands);
+        }
+        // 80,000 sprites are 10 MB of vertices and 1 MB of indices: the storage doubles past 16 MB and must still be kept.
+        long steady = BytesPerFrame(() => Frame(large, medium));
+        Assert.IsTrue(steady < 1024, $"13 MB recorded every frame allocated {steady:N0} bytes per frame");
+
+        // After one large frame, small frames give the large storage up (one of them allocates a small one) and then allocate nothing.
+        Frame(small, small);
+        Frame(small, small);
+        long before = GC.GetTotalMemory(forceFullCollection: true);
+        long later = BytesPerFrame(() => Frame(small, small));
+        Assert.IsTrue(later < 1024, $"small frames after a large one allocated {later:N0} bytes per frame");
+        // Live now: 13 MB of test data and the two device buffers' 13 MB. The large frames' storage was 24 MB more.
+        Assert.IsTrue(before < 40 << 20, $"the storage of the large frames is still held ({before:N0} bytes live)");
+    }
+
+    [TestMethod]
     public void A_batch_of_two_thousand_sprites_allocates_next_to_nothing_per_frame()
     {
         using var device = new ReferenceGraphicsDevice();

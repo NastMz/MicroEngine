@@ -89,8 +89,12 @@ public sealed class CommandList
     /// </summary>
     internal sealed class Storage
     {
-        /// <summary>A payload larger than this is not kept for the next list, so a one-off upload does not pin its size.</summary>
-        public const int LargestKeptPayload = 16 * 1024 * 1024;
+        /// <summary>
+        /// A payload larger than this is kept for the next list only when the list that gives it up filled at least an
+        /// eighth of it: frames that are always large keep their memory, and what a one-off upload grew is given up
+        /// by the first ordinary list after it.
+        /// </summary>
+        public const int AlwaysKeptPayload = 1024 * 1024;
 
         public readonly List<Command> Commands = [];
         public byte[] Payload = new byte[256];
@@ -345,7 +349,8 @@ public sealed class CommandList
         storage.Commands.Clear();
         storage.Textures.Clear();
         storage.Uniforms.Clear();
-        storage.Payload = _payload.Length <= Storage.LargestKeptPayload ? _payload : new byte[256];
+        bool keep = _payload.Length <= Storage.AlwaysKeptPayload || _payloadLength >= _payload.Length / 8;
+        storage.Payload = keep ? _payload : new byte[256];
         _commands = Released;
         _payload = [];
         _payloadLength = 0;
