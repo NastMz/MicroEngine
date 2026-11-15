@@ -233,10 +233,10 @@ public sealed class RoomScene : Scene
         DrawRoute(r, Patrol);
         DrawRoute(r, Chaser);
         DrawRoute(r, Player);
-        foreach (var bug in _swarm) r.FillRect(bug.Bounds, bug.Color);
         r.FillRect(Patrol.Bounds, Patrol.Color);
         r.FillRect(Chaser.Bounds, Chaser.Color);
         r.FillRect(Player.Bounds, Player.Color);
+        foreach (var bug in _swarm) r.FillRect(bug.Bounds, bug.Color);     // last: they end up beside the others
         r.FillRect(new RectF(0, 0, r.Width, 12), Color.Black.WithAlpha(0.6f));
         Font.Draw(r, $"CLICK: MOVE   Z: DOOR ({(DoorClosed ? "CLOSED" : "OPEN")})   SEARCHES {Player.Searches + Chaser.Searches + Patrol.Searches}", new Vector2(4, 3), Color.White);
     }

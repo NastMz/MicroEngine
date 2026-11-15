@@ -6,7 +6,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
-A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor.
+A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
+optional, for agents that find their way through a level.
 
 **Added**
 
@@ -15,6 +16,14 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
   drawn as Tiled shows them ([Maps from Tiled](../manual/world.md#maps-from-tiled)). The `TiledLevel` sample plays a
   level saved by Tiled.
+- `MicroEngine.Navigation` finds paths ([Navigation](navigation.md)): `PathFinder` gives the cheapest path over a
+  `NavGrid` (cells with costs, read from a tile map with `NavGrid.FromTiles` or from a physics world with
+  `NavGrid.FromPhysics`), a `NavGraph` (waypoints joined by hand, with one-way tagged links for jumps, drops and
+  doors) or a game's own `INavGraph`. `NavGrid.FindPath` returns the world points to walk through, straightened for
+  the agent's size; cells change while the game runs (`SetWalkable`, `SetBlocked`, `ReadTiles`) and `Version` and
+  `IsOpen` tell an agent when its path closed; `DistanceField` serves many agents with one goal. The same question
+  always gives the same path, and searching allocates nothing once warm. Managed code only. The `Pathfinding` sample
+  plays a chaser, a unit sent by clicks, a swarm and a patrol with a door.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
 - `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples

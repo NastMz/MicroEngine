@@ -103,6 +103,38 @@ public sealed class PathfindingTests
     }
 
     [TestMethod]
+    public void Platforms_are_climbed_by_the_jump_and_left_by_the_drops()
+    {
+        var level = new Platforms();
+        var finder = new PathFinder();
+        CollectionAssert.AreEqual(
+            new[] { (level.GroundMiddle, Platforms.Walk), (level.LedgeLeft, Platforms.Jump), (level.LedgeRight, Platforms.Walk) },
+            level.Steps(finder, level.GroundRight, level.LedgeRight), "under the ledge's right end there is no way up: back to the jump");
+        CollectionAssert.AreEqual(new[] { (level.GroundRight, Platforms.Drop) }, level.Steps(finder, level.LedgeRight, level.GroundRight));
+        level.Graph.SetEnabled(level.LedgeLeft, false);
+        Assert.IsEmpty(level.Steps(finder, level.GroundLeft, level.LedgeRight), "the ledge's left end fell: nothing reaches the ledge");
+    }
+
+    [TestMethod]
+    public void A_board_of_hexagons_is_searched_by_the_same_finder()
+    {
+        var board = new HexBoard(7, 7);
+        var finder = new PathFinder();
+        int from = board.NodeOf(0, 0), to = board.NodeOf(4, 4);
+        Assert.AreEqual(PathStatus.Found, finder.Find(board, from, to));
+        Assert.AreEqual(6, finder.Cost, "two hexagons across and four down, two of them shared");
+        Assert.HasCount(7, finder.Path);
+
+        // A wall across row 2 with its gap at the far right.
+        for (int column = 0; column < 6; column++) board.Block(column, 2);
+        Assert.AreEqual(PathStatus.Found, finder.Find(board, from, to));
+        CollectionAssert.Contains(finder.Path.ToArray(), board.NodeOf(6, 2), "through the gap");
+        Assert.AreEqual(10, finder.Cost);
+        board.Block(6, 2);
+        Assert.AreEqual(PathStatus.Unreachable, finder.Find(board, from, to));
+    }
+
+    [TestMethod]
     public void The_swarm_gathers_at_the_player_by_reading_one_field()
     {
         var (game, room) = Start();
