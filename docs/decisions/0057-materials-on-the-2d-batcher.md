@@ -2,7 +2,8 @@
 
 ## Status
 
-Proposed (2026-11-14); accepted by merging the branch that records it (`feat/graphics-1`). Evidence:
+Accepted (2026-11-14): the owner accepted it on the ground that the SDK is in Alpha, where a change of public API
+carries no compatibility commitment. Evidence:
 [GRAPHICS-1](../evaluations/graphics-1.md). Task record: [`odd/tasks/graphics-1.md`](../../odd/tasks/graphics-1.md).
 Builds on [ADR 0028](0028-graphics-device-contract.md) (the device contract),
 [0041](0041-tier1-device-on-sdl-gpu.md), [0042](0042-offline-shader-toolchain.md) (shaders compiled ahead of time) and
