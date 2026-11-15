@@ -1,7 +1,7 @@
 # 0056 — Navigation is an optional SDK package of the engine's own managed code
 
-Status: Proposed (2026-11-14): built on `feat/nav-1` for the owner's review; a new package changes the published set
-and needs the owner's approval. Amends [0019](0019-sdk-packages.md) (the published package set). Evidence:
+Status: Accepted (2026-11-14): the owner accepted it on the ground that the SDK is in Alpha, where a new package or
+a change of public API carries no compatibility commitment. Amends [0019](0019-sdk-packages.md) (the published package set). Evidence:
 [NAV-1](../evaluations/nav-1.md). Task record: [`odd/tasks/nav-1.md`](../../odd/tasks/nav-1.md).
 
 ## Context

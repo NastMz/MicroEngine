@@ -36,7 +36,7 @@ Decision: [ADR 0056](../../docs/decisions/0056-navigation-optional-package.md).
 | T5 Example `samples/Pathfinding` (chase, click to move, a patrol and a door, a swarm; platform links and a hex board) with its tests and tour | S7 | inline | done | `2925840` and the documentation commit; `PathfindingTests` 7/7; tour captures inspected (L5) |
 | T6 Benchmark `benchmarks/NavBench` on large maps | S4 | inline | done | `2925840`; evaluation §5 (L6) |
 | T7 Evaluation, ADR 0056, guide page, API reference, release notes, SDK page, architecture table | S2–S6 | inline | done | the documentation commit; snippets check, `api-reference.mjs --check`, `version.mjs check` (L7) |
-| T8 Owner decision on the package (ADR 0056 is Proposed) | S6 | owner | pending | — |
+| T8 Owner decision on the package (ADR 0056) | S6 | owner | done | accepted (L8) |
 
 ## Log
 
@@ -94,3 +94,6 @@ Decision: [ADR 0056](../../docs/decisions/0056-navigation-optional-package.md).
   Not verified: a NativeAOT or browser build of a consumer, `FromPhysics` on the Box2D backend, the site build (its
   `node_modules` are not installed in this worktree; every public page's entry was built with `repo-docs.mjs`
   instead: 549 pages, links and quoted code resolved). Next: the owner's decision (T8).
+- L8 (2026-11-14) The owner, verbatim: "Recuerda que el motor sigue en alfa, eso significa que cualquien nuevo paquete,
+  cambio sobre la api publica, etc, es valido porque ese es el significado de mantenerlo en alfa, no hay compromiso de
+  compatibilidad". ADR 0056 is Accepted; T8 closed.
