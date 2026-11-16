@@ -86,6 +86,18 @@ public ColorF? Clear { get; init; }
 
  [ColorF](MicroEngine.ColorF.md)?
 
+### <a id="MicroEngine_Graphics_BatchSettings_Material"></a> Material
+
+The material the batch starts with ([Material](MicroEngine.Graphics.RenderState.md#MicroEngine_Graphics_RenderState_Material)); null draws with the built-in pipeline.
+
+```csharp
+public Material2D? Material { get; init; }
+```
+
+#### Property Value
+
+ [Material2D](MicroEngine.Graphics.Material2D.md)?
+
 ### <a id="MicroEngine_Graphics_BatchSettings_Sampler"></a> Sampler
 
 The batch's sampler; null is [PointClamp](MicroEngine.Graphics.Devices.SamplerDescription.md#MicroEngine_Graphics_Devices_SamplerDescription_PointClamp).

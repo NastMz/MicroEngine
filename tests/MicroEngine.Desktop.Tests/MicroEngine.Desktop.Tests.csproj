@@ -13,6 +13,8 @@
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <ProjectReference Include="../../src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
     <ProjectReference Include="../../src/MicroEngine.Graphics3D/MicroEngine.Graphics3D.csproj" />
+    <!-- The examples whose rendering techniques need a window to show (RenderingExamplesTests). -->
+    <ProjectReference Include="../../samples/Examples/Examples.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The native keyboard (XTEST) and sound-server helpers the raylib tests use, so SDL is checked the same way. -->

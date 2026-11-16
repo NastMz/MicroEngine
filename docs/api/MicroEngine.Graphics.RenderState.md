@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)
 Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler and scissor.
+The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler, scissor and material.
 
 ```csharp
 public readonly struct RenderState : IEquatable<RenderState>
@@ -20,7 +20,7 @@ public readonly struct RenderState : IEquatable<RenderState>
 
 ### <a id="MicroEngine_Graphics_RenderState__ctor_MicroEngine_Graphics_Devices_BlendState_MicroEngine_Graphics_Devices_SamplerDescription_System_Nullable_MicroEngine_Graphics_Devices_RectI__"></a> RenderState\(BlendState, SamplerDescription, RectI?\)
 
-The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler and scissor.
+The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler, scissor and material.
 
 ```csharp
 public RenderState(BlendState Blend, SamplerDescription Sampler, RectI? Scissor)
@@ -56,7 +56,7 @@ public BlendState Blend { get; init; }
 
 ### <a id="MicroEngine_Graphics_RenderState_Default"></a> Default
 
-Premultiplied alpha blending, nearest clamped sampling, no scissor.
+Premultiplied alpha blending, nearest clamped sampling, no scissor, no material.
 
 ```csharp
 public static RenderState Default { get; }
@@ -65,6 +65,19 @@ public static RenderState Default { get; }
 #### Property Value
 
  [RenderState](MicroEngine.Graphics.RenderState.md)
+
+### <a id="MicroEngine_Graphics_RenderState_Material"></a> Material
+
+The shaders draws are drawn with, on a device with custom shaders; null (the default) is the built-in pipeline,
+which every device has. A draw keeps the parameters the material had when the draw was recorded.
+
+```csharp
+public Material2D? Material { get; init; }
+```
+
+#### Property Value
+
+ [Material2D](MicroEngine.Graphics.Material2D.md)?
 
 ### <a id="MicroEngine_Graphics_RenderState_Sampler"></a> Sampler
 
