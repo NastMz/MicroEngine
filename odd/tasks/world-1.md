@@ -44,7 +44,7 @@ Quoted fragments are the issue's text, verbatim (L1).
 | T1 Consumer scenarios in StressBench, measured on the code as it is (neighbours by a walk and through the physics world, a world larger than the view, a few destructions in a large world) | S2 S3 S5 S6 | inline | done | `ec78a01`; evaluation §3, §4 (L2) |
 | T2 Where the tile broad phase and the world's step spend their time (PERF-3's hypotheses and its anomaly, isolated) | S4 S5 | inline | done | evaluation §5, §7.3 (L3, L6) |
 | T3 Survey of managed libraries and the standard algorithms | S5 | inline | done | evaluation §6 (L4) |
-| T4 `SpatialIndex2D<T>`, test first | S2 S3 S6 S8 S9 | inline | done | `b97ae1c`, `75f4b3a`; RED: 14 of 14 failing on stubs; `SpatialIndex2DTests` 14/14 (L5) |
+| T4 `SpatialIndex2D<T>`, test first | S2 S3 S6 S8 S9 | inline | done | `b97ae1c`, `75f4b3a`, `b41264e`; RED: 14 of 14 failing on stubs, and the parameter name of `b41264e` seen wrong first; `SpatialIndex2DTests` 14/14 (L5) |
 | T5 The world's release and step copy; the tile broad phase on the index | S2 S4 S9 | inline | done | `0e13537`, `c2e288a`; hash of a 300-step history pinned on the previous code; broad-phase tests unchanged; StressBench checksums equal (L6, L7) |
 | T6 Example, guide page, API reference, release notes | S6 S8 | inline | done | `0a1c955` and the records commit; `NearbyExampleTests`; capture `32-nearby.png` inspected (L8) |
 | T7 After numbers, evaluation, ADR 0058, architecture, AGENTS.md | S1-S10 | inline | done | the records commit; evaluation §7 to §10 (L9) |
