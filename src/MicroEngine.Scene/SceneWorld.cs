@@ -23,8 +23,14 @@ public sealed class SceneWorld : IWorld, IStateHashed
 
     internal uint[] _gen = new uint[64];
     internal byte[] _state = new byte[64];
-    private Transform[] _local = new Transform[64];
-    private Transform[] _previous = new Transform[64];
+    // Both transforms of every slot in one array: the local one at [slot] and the one at the step's start at
+    // [_capacity + slot]. One array, because BeginStep copies the first half onto the second every step and the
+    // distance between the two decides what that copy costs: two arrays allocated one after the other lie 56 bytes
+    // apart modulo a memory page, where the copy of a world of 130,000 to 260,000 entities took twenty times longer
+    // (5 to 7 ms a step, measured on an AMD Zen 4). Halves of one array are a whole number of pages apart from 512
+    // slots on, where the copy costs what it should (1.3 to 1.7 ns per entity).
+    private Transform[] _transforms = new Transform[2 * 64];
+    private int _capacity = 64;
     private bool[] _snap = new bool[64];
     internal int[] _parent = new int[64];
     internal int[] _firstChild = new int[64];
@@ -33,8 +39,11 @@ public sealed class SceneWorld : IWorld, IStateHashed
     private int _used;
     private readonly Stack<int> _free = new();
     private readonly List<int> _pending = [];
+    // Creation order: slots, with -1 where a released entity was. _orderAt is each slot's place in it, so a release
+    // marks its place instead of closing it; the holes are closed once they are an eighth of the order.
     private int[] _order = new int[64];
-    private int _orderCount;
+    private int[] _orderAt = new int[64];
+    private int _orderCount, _orderHoles;
     private int _count;
     private float _blend = 1;
     internal int _hierarchyVersion;
@@ -62,7 +71,7 @@ public sealed class SceneWorld : IWorld, IStateHashed
     public float BeginStep(long engineStep, float dt)
     {
         Release();
-        Array.Copy(_local, _previous, _used);
+        Array.Copy(_transforms, 0, _transforms, _capacity, _used);   // see _transforms for why this is one array
         Array.Clear(_snap, 0, _used);
         SteppedAt = engineStep;
         return Clock.Advance(dt);
@@ -93,8 +102,8 @@ public sealed class SceneWorld : IWorld, IStateHashed
         }
         if (_gen[slot] == 0) _gen[slot] = 1;
         _state[slot] = Alive;
-        _local[slot] = Transform.Identity;
-        _previous[slot] = Transform.Identity;
+        _transforms[slot] = Transform.Identity;
+        _transforms[_capacity + slot] = Transform.Identity;
         _snap[slot] = true;
         _parent[slot] = -1;
         _firstChild[slot] = -1;
@@ -102,6 +111,7 @@ public sealed class SceneWorld : IWorld, IStateHashed
         _nextSibling[slot] = -1;
         if (parentSlot >= 0) Link(slot, parentSlot);
         if (_orderCount == _order.Length) Array.Resize(ref _order, _order.Length * 2);
+        _orderAt[slot] = _orderCount;
         _order[_orderCount++] = slot;
         _count++;
         return new EntityId((uint)slot, _gen[slot]);
@@ -175,7 +185,7 @@ public sealed class SceneWorld : IWorld, IStateHashed
     // ------------------------------------------------------------------ transforms and interpolation
 
     /// <inheritdoc/>
-    public ref Transform Local(EntityId entity) => ref _local[Resolve(entity)];
+    public ref Transform Local(EntityId entity) => ref _transforms[Resolve(entity)];
 
     /// <inheritdoc/>
     public Matrix4x4 WorldMatrix(EntityId entity) => MatrixOf(Resolve(entity));
@@ -195,7 +205,7 @@ public sealed class SceneWorld : IWorld, IStateHashed
         for (int p = _parent[slot]; p >= 0; p = _parent[p])
         {
             // Translation-only parents (the 2D case) add their position; a rotated or scaled one needs the matrices.
-            if (!_local[p].TranslationOnly || !_snap[p] && _blend < 1 && !_previous[p].TranslationOnly)
+            if (!_transforms[p].TranslationOnly || !_snap[p] && _blend < 1 && !_transforms[_capacity + p].TranslationOnly)
             {
                 var t = MatrixOf(slot).Translation;
                 return new Vector2(t.X, t.Y);
@@ -207,14 +217,14 @@ public sealed class SceneWorld : IWorld, IStateHashed
 
     private Vector2 DrawnPosition2D(int slot)
     {
-        var current = _local[slot].Position2D;
+        var current = _transforms[slot].Position2D;
         if (_blend >= 1 || _snap[slot]) return current;
-        var previous = _previous[slot].Position2D;
+        var previous = _transforms[_capacity + slot].Position2D;
         return previous == current ? current : Vector2.Lerp(previous, current, _blend);
     }
 
     private Transform Drawn(int slot) =>
-        _blend >= 1 || _snap[slot] ? _local[slot] : Transform.Interpolate(_previous[slot], _local[slot], _blend);
+        _blend >= 1 || _snap[slot] ? _transforms[slot] : Transform.Interpolate(_transforms[_capacity + slot], _transforms[slot], _blend);
 
     /// <inheritdoc/>
     public void Teleport(EntityId entity) => _snap[Resolve(entity)] = true;
@@ -288,15 +298,16 @@ public sealed class SceneWorld : IWorld, IStateHashed
         hash.Add(Clock.Scale);
         hash.Add(Clock.FreezeRemaining);
         hash.Add(_count);
-        hash.Add(_orderCount);
+        hash.Add(_orderCount - _orderHoles);
         for (int i = 0; i < _orderCount; i++)
         {
             int slot = _order[i];
+            if (slot < 0) continue;   // a released entity's place, not closed yet
             hash.Add(slot);
             hash.Add((long)_gen[slot]);
             hash.Add(_state[slot]);
             hash.Add(_parent[slot]);
-            ref var t = ref _local[slot];
+            ref var t = ref _transforms[slot];
             hash.Add(t.Position.X); hash.Add(t.Position.Y); hash.Add(t.Position.Z);
             hash.Add(t.Rotation.X); hash.Add(t.Rotation.Y); hash.Add(t.Rotation.Z); hash.Add(t.Rotation.W);
             hash.Add(t.Scale.X); hash.Add(t.Scale.Y); hash.Add(t.Scale.Z);
@@ -341,12 +352,25 @@ public sealed class SceneWorld : IWorld, IStateHashed
             foreach (var store in _storeList) store.Remove(slot);
             _state[slot] = Free;
             _gen[slot] = _gen[slot] == uint.MaxValue ? 1 : _gen[slot] + 1;
+            _order[_orderAt[slot]] = -1;
+            _orderHoles++;
         }
-        // Stable compaction of the creation order (O(n), not O(n) per removal).
-        int kept = 0;
-        for (int i = 0; i < _orderCount; i++)
-            if (_state[_order[i]] != Free) _order[kept++] = _order[i];
-        _orderCount = kept;
+        // The cost of a release is what it releases: the creation order and the attachment stores keep their holes
+        // (every walk skips them) and close them, in order, only once the holes are an eighth of their length. A pass
+        // over the whole world for every step with a destruction was most of the frame in a world of 300,000.
+        if (_orderHoles * 8 >= _orderCount)
+        {
+            int kept = 0;
+            for (int i = 0; i < _orderCount; i++)
+            {
+                int slot = _order[i];
+                if (slot < 0) continue;
+                _orderAt[slot] = kept;
+                _order[kept++] = slot;
+            }
+            _orderCount = kept;
+            _orderHoles = 0;
+        }
         foreach (var store in _storeList) store.Compact();
         // Slots go back to the free list only now, so nothing created during a callback reused one being released.
         foreach (int slot in _pending) _free.Push(slot);
@@ -387,12 +411,16 @@ public sealed class SceneWorld : IWorld, IStateHashed
         int size = _gen.Length * 2;
         Array.Resize(ref _gen, size);
         Array.Resize(ref _state, size);
-        Array.Resize(ref _local, size);
-        Array.Resize(ref _previous, size);
+        var transforms = new Transform[2 * size];
+        Array.Copy(_transforms, 0, transforms, 0, _used);
+        Array.Copy(_transforms, _capacity, transforms, size, _used);
+        _transforms = transforms;
+        _capacity = size;
         Array.Resize(ref _snap, size);
         Array.Resize(ref _parent, size);
         Array.Resize(ref _firstChild, size);
         Array.Resize(ref _lastChild, size);
         Array.Resize(ref _nextSibling, size);
+        Array.Resize(ref _orderAt, size);
     }
 }

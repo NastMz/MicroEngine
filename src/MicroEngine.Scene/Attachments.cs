@@ -24,7 +24,8 @@ internal interface IAttachmentStore
 
 /// <summary>
 /// One attachment type's dense array with a sparse slot index (slot → dense index + 1). A removal leaves a hole so a
-/// running iteration is never shifted; <see cref="Compact"/> closes the holes in order at the step's boundaries.
+/// running iteration is never shifted; <see cref="Compact"/> closes the holes in order at the step's boundaries, once
+/// they are an eighth of the array (every walk skips a hole, so a few of them cost less than a pass over the store).
 /// </summary>
 internal sealed class AttachmentStore<T> : IAttachmentStore where T : class
 {
@@ -32,7 +33,7 @@ internal sealed class AttachmentStore<T> : IAttachmentStore where T : class
     internal T?[] _items = new T?[16];
     internal int[] _slots = new int[16];
     internal int _count;
-    private bool _holes;
+    private int _holes;
 
     public string TypeName { get; } = typeof(T).FullName ?? typeof(T).Name;
 
@@ -71,15 +72,15 @@ internal sealed class AttachmentStore<T> : IAttachmentStore where T : class
         _sparse[slot] = 0;
         _slots[d] = -1;
         _items[d] = null;
-        _holes = true;
+        _holes++;
         return true;
     }
 
     // Stable: attach order is part of the contract (a swap-remove store changes what games do).
     public void Compact()
     {
-        if (!_holes) return;
-        _holes = false;
+        if (_holes * 8 < _count || _holes == 0) return;
+        _holes = 0;
         int kept = 0;
         for (int i = 0; i < _count; i++)
         {

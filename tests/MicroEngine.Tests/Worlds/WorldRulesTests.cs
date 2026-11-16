@@ -782,4 +782,103 @@ public sealed class WorldRulesTests
 
         Assert.AreEqual(before, Hash(world));
     }
+
+    // ------------------------------------------------------------------ large worlds (WORLD-1)
+
+    [TestMethod]
+    public void A_long_history_of_destruction_detachment_and_reuse_keeps_the_attach_order_and_the_state_hash()
+    {
+        // 300 steps over a few thousand entities: a few destroyed in most steps, many in some, attachments detached and
+        // attached again, slots reused. The order of All<T> is checked against a plain list at every step, and the
+        // hash of every step is folded into one value pinned from the world as it was before the release pass stopped
+        // walking the whole world: when the world closes its holes must never show.
+        uint seed = 12345;
+        int Next(int below) => (int)((seed = seed * 1664525 + 1013904223) >> 8) % below;
+        var world = new SceneWorld();
+        var model = new List<(EntityId Id, string Name)>();   // attach order of Tag
+        var live = new List<EntityId>();
+        int created = 0;
+        void Spawn()
+        {
+            var id = world.Create();
+            string name = $"e{created++}";
+            world.Attach(id, new Tag(name));
+            if (created % 3 != 0) world.Attach(id, new Health(created));
+            world.Local(id).Position2D = new Vector2(created, -created);
+            live.Add(id);
+            model.Add((id, name));
+        }
+        for (int i = 0; i < 3000; i++) Spawn();
+
+        ulong folded = 14695981039346656037UL;
+        for (int step = 1; step <= 300; step++)
+        {
+            world.BeginStep(step, Dt);
+            int destroyed = step % 50 == 0 ? live.Count / 3 : step % 7 == 0 ? 0 : 1 + Next(4);
+            for (int d = 0; d < destroyed && live.Count > 0; d++)
+            {
+                int at = Next(live.Count);
+                world.Destroy(live[at]);
+                model.RemoveAll(m => m.Id == live[at]);
+                live.RemoveAt(at);
+            }
+            for (int d = 0; d < 3 && live.Count > 0; d++)
+            {
+                // Detach and, half the time, attach again: the attachment goes to the end of the order.
+                var id = live[Next(live.Count)];
+                if (!world.TryGet<Tag>(id, out var tag)) continue;   // detached in an earlier step
+                Assert.IsTrue(world.Detach<Tag>(id));
+                model.RemoveAll(m => m.Id == id);
+                if (Next(2) == 0) continue;
+                world.Attach(id, tag);
+                model.Add((id, tag.Name));
+            }
+            int spawned = step % 50 == 25 ? 900 : Next(6);
+            for (int s = 0; s < spawned; s++) Spawn();
+            world.EndStep();
+
+            int walked = 0;
+            var walk = world.All<Tag>().GetEnumerator();
+            while (walk.MoveNext())
+            {
+                Assert.IsTrue(walked < model.Count, $"step {step}: more attachments than the model has");
+                Assert.AreEqual(model[walked].Name, walk.Current.Name, $"step {step}, place {walked}");
+                Assert.AreEqual(model[walked].Id, walk.Entity, $"step {step}, place {walked}");
+                walked++;
+            }
+            Assert.AreEqual(model.Count, walked, $"step {step}");
+            Assert.AreEqual(live.Count, world.Count, $"step {step}");
+            folded = (folded ^ Hash(world)) * 1099511628211UL;
+        }
+        Assert.IsTrue(created > 6000 && live.Count > 1000, $"{created} created, {live.Count} live");
+        Assert.AreEqual(PinnedHistoryHash, folded, "the state hash of every step is what it always was");
+    }
+
+    private const ulong PinnedHistoryHash = 6352569735638433876UL;
+
+    [TestMethod]
+    public void Every_entity_of_a_large_world_blends_from_where_it_was_when_the_step_started()
+    {
+        // 40,000 entities: more than the world copies at a time when it keeps the step's start.
+        var world = new SceneWorld();
+        var ids = new EntityId[40_000];
+        for (int i = 0; i < ids.Length; i++)
+        {
+            ids[i] = world.Create();
+            world.Local(ids[i]).Position2D = new Vector2(i, 1);
+        }
+        world.BeginStep(1, Dt);
+        world.EndStep();
+        world.BeginStep(2, Dt);
+        for (int i = 0; i < ids.Length; i++) world.Local(ids[i]).Position2D = new Vector2(i + 8, 3);
+        world.EndStep();
+
+        world.BeginDraw(2, 0.25f);
+        for (int i = 0; i < ids.Length; i++)
+            if (world.DrawPosition2D(ids[i]) != new Vector2(i + 2, 1.5f)) Assert.Fail($"entity {i} is drawn at {world.DrawPosition2D(ids[i])}");
+        world.BeginStep(3, Dt);
+        world.BeginDraw(3, 0.25f);
+        for (int i = 0; i < ids.Length; i++)
+            if (world.DrawPosition2D(ids[i]) != new Vector2(i + 8, 3)) Assert.Fail($"entity {i} did not move in step 3 and is drawn at {world.DrawPosition2D(ids[i])}");
+    }
 }
