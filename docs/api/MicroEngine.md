@@ -26,6 +26,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Kernel](MicroEngine.Kernel.md)
 
+ [MicroEngine.Navigation](MicroEngine.Navigation.md)
+
  [MicroEngine.Physics](MicroEngine.Physics.md)
 
  [MicroEngine.Platform](MicroEngine.Platform.md)

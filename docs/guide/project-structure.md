@@ -12,7 +12,7 @@ This page maps the folders and then shows how a game project is organised, using
 | `src/MicroEngine.Cli/` | The `microengine` tool, with the browser, Android and iOS hosts it packages games with (`Hosts/`) |
 | `templates/` | The `dotnet new` template |
 | `games/<Name>/` | A complete demo game: code, procedural art and audio, optional asset files, input scripts, README |
-| `samples/` | `HelloEngine` (the smallest game, [walkthrough](../examples/hello-engine.md)), `GemGarden` (the tutorial), `Examples` (the focused examples), `AssetGallery`, `Slice3D` (the 3D path), `PhysicsSubstitution` (the two physics backends side by side), `TiledLevel` (a level saved by the Tiled editor) |
+| `samples/` | `HelloEngine` (the smallest game, [walkthrough](../examples/hello-engine.md)), `GemGarden` (the tutorial), `Examples` (the focused examples), `AssetGallery`, `Slice3D` (the 3D path), `PhysicsSubstitution` (the two physics backends side by side), `TiledLevel` (a level saved by the Tiled editor), `Pathfinding` (agents that find their way with the navigation package) |
 | `tests/` | Engine and backend tests (MSTest), each game's rule tests and headless playthroughs, the samples' build checks, suites shared between test projects (`tests/Shared`) |
 | `web/` | The browser build scripts, the pinned toolchain, a local server and the browser tests ([web/README.md](../../web/README.md)) |
 | `sdk/` | The documented SDK version and the checks that use the SDK from outside the repository |
@@ -40,7 +40,7 @@ hosts run the same composition in browsers and on phones. Which namespace and ty
 | Kernel and contracts | `MicroEngine.Kernel`, `MicroEngine.Platform`, `MicroEngine.Graphics` (the device contract), `MicroEngine.Input`, `MicroEngine.Audio`, `MicroEngine.Content` |
 | Composition | `MicroEngine.Hosting`, `MicroEngine` (the core: `Game`, launchers, the headless platform, scenes, the asset cache) |
 | Modules | `MicroEngine.Graphics2D`, `MicroEngine.Text`, `MicroEngine.UI`, `MicroEngine.Input.Touch`, `MicroEngine.Scene`, `MicroEngine.Physics`, `MicroEngine.Physics.Tiles`, `MicroEngine.Saves`, `MicroEngine.Achievements` |
-| Backends and optional modules | `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Graphics.SdlGpu` (the tier-1 device), `MicroEngine.Graphics3D` (the minimal 3D path), `MicroEngine.Text.Shaping` (HarfBuzz text shaping, an optional package), `MicroEngine.Physics.Box2D` (native Box2D, an optional package) |
+| Backends and optional modules | `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Graphics.SdlGpu` (the tier-1 device), `MicroEngine.Graphics3D` (the minimal 3D path), `MicroEngine.Text.Shaping` (HarfBuzz text shaping, an optional package), `MicroEngine.Physics.Box2D` (native Box2D, an optional package), `MicroEngine.Navigation` (pathfinding, an optional package) |
 | Hosts and tools | `MicroEngine.Desktop`, `MicroEngine.Cli` |
 
 There is no `MicroEngine.Migration.Entities` any more: the transitional copy of the old `Entity` API was removed once no

@@ -26,8 +26,9 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/graphics-2.md`](odd/tasks/graphics-2.md) (canvas prescale and whole-pixel presentation),
   [`odd/tasks/graphics-1.md`](odd/tasks/graphics-1.md) (render targets, blend states and materials for a game's own rendering techniques, ADR 0057),
   [`odd/tasks/aot-1.md`](odd/tasks/aot-1.md) (saves without reflection for trimmed builds, the NativeAOT and trimming audit, ADR 0054),
-  [`odd/tasks/anim-1.md`](odd/tasks/anim-1.md) (keyframe tracks and timelines, ADR 0055) and
-  [`odd/tasks/audio-1.md`](odd/tasks/audio-1.md) (voices, buses and live pitch on `Game.Audio`, output latency).
+  [`odd/tasks/anim-1.md`](odd/tasks/anim-1.md) (keyframe tracks and timelines, ADR 0055),
+  [`odd/tasks/audio-1.md`](odd/tasks/audio-1.md) (voices, buses and live pitch on `Game.Audio`, output latency) and
+  [`odd/tasks/nav-1.md`](odd/tasks/nav-1.md) (pathfinding, the optional `MicroEngine.Navigation` package, ADR 0056).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos

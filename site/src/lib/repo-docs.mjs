@@ -79,6 +79,7 @@ const guidePages = [
   { source: 'docs/manual/audio.md', slug: 'docs/manual/audio', group: 'manual', label: 'Audio' },
   { source: 'docs/manual/assets.md', slug: 'docs/manual/assets', group: 'manual', label: 'Assets' },
   { source: 'docs/manual/world.md', slug: 'docs/manual/world', group: 'manual', label: 'Tile maps and collision' },
+  { source: 'docs/guide/navigation.md', slug: 'docs/navigation', group: 'manual', label: 'Navigation' },
   { source: 'docs/manual/ui.md', slug: 'docs/manual/ui', group: 'manual', label: 'UI widgets' },
   { source: 'docs/manual/persistence.md', slug: 'docs/manual/persistence', group: 'manual', label: 'Saving data' },
   { source: 'docs/manual/achievements.md', slug: 'docs/manual/achievements', group: 'manual', label: 'Achievements' },
