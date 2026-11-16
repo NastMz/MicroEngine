@@ -294,7 +294,7 @@ public sealed class SpatialIndex2DTests
         var item = index.Add(1, new Vector2(1, 1));
         var results = new List<int>();
 
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => index.Add(2, new Vector2(float.NaN, 0)));
+        Assert.AreEqual("position", Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => index.Add(2, new Vector2(float.NaN, 0))).ParamName, "the error names the argument the caller passed");
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => index.Add(2, new RectF(0, 0, -1, 5)));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => index.Add(2, new RectF(0, float.PositiveInfinity, 1, 5)));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => index.Move(item, new Vector2(0, float.NegativeInfinity)));

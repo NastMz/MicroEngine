@@ -103,7 +103,11 @@ public sealed class SpatialIndex2D<T>
 
     /// <summary>Adds <paramref name="item"/> at the point <paramref name="position"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="position"/> is not finite.</exception>
-    public SpatialHandle Add(T item, Vector2 position) => Add(item, new RectF(position.X, position.Y, 0, 0));
+    public SpatialHandle Add(T item, Vector2 position)
+    {
+        if (!float.IsFinite(position.X) || !float.IsFinite(position.Y)) throw new ArgumentOutOfRangeException(nameof(position), position, "The position must be finite.");
+        return Add(item, new RectF(position.X, position.Y, 0, 0));
+    }
 
     /// <summary>Adds <paramref name="item"/> under the rectangle <paramref name="bounds"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="bounds"/> is not finite or has a negative size.</exception>
