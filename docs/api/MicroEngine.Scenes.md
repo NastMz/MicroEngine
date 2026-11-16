@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.
+The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks; and the spatial index a game creates to find what is near a place.
 
 Guide: [Scenes](../manual/scenes.md)  
 
@@ -40,6 +40,14 @@ tree, and one dense array per attachment type. Games program against [IWorld](Mi
 A screen of the game (title, level, battle, pause menu...). Scenes live on a stack:
 an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
 Each scene owns its coroutines and tweens, which stop when it leaves the stack.
+
+ [SpatialIndex2D<T\>](MicroEngine.Scenes.SpatialIndex2D\-1.md)
+
+Finds what is near a place: items of the game's own (entity ids, objects, numbers), each filed under a point or a
+rectangle of the 2D world, asked for by rectangle or by circle without walking every item. A game creates one for
+what it needs to find (enemies for the towers, neighbours for a swarm, what is in view in a world much larger than
+the screen), moves an item's place when the item moves and removes it when it goes. A world has none unless the
+game makes one, and the physics world is not involved: items need no body.
 
  [Timeline](MicroEngine.Scenes.Timeline.md)
 
@@ -97,6 +105,12 @@ The live direct children of an entity, in parenting order ([Children](MicroEngin
 An entity of an [IWorld](MicroEngine.Scenes.IWorld.md): a slot index and the generation of the entity that held the slot when the id
 was made. A destroyed entity's slot is reused with a new generation, so an old id never reaches the new entity.
 <code>default</code> is [None](MicroEngine.Scenes.EntityId.md#MicroEngine_Scenes_EntityId_None) (generation 0 is never issued).
+
+ [SpatialHandle](MicroEngine.Scenes.SpatialHandle.md)
+
+An item of a [SpatialIndex2D`1](MicroEngine.Scenes.md): a slot index and the generation of the item that held the slot when
+the handle was made. A removed item's slot is reused with a new generation, so an old handle never reaches the new
+item. <code>default</code> is [None](MicroEngine.Scenes.SpatialHandle.md#MicroEngine_Scenes_SpatialHandle_None) (generation 0 is never issued).
 
  [Transform](MicroEngine.Scenes.Transform.md)
 

@@ -54,6 +54,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Masks (render targets)", g => new MaskExample()),
         ("Water (a shader of your own)", g => new WaterExample()),
         ("Post-processing (shader passes)", g => new PostProcessExample()),
+        ("Nearby objects (spatial index)", g => new NearbyExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

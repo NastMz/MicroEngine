@@ -92,7 +92,7 @@ const namespaceSummaries = {
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Saves': 'Saves as an optional engine module: the module that registers a save store as a service of the engine.',
   'MicroEngine.Raylib': 'The raylib platform for desktops (in the published SDK, also the browser platform).',
-  'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
+  'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks; and the spatial index a game creates to find what is near a place.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android, iOS and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.Tiled': 'Maps made in the Tiled editor (optional package): the map loaded through the assets, its tile, object, image and group layers, objects and typed properties, tilesets and tiles, collision grids from a tile property, and the sprites that draw tile layers and tile objects.',
   'MicroEngine.UI': 'Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer.',
