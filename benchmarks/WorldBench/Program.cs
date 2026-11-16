@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using MicroEngine;
 using MicroEngine.Scenes;
 
 // The scene world's hot paths, ns per operation and bytes allocated per operation (best of 9 runs after warm-up, one
@@ -160,7 +161,114 @@ internal static class Bench
         {
             for (int r = 0; r < Repeat; r++) world.BeginStep(r, 1 / 60f);
         });
+        Large();
+        Spatial();
         Console.WriteLine();
         Console.WriteLine($"(checksum {_sink})");
+    }
+
+    // WORLD-1: what a step costs a large world that does little (docs/evaluations/world-1.md).
+    private static void Large()
+    {
+        const int big = 200_000;
+        var world = new SceneWorld();
+        var ids = new EntityId[big];
+        for (int i = 0; i < big; i++)
+        {
+            ids[i] = world.Create();
+            world.Attach(ids[i], new Payload { Value = i });
+            world.Attach(ids[i], new Other());
+        }
+        var spare = new Payload();
+        var other = new Other();
+        Row("`BeginStep`, 200,000 entities, per entity", big * 20, () =>
+        {
+            for (int r = 0; r < 20; r++) world.BeginStep(r, 1 / 60f);
+        });
+        int next = 0;
+        Row("A step that destroys and creates one entity among 200,000 (`Destroy`, `EndStep`, `Create`, two `Attach`), per step", 200, () =>
+        {
+            for (int r = 0; r < 200; r++)
+            {
+                next = (next + 7919) % big;
+                world.Destroy(ids[next]);
+                world.EndStep();
+                ids[next] = world.Create();
+                world.Attach(ids[next], spare);
+                world.Attach(ids[next], other);
+            }
+        });
+        Row("`All<class>` walk of 200,000 after those steps, per element", big * 5, () =>
+        {
+            long s = 0;
+            for (int r = 0; r < 5; r++) foreach (var p in world.All<Payload>()) s += p.Value;
+            _sink += s;
+        });
+    }
+
+    // WORLD-1: SpatialIndex2D, 20,000 points at one per 24x24 units (a query of radius 48 finds about thirteen).
+    private static void Spatial()
+    {
+        const int points = 20_000;
+        float side = MathF.Sqrt(points) * 24;
+        var random = new Random(1);
+        var index = new SpatialIndex2D<int>(48);
+        var at = new Vector2[points];
+        var handles = new SpatialHandle[points];
+        Row("`SpatialIndex2D.Add` (a point), per item", points, () =>
+        {
+            index.Clear();
+            random = new Random(1);
+            for (int i = 0; i < points; i++)
+            {
+                at[i] = new Vector2(random.NextSingle() * side, random.NextSingle() * side);
+                handles[i] = index.Add(i, at[i]);
+            }
+        });
+        Row("`SpatialIndex2D.Move` within the item's cell", points * 10, () =>
+        {
+            for (int r = 0; r < 10; r++)
+                for (int i = 0; i < points; i++) index.Move(handles[i], at[i]);
+        });
+        Row("`SpatialIndex2D.Move` to another cell and back", points * 2, () =>
+        {
+            for (int i = 0; i < points; i++) index.Move(handles[i], at[i] + new Vector2(96, 0));
+            for (int i = 0; i < points; i++) index.Move(handles[i], at[i]);
+        });
+        var found = new int[256];
+        Row("`SpatialIndex2D.QueryCircle`, radius 48 (about 13 found), per query", points, () =>
+        {
+            long s = 0;
+            for (int i = 0; i < points; i++) s += index.QueryCircle(at[i], 48, found);
+            _sink += s;
+        });
+        Row("`SpatialIndex2D.Query`, 96x96 (about 16 found), per query", points, () =>
+        {
+            long s = 0;
+            for (int i = 0; i < points; i++) s += index.Query(new RectF(at[i].X - 48, at[i].Y - 48, 96, 96), found);
+            _sink += s;
+        });
+        var view = new List<int>(4096);
+        Row("`SpatialIndex2D.Query`, 1431x805 into a list (about 2,000 found), per query", 200, () =>
+        {
+            long s = 0;
+            for (int i = 0; i < 200; i++)
+            {
+                view.Clear();
+                s += index.Query(new RectF(at[i].X * 0.5f, at[i].Y * 0.5f, 1431, 805), view);
+            }
+            _sink += s;
+        });
+        Row("Walk of 20,000 positions for one circle (the walk an index replaces), per query", 200, () =>
+        {
+            long s = 0;
+            for (int q = 0; q < 200; q++)
+            {
+                var c = at[q];
+                for (int i = 0; i < points; i++)
+                    if (Vector2.DistanceSquared(at[i], c) <= 48 * 48) s++;
+            }
+            _sink += s;
+        });
     }
 }

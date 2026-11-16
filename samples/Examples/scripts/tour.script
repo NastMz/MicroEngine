@@ -182,4 +182,9 @@
 3530 press confirm
 3600 capture 31-post.png
 3606 press pause
-3620 quit
+3620 press down
+3630 press confirm
+3660 hold right 40
+3720 capture 32-nearby.png
+3726 press pause
+3740 quit

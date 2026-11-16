@@ -15,8 +15,15 @@ public static class Scenarios
     private static readonly (string Name, int Load, string What, Func<int, string, StressScene> Create)[] All =
     [
         ("entity-churn", 10_000, "live entities with two attachments; a tenth destroyed and created again every step", (n, _) => new EntityChurnScene(n)),
+        ("entity-trickle", 100_000, "live entities with two attachments; eight destroyed and created again every step", (n, _) => new EntityChurnScene(n, replaced: 8)),
         ("world-iterate", 20_000, "entities walked through All<T>, moved through Local and drawn through DrawPosition2D", (n, _) => new WorldIterateScene(n)),
         ("spatial-query", 8_000, "static boxes in the tile physics world; a quarter ask Overlap and a quarter RayCast every step", (n, _) => new SpatialQueryScene(n)),
+        ("neighbours-brute", 1_000, "wandering agents at a constant density, each counting the others within 48 pixels by walking All<T>", (n, _) => new NeighboursScene(n, Lookup.Brute)),
+        ("neighbours-physics", 4_000, "the same agents, each with a body in the tile physics world it moves with SetPosition and asks with Overlap", (n, _) => new NeighboursScene(n, Lookup.Physics)),
+        ("neighbours-index", 20_000, "the same agents, each with a place in a SpatialIndex2D it moves and asks with QueryCircle", (n, _) => new NeighboursScene(n, Lookup.Index)),
+        ("large-world", 200_000, "entities in a world larger than the view (2,000 of them in view), all moved and all drawn", (n, _) => new LargeWorldScene(n, Scope.Everything)),
+        ("large-world-culled", 200_000, "the same world, all moved, drawn only where Camera2D.IsVisible says so", (n, _) => new LargeWorldScene(n, Scope.Culled)),
+        ("large-world-region", 200_000, "the same world in a SpatialIndex2D: only what is within 96 pixels of the view is moved, only what is in view is drawn", (n, _) => new LargeWorldScene(n, Scope.Region)),
         ("physics", 2_000, "kinematic boxes moved through the tile level (PhysicsBench's world), one Move each and one Step", (n, backend) => new PhysicsScene(n, backend)),
         ("sprites", 20_000, "moving sprites of one texture: one batch", (n, _) => new SpritesScene(n, breakBatches: false)),
         ("batch-breaks", 20_000, "the same sprites over 16 textures, a texture switch every draw and a blend switch every other", (n, _) => new SpritesScene(n, breakBatches: true)),
@@ -152,6 +159,7 @@ internal sealed class Mover
 {
     public EntityId Id;
     public Vector2 Velocity;
+    public SpatialHandle Place;
     public int Texture;
 }
 
@@ -160,8 +168,11 @@ internal sealed class Tag
     public int Value;
 }
 
-/// <summary>Entity creation and destruction: a ring of live entities, the oldest tenth replaced every step.</summary>
-internal sealed class EntityChurnScene(int load) : StressScene(load, "destroy", "create")
+/// <summary>
+/// Entity creation and destruction: a ring of live entities, the oldest tenth (or the oldest
+/// <paramref name="replaced"/>) replaced every step.
+/// </summary>
+internal sealed class EntityChurnScene(int load, int replaced = 0) : StressScene(load, "destroy", "create")
 {
     private readonly EntityId[] _ring = new EntityId[load];
     private readonly Stack<Mover> _movers = new(load);
@@ -191,7 +202,7 @@ internal sealed class EntityChurnScene(int load) : StressScene(load, "destroy", 
     protected override void Step(float dt)
     {
         var world = Objects;
-        int batch = Math.Max(1, Load / 10);
+        int batch = Math.Min(Load, replaced > 0 ? replaced : Math.Max(1, Load / 10));
         long t = Now;
         for (int j = 0; j < batch; j++)
         {

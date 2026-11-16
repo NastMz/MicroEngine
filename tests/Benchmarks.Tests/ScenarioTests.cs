@@ -67,8 +67,48 @@ public class ScenarioTests
     public void A_steady_scenario_allocates_nothing_per_frame()
     {
         var long_ = Short with { Frames = 60, Warmup = 30 };
-        foreach (string scenario in new[] { "entity-churn", "world-iterate", "spatial-query", "sprites", "batch-breaks", "shapes", "text", "particles" })
+        foreach (string scenario in new[] { "entity-churn", "entity-trickle", "world-iterate", "spatial-query", "neighbours-brute", "neighbours-index",
+            "large-world", "large-world-culled", "large-world-region", "sprites", "batch-breaks", "shapes", "text", "particles" })
             Assert.IsTrue(Harness.Run(scenario, 200, RunMode.Headless, long_).AllocatedPerFrame < 64, $"{scenario}: what a frame allocates is the engine's, and it should be nothing");
+    }
+
+    [TestMethod]
+    public void Every_way_of_finding_neighbours_ends_in_the_same_state()
+    {
+        // WORLD-1: the walk over every agent, the physics world's Overlap and the spatial index count the same pairs.
+        var brute = Harness.Run("neighbours-brute", 600, RunMode.Headless, Short);
+        var physics = Harness.Run("neighbours-physics", 600, RunMode.Headless, Short);
+        var index = Harness.Run("neighbours-index", 600, RunMode.Headless, Short);
+
+        Assert.IsTrue(brute.Resources["pairs"] > 600 * 16, "about twelve neighbours each, every step");
+        Assert.AreEqual(brute.Resources["pairs"], physics.Resources["pairs"]);
+        Assert.AreEqual(brute.Resources["pairs"], index.Resources["pairs"]);
+        Assert.AreEqual(brute.Checksum, physics.Checksum, "positions and each agent's count");
+        Assert.AreEqual(brute.Checksum, index.Checksum);
+    }
+
+    [TestMethod]
+    public void A_trickle_replaces_eight_entities_a_step()
+    {
+        var trickle = Harness.Run("entity-trickle", 200, RunMode.Headless, Short);
+        Assert.AreEqual(200, trickle.Resources["entities"]);
+        Assert.AreEqual(200 + 16 * 8, trickle.Resources["entitiesCreated"]);
+    }
+
+    [TestMethod]
+    public void A_large_world_by_region_moves_and_draws_only_what_is_near_the_view()
+    {
+        var all = Harness.Run("large-world", 20_000, RunMode.Headless, Short);
+        var culled = Harness.Run("large-world-culled", 20_000, RunMode.Headless, Short);
+        var region = Harness.Run("large-world-region", 20_000, RunMode.Headless, Short);
+
+        Assert.AreEqual(20_000, all.DrawsPerFrame);
+        Assert.AreEqual(20_000, all.Resources["movedLastStep"]);
+        Assert.AreEqual(all.Checksum, culled.Checksum, "culling changes what is drawn, not the simulation");
+        Assert.IsTrue(culled.DrawsPerFrame is > 1_000 and < 4_000, $"about 2,000 in view: {culled.DrawsPerFrame}");
+        Assert.AreEqual(20_000, culled.Resources["movedLastStep"]);
+        Assert.IsTrue(region.DrawsPerFrame is > 1_000 and < 4_000, $"about 2,000 in view: {region.DrawsPerFrame}");
+        Assert.IsTrue(region.Resources["movedLastStep"] > region.DrawsPerFrame && region.Resources["movedLastStep"] < 10_000, "the view and its margin, not the world");
     }
 
     [TestMethod]

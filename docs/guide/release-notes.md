@@ -64,6 +64,14 @@ optional, for agents that find their way through a level.
   [Render targets and shaders](render-targets-and-shaders.md) shows how a game builds its own light that stops at
   walls, masks, a water shader and a post-processing chain, each an example of the Examples sample; the first two use
   only render targets and the blend states every device has, so they run in browsers too.
+- `SpatialIndex2D<T>` finds what is near a place ([Large worlds and nearby objects](large-worlds.md)). A game files
+  its own items (entity ids, attachments, indices into its arrays) under a point or a rectangle and asks by rectangle
+  (`Query`) or by circle (`QueryCircle`), without walking the world and without giving every item a physics body.
+  Items move (`Move`) and leave (`Remove`) through a `SpatialHandle`; a query allocates nothing, and results
+  come in an order that depends only on the calls made. A swarm of 20,000 whose members each count their neighbours
+  every step fits in a 60 Hz frame on a desktop, where a walk over all of them for each one stops under 2,000, and a
+  query with `Camera2D.VisibleBounds` gives what a world much larger than the view should update and draw. The
+  "Nearby objects" example of the Examples sample moves, of 3,000 fireflies, the ones near the view.
 
 **Changed**
 
@@ -81,9 +89,18 @@ optional, for agents that find their way through a level.
   or particles no longer runs a full garbage collection every few frames. For code that drives a graphics device
   directly: once `IGraphicsDevice.Submit` returns, the submitted `CommandList` holds nothing (`Commands` is empty and
   `Payload` throws `InvalidOperationException`); a backend reads a list while it executes it, as before.
+- The tile physics world looks at the shapes that touch the area of a move, a ray, an overlap or a sensor, instead of
+  every shape of the 64-unit cells the area reaches. Crowds cost less: a room with 1,000 to 4,000 kinematic boxes
+  moving through each other takes about 60% less time per step, and overlaps and rays among thousands of bodies about
+  half. Every result is the same as before, and a body that enters a new cell no longer allocates.
+- Destroying entities costs what is destroyed, not a pass over the scene's world: a step in which a few entities are
+  destroyed among 100,000 took the world about 0.9 ms and takes about 0.15 ms. Iteration order and the state hash
+  are unchanged.
 
 **Fixed**
 
+- A scene's world of about 130,000 to 260,000 entities could take 5 to 7 ms to start every step, depending on where
+  the runtime had placed two of the world's arrays in memory (seen on an AMD Zen 4 processor). It takes 0.2 to 0.4 ms.
 - `AchievementTracker` with a store threw `InvalidOperationException` in a game published trimmed or with NativeAOT,
   when it loaded and when it saved. It now reads and writes its slot without reflection; the file is unchanged and
   existing achievement files load as before.

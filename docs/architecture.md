@@ -172,14 +172,17 @@ The scene world is another assembly of the
 namespace, beside the scene stack: `IWorld` and its implementation `SceneWorld` (entities with generational `EntityId`s,
 a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked in attach order, interpolation for
 drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
-the per-step state hash.
+the per-step state hash. Beside the world, and used only by a game that creates one, is `SpatialIndex2D<T>`: the
+game's own items under a point or a rectangle, found by rectangle or by circle
+([Large worlds and nearby objects](guide/large-worlds.md)).
 
 Physics is two more assemblies of the
 `MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies
 owned by entities, box shapes with collision layers, collide-and-slide moves that return their contacts, exact ray and
 overlap queries, sensors with buffered events, declared `PhysicsCapabilities` with a typed error for anything a backend
 does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase and writes body poses to transforms.
-`MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
+`MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D` (its broad phase files box shapes in a
+`SpatialIndex2D` of the scene assembly), and now holds the tile types (`TileLayer`,
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
 `MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; an optional package of its own) is the
@@ -267,7 +270,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Input` | `MicroEngine.Input` | Device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem`, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, with saved bindings |
 | `MicroEngine.Content` | `MicroEngine.Content` | `AssetStore` (`Game.Assets`), `Asset<T>`, `AssetScope`, `AssetLoaderRegistry`, `IAssetLoader<T>`, `IAssetImporter`, `ZipContentSource`, `ListedContentSource` |
 | `MicroEngine.Hosting` | `MicroEngine.Hosting` | `HostBuilder` (the composition a game's `Configure` entry point fills), `LaunchRequest`, `ProfileSelection`, `HostEnvironment` |
-| `MicroEngine.Scene` | (`MicroEngine.Scenes`) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
+| `MicroEngine.Scene` | (`MicroEngine.Scenes`) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock`, `SpatialIndex2D<T>`, `SpatialHandle` |
 | `MicroEngine.Physics` | `MicroEngine.Physics` | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` | `MicroEngine.Physics.Tiles`, (`MicroEngine.World`) | `TilePhysicsWorld2D` (tile grids as static geometry, the swept mover, one-way platforms, moving solids); `TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion` (whose `Move` returns a `TileMoveResult`; it was `MoveResult`, the physics contract's name) |
 | `MicroEngine.Graphics2D` | (`MicroEngine.Graphics`) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, `CanvasPresenter` (the canvas into the window, prescale included), `Material2D` (shaders of the game's own on the batcher, with parameters and textures), and the 2D drawing model: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
