@@ -66,11 +66,14 @@ public sealed class SpatialIndex2D<T>
     }
 
     // One per cell an item is filed in: a link of the cell's chain (through its bucket) and of the item's own chain.
+    // It carries the item's edges, so a query reads the nodes of a cell and nothing else until an item matches.
     private struct Node
     {
+        public float Left, Top, Right, Bottom;
         public int Item, CellX, CellY;
         public int Next, Previous;   // the chain of the bucket; a free node keeps the next free one in Next
         public int Sibling;          // the item's next cell
+        public bool Several;         // the item is filed in more than one cell
     }
 
     private readonly float _cell, _inverse;
@@ -139,6 +142,9 @@ public sealed class SpatialIndex2D<T>
         {
             // The usual move: within the cell the item is in.
             e.X = position.X; e.Y = position.Y; e.Width = 0; e.Height = 0;
+            ref var node = ref _nodes[e.Link];
+            node.Left = node.Right = position.X;
+            node.Top = node.Bottom = position.Y;
             return;
         }
         Unfile(slot);
@@ -158,6 +164,12 @@ public sealed class SpatialIndex2D<T>
         if (large ? e.State == Large : e.State == Filed && e.X0 == x0 && e.Y0 == y0 && e.X1 == x1 && e.Y1 == y1)
         {
             e.X = bounds.X; e.Y = bounds.Y; e.Width = bounds.Width; e.Height = bounds.Height;
+            if (large) return;
+            for (int n = e.Link; n >= 0; n = _nodes[n].Sibling)
+            {
+                ref var node = ref _nodes[n];
+                node.Left = bounds.X; node.Top = bounds.Y; node.Right = bounds.X + bounds.Width; node.Bottom = bounds.Y + bounds.Height;
+            }
             return;
         }
         Unfile(slot);
@@ -293,10 +305,12 @@ public sealed class SpatialIndex2D<T>
                 n = _nodesUsed++;
             }
             ref var node = ref _nodes[n];
+            node.Left = bounds.X; node.Top = bounds.Y; node.Right = bounds.X + bounds.Width; node.Bottom = bounds.Y + bounds.Height;
             node.Item = slot;
             node.CellX = x;
             node.CellY = y;
             node.Sibling = -1;
+            node.Several = cells > 1;
             Chain(n, ref node);
             if (last < 0) _entries[slot].Link = n; else _nodes[last].Sibling = n;
             last = n;
@@ -412,7 +426,8 @@ public sealed class SpatialIndex2D<T>
         int count = 0;
         foreach (int slot in _large)
         {
-            if (!Matches(in entries[slot], left, top, right, bottom, circle, center, radiusSquared)) continue;
+            ref var e = ref entries[slot];
+            if (!Matches(e.X, e.Y, e.X + e.Width, e.Y + e.Height, left, top, right, bottom, circle, center, radiusSquared)) continue;
             if (list is not null) list.Add(items[slot]);
             else if (count < span.Length) span[count] = items[slot];
             count++;
@@ -424,7 +439,8 @@ public sealed class SpatialIndex2D<T>
             // More cells than items: walk the items instead of the cells.
             for (int slot = 0; slot < _used; slot++)
             {
-                if (entries[slot].State != Filed || !Matches(in entries[slot], left, top, right, bottom, circle, center, radiusSquared)) continue;
+                ref var e = ref entries[slot];
+                if (e.State != Filed || !Matches(e.X, e.Y, e.X + e.Width, e.Y + e.Height, left, top, right, bottom, circle, center, radiusSquared)) continue;
                 if (list is not null) list.Add(items[slot]);
                 else if (count < span.Length) span[count] = items[slot];
                 count++;
@@ -440,10 +456,9 @@ public sealed class SpatialIndex2D<T>
             {
                 ref var node = ref nodes[n];
                 if (node.CellX != x || node.CellY != y) continue;
-                ref var e = ref entries[node.Item];
+                if (!Matches(node.Left, node.Top, node.Right, node.Bottom, left, top, right, bottom, circle, center, radiusSquared)) continue;
                 // An item over several cells is reported from the first of them the area reaches.
-                if ((e.X0 != e.X1 || e.Y0 != e.Y1) && (x != Math.Max(e.X0, x0) || y != Math.Max(e.Y0, y0))) continue;
-                if (!Matches(in e, left, top, right, bottom, circle, center, radiusSquared)) continue;
+                if (node.Several && (x != Math.Max(entries[node.Item].X0, x0) || y != Math.Max(entries[node.Item].Y0, y0))) continue;
                 if (list is not null) list.Add(items[node.Item]);
                 else if (count < span.Length) span[count] = items[node.Item];
                 count++;
@@ -452,11 +467,10 @@ public sealed class SpatialIndex2D<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Matches(in Entry e, float left, float top, float right, float bottom, bool circle, Vector2 center, float radiusSquared)
+    private static bool Matches(float l, float t, float r, float b, float left, float top, float right, float bottom, bool circle, Vector2 center, float radiusSquared)
     {
-        float r = e.X + e.Width, b = e.Y + e.Height;
-        if (!circle) return e.X <= right && r >= left && e.Y <= bottom && b >= top;
-        float dx = MathF.Max(MathF.Max(e.X - center.X, center.X - r), 0), dy = MathF.Max(MathF.Max(e.Y - center.Y, center.Y - b), 0);
+        if (!circle) return l <= right && r >= left && t <= bottom && b >= top;
+        float dx = MathF.Max(MathF.Max(l - center.X, center.X - r), 0), dy = MathF.Max(MathF.Max(t - center.Y, center.Y - b), 0);
         return dx * dx + dy * dy <= radiusSquared;
     }
 }
