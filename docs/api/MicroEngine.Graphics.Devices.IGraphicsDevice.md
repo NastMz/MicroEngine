@@ -213,7 +213,8 @@ ReadbackRequest ReadPixels(RenderTarget target, RectI region)
 
 ### <a id="MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_"></a> Submit\(CommandList\)
 
-Executes a finished list (no open pass) after every list submitted before it. A list is submitted once.
+Executes a finished list (no open pass) after every list submitted before it. A list is submitted once, and holds
+nothing once this returns: the device records its next list into the same memory.
 
 ```csharp
 void Submit(CommandList commands)

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The engine's stress harness (docs/evaluations/perf-3.md): extreme, reproducible workloads run through the real
+       game loop on the headless platform (CPU only), a hidden SDL window (CPU plus the real renderer) or a visible
+       one (end to end), with frame percentiles, allocations, garbage collections and pauses, memory and a baseline
+       to compare a later run against. Run it in Release: dotnet run -c Release (project benchmarks/StressBench). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>StressBench</RootNamespace>
+    <Version>1.0.0</Version>
+    <ApplicationTitle>MicroEngine StressBench</ApplicationTitle>
+    <ApplicationId>dev.microengine.stressbench</ApplicationId>
+    <MicroEngineSplash>false</MicroEngineSplash>
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Description>Extreme engine workloads with frame, allocation, garbage collection and memory measurements.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+    <!-- The optional Box2D backend, for the physics scenario's box2d backend (needs the native library built). -->
+    <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The physics level PhysicsBench times, shared so both measure the same world. -->
+    <Compile Include="../Shared/PhysicsLevel.cs" Link="Shared/PhysicsLevel.cs" />
+    <InternalsVisibleTo Include="Benchmarks.Tests" />
+  </ItemGroup>
+</Project>

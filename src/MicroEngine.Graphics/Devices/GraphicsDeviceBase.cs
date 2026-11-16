@@ -16,6 +16,7 @@ public abstract class GraphicsDeviceBase : IGraphicsDevice
     private readonly Queue<(long Serial, GraphicsResource Resource)> _retired = new();
     private RenderTarget? _surfaceTarget;
     private GraphicsCounters _counters;
+    private CommandList.Storage? _spareCommands;
 
     /// <inheritdoc />
     public abstract GraphicsCapabilities Capabilities { get; }
@@ -154,7 +155,11 @@ public abstract class GraphicsDeviceBase : IGraphicsDevice
     public CommandList BeginCommands()
     {
         Alive();
-        return new CommandList(this);
+        // The storage of the last list this device executed: a frame's commands and vertices are recorded into memory
+        // that already has their size, instead of growing a new list from nothing every frame.
+        var storage = _spareCommands;
+        _spareCommands = null;
+        return new CommandList(this, storage);
     }
 
     /// <inheritdoc />
@@ -166,6 +171,8 @@ public abstract class GraphicsDeviceBase : IGraphicsDevice
         commands.Seal();
         Count(commands);
         SubmitCore(commands);
+        // Backends execute a list inside SubmitCore; what it recorded into goes to the next list.
+        _spareCommands = commands.Release() ?? _spareCommands;
         _counters = _counters with { Submissions = _counters.Submissions + 1 };
         CollectRetired();
     }

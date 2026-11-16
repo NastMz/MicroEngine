@@ -6,6 +6,10 @@
     <MicroEngineContentItems>false</MicroEngineContentItems>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The level and step, shared with StressBench so both measure the same world. -->
+    <Compile Include="../Shared/PhysicsLevel.cs" Link="Shared/PhysicsLevel.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine/MicroEngine.csproj" />
     <!-- The optional Box2D backend, for the box2d backend option (repository only: needs the native library built). -->
     <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />

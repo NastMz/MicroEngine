@@ -81,7 +81,10 @@ public interface IGraphicsDevice : IDisposable
     /// <summary>Starts an empty command list for this device.</summary>
     CommandList BeginCommands();
 
-    /// <summary>Executes a finished list (no open pass) after every list submitted before it. A list is submitted once.</summary>
+    /// <summary>
+    /// Executes a finished list (no open pass) after every list submitted before it. A list is submitted once, and holds
+    /// nothing once this returns: the device records its next list into the same memory.
+    /// </summary>
     void Submit(CommandList commands);
 
     /// <summary>
