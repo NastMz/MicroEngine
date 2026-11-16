@@ -56,6 +56,14 @@ optional, for agents that find their way through a level.
   pitch, pause, resume) take effect at the same instant, which moves the first of them slightly later than before
   ([migration notes](../migrations.md#several-changes-to-one-sound-in-the-same-update-apply-at-the-same-instant)). The Examples sample has a looping sound that follows a moving source.
   ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
+- Materials on the 2D batcher: a `Material2D` is a vertex and a fragment shader of the game's own (compiled ahead of
+  time by `microengine shaders`) with their parameters (`SetUniforms`) and extra textures (`SetTexture`). Set on
+  `RenderState.Material` or `BatchSettings.Material`, it draws a batch's sprites and geometry through those shaders on
+  the `sdl-gpu` device, with the batch's blend state, sampler, scissor, transforms and view; each draw keeps the
+  parameters set when it was recorded. Without a material a batch is drawn as before. The new guide
+  [Render targets and shaders](render-targets-and-shaders.md) shows how a game builds its own light that stops at
+  walls, masks, a water shader and a post-processing chain, each an example of the Examples sample; the first two use
+  only render targets and the blend states every device has, so they run in browsers too.
 
 **Changed**
 

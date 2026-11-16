@@ -102,6 +102,15 @@ is multiplied over the screen, toward [Shade](MicroEngine.Graphics.LightMap.md#M
 Rows of equal cells merge into single rectangles, so a full screen costs a few hundred quads.
 With [Darkness](MicroEngine.Graphics.LightMap.md#MicroEngine_Graphics_LightMap_Darkness) 1 and lights of brightness 0 it becomes a flat colour grade plus glows.
 
+ [Material2D](MicroEngine.Graphics.Material2D.md)
+
+A pair of shaders of the game's own, with their parameters, that the 2D batcher draws with instead of the built-in
+pipeline: set it on [Material](MicroEngine.Graphics.RenderState.md#MicroEngine_Graphics_RenderState_Material) (or [Material](MicroEngine.Graphics.BatchSettings.md#MicroEngine_Graphics_BatchSettings_Material)) and every draw
+recorded while it is set (sprites, geometry, in any transform, with the state's blend, sampler and scissor) goes
+through its shaders. It needs a device with custom shaders ([Shaders](MicroEngine.Graphics.Devices.GraphicsFeatures.md)); the shaders
+are created from files compiled ahead of time ([CompiledShader](MicroEngine.Graphics.Devices.CompiledShader.md)), which refuse any other device with
+[GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md).
+
  [ParallaxLayer](MicroEngine.Graphics.ParallaxLayer.md)
 
 A background image that scrolls slower (or faster) than the camera and repeats horizontally.
@@ -211,7 +220,7 @@ own ([Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_
 
  [RenderState](MicroEngine.Graphics.RenderState.md)
 
-The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler and scissor.
+The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler, scissor and material.
 
  [Renderer2DStatistics](MicroEngine.Graphics.Renderer2DStatistics.md)
 
@@ -236,8 +245,10 @@ Creates device resources. Separated so headless tests can provide fakes.
  [IRenderer2D](MicroEngine.Graphics.IRenderer2D.md)
 
 The 2D renderer over the graphics device, implemented once in core: it writes vertices and indices into device
-buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline only, so it runs unchanged
-on every tier. Colours (tints, vertex colours) are premultiplied, and the default blend state is premultiplied alpha.
+buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline, so it runs unchanged on
+every tier, or, for the draws recorded with a [Material](MicroEngine.Graphics.RenderState.md#MicroEngine_Graphics_RenderState_Material), with that material's shaders on a
+device that has custom shaders. Colours (tints, vertex colours) are premultiplied, and the default blend state is
+premultiplied alpha.
 
  [IRenderer](MicroEngine.Graphics.IRenderer.md)
 

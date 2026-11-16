@@ -27,16 +27,26 @@ public enum SortMode
 /// <param name="Clear">A premultiplied colour the target is cleared to first; null keeps its contents.</param>
 /// <param name="Viewport">The viewport in target pixels; null is the whole target.</param>
 public readonly record struct BatchSettings(RenderTarget Target, Matrix3x2? View = null, BlendState? Blend = null,
-    SamplerDescription? Sampler = null, SortMode Sort = SortMode.Deferred, RectI? Scissor = null, ColorF? Clear = null, RectI? Viewport = null);
+    SamplerDescription? Sampler = null, SortMode Sort = SortMode.Deferred, RectI? Scissor = null, ColorF? Clear = null, RectI? Viewport = null)
+{
+    /// <summary>The material the batch starts with (<see cref="RenderState.Material"/>); null draws with the built-in pipeline.</summary>
+    public Material2D? Material { get; init; }
+}
 
-/// <summary>The per-draw state of the 2D batcher (<see cref="IRenderer2D.State"/>): blend, sampler and scissor.</summary>
+/// <summary>The per-draw state of the 2D batcher (<see cref="IRenderer2D.State"/>): blend, sampler, scissor and material.</summary>
 /// <param name="Blend">Blend state; the built-in presets work on every device.</param>
 /// <param name="Sampler">Sampler of the draws' textures.</param>
 /// <param name="Scissor">Scissor in target pixels; null draws on the whole viewport.</param>
 public readonly record struct RenderState(BlendState Blend, SamplerDescription Sampler, RectI? Scissor)
 {
-    /// <summary>Premultiplied alpha blending, nearest clamped sampling, no scissor.</summary>
+    /// <summary>Premultiplied alpha blending, nearest clamped sampling, no scissor, no material.</summary>
     public static RenderState Default { get; } = new(BlendState.AlphaPremultiplied, SamplerDescription.PointClamp, null);
+
+    /// <summary>
+    /// The shaders draws are drawn with, on a device with custom shaders; null (the default) is the built-in pipeline,
+    /// which every device has. A draw keeps the parameters the material had when the draw was recorded.
+    /// </summary>
+    public Material2D? Material { get; init; }
 }
 
 /// <summary>Deterministic counts of the last batch (<see cref="IRenderer2D.Statistics"/>), the same on every device and run.</summary>
@@ -47,13 +57,15 @@ public readonly record struct Renderer2DStatistics(int Sprites = 0, int DrawCall
 
 /// <summary>
 /// The 2D renderer over the graphics device, implemented once in core: it writes vertices and indices into device
-/// buffers and draws them with the built-in <see cref="BuiltInPipeline.Textured"/> pipeline only, so it runs unchanged
-/// on every tier. Colours (tints, vertex colours) are premultiplied, and the default blend state is premultiplied alpha.
+/// buffers and draws them with the built-in <see cref="BuiltInPipeline.Textured"/> pipeline, so it runs unchanged on
+/// every tier, or, for the draws recorded with a <see cref="RenderState.Material"/>, with that material's shaders on a
+/// device that has custom shaders. Colours (tints, vertex colours) are premultiplied, and the default blend state is
+/// premultiplied alpha.
 /// </summary>
 /// <remarks>
 /// Rules: a draw's vertices are transformed on the CPU by its world matrix, then the pushed transforms, then the batch's
-/// view, into target pixels; consecutive draws (after sorting) with the same texture and <see cref="RenderState"/> share
-/// one indexed draw; a <see cref="Clear"/> or <see cref="Flush"/> submits what was recorded so far; nothing reaches the
+/// view, into target pixels; consecutive draws (after sorting) with the same texture, <see cref="RenderState"/> and
+/// material parameters share one indexed draw; a <see cref="Clear"/> or <see cref="Flush"/> submits what was recorded so far; nothing reaches the
 /// device before <see cref="End"/>, <see cref="Clear"/> or <see cref="Flush"/>.
 /// </remarks>
 public interface IRenderer2D
@@ -165,7 +177,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         _transform = Matrix3x2.Identity;
         _transforms.Clear();
         _savedStates.Clear();
-        _state = new RenderState(settings.Blend ?? BlendState.AlphaPremultiplied, settings.Sampler ?? SamplerDescription.PointClamp, settings.Scissor);
+        _state = new RenderState(settings.Blend ?? BlendState.AlphaPremultiplied, settings.Sampler ?? SamplerDescription.PointClamp, settings.Scissor) { Material = settings.Material };
         _pendingClear = settings.Clear;
         _statistics = default;
     }
@@ -175,6 +187,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     {
         Begun();
         ArgumentNullException.ThrowIfNull(texture);
+        var parameters = _state.Material?.Parameters(_device);
         var m = world * _transform * View;
         float u0 = source.X / texture.Width, v0 = source.Y / texture.Height;
         float u1 = (source.X + source.Width) / texture.Width, v1 = (source.Y + source.Height) / texture.Height;
@@ -187,7 +200,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         _vertices.Add(new Vertex2D(Vector2.Transform(new Vector2(0, source.Height), m), new Vector2(u0, v1), tint));
         int indexStart = _indices.Count;
         _indices.AddRange([0, 1, 2, 0, 2, 3]);
-        Record(texture, depth, start, 4, indexStart, 6);
+        Record(texture, parameters, depth, start, 4, indexStart, 6);
     }
 
     /// <inheritdoc />
@@ -198,12 +211,13 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         foreach (var i in indices)
             if (i >= vertices.Length) throw new ArgumentOutOfRangeException(nameof(indices), $"index {i} selects none of the {vertices.Length} vertices");
         if (indices.Length % 3 != 0) throw new ArgumentException("indices come in whole triangles (a multiple of 3)", nameof(indices));
+        var parameters = _state.Material?.Parameters(_device);
         var m = _transform * View;
         int start = _vertices.Count;
         foreach (var v in vertices) _vertices.Add(v with { Position = Vector2.Transform(v.Position, m) });
         int indexStart = _indices.Count;
         foreach (var i in indices) _indices.Add(i);
-        Record(texture ?? _white, depth, start, vertices.Length, indexStart, indices.Length);
+        Record(texture ?? _white, parameters, depth, start, vertices.Length, indexStart, indices.Length);
     }
 
     /// <inheritdoc />
@@ -283,7 +297,8 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
 
     private Matrix3x2 View => _settings.View ?? Matrix3x2.Identity;
 
-    private void Record(Devices.Texture texture, float depth, int vertexStart, int vertexCount, int indexStart, int indexCount)
+    /// <summary>Records a draw with the material parameters of this moment (null: the built-in pipeline).</summary>
+    private void Record(Devices.Texture texture, MaterialParameters? parameters, float depth, int vertexStart, int vertexCount, int indexStart, int indexCount)
     {
         int state = _states.IndexOf(_state);
         if (state < 0)
@@ -291,7 +306,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
             _states.Add(_state);
             state = _states.Count - 1;
         }
-        _items.Add(new Item(texture, state, depth, _items.Count, vertexStart, vertexCount, indexStart, indexCount));
+        _items.Add(new Item(texture, state, parameters, depth, _items.Count, vertexStart, vertexCount, indexStart, indexCount));
         _statistics = _statistics with { Sprites = _statistics.Sprites + 1 };
     }
 
@@ -313,8 +328,8 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         foreach (var item in ordered)
         {
             bool join = runs.Count > 0 && ReferenceEquals(runs[^1].Texture, item.Texture) && runs[^1].State == item.State
-                && runs[^1].VertexCount + item.VertexCount <= MaxVerticesPerDraw;
-            if (!join) runs.Add(new Run(item.Texture, item.State, _scratchIndices.Count, 0, _scratchVertices.Count, 0));
+                && ReferenceEquals(runs[^1].Parameters, item.Parameters) && runs[^1].VertexCount + item.VertexCount <= MaxVerticesPerDraw;
+            if (!join) runs.Add(new Run(item.Texture, item.State, item.Parameters, _scratchIndices.Count, 0, _scratchVertices.Count, 0));
             var run = runs[^1];
             int relative = run.VertexCount;
             for (int v = 0; v < item.VertexCount; v++) _scratchVertices.Add(_vertices[item.VertexStart + v]);
@@ -343,18 +358,36 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
             bool scissorSet = false;
             Devices.Texture? texture = null;
             SamplerDescription sampler = default;
+            MaterialParameters? parameters = null;
             foreach (var run in runs)
             {
                 var state = _states[run.State];
-                var next = _device.GetBuiltInPipeline(BuiltInPipeline.Textured, state.Blend, target.ColorFormat);
-                if (!ReferenceEquals(next, pipeline)) commands.SetPipeline(pipeline = next);
+                var next = run.Parameters is { } material ? material.Material.PipelineFor(state.Blend, target.ColorFormat)
+                    : _device.GetBuiltInPipeline(BuiltInPipeline.Textured, state.Blend, target.ColorFormat);
+                bool bound = !ReferenceEquals(next, pipeline);
+                if (bound) commands.SetPipeline(pipeline = next);
+                if (run.Parameters is { } p && (bound || !ReferenceEquals(p, parameters)))
+                {
+                    // What a material's shaders receive: the pixel-to-clip matrix of the viewport, this run's parameters
+                    // and its textures from slot 1 on (slot 0 is the run's texture, bound below).
+                    if (next.VertexResources.UniformBuffers > 0)
+                    {
+                        var area = _settings.Viewport ?? target.Bounds;
+                        commands.SetUniforms(ShaderStage.Vertex, 0, Matrix4x4.CreateOrthographicOffCenter(0, area.Width, area.Height, 0, 0, 1));
+                    }
+                    for (int slot = 0; slot < p.Uniforms.Length; slot++) commands.SetUniforms(ShaderStage.Fragment, slot, p.Uniforms[slot]);
+                    for (int slot = 0; slot < p.Textures.Length; slot++)
+                        commands.SetTexture(slot + 1, p.Textures[slot].Texture, _device.GetSampler(p.Textures[slot].Sampler));
+                }
+                parameters = run.Parameters;
                 if (!scissorSet || scissor != state.Scissor)
                 {
                     commands.SetScissor(state.Scissor);
                     scissor = state.Scissor;
                     scissorSet = true;
                 }
-                if (!ReferenceEquals(texture, run.Texture) || sampler != state.Sampler)
+                // A shader that samples nothing has no slot for the draw's texture.
+                if (next.FragmentResources.Samplers > 0 && (!ReferenceEquals(texture, run.Texture) || sampler != state.Sampler))
                 {
                     commands.SetTexture(0, run.Texture, _device.GetSampler(state.Sampler));
                     texture = run.Texture;
@@ -387,7 +420,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         if (!_begun) throw new InvalidOperationException("call Begin first");
     }
 
-    private readonly record struct Item(Devices.Texture Texture, int State, float Depth, int Order, int VertexStart, int VertexCount, int IndexStart, int IndexCount);
+    private readonly record struct Item(Devices.Texture Texture, int State, MaterialParameters? Parameters, float Depth, int Order, int VertexStart, int VertexCount, int IndexStart, int IndexCount);
 
-    private readonly record struct Run(Devices.Texture Texture, int State, int FirstIndex, int IndexCount, int BaseVertex, int VertexCount);
+    private readonly record struct Run(Devices.Texture Texture, int State, MaterialParameters? Parameters, int FirstIndex, int IndexCount, int BaseVertex, int VertexCount);
 }

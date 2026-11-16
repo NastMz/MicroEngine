@@ -7,8 +7,10 @@ Assembly: MicroEngine.Graphics2D.dll
 Guide: [The 2D batcher and the camera](../manual/rendering.md#the-2d-batcher-and-the-camera)  
 
 The 2D renderer over the graphics device, implemented once in core: it writes vertices and indices into device
-buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline only, so it runs unchanged
-on every tier. Colours (tints, vertex colours) are premultiplied, and the default blend state is premultiplied alpha.
+buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline, so it runs unchanged on
+every tier, or, for the draws recorded with a [Material](MicroEngine.Graphics.RenderState.md#MicroEngine_Graphics_RenderState_Material), with that material's shaders on a
+device that has custom shaders. Colours (tints, vertex colours) are premultiplied, and the default blend state is
+premultiplied alpha.
 
 ```csharp
 public interface IRenderer2D
@@ -17,8 +19,8 @@ public interface IRenderer2D
 ## Remarks
 
 Rules: a draw's vertices are transformed on the CPU by its world matrix, then the pushed transforms, then the batch's
-view, into target pixels; consecutive draws (after sorting) with the same texture and [RenderState](MicroEngine.Graphics.RenderState.md) share
-one indexed draw; a [Clear](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Clear_MicroEngine_ColorF_) or [Flush](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Flush) submits what was recorded so far; nothing reaches the
+view, into target pixels; consecutive draws (after sorting) with the same texture, [RenderState](MicroEngine.Graphics.RenderState.md) and
+material parameters share one indexed draw; a [Clear](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Clear_MicroEngine_ColorF_) or [Flush](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Flush) submits what was recorded so far; nothing reaches the
 device before [End](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_End), [Clear](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Clear_MicroEngine_ColorF_) or [Flush](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Flush).
 
 ## Properties

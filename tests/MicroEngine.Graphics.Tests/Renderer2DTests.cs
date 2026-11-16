@@ -200,6 +200,18 @@ public sealed class Renderer2DTests
         _batcher.PopTransform();
         _batcher.End();
     }
+
+    [TestMethod]
+    public void AState_HasNoMaterial_UnlessGivenOne()
+    {
+        // Materials need custom shaders, which this device does not have (their tests run on SDL_GPU); here, the states
+        // every existing caller builds are the ones they always were.
+        Assert.IsNull(RenderState.Default.Material);
+        Assert.AreEqual(RenderState.Default, new RenderState(BlendState.AlphaPremultiplied, SamplerDescription.PointClamp, null));
+        _batcher.Begin(new BatchSettings(Target(2, 2)));
+        Assert.IsNull(_batcher.State.Material);
+        _batcher.End();
+    }
 }
 
 /// <summary>The 2D camera's transform: zoom and rotation around the view's centre, optional pixel snap.</summary>
