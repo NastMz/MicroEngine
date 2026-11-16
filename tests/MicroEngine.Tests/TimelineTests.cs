@@ -281,16 +281,54 @@ public sealed class TimelineTests
         var timeline = new Timeline(1, loop: true).At(0.5f, "tick");
         timeline.Reached += _ => count++;
         // A step so long that subtracting one pass from it changes nothing in single precision.
-        Assert.IsTrue(Task.Run(() => timeline.Update(1e9f)).Wait(TimeSpan.FromSeconds(5)), "The update must end.");
+        Assert.IsTrue(Ends(() => timeline.Update(1e9f)), "The update must end.");
         Assert.IsTrue(timeline.Time >= 0 && timeline.Time < 1, $"The playhead stays inside the pass (was {timeline.Time}).");
         Assert.IsTrue(count is >= 999 and <= 1001, $"One update raises the events of at most 1,000 passes (raised {count}).");
 
         var tiny = new Timeline(1e-6f, loop: true).At(0, "tick");
         int ticks = 0;
         tiny.Reached += _ => ticks++;
-        Assert.IsTrue(Task.Run(() => tiny.Update(3600)).Wait(TimeSpan.FromSeconds(5)), "The update must end.");
+        Assert.IsTrue(Ends(() => tiny.Update(3600)), "The update must end.");
         Assert.IsTrue(ticks <= 1001, $"Raised {ticks}.");
         Assert.IsTrue(tiny.Time >= 0 && tiny.Time < tiny.Duration);
+    }
+
+    [TestMethod]
+    public void The_guard_against_an_update_that_never_ends_does_not_wait_for_the_thread_pool()
+    {
+        // Tests of this assembly run in parallel and can hold every thread of the pool; work queued to a full pool starts
+        // seconds late. The guard has to time the update, not the wait for a free thread, so it runs it on a thread of
+        // its own.
+        bool onPool = true;
+        Assert.IsTrue(Ends(() => onPool = Thread.CurrentThread.IsThreadPoolThread));
+        Assert.IsFalse(onPool, "The guarded update runs on its own thread.");
+
+        var thrown = Assert.ThrowsExactly<InvalidOperationException>(() => Ends(() => throw new InvalidOperationException("from the update")));
+        Assert.AreEqual("from the update", thrown.Message, "What the update throws reaches the test as it was thrown.");
+
+        using var never = new ManualResetEventSlim();
+        Assert.IsFalse(Ends(never.Wait, TimeSpan.FromMilliseconds(50)), "An update that does not return is reported.");
+        never.Set();
+    }
+
+    /// <summary>
+    /// Whether <paramref name="update"/> returns within <paramref name="deadline"/> (30 seconds when not given), so an
+    /// update that loops for ever fails its test instead of hanging the run. What it throws is thrown here.
+    /// </summary>
+    private static bool Ends(Action update, TimeSpan? deadline = null)
+    {
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo? thrown = null;
+        // A thread of its own, not the pool's: the deadline measures the update, not the wait for a free pool thread.
+        var thread = new Thread(() =>
+        {
+            try { update(); }
+            catch (Exception e) { thrown = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(e); }
+        })
+        { IsBackground = true, Name = "timeline update under a deadline" };
+        thread.Start();
+        if (!thread.Join(deadline ?? TimeSpan.FromSeconds(30))) return false;
+        thrown?.Throw();
+        return true;
     }
 
     [TestMethod]
