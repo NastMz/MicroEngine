@@ -29,7 +29,7 @@ another framework or are ECS frameworks, which the issue rules out as a compulso
 - **`SpatialIndex2D<T>` is a public type of `MicroEngine.Scene`** (namespace `MicroEngine.Scenes`, in the
   `MicroEngine` package): the game's own items (entity ids, attachments, indices into its arrays), each under a point
   or a rectangle, found by rectangle or by circle. It is a grid of square cells behind a hash table; items move, a
-  query or a move allocates nothing, and results come in an order that depends only on the calls made.
+  query allocates nothing (a move only when the index grows), and results come in an order that depends only on the calls made.
 - **It is beside the world, not in it.** `IWorld` gains nothing and no scene has an index unless the game creates
   one. The world does not know which entities moved (a transform is written through a reference), so the game tells
   the index, in the place where it already moves the entity. An index of anything else (bullets in an array) works

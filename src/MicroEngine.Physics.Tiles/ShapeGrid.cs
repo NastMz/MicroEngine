@@ -60,7 +60,7 @@ internal sealed class ShapeGrid
     {
         Range(bounds, out int x0, out int y0, out int x1, out int y1);
         // A rectangle the cells cannot hold (an edge that is not a number) is kept with the large ones: always a candidate.
-        bool large = (long)(x1 - x0 + 1) * (y1 - y0 + 1) > MaxCells
+        bool large = ((long)x1 - x0 + 1) * ((long)y1 - y0 + 1) > MaxCells
             || !(float.IsFinite(bounds.X) && float.IsFinite(bounds.Y) && bounds.Width >= 0 && bounds.Height >= 0 && float.IsFinite(bounds.Width) && float.IsFinite(bounds.Height));
         ref var e = ref EntryOf(slot);
         if (e.Filed && e.Large == large)

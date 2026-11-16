@@ -41,7 +41,7 @@ public readonly record struct SpatialHandle(uint Index, uint Generation)
 /// its area reaches, so choose a cell about the size of the usual query (the radius a tower sees, the view of a
 /// camera divided by a few). An item that covers more than <see cref="MaxCells"/> cells is kept apart and tested by
 /// every query. A move within the item's cells changes no cell.</item>
-/// <item><b>Memory.</b> Nothing is allocated by a query, a move or a removal; adding items allocates only when the
+/// <item><b>Memory.</b> Nothing is allocated by a query or a removal; adding an item, or a move to more cells, allocates only when the
 /// index grows.</item>
 /// <item><b>Threads.</b> Not thread-safe. A query changes nothing, so several threads may query while none adds,
 /// moves or removes.</item>
@@ -164,7 +164,7 @@ public sealed class SpatialIndex2D<T>
         Check(bounds, nameof(bounds));
         ref var e = ref _entries[slot];
         Cells(bounds, out int x0, out int y0, out int x1, out int y1);
-        bool large = (long)(x1 - x0 + 1) * (y1 - y0 + 1) > MaxCells;
+        bool large = ((long)x1 - x0 + 1) * ((long)y1 - y0 + 1) > MaxCells;
         if (large ? e.State == Large : e.State == Filed && e.X0 == x0 && e.Y0 == y0 && e.X1 == x1 && e.Y1 == y1)
         {
             e.X = bounds.X; e.Y = bounds.Y; e.Width = bounds.Width; e.Height = bounds.Height;
@@ -286,7 +286,7 @@ public sealed class SpatialIndex2D<T>
         ref var e = ref _entries[slot];
         e.X = bounds.X; e.Y = bounds.Y; e.Width = bounds.Width; e.Height = bounds.Height;
         Cells(bounds, out e.X0, out e.Y0, out e.X1, out e.Y1);
-        long cells = (long)(e.X1 - e.X0 + 1) * (e.Y1 - e.Y0 + 1);
+        long cells = ((long)e.X1 - e.X0 + 1) * ((long)e.Y1 - e.Y0 + 1);
         if (cells > MaxCells)
         {
             e.State = Large;
@@ -438,7 +438,7 @@ public sealed class SpatialIndex2D<T>
         }
 
         int x0 = Cell(left), y0 = Cell(top), x1 = Cell(right), y1 = Cell(bottom);
-        if ((long)(x1 - x0 + 1) * (y1 - y0 + 1) > _used)
+        if (((long)x1 - x0 + 1) * ((long)y1 - y0 + 1) > _used)
         {
             // More cells than items: walk the items instead of the cells.
             for (int slot = 0; slot < _used; slot++)

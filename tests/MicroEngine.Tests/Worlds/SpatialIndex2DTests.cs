@@ -331,4 +331,20 @@ public sealed class SpatialIndex2DTests
         Assert.AreEqual(0, index.QueryCircle(Vector2.Zero, 50, found));
         Assert.AreEqual(2, index.QueryCircle(new Vector2(890, 40), 50, found));
     }
+
+    [TestMethod]
+    public void A_strip_as_wide_as_the_cells_can_count_is_kept_apart_and_still_found()
+    {
+        // Wider than 2^31 cells and one cell tall: counted in 32 bits the strip looked small and was filed cell by cell.
+        var index = new SpatialIndex2D<int>(64);
+        var strip = index.Add(1, new RectF(-1e12f, 0, 2e12f, 10));
+        index.Add(2, new Vector2(5, 500));
+
+        AssertSame([1], Rect(index, new RectF(0, 0, 10, 10)), "a query inside the strip");
+        AssertSame([1, 2], Rect(index, new RectF(-1e12f, -1000, 2e12f, 2000)), "a query as wide as the strip");
+
+        index.Move(strip, new RectF(0, 0, 10, 10));
+        index.Move(strip, new RectF(-1e12f, 0, 2e12f, 10));
+        AssertSame([1], Rect(index, new RectF(5e11f, 0, 10, 10)), "after moving back to the strip");
+    }
 }

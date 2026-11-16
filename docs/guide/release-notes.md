@@ -67,7 +67,7 @@ optional, for agents that find their way through a level.
 - `SpatialIndex2D<T>` finds what is near a place ([Large worlds and nearby objects](large-worlds.md)). A game files
   its own items (entity ids, attachments, indices into its arrays) under a point or a rectangle and asks by rectangle
   (`Query`) or by circle (`QueryCircle`), without walking the world and without giving every item a physics body.
-  Items move (`Move`) and leave (`Remove`) through a `SpatialHandle`; a query or a move allocates nothing, and results
+  Items move (`Move`) and leave (`Remove`) through a `SpatialHandle`; a query allocates nothing, and results
   come in an order that depends only on the calls made. A swarm of 20,000 whose members each count their neighbours
   every step fits in a 60 Hz frame on a desktop, where a walk over all of them for each one stops under 2,000, and a
   query with `Camera2D.VisibleBounds` gives what a world much larger than the view should update and draw. The

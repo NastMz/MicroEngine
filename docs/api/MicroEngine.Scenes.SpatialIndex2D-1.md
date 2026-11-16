@@ -38,7 +38,7 @@ moves, removals and queries give the same results in the same order on every run
 distance or by handle.</li><li><b>Cost.</b> The index is a grid of square cells of [CellSize](MicroEngine.Scenes.md) units: a query looks at the cells
 its area reaches, so choose a cell about the size of the usual query (the radius a tower sees, the view of a
 camera divided by a few). An item that covers more than [MaxCells](MicroEngine.Scenes.md) cells is kept apart and tested by
-every query. A move within the item's cells changes no cell.</li><li><b>Memory.</b> Nothing is allocated by a query, a move or a removal; adding items allocates only when the
+every query. A move within the item's cells changes no cell.</li><li><b>Memory.</b> Nothing is allocated by a query or a removal; adding an item, or a move to more cells, allocates only when the
 index grows.</li><li><b>Threads.</b> Not thread-safe. A query changes nothing, so several threads may query while none adds,
 moves or removes.</li></ol>
 

@@ -85,7 +85,7 @@ foreach (var id in _found) Objects.Get<Firefly>(id).Lit = true;
   written.
 - The order of the results depends only on the calls made on the index, so two runs of the same game get the same
   results in the same order. It is not by distance: to pick the nearest, compare the distances of what came back.
-- Neither a query nor a move allocates.
+- A query allocates nothing. A move allocates only when the item reaches more cells than the index has room for.
 
 ## Only what is near the view
 
