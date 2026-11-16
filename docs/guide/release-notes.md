@@ -6,7 +6,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
-A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor.
+A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
+optional, for agents that find their way through a level.
 
 **Added**
 
@@ -15,6 +16,14 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
   drawn as Tiled shows them ([Maps from Tiled](../manual/world.md#maps-from-tiled)). The `TiledLevel` sample plays a
   level saved by Tiled.
+- `MicroEngine.Navigation` finds paths ([Navigation](navigation.md)): `PathFinder` gives the cheapest path over a
+  `NavGrid` (cells with costs, read from a tile map with `NavGrid.FromTiles` or from a physics world with
+  `NavGrid.FromPhysics`), a `NavGraph` (waypoints joined by hand, with one-way tagged links for jumps, drops and
+  doors) or a game's own `INavGraph`. `NavGrid.FindPath` returns the world points to walk through, straightened for
+  the agent's size; cells change while the game runs (`SetWalkable`, `SetBlocked`, `ReadTiles`) and `Version` and
+  `IsOpen` tell an agent when its path closed; `DistanceField` serves many agents with one goal. The same question
+  always gives the same path, and searching allocates nothing once warm. Managed code only. The `Pathfinding` sample
+  plays a chaser, a unit sent by clicks, a swarm and a patrol with a door.
 - `TileOrientation`, and a `TileRenderer.Draw` overload that draws each cell mirrored or turned, at an offset, tinted
   and with an extra margin for sprites larger than a cell.
 - `Presentation.Prescale`: the whole factor the canvas is enlarged by, with nearest sampling, before `Upscale` samples
@@ -47,6 +56,14 @@ A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled edito
   pitch, pause, resume) take effect at the same instant, which moves the first of them slightly later than before
   ([migration notes](../migrations.md#several-changes-to-one-sound-in-the-same-update-apply-at-the-same-instant)). The Examples sample has a looping sound that follows a moving source.
   ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
+- Materials on the 2D batcher: a `Material2D` is a vertex and a fragment shader of the game's own (compiled ahead of
+  time by `microengine shaders`) with their parameters (`SetUniforms`) and extra textures (`SetTexture`). Set on
+  `RenderState.Material` or `BatchSettings.Material`, it draws a batch's sprites and geometry through those shaders on
+  the `sdl-gpu` device, with the batch's blend state, sampler, scissor, transforms and view; each draw keeps the
+  parameters set when it was recorded. Without a material a batch is drawn as before. The new guide
+  [Render targets and shaders](render-targets-and-shaders.md) shows how a game builds its own light that stops at
+  walls, masks, a water shader and a post-processing chain, each an example of the Examples sample; the first two use
+  only render targets and the blend states every device has, so they run in browsers too.
 
 **Changed**
 

@@ -82,6 +82,8 @@ kernel, those that touch the host also the platform contracts, and the core refe
 `MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
 package carries the tier-1 device. Text shaping (`MicroEngine.Text.Shaping`) is an optional package of its own, with
 HarfBuzz, and so is the Box2D backend (`MicroEngine.Physics.Box2D`), with Box2D's native library for each runtime.
+Navigation (`MicroEngine.Navigation`) is an optional package too, of managed code over the tile types and the physics
+contract; no engine assembly references it.
 The 3D path (`MicroEngine.Graphics3D`) is not in the SDK packages: it is in the repository only.
 
 The kernel is its own assembly,
@@ -268,7 +270,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Scene` | (`MicroEngine.Scenes`) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
 | `MicroEngine.Physics` | `MicroEngine.Physics` | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` | `MicroEngine.Physics.Tiles`, (`MicroEngine.World`) | `TilePhysicsWorld2D` (tile grids as static geometry, the swept mover, one-way platforms, moving solids); `TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion` (whose `Move` returns a `TileMoveResult`; it was `MoveResult`, the physics contract's name) |
-| `MicroEngine.Graphics2D` | (`MicroEngine.Graphics`) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, `CanvasPresenter` (the canvas into the window, prescale included), and the 2D drawing model: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
+| `MicroEngine.Graphics2D` | (`MicroEngine.Graphics`) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, `CanvasPresenter` (the canvas into the window, prescale included), `Material2D` (shaders of the game's own on the batcher, with parameters and textures), and the 2D drawing model: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
 | `MicroEngine.Text` | (`MicroEngine.Graphics`) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`, the font loader |
 | `MicroEngine.Text.Shaping` | (`MicroEngine.Graphics`) | `ShapedFont`, `ShapedFontSize`, `ShapedGlyph`: HarfBuzz shaping, glyphs rasterized by index; an optional package of its own |
 | `MicroEngine.Input.Touch` | (`MicroEngine.Input`) | `ITouchScreen`, `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `TouchStyle`, `ITouchSkin` |
@@ -281,6 +283,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
 | `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package |
+| `MicroEngine.Navigation` | `MicroEngine.Navigation` | `PathFinder` (A* over `INavGraph`), `NavGrid` (cells read from tile grids or a physics world), `NavGraph` (waypoints with directed tagged links), `DistanceField`; an optional package ([Navigation](guide/navigation.md)) |
 | `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, the platform of every browser build) |
 | `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform |
 | `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |

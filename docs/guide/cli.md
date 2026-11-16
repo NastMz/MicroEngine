@@ -83,6 +83,7 @@ game's `Shaders` folder (or `--source`) becomes `name.vert.shader` in `Content/s
 Direct3D 12, SPIR-V for Vulkan, MSL for Metal and the resource counts the device needs. A game loads the file with
 `CompiledShader.Parse` and creates it with `CompiledShader.Create(device)`, which picks the format the device runs;
 nothing compiles while the game runs, and a device without custom shaders refuses with `GraphicsCapabilityException`.
+[Render targets and shaders](render-targets-and-shaders.md) shows a game drawing its sprites through such shaders.
 
 Write one HLSL file per stage with the entry point `main` (shader model 6.0) and the SDL_GPU binding rules: vertex
 inputs use `TEXCOORD0`, `TEXCOORD1`... for their locations; vertex-stage uniforms are `register(b0, space1)`;

@@ -63,7 +63,8 @@ What each target needs is in [Packaging a game](packaging.md).
 
 A game references one of the first four; the template references `MicroEngine.Desktop`. A game that writes Arabic,
 Hebrew or an Indic script adds `MicroEngine.Text.Shaping`; one with dynamic bodies (crates, ragdolls, physics
-puzzles) adds `MicroEngine.Physics.Box2D`.
+puzzles) adds `MicroEngine.Physics.Box2D`; one whose characters find their way around walls adds
+`MicroEngine.Navigation`.
 
 | Package | Contains |
 | --- | --- |
@@ -73,6 +74,7 @@ puzzles) adds `MicroEngine.Physics.Box2D`.
 | [`MicroEngine.Desktop`](https://www.nuget.org/packages/MicroEngine.Desktop) | `DesktopLauncher` with SDL 3, raylib, SDL's software renderer and headless |
 | [`MicroEngine.Text.Shaping`](https://www.nuget.org/packages/MicroEngine.Text.Shaping) | optional: shaped text (`ShapedFont`, HarfBuzz) for complex and right-to-left scripts |
 | [`MicroEngine.Physics.Box2D`](https://www.nuget.org/packages/MicroEngine.Physics.Box2D) | optional: Box2D physics (`Box2DPhysicsWorld2D`): dynamic bodies, rotation, round and polygon shapes |
+| [`MicroEngine.Navigation`](https://www.nuget.org/packages/MicroEngine.Navigation) | optional: pathfinding (`PathFinder`, `NavGrid`, `NavGraph`, `DistanceField`) over tile maps, physics worlds and waypoints |
 | [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli) | the `microengine` tool |
 | [`MicroEngine.Templates`](https://www.nuget.org/packages/MicroEngine.Templates) | `dotnet new microengine-game` |
 

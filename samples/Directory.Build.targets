@@ -19,6 +19,10 @@
     <_MicroEngineTiled Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Tiled'))" />
     <PackageReference Remove="MicroEngine.Tiled" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Tiled/MicroEngine.Tiled.csproj" Condition="'@(_MicroEngineTiled)' != ''" />
+    <!-- The optional navigation package, the same way. -->
+    <_MicroEngineNavigation Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Navigation'))" />
+    <PackageReference Remove="MicroEngine.Navigation" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Navigation/MicroEngine.Navigation.csproj" Condition="'@(_MicroEngineNavigation)' != ''" />
     <!-- The optional Box2D physics package, the same way. -->
     <_MicroEngineBox2D Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Physics.Box2D'))" />
     <PackageReference Remove="MicroEngine.Physics.Box2D" />

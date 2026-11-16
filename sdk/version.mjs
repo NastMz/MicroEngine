@@ -15,7 +15,7 @@
 //   node sdk/version.mjs release <version>            prepares a release: prepared = documented = <version>, every
 //                                                     "## Next release" section renamed to the version, and every
 //                                                     active reference rewritten (never an older release or migration note)
-//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all eight packages
+//   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all the packages
 //   node sdk/version.mjs packages [<version>]         the package ids of a version (the documented one), in push order
 //   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
 //                                                     (nothing while .github/phase-freeze exists: publication freeze)
@@ -33,13 +33,14 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The nine SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
-export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Physics.Box2D', 'MicroEngine.Tiled', 'MicroEngine.Cli', 'MicroEngine.Templates'];
+/** The ten SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
+export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Physics.Box2D', 'MicroEngine.Tiled', 'MicroEngine.Navigation', 'MicroEngine.Cli', 'MicroEngine.Templates'];
 /** Published SDK versions that shipped without a package (it was added later): never required of those versions. */
 const shippedWithout = {
   'MicroEngine.Text.Shaping': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1'],
   'MicroEngine.Physics.Box2D': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2'],
   'MicroEngine.Tiled': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
+  'MicroEngine.Navigation': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
 };
 /** The packages SDK `version` is made of, in push order. */
 export const packagesAt = version => packageIds.filter(id => !shippedWithout[id]?.includes(version.toLowerCase()));
