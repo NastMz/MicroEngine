@@ -1,0 +1,7 @@
+# The beacon crosses the swarm, which turns after it; a carrier is dropped with its flag; the swarm closes in.
+10 hold right 70
+70 capture crossing.png
+90 press confirm
+100 hold down 40
+240 capture closing.png
+242 quit
