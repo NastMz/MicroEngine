@@ -69,6 +69,31 @@ public IReadOnlyList<Scene> Stack { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Scenes_SceneManager_AddSystem__1_System_Func_MicroEngine_Scenes_Scene___0__"></a> AddSystem<T\>\(Func<Scene, T?\>\)
+
+Gives a system to every scene pushed from now on: <code class="paramref">create</code> is called for each scene just before
+its [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) and returns the system to add, or null for a scene that gets none. A module uses it
+from its <code>Configure</code> to live in the game's scenes with no code in them; a scene reads the system from its
+[Systems](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Systems).
+
+```csharp
+public void AddSystem<T>(Func<Scene, T?> create) where T : SceneSystem
+```
+
+#### Parameters
+
+`create` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[Scene](MicroEngine.Scenes.Scene.md), T?\>
+
+#### Type Parameters
+
+`T` 
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">create</code> is null.
+
 ### <a id="MicroEngine_Scenes_SceneManager_Pop_MicroEngine_Scenes_Transition_"></a> Pop\(Transition?\)
 
 Removes the top scene, deferred like [Push](MicroEngine.Scenes.SceneManager.md#MicroEngine_Scenes_SceneManager_Push_MicroEngine_Scenes_Scene_MicroEngine_Scenes_Transition_). The scene below receives [Resume](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Resume). Does nothing on an empty stack.
@@ -150,5 +175,29 @@ public void Reset(Scene scene, Transition? transition = null)
 `scene` [Scene](MicroEngine.Scenes.Scene.md)
 
 `transition` [Transition](MicroEngine.Scenes.Transition.md)?
+
+### <a id="MicroEngine_Scenes_SceneManager_Entered"></a> Entered
+
+Raised when a scene went onto the stack, after its [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter).
+
+```csharp
+public event Action<Scene>? Entered
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[Scene](MicroEngine.Scenes.Scene.md)\>?
+
+### <a id="MicroEngine_Scenes_SceneManager_Exited"></a> Exited
+
+Raised when a scene left the stack, after its [Exit](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Exit) and after its systems stopped.
+
+```csharp
+public event Action<Scene>? Exited
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[Scene](MicroEngine.Scenes.Scene.md)\>?
 
 </div>

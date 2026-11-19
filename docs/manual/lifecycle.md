@@ -166,6 +166,15 @@ Services are found by the exact type they were registered as: `Services.Get<Inpu
 and the game quits later with `Quit()`), `Resized` (the window's or canvas's new size in pixels) and `FocusChanged`, as
 the platform delivers them at the start of a frame ([The platform host](backends.md#the-platform-host)). `Game.Log` writes `category: message` lines to the standard error unless a host registers another `ILog`.
 
+A module that keeps something alive for the whole run uses three more hooks from its `Configure`:
+
+- `builder.Lifecycle.Started` is raised once after `Load`, when every service exists, and `Stopping` once at
+  shutdown, after every scene left and before the game's `Unload`: the place to release what the module owns.
+- `builder.StateSections.Add("mymodule.state", hash => ...)` adds a named section to the state hash, after the
+  engine's sections and before the scenes, so a deterministic run covers the module's state.
+- `builder.Services.Get<SceneManager>().AddSystem(scene => ...)` gives every scene a
+  [scene system](scenes.md#scene-systems): state that belongs to a scene is stepped, hashed and released with it.
+
 ## Time
 
 The loop owns time; a platform only supplies a

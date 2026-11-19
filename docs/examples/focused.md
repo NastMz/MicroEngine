@@ -817,3 +817,47 @@ private void ShowNext()
 ```
 
 Manual: [Showing achievements](../manual/achievements.md#showing-achievements).
+
+## A scene system and timers
+
+A day that turns to night and stars that appear while it is dark. The time of day is a scene system: the engine steps
+it before the scene, adds it to the state hash and stops it with the scene. The stars come from one of the scene's
+timers. Source: [`SystemsExample.cs`](../../samples/Examples/Examples/SystemsExample.cs).
+
+<!-- code: samples/Examples/Examples/SystemsExample.cs#system -->
+```csharp
+/// <summary>The time of day, shared by whatever in the scene wants to read it.</summary>
+public sealed class DayCycle : SceneSystem
+{
+    /// <summary>0 at dawn, 0.5 at dusk, back to 0 after a full day.</summary>
+    public float Time { get; private set; }
+    public float DayLength { get; init; } = 8f;
+    public bool IsNight => Time >= 0.5f;
+
+    // Called by the engine before the scene's Update, with the same step.
+    protected override void Update(float dt) => Time = (Time + dt / DayLength) % 1f;
+
+    // The engine adds it to the scene's state hash: a deterministic run covers the system with no code in the scene.
+    public override void HashState(StateHasher hash) => hash.Add(Time);
+}
+```
+
+<!-- code: samples/Examples/Examples/SystemsExample.cs#use -->
+```csharp
+public override void Enter()
+{
+    _day = Systems.Add(new DayCycle());          // started now, stepped every update, stopped when the scene leaves
+    Timers.Every(0.5f, () =>                     // the scene's time: it slows and freezes with the world's clock
+    {
+        if (_day.IsNight) _stars.Add(new Vector2(Game.Random.Next(20, 300), Game.Random.Next(30, 110)));
+        else _stars.Clear();
+    });
+}
+
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) Game.Scenes.Pop();
+}
+```
+
+Manual: [Scene systems](../manual/scenes.md#scene-systems).

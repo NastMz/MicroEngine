@@ -15,6 +15,8 @@ MicroEngine's tests.
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
+| a part of a scene that the engine steps, hashes and stops with it (a store, a world, a scheduler) | subclass `SceneSystem` | `Scene.Systems.Add(system)`, or `Scenes.AddSystem` for every scene ([Scene systems](scenes.md#scene-systems)) |
+| state of a module in the state hash, or work at start-up and shutdown | a section, a handler | `builder.StateSections.Add`, `builder.Lifecycle.Started` and `Stopping` ([Modules](lifecycle.md#modules-and-the-frame-schedule)) |
 | game objects with deferred spawning and removal | your own classes attached to entities | `Scene.Objects`, an `IWorld` ([The scene world](scenes.md#the-scene-world)) |
 | your own on-screen controls | records of `TouchLayout` | `Game.CreateTouchLayout` ([Input](input.md#touch-controls)) |
 

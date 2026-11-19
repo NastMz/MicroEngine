@@ -78,6 +78,22 @@ Raises [Resumed](MicroEngine.Kernel.EngineLifecycle.md#MicroEngine_Kernel_Engine
 public void RaiseResumed()
 ```
 
+### <a id="MicroEngine_Kernel_EngineLifecycle_RaiseStarted"></a> RaiseStarted\(\)
+
+Raises [Started](MicroEngine.Kernel.EngineLifecycle.md#MicroEngine_Kernel_EngineLifecycle_Started).
+
+```csharp
+public void RaiseStarted()
+```
+
+### <a id="MicroEngine_Kernel_EngineLifecycle_RaiseStopping"></a> RaiseStopping\(\)
+
+Raises [Stopping](MicroEngine.Kernel.EngineLifecycle.md#MicroEngine_Kernel_EngineLifecycle_Stopping).
+
+```csharp
+public void RaiseStopping()
+```
+
 ### <a id="MicroEngine_Kernel_EngineLifecycle_RaiseSuspending"></a> RaiseSuspending\(\)
 
 Raises [Suspending](MicroEngine.Kernel.EngineLifecycle.md#MicroEngine_Kernel_EngineLifecycle_Suspending).
@@ -128,6 +144,30 @@ A suspended game came back; raised before its next frame.
 
 ```csharp
 public event Action? Resumed
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
+### <a id="MicroEngine_Kernel_EngineLifecycle_Started"></a> Started
+
+The game started: every service exists and the game loaded; raised once, before the first frame.
+
+```csharp
+public event Action? Started
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
+### <a id="MicroEngine_Kernel_EngineLifecycle_Stopping"></a> Stopping
+
+The game is shutting down, after every scene left; raised once, while every service still exists. Release what a module owns here.
+
+```csharp
+public event Action? Stopping
 ```
 
 #### Event Type

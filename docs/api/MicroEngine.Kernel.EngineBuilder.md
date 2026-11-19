@@ -87,6 +87,18 @@ public ServiceRegistry Services { get; }
 
  [ServiceRegistry](MicroEngine.Kernel.ServiceRegistry.md)
 
+### <a id="MicroEngine_Kernel_EngineBuilder_StateSections"></a> StateSections
+
+The sections modules add to the per-step state hash ([StateSections](MicroEngine.Kernel.StateSections.md)).
+
+```csharp
+public StateSections StateSections { get; }
+```
+
+#### Property Value
+
+ [StateSections](MicroEngine.Kernel.StateSections.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Kernel_EngineBuilder_Add__1___0_"></a> Add<TModule\>\(TModule\)

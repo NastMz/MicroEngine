@@ -28,6 +28,27 @@ end it with [Finish](MicroEngine.Scenes.md).
 
 Manages the scene stack and the transitions between scenes.
 
+ [SceneSystem](MicroEngine.Scenes.SceneSystem.md)
+
+A part of a scene that lives with it: the engine starts it when the scene is on the stack, steps it with the scene
+([Update](MicroEngine.Scenes.SceneSystem.md#MicroEngine_Scenes_SceneSystem_Update_System_Single_) before the scene's own update, [LateUpdate](MicroEngine.Scenes.SceneSystem.md#MicroEngine_Scenes_SceneSystem_LateUpdate_System_Single_) after it), adds its state to the
+scene's state hash and stops it when the scene leaves, with no call from the scene's own <code>Update</code>,
+<code>HashState</code> or <code>Exit</code>. Add one to [Systems](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Systems), or give every scene one through
+[AddSystem``1](MicroEngine.Scenes.SceneManager.md#MicroEngine_Scenes_SceneManager_AddSystem__1_System_Func_MicroEngine_Scenes_Scene___0__). A component store, a physics world, a set of state machines and a
+scheduler are scene systems.
+
+ [SceneSystems](MicroEngine.Scenes.SceneSystems.md)
+
+The systems of one scene ([Systems](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Systems)), one per type. The scene steps, hashes and stops them; see
+[SceneSystem](MicroEngine.Scenes.SceneSystem.md).
+
+ [SceneTimers](MicroEngine.Scenes.SceneTimers.md)
+
+Calls actions after a time or at intervals, on the scene's time ([Timers](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Timers)). Timers advance before
+the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) by the step it receives, so they slow down and freeze with the world's clock;
+an unscaled timer advances by [EngineStep](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_EngineStep) instead. They stop with the scene, and their state is
+part of its state hash. For a sequence of steps over time use a coroutine ([Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines)).
+
  [SceneWorld](MicroEngine.Scenes.SceneWorld.md)
 
 The engine's [IWorld](MicroEngine.Scenes.IWorld.md): entity slots with generations, local and step-start transforms, a parent/child
@@ -39,7 +60,7 @@ tree, and one dense array per attachment type. Games program against [IWorld](Mi
 
 A screen of the game (title, level, battle, pause menu...). Scenes live on a stack:
 an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
-Each scene owns its coroutines and tweens, which stop when it leaves the stack.
+Each scene owns its coroutines, tweens and systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), which stop when it leaves the stack.
 
  [SpatialIndex2D<T\>](MicroEngine.Scenes.SpatialIndex2D\-1.md)
 
@@ -111,6 +132,10 @@ was made. A destroyed entity's slot is reused with a new generation, so an old i
 An item of a [SpatialIndex2D`1](MicroEngine.Scenes.md): a slot index and the generation of the item that held the slot when
 the handle was made. A removed item's slot is reused with a new generation, so an old handle never reaches the new
 item. <code>default</code> is [None](MicroEngine.Scenes.SpatialHandle.md#MicroEngine_Scenes_SpatialHandle_None) (generation 0 is never issued).
+
+ [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
+
+A timer of a scene's [SceneTimers](MicroEngine.Scenes.SceneTimers.md); [None](MicroEngine.Scenes.TimerHandle.md#MicroEngine_Scenes_TimerHandle_None) names no timer.
 
  [Transform](MicroEngine.Scenes.Transform.md)
 

@@ -10,7 +10,7 @@ namespace MicroEngine.Scenes;
 /// <summary>
 /// A screen of the game (title, level, battle, pause menu...). Scenes live on a stack:
 /// an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
-/// Each scene owns its coroutines and tweens, which stop when it leaves the stack.
+/// Each scene owns its coroutines, tweens and systems (<see cref="SceneSystem"/>), which stop when it leaves the stack.
 /// </summary>
 /// <example>
 /// <code>
@@ -84,12 +84,43 @@ public abstract class Scene : IStateHashed
     /// <summary>Whether <see cref="Objects"/> was created (a scene that never reads it has none and pays nothing).</summary>
     internal bool HasWorld => _world is not null;
 
+    private SceneSystems? _systems;
+    /// <summary>
+    /// The scene's systems (<see cref="SceneSystem"/>), created the first time it is read: parts of the scene that the
+    /// engine starts, steps, hashes and stops with it. They run after the scene's coroutines, tweens and widgets and
+    /// before <see cref="Update"/>, then once more after it (<see cref="SceneSystem.LateUpdate"/>), and stop after
+    /// <see cref="Exit"/>. A scene that never reads it has none and pays nothing.
+    /// </summary>
+    public SceneSystems Systems => _systems ??= new SceneSystems(this);
+    /// <summary>
+    /// The scene's timers (<see cref="SceneTimers"/>), a system added the first time it is read: actions called after a
+    /// time or at intervals on the scene's time. Read it first outside drawing, like <see cref="Objects"/>.
+    /// </summary>
+    public SceneTimers Timers => Systems.GetOrAdd<SceneTimers>();
+    /// <summary>Whether the scene is on the stack: from just before <see cref="Enter"/> until its systems stopped after <see cref="Exit"/>.</summary>
+    public bool OnStack { get; private set; }
+    private long _tickedAt = -1;
+
     internal Action<object?>? ResultHandler;
     internal bool Finishing;
     internal bool HasResult;
     internal object? Result;
 
     internal void Attach(Game game) => _game = game;
+
+    /// <summary>Marks the scene as on the stack and starts the systems it already has.</summary>
+    internal void StartSystems()
+    {
+        OnStack = true;
+        _systems?.StartAll();
+    }
+
+    /// <summary>Stops the scene's systems, in reverse order, and marks it as off the stack.</summary>
+    internal void StopSystems()
+    {
+        try { _systems?.StopAll(); }
+        finally { OnStack = false; }
+    }
 
     /// <summary>Called when the scene is pushed onto the stack, after <see cref="Game"/> is set and input was reset.</summary>
     public virtual void Enter() { }
@@ -187,28 +218,25 @@ public abstract class Scene : IStateHashed
         Tweens.HashState(hash);
         _world?.HashState(hash);
         _ui?.HashState(hash);
+        _systems?.HashState(hash);
         HashState(hash);
     }
 
     internal void Tick(float dt)
     {
         _engineStep = dt;
-        if (_world is not { } world)
-        {
-            Age += dt;
-            Coroutines.Update(dt);
-            Tweens.Update(dt);
-            TickUi(dt);
-            Update(dt);
-            return;
-        }
-        float step = world.BeginStep(Game.UpdateCount, dt);
+        _tickedAt = Game.UpdateCount;
+        // A world created during this step is stepped from the next one.
+        var world = _world;
+        float step = world is null ? dt : world.BeginStep(Game.UpdateCount, dt);
         Age += dt;
         Coroutines.Update(dt);
         Tweens.Update(dt);
         TickUi(dt);
+        _systems?.Update(step);
         Update(step);
-        world.EndStep();
+        _systems?.LateUpdate(step);
+        world?.EndStep();
     }
 
     private void TickUi(float dt)
@@ -218,7 +246,11 @@ public abstract class Scene : IStateHashed
         _ui.Update(dt);
     }
 
-    internal void BeginDraw() => _world?.BeginDraw(Game.UpdateCount, Game.FrameBlend);
+    internal void BeginDraw()
+    {
+        _world?.BeginDraw(Game.UpdateCount, Game.FrameBlend);
+        _systems?.BeginDraw(_tickedAt == Game.UpdateCount ? Game.FrameBlend : 1f);
+    }
 }
 
 /// <summary>
@@ -251,7 +283,27 @@ public sealed class SceneManager
     private Action? _transitionSwap;
     private bool _swapped;
 
+    private readonly List<Func<Scene, SceneSystem?>> _systemFactories = [];
+
     internal SceneManager(Game game) => _game = game;
+
+    /// <summary>Raised when a scene went onto the stack, after its <see cref="Scene.Enter"/>.</summary>
+    public event Action<Scene>? Entered;
+    /// <summary>Raised when a scene left the stack, after its <see cref="Scene.Exit"/> and after its systems stopped.</summary>
+    public event Action<Scene>? Exited;
+
+    /// <summary>
+    /// Gives a system to every scene pushed from now on: <paramref name="create"/> is called for each scene just before
+    /// its <see cref="Scene.Enter"/> and returns the system to add, or null for a scene that gets none. A module uses it
+    /// from its <c>Configure</c> to live in the game's scenes with no code in them; a scene reads the system from its
+    /// <see cref="Scene.Systems"/>.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="create"/> is null.</exception>
+    public void AddSystem<T>(Func<Scene, T?> create) where T : SceneSystem
+    {
+        ArgumentNullException.ThrowIfNull(create);
+        _systemFactories.Add(create);
+    }
 
     /// <summary>The top scene, or null when the stack is empty.</summary>
     public Scene? Current => _stack.Count > 0 ? _stack[^1] : null;
@@ -328,7 +380,11 @@ public sealed class SceneManager
         if (Current?.UiOrNull is { Focused: UI.TextField } below) below.Focus(null);
         _stack.Add(scene);
         _game.Input.Reset();
+        foreach (var create in _systemFactories)
+            if (create(scene) is { } system) scene.Systems.Add(system);
+        scene.StartSystems();
         scene.Enter();
+        Entered?.Invoke(scene);
     }
 
     private void PopNow()
@@ -338,8 +394,10 @@ public sealed class SceneManager
         _stack.RemoveAt(_stack.Count - 1);
         top.Coroutines.StopAll();
         top.Tweens.Clear();
-        top.Exit();
+        try { top.Exit(); }
+        finally { top.StopSystems(); }
         top.UiOrNull?.Focus(null); // releases the text channel a focused text field holds
+        Exited?.Invoke(top);
         var handler = top.HasResult ? top.ResultHandler : null;
         object? result = top.Result;
         top.ResultHandler = null;

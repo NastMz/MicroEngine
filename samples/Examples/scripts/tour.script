@@ -187,4 +187,8 @@
 3660 hold right 40
 3720 capture 32-nearby.png
 3726 press pause
-3740 quit
+3740 press down
+3750 press confirm
+3850 capture 33-systems.png
+3856 press pause
+3870 quit

@@ -92,6 +92,18 @@ public ServiceRegistry Services { get; }
 
  [ServiceRegistry](MicroEngine.Kernel.ServiceRegistry.md)
 
+### <a id="MicroEngine_Kernel_Engine_StateSections"></a> StateSections
+
+The sections modules added to the per-step state hash.
+
+```csharp
+public StateSections StateSections { get; }
+```
+
+#### Property Value
+
+ [StateSections](MicroEngine.Kernel.StateSections.md)
+
 ### <a id="MicroEngine_Kernel_Engine_Time"></a> Time
 
 The time policy the engine was built with.

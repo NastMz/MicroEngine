@@ -59,6 +59,7 @@ maintainer's archive, not in the public history.
 | [0057](0057-materials-on-the-2d-batcher.md) | Developer-authored rendering is render targets, blend states and materials on the 2D batcher (`Material2D`: the game's shaders with parameters and textures); light, masks, water and post-processing are examples, never engine effects; no new dependency, the device contract unchanged | Accepted |
 | [0058](0058-spatial-index-beside-the-world.md) | Nearby objects through an opt-in `SpatialIndex2D<T>` beside the scene world (no region or chunk system); the tile broad phase on the same structure; the world releases and copies in proportion to the work | Accepted |
 | [0059](0059-no-first-party-ecs.md) | No first-party Entity Component System for now (deferred and provisional: speed, memory and integration were evaluated, modelling was not; with the conditions that reopen it): the scene world stays the only entity model of the SDK, and a game that needs a component store runs a third-party one beside it through the scene's hooks; no engine assembly may reference one | Accepted |
+| [0060](0060-scene-systems-and-module-lifecycle.md) | Scene systems (a part of a scene that the engine starts, steps, hashes and stops with it) and module lifecycle hooks (started, stopping, state-hash sections, a system for every scene); the scene's built-in coroutines, tweens, world and widgets keep their fixed place | Accepted |
 
 Each number is used once. The numbers missing from the table:
 

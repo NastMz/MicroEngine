@@ -47,6 +47,15 @@ public sealed class AchievementsModule : IEngineModule
         string? before = builder.Schedule.PhaseOf(inputEnd) == FramePhase.PostFixed ? inputEnd : null;
         builder.Schedule.Add(FramePhase.PostFixed, SystemName, step => Step((float)step.FixedDelta), before: before);
         builder.Lifecycle.Suspending += () => Tracker.Flush();
+        builder.StateSections.Add(SystemName, hash =>
+        {
+            foreach (var status in Tracker.All)
+            {
+                hash.Add(status.Id);
+                hash.Add(status.Progress);
+                hash.Add(status.Unlocked);
+            }
+        });
     }
 
     /// <summary>Advances the module by one step of <paramref name="dt"/> seconds: raises <see cref="Stepped"/>, then writes progress when <see cref="FlushInterval"/> has passed.</summary>
