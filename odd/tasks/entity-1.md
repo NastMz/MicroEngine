@@ -41,10 +41,13 @@ Delivery strategy: `ask-on-risk` (no push, pull request or release without the o
 | --- | --- | --- | --- | --- |
 | T1 Map the simple model, the PERF-3 and WORLD-1 measurements, the harness and the package wiring | S1 S8 | inline | done | L2 |
 | T2 Survey mature .NET ECS libraries from primary sources | S8 | inline | done | L2; evaluation |
-| T3 Workloads in the stress harness for the simple model, the candidates and a first-party prototype; their tests | S1 S2 | inline | pending | |
-| T4 Measure on an idle machine; thresholds | S2 S3 | inline | pending | |
-| T5 Decision (ADR) and what it needs: slice, tests, independence proof | S4 S5 S7 S9 | inline | pending | |
-| T6 Evaluation, guide, release notes, architecture, API reference | S3 S6 | inline | pending | |
+| T3 Workloads in the stress harness for the simple model, the candidates and a first-party prototype; their tests | S1 S2 | inline | done | `95ab306`; `Benchmarks.Tests` 53/53, the ten new ones included (L3) |
+| T4 Measure on an idle machine; thresholds | S2 S3 | inline | done | `7730a80` (campaign script); evaluation §1, §4 to §6, §8 (L4, L6) |
+| T5 Decision (ADR 0059: defer) and what it needs: the sample, its tests, the independence proof | S4 S5 S7 S9 | inline | done | `98279fd`; `EcsSwarmTests` 9/9, architecture tests 23/23; RED by mutation (L5) |
+| T6 Evaluation, ADR, guide, release notes, architecture, decision index | S3 S6 | inline | done | the documentation commit; snippets check, `api-reference.mjs --check`, `version.mjs check` (L7) |
+
+Routes: every task inline. No writer trigger held (one behaviour after another, each depending on the previous
+one's result), and the measurements needed the machine to itself, which rules out parallel work.
 
 ## Log
 
@@ -116,3 +119,39 @@ Delivery strategy: `ask-on-risk` (no push, pull request or release without the o
   3.6.0 (MIT, managed only, declares NativeAOT and WASM), fennecs 0.7.3 (MIT, net10.0 only), DefaultEcs 0.17.2 (MIT-0,
   last stable 2022, `Reflection.Emit`), Flecs.NET (MIT, native library, prerelease builds only). Details in the
   evaluation.
+- L3 (2026-11-18) The benchmark. `benchmarks/EcsBench` is the stress harness with scenarios added from outside it
+  (`Scenarios.Add`, `StressProgram.Run`; StressBench's own list and baseline are unchanged), so only EcsBench
+  references Arch and Friflo.Engine.ECS. Four workloads (move, churn, query, mixed) on five stores (the scene world
+  pooled and unpooled, Arch, Friflo, a first-party archetype prototype of about 220 lines). Every store must end a
+  workload in the same checksum; the test that says so passed on the first build of the three component stores. One
+  expectation of mine was wrong, not the code (shots live 30 to 59 steps, so few agents die in 48). A rule learned:
+  a scene that draws with `Objects.Blend` must read `Objects` before its first draw.
+- L4 (2026-11-19) Measurements (evaluation §4, §5). The first run of the loads group started while the build servers
+  of the publish were still working (2.42 CPU seconds in the idle check): discarded as the record, run again clean,
+  the two agreeing within 1.9% at the median. CPU work of a frame at the median: 100,000 objects moved and drawn
+  1.62 ms in the scene world against 1.20 to 1.21 in a store; a tenth of 100,000 replaced per step 1.73 against 0.53
+  to 0.92; three combination queries 0.96 against 0.12; a game step of 375,000 objects 21.9 ms (41.7 at the 99th
+  percentile) against 6.2 to 6.4. Limits within one 60 Hz update: a game step of 281,000 objects in the world,
+  600,000 to 675,000 in a store. Memory per million objects 238 MB against 57 to 66. A new attachment per spawn at
+  10,000 spawns a step: 15 collections and 36.9 ms of pauses in 600 frames. In a window drawing is most of the
+  frame on every store. The prototype is as fast as the libraries on walks and faster on creation.
+- L5 (2026-11-19) Decision: defer a first-party module (ADR 0059). The slice is `samples/EcsSwarm`, written on
+  Friflo.Engine.ECS first with its tests ahead of the first build (nine tests; three expectations of mine were wrong:
+  the mean distance of a swarm whose caught members reappear at the edges, the scene of a finished `GameRunner`
+  run, a beacon the scene clamps to the canvas). RED was observed by mutation: without `Forget` and without the
+  store in `HashState`, three tests fail; with the sample removed from the allowed consumers, the architecture test
+  names it.
+- L6 (2026-11-19) NativeAOT and trimming (evaluation §6), which changed the sample's library. Friflo.Engine.ECS:
+  13 trimming warnings and 19 in its JSON dependency, a type initializer failure under NativeAOT until its component
+  types are registered, a line written to standard output at start-up. Arch: no warning, ran in the benchmark, and
+  threw in the sample (`'EcsSwarm.Position[]' is missing native code or metadata`) until `ArrayRegistry.Add<T>()`
+  named each component; it had worked in the benchmark only because the prototype makes arrays of the same types.
+  The sample moved to Arch (the scene's loops changed, nothing else); its NativeAOT and trimmed publishes give no
+  warning and play the tour. The tour's two captures were looked at.
+- L7 (2026-11-19) Documentation: the evaluation, ADR 0059 (Accepted: the engine is Alpha, and nothing public
+  changed), the guide page "Many alike objects and Entity Component Systems" with its code quoted from the sample,
+  the release notes, the architecture page, the decision index, AGENTS. Not done, with reasons: `docs/migrations.md`
+  (nothing breaks), `docs/api` (no public API changed; the check passes unchanged), `THIRD-PARTY-NOTICES.md` (outside
+  this task's edit surfaces, and the two libraries are not shipped by the SDK or the demos; noted in the ADR). Not
+  run: a browser build of either library, the site build, the SDK's external-project checks that need packed
+  packages (`sdk/tests/docs.mjs` lists the new sample; it was not run here).
