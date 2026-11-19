@@ -269,7 +269,7 @@ the namespace they had in `MicroEngine.dll`.
 | --- | --- | --- |
 | `MicroEngine.Kernel` | `MicroEngine.Kernel`, `MicroEngine` | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>`, `SeededRandom`, the per-step state hash (`StateHasher`, `IStateHashed`, `StateTrace`); `Color`, `ColorF`, `RectF`, `MathX`, `Ease`, keyframe tracks (`Track<T>`, `Keyframe<T>`, `Track`) |
 | `MicroEngine.Platform` | `MicroEngine.Platform` | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource`, `IAudioSink` |
-| `MicroEngine.Graphics` | `MicroEngine.Graphics.Devices` | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
+| `MicroEngine.Graphics` | `MicroEngine.Graphics.Devices` | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice`, `CompiledShader`, `TextureFile` (textures made ahead of time, KTX 2.0) |
 | `MicroEngine.Input` | `MicroEngine.Input` | Device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem`, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, with saved bindings |
 | `MicroEngine.Content` | `MicroEngine.Content` | `AssetStore` (`Game.Assets`), `Asset<T>`, `AssetScope`, `AssetLoaderRegistry`, `IAssetLoader<T>`, `IAssetImporter`, `ZipContentSource`, `ListedContentSource` |
 | `MicroEngine.Hosting` | `MicroEngine.Hosting` | `HostBuilder` (the composition a game's `Configure` entry point fills), `LaunchRequest`, `ProfileSelection`, `HostEnvironment` |
@@ -302,7 +302,10 @@ In short:
   images (StbImageSharp), atlases from packing tools and TTF/OTF fonts (FontStashSharp) are decoded in managed code at
   load, the same on every platform. `Game.Assets` returns one object per file and options, releases each scope's assets
   with it, and reports loads that would hitch during play. The platform locates files and makes textures; the game
-  decides what to load and when.
+  decides what to load and when. There is no content build. A game with a lot of high-resolution art may convert
+  images ahead of time into texture files (`microengine textures`, KTX 2.0, read by `TextureFile`), which load without
+  decoding and, as BC7 blocks, take a quarter of the graphics memory where the device samples them; they are optional
+  and drawn through the 2D batcher ([Textures made ahead of time](guide/texture-files.md)).
 - **Code-first content by default, files when a game wants them.** Sprites, tiles and fonts can be
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
   no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG (or MP3 on raylib)

@@ -74,6 +74,7 @@ const guidePages = [
   { source: 'docs/manual/rendering.md', slug: 'docs/manual/rendering', group: 'manual', label: 'Graphics' },
   { source: 'docs/guide/animation.md', slug: 'docs/animation', group: 'manual', label: 'Animation' },
   { source: 'docs/guide/render-targets-and-shaders.md', slug: 'docs/render-targets-and-shaders', group: 'manual', label: 'Render targets and shaders' },
+  { source: 'docs/guide/texture-files.md', slug: 'docs/texture-files', group: 'manual', label: 'Textures made ahead of time' },
   { source: 'docs/manual/text.md', slug: 'docs/manual/text', group: 'manual', label: 'Text' },
   { source: 'docs/manual/input.md', slug: 'docs/manual/input', group: 'manual', label: 'Input' },
   { source: 'docs/manual/audio.md', slug: 'docs/manual/audio', group: 'manual', label: 'Audio' },

@@ -11,6 +11,13 @@ optional, for agents that find their way through a level.
 
 **Added**
 
+- Texture files: `TextureFile` reads and writes KTX 2.0 files (`.ktx2`) that hold a texture as the graphics device
+  takes it, and `TextureFile.Create(device)` makes the texture with nothing to decode. The new
+  [`microengine textures`](cli.md#textures) command converts a folder of images into them, as BC7 blocks (a quarter of
+  the graphics memory, on devices that sample BC7: the `sdl-gpu` device on desktop graphics cards) or as the image's own
+  pixels (every device). They are optional: images load as before, and a game may ship both
+  ([Textures made ahead of time](texture-files.md)). The "A texture made ahead of time" example of the Examples sample
+  draws one, and the image where the device does not sample it.
 - `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets
   (`Assets.TiledMap(path)`): tile layers with each cell's flips, tilesets as sprites (`TiledSprites`), objects and
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
@@ -81,6 +88,8 @@ optional, for agents that find their way through a level.
 
 **Changed**
 
+- Uploading an image is faster: `PixelImage.ToRgba` copies the pixels in one step and
+  `PremultipliedColor.PremultiplyInPlace` no longer divides. The results are the same bytes.
 - A save slot is a plain name on every system. `SaveStore` and `FileSaveStorage` throw `ArgumentException` for a slot
   that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, ends
   with `.corrupt` (the name unreadable data is set aside under), or is a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file

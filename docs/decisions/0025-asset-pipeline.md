@@ -100,3 +100,12 @@ bookkeeping of the amendment above moved unchanged into `MicroEngine.Content` (`
 atlases and fonts are loaders registered under the kinds `texture`, `atlas`, `folder atlas` and `font`, and content may
 come from any source the composition names (a zip archive, a host's listing), not only a folder. Games, their paths and
 their scopes are unchanged.
+
+## Amendment (2026-11-18, CONTENT-1)
+
+The build step this decision left for later ("GPU texture formats and shaders return with GRAPHICS-1; the pipeline can
+then convert at build time where it pays") is decided by [ADR 0060](0060-optional-texture-files.md): still no content
+build and no conversion a game must run; shaders are compiled ahead of time by `microengine shaders` (ADR 0042), and
+textures may be converted ahead of time by `microengine textures` into optional KTX 2.0 files. Images are decoded at
+load as decided here, and remain the default. The sentence "decoding a PNG of game size takes milliseconds" holds for
+the images ASSET-1 measured (512 × 1024 at most); CONTENT-1 measured 44 to 79 ms for a 2048 × 2048 page.

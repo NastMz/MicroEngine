@@ -42,7 +42,10 @@ engine refuses the wrong spelling everywhere, Windows and macOS included, and na
 fails (error ME0010) when two files differ only in letter case.
 
 Nothing is converted at build time: images, atlases and fonts are decoded when the game loads them, in managed code, the
-same way on every platform and in headless tests. Decoding a game-sized image takes milliseconds.
+same way on every platform and in headless tests. Decoding a game-sized image takes milliseconds. A game with a lot of
+high-resolution art may also convert images ahead of time into texture files, which load without decoding and, as
+BC7 blocks, take a quarter of the graphics memory on devices that sample them; that step is optional
+([Textures made ahead of time](../guide/texture-files.md)).
 
 ## `Game.Assets`
 

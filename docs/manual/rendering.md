@@ -519,7 +519,8 @@ a 3D renderer:
 ## Limitations
 
 - No shaders, render targets or post-processing are exposed through `IRenderer`.
-- No mipmaps or compressed GPU texture formats; textures are 32-bit RGBA.
+- No mipmaps. Images are uploaded as 32-bit RGBA; block-compressed textures come from texture files made ahead of
+  time, on devices that sample them ([Textures made ahead of time](../guide/texture-files.md)).
 - No sprite batching control beyond packing art into atlases; draw order is call order.
 - Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.
 - On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in

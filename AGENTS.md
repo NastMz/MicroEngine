@@ -32,10 +32,13 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/perf-3.md`](odd/tasks/perf-3.md) (the stress harness `benchmarks/StressBench`, measured limits, a
   baseline to compare later runs against),
   [`odd/tasks/world-1.md`](odd/tasks/world-1.md) (large worlds and nearby objects: `SpatialIndex2D`, the tile broad
-  phase on it, a world whose release and step copy follow the work, ADR 0058) and
+  phase on it, a world whose release and step copy follow the work, ADR 0058),
   [`odd/tasks/entity-1.md`](odd/tasks/entity-1.md) (Entity Component Systems: no first-party module; a game runs a
   third-party one beside the scene's world, the `EcsSwarm` sample, the comparison `benchmarks/EcsBench`, ADR 0059, provisional until a game with complex mechanics
-  tests the modelling side).
+  tests the modelling side) and
+  [`odd/tasks/content-1.md`](odd/tasks/content-1.md) (offline asset processing: no content build; optional texture
+  files in KTX 2.0, `TextureFile` and `microengine textures`, drawn through the 2D batcher; images stay the default;
+  the measurements `benchmarks/ContentBench`, ADR 0060, with what it did not evaluate: browsers, phones, real art).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
