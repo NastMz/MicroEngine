@@ -147,7 +147,7 @@ public interface IRenderer
 }
 ```
 
-Source: [`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Legacy/IGraphics.cs)
+Source: [`src/MicroEngine.Graphics2D/Drawing/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Drawing/IGraphics.cs)
 
 - `DrawOptions` carries `FlipX`, `FlipY`, `Rotation` (radians), `Origin` (pivot in source pixels) and `Scale`.
 - `BlendMode` is `Alpha`, `Additive` or `Multiply`.
@@ -171,7 +171,7 @@ Every backend draws by the same rules.
 - Captures are opaque (alpha 255) on every backend.
 - Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
 
-Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Legacy/RendererExtensions.cs) add
+Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Drawing/RendererExtensions.cs) add
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient`, `DrawNineSlice` (an image stretched to any
 size with its corners kept, from a `NineSlice`) and `Panel` (a bordered UI box from a `PanelStyle`, or its `Image`).
@@ -233,7 +233,7 @@ called while drawing. Duplicate names and unknown names throw.
 `AnimationClip(frames, framesPerSecond, loop = true)` is an immutable frame sequence; `FrameAt(time)` picks a
 frame. `Animator` plays named clips: `Add(name, clip)`, `Play(name, restart = false)` (playing the current clip
 again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-looping clips). Source:
-[`src/MicroEngine.Graphics2D/Legacy/Animation.cs`](../../src/MicroEngine.Graphics2D/Legacy/Animation.cs). Games may equally pick
+[`src/MicroEngine.Graphics2D/Drawing/Animation.cs`](../../src/MicroEngine.Graphics2D/Drawing/Animation.cs). Games may equally pick
 frames themselves from `atlas.Frames(...)` and a timer. Values that move through several keys, and moments the game
 reacts to during a clip (a footstep, the frame a swing lands), are tracks and timelines: [Animation](../guide/animation.md).
 
@@ -283,7 +283,7 @@ parallax drawn by `DrawBackdrop` reads `cam.DrawnPosition`.
 `ParallaxLayer(texture)` is drawn in screen space (no camera pushed) with `Draw(r, cameraPosition, time)`.
 Init properties: `Factor` (0 fixed, 1 moves with the world; default 0.5), `VerticalFactor`, `Y`, `Drift`
 (pixels per second), `RepeatX` (default true), `Tint`. Source:
-[`src/MicroEngine.Graphics2D/Legacy/Parallax.cs`](../../src/MicroEngine.Graphics2D/Legacy/Parallax.cs).
+[`src/MicroEngine.Graphics2D/Drawing/Parallax.cs`](../../src/MicroEngine.Graphics2D/Drawing/Parallax.cs).
 
 ## Particles
 
