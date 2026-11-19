@@ -164,6 +164,63 @@ public sealed class SaveVersionTests
     }
 }
 
+/// <summary>What the player is told about a save the game cannot use.</summary>
+[TestClass]
+public sealed class SaveFeedbackTests
+{
+    private string _dir = "";
+
+    [TestInitialize]
+    public void Init() => _dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "trailduel-save-feedback-" + Guid.NewGuid().ToString("N"))).FullName;
+
+    [TestCleanup]
+    public void Cleanup()
+    {
+        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
+    }
+
+    private TrailDuelGame Launch(string? debug = null)
+    {
+        var game = new TrailDuelGame(_dir, debug);
+        game.InitializeForTest(new HeadlessPlatform(), 3);
+        game.StepForTest();
+        return game;
+    }
+
+    [TestMethod]
+    public void ASaveFromANewerReleaseIsNotOfferedAsContinue()
+    {
+        File.WriteAllText(Path.Combine(_dir, GameState.SaveSlot + ".json"), """{ "@version": 2, "Money": 5 }""");
+        var title = Assert.IsInstanceOfType<Scenes.TitleScene>(Launch().Scenes.Current);
+        CollectionAssert.DoesNotContain(title.Options.ToArray(), "CONTINUE");
+    }
+
+    [TestMethod]
+    public void ASaveThatLoadsIsOfferedAsContinue()
+    {
+        GameState.NewGame().Save(new SaveStore("TrailDuel", _dir));
+        var title = Assert.IsInstanceOfType<Scenes.TitleScene>(Launch().Scenes.Current);
+        Assert.AreEqual("CONTINUE", title.Options[0]);
+    }
+
+    [TestMethod]
+    public void ARefusedSaveIsNotReportedAsSaved()
+    {
+        string file = Path.Combine(_dir, GameState.SaveSlot + ".json");
+        const string newer = """{ "@version": 2, "Money": 5 }""";
+        File.WriteAllText(file, newer);
+        var game = Launch("town");
+
+        Assert.IsFalse(game.SaveGame());
+        Assert.AreEqual(newer, File.ReadAllText(file));
+        Assert.AreEqual("The trail could not be saved.", Scenes.StartMenuScene.SaveMessage(false));
+        Assert.AreEqual("Progress saved! Rest easy.", Scenes.StartMenuScene.SaveMessage(true));
+
+        File.Delete(file);
+        Assert.IsTrue(game.SaveGame());
+    }
+}
+
 /// <summary>The game keeps its saves where its host says, under the id they have always had.</summary>
 [TestClass]
 public sealed class SaveMediumTests

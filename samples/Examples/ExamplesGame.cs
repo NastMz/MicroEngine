@@ -60,6 +60,9 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
     ];
 
+    /// <summary>The id the examples' saves have always been kept under; without it, it would be the project's application id.</summary>
+    protected override string SaveId => "MicroEngineExamples";
+
     #region saves
     /// <summary>
     /// The store behind <c>Saves</c>, built by hand when a folder was asked for (tests pass a temporary one); without

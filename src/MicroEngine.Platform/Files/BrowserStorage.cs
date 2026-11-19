@@ -51,10 +51,8 @@ public sealed partial class BrowserStorage : IStorage
     public void Write(string slot, string text)
     {
         var key = Key(_prefix, slot);
-        // The stamp first: if only one of the two is written, it is the one that loses nothing.
-        try { SetItem(_timePrefix + slot, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)); }
-        catch (JSException) { /* The slot lists without a time. */ }
-        Call(() => { SetItem(key, text); return 0; });
+        string stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
+        Call(() => { Store(SetItem, key, text, _timePrefix + slot, stamp); return 0; });
     }
 
     /// <inheritdoc/>
@@ -82,11 +80,24 @@ public sealed partial class BrowserStorage : IStorage
 
     /// <summary>
     /// The game's slots: every key under its prefix but the copies set aside, with the length of its text as the size and
-    /// the time of its last write when one was stamped.
+    /// the time of its last write when one was stamped. localStorage has no size to ask for, so listing reads each
+    /// slot's text to measure it.
     /// </summary>
     public IReadOnlyList<SlotInfo> List() => Call(() => Slots(_prefix, _timePrefix, Keys(_prefix), GetItem));
 
     private const string SetAsideSuffix = ".corrupt";
+
+    /// <summary>
+    /// Writes a slot and then stamps its time: the data first, so a write the page refuses (the quota) leaves no time
+    /// newer than the content. A stamp that cannot be written loses only the time.
+    /// </summary>
+    internal static void Store(Action<string, string> set, string key, string text, string timeKey, string stamp)
+    {
+        set(key, text);
+        try { set(timeKey, stamp); }
+        // Whatever refused the stamp, the save itself is written.
+        catch (Exception) { /* The slot lists without a time, or with the one of its previous write. */ }
+    }
 
     /// <summary>Where the write times of a game's slots are stamped: a root of its own, so no slot of any game can be one.</summary>
     internal static string TimePrefix(string gameId) => $"microengine.time/{gameId}/";

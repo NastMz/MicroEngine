@@ -26,6 +26,9 @@ public sealed class MainGame : Game
     /// <param name="saveDirectory">A folder for the save file, for tests; null keeps it in the player's save folder.</param>
     public MainGame(string? saveDirectory = null) => _saveDirectory = saveDirectory;
 
+    /// <summary>The id the saves are kept under: it names the save folder, so it never changes once players have saves.</summary>
+    protected override string SaveId => "GemGarden";
+
     /// <summary>The store behind <c>Saves</c>: the one every game comes with, or one in the folder a test asked for.</summary>
     protected override SaveStore CreateSaves() =>
         _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);

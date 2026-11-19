@@ -42,8 +42,10 @@ public static class Backdrop
 public sealed class TitleScene : Scene
 {
     private readonly CourtyardKeyGame _game;
-    private readonly DemoKit.OptionList _menu = new("New Game", "Continue", "Controls", "Achievements", "Quit");
+    private readonly DemoKit.OptionList _menu;
+    private readonly bool _canContinue;
     private readonly ParticleSystem _motes = new(200, 21) { Additive = true };
+    internal DemoKit.OptionList Menu => _menu;
     private bool _showControls;
     private float _spawn;
     private (string Key, string What)[]? _controlRows;
@@ -52,15 +54,24 @@ public sealed class TitleScene : Scene
     public TitleScene(CourtyardKeyGame game)
     {
         _game = game;
+        // What the save slot holds decides the second entry: an adventure to continue, or the reason there is none.
+        var save = game.Slots.Check();
+        _canContinue = save is MicroEngine.Core.SaveLoadStatus.Loaded or MicroEngine.Core.SaveLoadStatus.Migrated;
+        string second = save switch
+        {
+            MicroEngine.Core.SaveLoadStatus.TooNew => "Newer save",
+            MicroEngine.Core.SaveLoadStatus.MigrationFailed or MicroEngine.Core.SaveLoadStatus.Unreadable => "Unreadable",
+            _ => "Continue",
+        };
+        _menu = new DemoKit.OptionList("New Game", second, "Controls", "Achievements", "Quit");
         _menu.Moved += () => Audio.Play("menu_move");
     }
 
     public override void Enter()
     {
         Audio.PlayMusic("title", 0.6f);
-        bool hasSave = _game.Slots.HasSave;
-        _menu.SetEnabled(1, hasSave);
-        _menu.Index = hasSave ? 1 : 0;
+        _menu.SetEnabled(1, _canContinue);
+        _menu.Index = _canContinue ? 1 : 0;
     }
 
     /// <summary>

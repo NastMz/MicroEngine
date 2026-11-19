@@ -40,9 +40,9 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
             case 1: Game.Scenes.Push(new BagScene(game, null)); break;
             case 2: Game.Scenes.Push(new TrailLogScene(game)); break;
             case 3:
-                game.SaveGame();
-                Audio.Play("save");
-                Say("Progress saved! Rest easy.");
+                bool saved = game.SaveGame();
+                Audio.Play(saved ? "save" : "deny");
+                Say(SaveMessage(saved));
                 break;
             case 4: Game.Scenes.Push(new ControlsScene()); break;
             default: Game.Scenes.Pop(); break;
@@ -50,6 +50,9 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.2f; }
+
+    /// <summary>What the menu says after saving.</summary>
+    internal static string SaveMessage(bool saved) => saved ? "Progress saved! Rest easy." : "The trail could not be saved.";
 
     /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide and the play-time text cache.</summary>
     public override void HashState(StateHasher hash)

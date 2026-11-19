@@ -75,28 +75,39 @@ public readonly struct SaveLoadResult<T> where T : class
 public static class SaveSchema
 {
     /// <summary>
-    /// The name of the property that holds a save's version, the first one of the saved JSON object: <c>"$version"</c>.
+    /// The name of the property that holds a save's version, the first one of the saved JSON object: <c>"@version"</c>.
     /// The store writes and removes it; the saved type never sees it and must not have a property serialized under
     /// this name.
     /// </summary>
-    public const string VersionProperty = "$version";
+    public const string VersionProperty = "@version";
 
     /// <summary>The version of a save that has no version property: the saves written before the type had a schema.</summary>
     public const int FirstVersion = 1;
 
-    /// <summary>The version a stored text declares, or null when it is not a JSON object with a whole version from 1 (which includes having none).</summary>
-    internal static int? DeclaredVersion(string text)
+    /// <summary>
+    /// Whether a stored text is a JSON object with a version property, whatever its value: a slot a schema wrote, which
+    /// a call without a schema must not replace.
+    /// </summary>
+    internal static bool DeclaresVersion(string text) => WithoutVersion(text) is not null;
+
+    /// <summary>
+    /// The save in a text that carries a version property, without that property; null when the text carries none (or
+    /// is not a JSON object), which is every text a call without a schema wrote.
+    /// </summary>
+    internal static JsonObject? WithoutVersion(string text)
     {
+        if (!text.Contains(QuotedVersionProperty, StringComparison.Ordinal)) return null;
         try
         {
-            return JsonNode.Parse(text) is JsonObject save && save[VersionProperty] is JsonValue value
-                && value.TryGetValue(out int version) && version >= FirstVersion ? version : null;
+            return JsonNode.Parse(text) is JsonObject save && save.Remove(VersionProperty) ? save : null;
         }
         catch (Exception e) when (e is JsonException or ArgumentException)
         {
             return null;
         }
     }
+
+    private const string QuotedVersionProperty = "\"" + VersionProperty + "\"";
 }
 
 /// <summary>
@@ -164,6 +175,9 @@ public sealed class SaveSchema<T> where T : class
     [RequiresDynamicCode(ReflectionMessage)]
     public SaveSchema(int version) : this(version, static save => save.Deserialize<T>(SaveStore.Options), static value => JsonSerializer.SerializeToNode(value, SaveStore.Options))
     {
+        if (!JsonSerializer.IsReflectionEnabledByDefault) throw new InvalidOperationException(ReflectionMessage);
+        SaveStore.Options.MakeReadOnly(populateMissingResolver: true);
+        CheckRoot(SaveStore.Options.GetTypeInfo(typeof(T)).Kind);
     }
 
     private SaveSchema(int version, Func<JsonObject, T?> read, Func<T, JsonNode?> write)
@@ -178,8 +192,22 @@ public sealed class SaveSchema<T> where T : class
     private static Func<JsonObject, T?> Reader(JsonTypeInfo<T> typeInfo)
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
+        CheckRoot(typeInfo.Kind);
         return save => save.Deserialize(typeInfo);
     }
+
+    /// <summary>
+    /// A versioned save is a JSON object, because the version is one of its properties. A list or a text can be told
+    /// apart when the schema is declared, before any slot is touched; a type with a converter of its own is found out
+    /// when it is first written.
+    /// </summary>
+    private static void CheckRoot(JsonTypeInfoKind kind)
+    {
+        if (kind == JsonTypeInfoKind.Enumerable || typeof(T) == typeof(string))
+            throw new InvalidOperationException(NotAnObject);
+    }
+
+    private static string NotAnObject => $"A versioned save is a JSON object, and {typeof(T).Name} does not serialize to one: its root must be an object. Save a class whose properties hold the data.";
 
     private static Func<T, JsonNode?> Writer(JsonTypeInfo<T> typeInfo) => value => JsonSerializer.SerializeToNode(value, typeInfo);
 
@@ -225,7 +253,7 @@ public sealed class SaveSchema<T> where T : class
             if (JsonNode.Parse(text) is not JsonObject parsed)
                 return new(SaveLoadStatus.Corrupt, error: new JsonException("A save is a JSON object."));
             save = parsed;
-            if (save[SaveSchema.VersionProperty] is { } declared)
+            if (save.TryGetPropertyValue(SaveSchema.VersionProperty, out var declared))
             {
                 if (declared is not JsonValue value || !value.TryGetValue(out version) || version < SaveSchema.FirstVersion)
                     return new(SaveLoadStatus.Corrupt, error: new JsonException($"\"{SaveSchema.VersionProperty}\" is not a whole number from {SaveSchema.FirstVersion}."));
@@ -255,7 +283,10 @@ public sealed class SaveSchema<T> where T : class
             if (_read(save) is { } loaded) return new(older ? SaveLoadStatus.Migrated : SaveLoadStatus.Loaded, loaded, version);
             return new(older ? SaveLoadStatus.MigrationFailed : SaveLoadStatus.Corrupt, version: older ? version : 0, error: new JsonException("The save is null."));
         }
-        catch (JsonException e)
+        // Whatever building the type throws (the serializer on a value of the wrong kind, the type's own code on a
+        // value it refuses), the save does not fit the type. NotSupportedException is the serializer saying the type
+        // itself cannot be read, whatever the save holds: a mistake in the game, not in the save.
+        catch (Exception e) when (e is not NotSupportedException)
         {
             return new(older ? SaveLoadStatus.MigrationFailed : SaveLoadStatus.Corrupt, version: older ? version : 0, error: e);
         }
@@ -275,10 +306,17 @@ public sealed class SaveSchema<T> where T : class
         ArgumentNullException.ThrowIfNull(value);
         CheckComplete();
         if (_write(value) is not JsonObject save)
-            throw new InvalidOperationException($"A versioned save is a JSON object, and {typeof(T).Name} does not serialize to one. Save a class whose properties hold the data.");
+            throw new InvalidOperationException(NotAnObject);
         if (save.ContainsKey(SaveSchema.VersionProperty))
             throw new InvalidOperationException($"{typeof(T).Name} has a property serialized as \"{SaveSchema.VersionProperty}\", the name the store keeps a save's version under. Rename the property.");
-        save.Insert(0, SaveSchema.VersionProperty, Version);
+        // After the serializer's own leading properties ("$type", "$id"), which it reads only at the start of an object.
+        int index = 0;
+        foreach (var property in save)
+        {
+            if (!property.Key.StartsWith('$')) break;
+            index++;
+        }
+        save.Insert(index, SaveSchema.VersionProperty, Version);
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, SaveStore.WriterOptions)) save.WriteTo(writer);
         return Encoding.UTF8.GetString(buffer.WrittenSpan);

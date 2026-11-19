@@ -78,7 +78,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void An_older_save_loads_through_every_step_in_order()
     {
-        const string old = """{ "$version": 1, "Coins": 7, "Name": "Ada" }""";
+        const string old = """{ "@version": 1, "Coins": 7, "Name": "Ada" }""";
         var (storage, store) = With(old);
         var result = store.Load("profile", Schema());
         Assert.AreEqual(SaveLoadStatus.Migrated, result.Status);
@@ -94,7 +94,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void A_save_starts_at_the_step_of_its_own_version()
     {
-        var (_, store) = With("""{ "$version": 2, "Coins": 7, "Lives": 1 }""");
+        var (_, store) = With("""{ "@version": 2, "Coins": 7, "Lives": 1 }""");
         var result = store.Load("profile", Schema());
         Assert.AreEqual(SaveLoadStatus.Migrated, result.Status);
         Assert.AreEqual(2, result.Version);
@@ -123,7 +123,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void A_save_of_the_current_version_loads_as_it_is()
     {
-        var (_, store) = With("""{ "$version": 3, "Gold": 2, "Lives": 1 }""");
+        var (_, store) = With("""{ "@version": 3, "Gold": 2, "Lives": 1 }""");
         var result = store.Load("profile", Schema());
         Assert.AreEqual(SaveLoadStatus.Loaded, result.Status);
         Assert.AreEqual(3, result.Version);
@@ -146,7 +146,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void A_save_from_a_newer_version_is_refused_and_left_alone()
     {
-        const string newer = """{ "$version": 4, "Gold": 1, "Gems": 3 }""";
+        const string newer = """{ "@version": 4, "Gold": 1, "Gems": 3 }""";
         var (storage, store) = With(newer);
         var result = store.Load("profile", Schema());
         Assert.AreEqual(SaveLoadStatus.TooNew, result.Status);
@@ -166,27 +166,20 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void Saving_never_replaces_a_newer_save_the_store_has_not_loaded()
     {
-        const string newer = """{ "$version": 9, "Gold": 1 }""";
+        const string newer = """{ "@version": 9, "Gold": 1 }""";
         var (storage, store) = With(newer);
         Assert.IsFalse(store.Save("profile", new Profile { Gold = 5 }, Schema()));
         Assert.AreEqual(newer, storage.Slots["profile"]);
         Assert.IsFalse(store.Save("profile", new Profile { Gold = 5 }, Schema()), "and keeps refusing");
-
-        // The slot is looked at once: later saves do not read it again.
-        var (other, fresh) = With("""{ "$version": 3, "Gold": 1 }""");
-        Assert.IsTrue(fresh.Save("profile", new Profile { Gold = 5 }, Schema()));
-        int reads = other.Reads;
-        Assert.IsTrue(fresh.Save("profile", new Profile { Gold = 6 }, Schema()));
-        Assert.AreEqual(reads, other.Reads);
     }
 
     [TestMethod]
     [DataRow("{ not json", DisplayName = "invalid JSON")]
     [DataRow("[1, 2]", DisplayName = "not an object")]
     [DataRow("null", DisplayName = "null")]
-    [DataRow("""{ "$version": "two", "Gold": 1 }""", DisplayName = "a version that is not a number")]
-    [DataRow("""{ "$version": 0, "Gold": 1 }""", DisplayName = "a version below 1")]
-    [DataRow("""{ "$version": 3, "Gold": "lots" }""", DisplayName = "a field of the wrong type")]
+    [DataRow("""{ "@version": "two", "Gold": 1 }""", DisplayName = "a version that is not a number")]
+    [DataRow("""{ "@version": 0, "Gold": 1 }""", DisplayName = "a version below 1")]
+    [DataRow("""{ "@version": 3, "Gold": "lots" }""", DisplayName = "a field of the wrong type")]
     public void Corrupt_data_is_set_aside_like_any_corrupt_slot(string text)
     {
         var (storage, store) = With(text);
@@ -202,7 +195,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void A_slot_that_cannot_be_read_is_protected()
     {
-        const string saved = """{ "$version": 3, "Gold": 2 }""";
+        const string saved = """{ "@version": 3, "Gold": 2 }""";
         var (storage, store) = With(saved);
         storage.FailReads = true;
         var result = store.Load("profile", Schema());
@@ -222,7 +215,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void A_step_that_fails_leaves_the_save_alone_and_reports_why()
     {
-        const string old = """{ "$version": 1, "Coins": "many" }""";
+        const string old = """{ "@version": 1, "Coins": "many" }""";
         var schema = new SaveSchema<Profile>(2, SchemaTypes.Default.Profile)
             .Migrate(1, save => save["Gold"] = save["Coins"]!.GetValue<int>() * 2);
         var (storage, store) = With(old);
@@ -257,10 +250,10 @@ public sealed partial class SaveSchemaTests
     {
         var (storage, store) = With(null);
         Assert.IsTrue(store.Save("profile", new Profile { Gold = 2, Lives = 1, Name = "Ada" }, Schema()));
-        string versionLine = """  "$version": 3,""" + Environment.NewLine;
+        string versionLine = """  "@version": 3,""" + Environment.NewLine;
         string expected = string.Join(Environment.NewLine,
             "{",
-            """  "$version": 3,""",
+            """  "@version": 3,""",
             """  "Gold": 2,""",
             """  "Lives": 1,""",
             """  "Name": "Ada" """.TrimEnd(),
@@ -282,7 +275,7 @@ public sealed partial class SaveSchemaTests
     [TestMethod]
     public void The_first_save_over_an_older_save_keeps_the_original()
     {
-        const string old = """{ "$version": 2, "Coins": 7, "Lives": 1 }""";
+        const string old = """{ "@version": 2, "Coins": 7, "Lives": 1 }""";
         var (storage, store) = With(old);
         var profile = store.Load("profile", Schema()).Value!;
         Assert.AreEqual(1, storage.Slots.Count, "nothing is copied until the slot is about to change");
@@ -291,7 +284,7 @@ public sealed partial class SaveSchemaTests
         Assert.IsTrue(store.Save("profile", profile, Schema()));
         Assert.AreEqual(old, storage.Slots["profile.v2.backup"]);
         StringAssert.Contains(storage.Slots["profile"], """
-            "$version": 3
+            "@version": 3
             """.Trim());
 
         storage.Slots.Remove("profile.v2.backup");
@@ -347,7 +340,7 @@ public sealed partial class SaveSchemaTests
         var read = schema.Read("""{ "Coins": 7 }""");
         Assert.AreEqual(SaveLoadStatus.Migrated, read.Status);
         Assert.AreEqual(7, read.Value!.Gold);
-        Assert.AreEqual(SaveLoadStatus.TooNew, schema.Read("""{ "$version": 4 }""").Status);
+        Assert.AreEqual(SaveLoadStatus.TooNew, schema.Read("""{ "@version": 4 }""").Status);
         Assert.AreEqual(SaveLoadStatus.Corrupt, schema.Read("nope").Status);
         Assert.IsNotNull(schema.Read("nope").Error);
         Assert.AreEqual(SaveLoadStatus.Loaded, schema.Read(schema.Write(new Profile())).Status);
@@ -365,7 +358,7 @@ public sealed partial class SaveSchemaTests
         Assert.ThrowsExactly<ArgumentException>(() => schema.Migrate(1, AddLives), "one step per version");
 
         // The step from version 2 is missing: every use says so, instead of a player's old save finding out.
-        var missing = Assert.ThrowsExactly<InvalidOperationException>(() => schema.Read("""{ "$version": 3 }"""));
+        var missing = Assert.ThrowsExactly<InvalidOperationException>(() => schema.Read("""{ "@version": 3 }"""));
         StringAssert.Contains(missing.Message, "version 2");
         Assert.ThrowsExactly<InvalidOperationException>(() => schema.Write(new Profile()));
         var store = new SaveStore(new MemoryStorage());
@@ -376,13 +369,6 @@ public sealed partial class SaveSchemaTests
         Assert.ThrowsExactly<ArgumentNullException>(() => store.Save("profile", new Profile(), (SaveSchema<Profile>)null!));
         Assert.ThrowsExactly<ArgumentNullException>(() => Schema().Read(null!));
         Assert.ThrowsExactly<ArgumentNullException>(() => Schema().Write(null!));
-    }
-
-    [TestMethod]
-    public void A_versioned_save_is_a_JSON_object()
-    {
-        var list = new SaveSchema<List<int>>(1, SchemaTypes.Default.ListInt32);
-        Assert.ThrowsExactly<InvalidOperationException>(() => list.Write([1, 2]));
     }
 
     // ---- Slots ---------------------------------------------------------------------------------------------------

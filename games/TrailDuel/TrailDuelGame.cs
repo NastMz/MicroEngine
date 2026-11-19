@@ -133,7 +133,11 @@ public sealed class TrailDuelGame : Game
         Scenes.Reset(new OverworldScene(this), Transition.Fade(1f, Pal.Ink));
     }
 
-    public void SaveGame() => State.Save(Saves);
+    /// <summary>False when the adventure was not saved.</summary>
+    public bool SaveGame() => State.Save(Saves);
+
+    /// <summary>Whether the save slot holds an adventure this build can load (what the title offers as "continue").</summary>
+    public bool CanContinue => GameState.Load(Saves) is not null;
 
     internal Sprite Sprite(string name) => Atlas[name];
 }

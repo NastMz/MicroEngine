@@ -24,8 +24,15 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
     {
         Audio.PlayMusic("title", 0.3f);
         string[] options = ["NEW GAME", "CONTROLS", "ACHIEVEMENTS", "QUIT"];
-        _list = UiKit.List(Audio, game.HasSave ? ["CONTINUE", .. options] : options);
+        // Asked once, here: a save from a newer release, or one that cannot be read, is not an adventure to continue.
+        _canContinue = game.CanContinue;
+        _list = UiKit.List(Audio, _canContinue ? ["CONTINUE", .. options] : options);
     }
+
+    private bool _canContinue;
+
+    /// <summary>The title's options, top to bottom.</summary>
+    internal IReadOnlyList<string> Options => _list.Options;
 
     public override void Resume() => Audio.PlayMusic("title");
 
@@ -66,7 +73,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         {
             case "CONTINUE": game.ContinueGame(); break;
             case "NEW GAME":
-                if (game.HasSave) { _confirmOverwrite = true; _confirm = new ChoiceMenu(Font, Audio, "START OVER", "CANCEL"); }
+                if (_canContinue) { _confirmOverwrite = true; _confirm = new ChoiceMenu(Font, Audio, "START OVER", "CANCEL"); }
                 else game.StartNewGame();
                 break;
             case "QUIT": Game.Quit(); break;

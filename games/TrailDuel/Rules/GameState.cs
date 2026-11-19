@@ -148,7 +148,8 @@ public sealed class GameState : IStateHashed
     /// </summary>
     public static readonly SaveSchema<GameState> Schema = new(version: 1);
 
-    public void Save(SaveStore store) => store.Save(SaveSlot, this, Schema);
+    /// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+    public bool Save(SaveStore store) => store.Save(SaveSlot, this, Schema);
 
     /// <summary>
     /// The saved adventure, or null without one the game can use (none, damaged, or written by a newer release, which

@@ -110,6 +110,9 @@ public sealed class SaveSlots(SaveStore store)
     public SaveStore Store { get; } = store;
     public bool HasSave => Store.Exists(Slot);
     public Progress? Load() => Store.Load(Slot, Progress.Schema).Value;
-    public void Save(Progress progress) => Store.Save(Slot, progress, Progress.Schema);
+    /// <summary>What the slot holds, as a load finds it: whether there is an adventure to continue, and why not.</summary>
+    public SaveLoadStatus Check() => Store.Load(Slot, Progress.Schema).Status;
+    /// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+    public bool Save(Progress progress) => Store.Save(Slot, progress, Progress.Schema);
     public void Delete() => Store.Delete(Slot);
 }

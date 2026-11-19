@@ -250,5 +250,26 @@ public sealed class StorageSlotContractTests
         Assert.IsNull(slots.Single(s => s.Name == "slot 2").LastWrite, "a slot with no usable stamp has no time");
         Assert.AreEqual("microengine.time/game/progress", BrowserStorage.Key(BrowserStorage.TimePrefix("game"), "progress"), "stamps live outside every game's slot keys");
     }
+
+    [TestMethod]
+    public void BrowserStorageStampsTheTimeOnlyAfterTheDataIsWritten()
+    {
+        var written = new List<string>();
+        BrowserStorage.Store((key, _) => written.Add(key), "microengine/game/progress", "{}", "microengine.time/game/progress", "1");
+        CollectionAssert.AreEqual(new[] { "microengine/game/progress", "microengine.time/game/progress" }, written);
+
+        // A refused write (the quota) leaves no newer time than the content.
+        written.Clear();
+        Assert.ThrowsExactly<IOException>(() => BrowserStorage.Store(
+            (key, _) => { if (key.StartsWith("microengine/")) throw new IOException("QuotaExceededError"); written.Add(key); },
+            "microengine/game/progress", "{}", "microengine.time/game/progress", "1"));
+        Assert.AreEqual(0, written.Count);
+
+        // A stamp that cannot be written loses only the time.
+        BrowserStorage.Store(
+            (key, _) => { if (key.StartsWith("microengine.time/")) throw new IOException("QuotaExceededError"); written.Add(key); },
+            "microengine/game/progress", "{}", "microengine.time/game/progress", "1");
+        CollectionAssert.AreEqual(new[] { "microengine/game/progress" }, written);
+    }
 #pragma warning restore CA1416
 }

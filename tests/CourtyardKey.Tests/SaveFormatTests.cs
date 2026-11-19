@@ -114,6 +114,55 @@ public sealed class SaveFormatTests
         Assert.AreEqual(newer, File.ReadAllText(SaveFile));
     }
 
+    [TestMethod]
+    public void ASaveFromANewerReleaseIsNotOfferedAsContinue()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SaveFile, """{ "@version": 2, "Gems": 5 }""");
+        var game = new CourtyardKeyGame(_dir);
+        game.InitializeForTest(new HeadlessPlatform());
+        game.StepForTest();
+
+        var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
+        Assert.AreEqual("Newer save", title.Menu.Options[1], "the entry says why it cannot be chosen");
+        Assert.IsFalse(title.Menu.IsEnabled(1));
+        Assert.AreEqual(0, title.Menu.Index, "the cursor starts on New Game");
+    }
+
+    [TestMethod]
+    public void ASaveThatLoadsIsOfferedAsContinue()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
+        var game = new CourtyardKeyGame(_dir);
+        game.InitializeForTest(new HeadlessPlatform());
+        game.StepForTest();
+
+        var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
+        Assert.AreEqual("Continue", title.Menu.Options[1]);
+        Assert.IsTrue(title.Menu.IsEnabled(1));
+        Assert.AreEqual(1, title.Menu.Index);
+    }
+
+    [TestMethod]
+    public void ARefusedSaveIsNotReportedAsSaved()
+    {
+        const string newer = """{ "@version": 2, "Gems": 5 }""";
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(SaveFile, newer);
+        var game = new CourtyardKeyGame(_dir, "road");
+        game.InitializeForTest(new HeadlessPlatform());
+        game.StepForTest();
+
+        game.Play!.SaveGame();
+        Assert.AreEqual("Could not save", game.Play.Hud.ToastText);
+        Assert.AreEqual(newer, File.ReadAllText(SaveFile));
+
+        File.Delete(SaveFile);
+        game.Play.SaveGame();
+        Assert.AreEqual("Progress saved", game.Play.Hud.ToastText);
+    }
+
     private sealed class MemoryStorage : IStorage
     {
         public Dictionary<string, string> Slots { get; } = [];

@@ -675,7 +675,7 @@ public sealed class SaveVersionTests
     [TestMethod]
     public void ASaveFromAnIntermediateVersionRunsOnlyTheRemainingSteps()
     {
-        var (_, store) = With("""{ "$version": 2, "Coins": 5, "Lives": 1 }""");
+        var (_, store) = With("""{ "@version": 2, "Coins": 5, "Lives": 1 }""");
         var profile = ProfileSaves.Load(store, out string notice);
         Assert.AreEqual(5, profile.Gold);
         Assert.AreEqual(1, profile.Lives, "the 1 -> 2 step did not run again");
@@ -697,7 +697,7 @@ public sealed class SaveVersionTests
     [TestMethod]
     public void ACurrentSaveLoadsWithoutACopy()
     {
-        var (storage, store) = With("""{ "$version": 3, "Gold": 9, "Lives": 2 }""");
+        var (storage, store) = With("""{ "@version": 3, "Gold": 9, "Lives": 2 }""");
         var profile = ProfileSaves.Load(store, out string notice);
         Assert.AreEqual(9, profile.Gold);
         Assert.AreEqual("", notice);
@@ -718,7 +718,7 @@ public sealed class SaveVersionTests
     [TestMethod]
     public void ASaveFromANewerBuildIsLeftAsItIsAndNotSavedOver()
     {
-        const string newer = """{ "$version": 99, "Gold": 1 }""";
+        const string newer = """{ "@version": 99, "Gold": 1 }""";
         var (storage, store) = With(newer);
         var profile = ProfileSaves.Load(store, out string notice);
         StringAssert.Contains(notice, "newer version");
@@ -730,7 +730,7 @@ public sealed class SaveVersionTests
     [TestMethod]
     public void DamagedDataIsSetAsideAndANewProfileCanBeSaved()
     {
-        var (storage, store) = With("""{ "$version": 3, "Gold": "lots" }""");
+        var (storage, store) = With("""{ "@version": 3, "Gold": "lots" }""");
         ProfileSaves.Load(store, out string notice);
         StringAssert.Contains(notice, "set aside");
         Assert.IsTrue(storage.Exists("profile.corrupt"));
@@ -766,6 +766,19 @@ public sealed class SaveVersionTests
         public void SetAside(string slot) => _slots.SetAside(slot);
         public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => _slots.List();
     }
+}
+
+/// <summary>The samples keep the save folders they have always had.</summary>
+[TestClass]
+public sealed class SampleSaveIdTests
+{
+    [TestMethod]
+    public void TheExamplesKeepTheirSaveFolder() =>
+        Assert.AreEqual(SaveStore.DefaultDirectory("MicroEngineExamples"), new ExamplesGame().Saves.Directory);
+
+    [TestMethod]
+    public void GemGardenKeepsItsSaveFolder() =>
+        Assert.AreEqual(SaveStore.DefaultDirectory("GemGarden"), new GemGarden.MainGame().Saves.Directory);
 }
 
 /// <summary>The save games of a "load game" screen, and the settings as one more slot of the same store.</summary>

@@ -53,7 +53,7 @@ public sealed class SaveFormatTests
         game.Session.AddScore(20000);
         game.SaveHighScore();
 
-        string expected = string.Join(Environment.NewLine, "{", """  "$version": 1,""", """  "HighScore": 20000""", "}");
+        string expected = string.Join(Environment.NewLine, "{", """  "@version": 1,""", """  "HighScore": 20000""", "}");
         Assert.AreEqual(expected, File.ReadAllText(SaveFile));
         Assert.AreEqual(20000, Launch().Session.HighScore);
     }
@@ -61,7 +61,7 @@ public sealed class SaveFormatTests
     [TestMethod]
     public void ARecordFromANewerReleaseIsNotLoadedAndNotReplaced()
     {
-        const string newer = """{ "$version": 2, "Best": { "Score": 99999 } }""";
+        const string newer = """{ "@version": 2, "Best": { "Score": 99999 } }""";
         File.WriteAllText(SaveFile, newer);
         var game = Launch();
         Assert.AreEqual(0, game.Session.HighScore);
