@@ -36,6 +36,12 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/entity-1.md`](odd/tasks/entity-1.md) (Entity Component Systems: no first-party module; a game runs a
   third-party one beside the scene's world, the `EcsSwarm` sample, the comparison `benchmarks/EcsBench`, ADR 0059, provisional until a game with complex mechanics
   tests the modelling side).
+- An architectural consolidation is in progress: [`odd/tasks/consolidation-1.md`](odd/tasks/consolidation-1.md) (issue
+  #183) holds its initiatives, their order and their state, and
+  [`docs/evaluations/consolidation-1.md`](docs/evaluations/consolidation-1.md) the audit behind them. It reopens earlier
+  "defer" decisions (ECS, state machines, pointer bindings, audio effects, joints, post-processing, content
+  processing, save migrations) and judges a capability by what a developer outside the repository must write, never
+  by what the demos use or by a benchmark alone. Read it before proposing or declining an engine capability.
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
