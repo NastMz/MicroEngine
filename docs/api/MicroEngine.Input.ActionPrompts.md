@@ -50,7 +50,8 @@ public ActionPrompts(InputMap input, VirtualControls? touch = null)
 
 The device prompts are shown for: [Override](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Override), else the device that last pressed an action; before any
 press (or after scripted input), touch when the on-screen controls are shown or the screen is touch-first,
-otherwise the keyboard.
+otherwise the keyboard. The keyboard and the mouse are one device here: a player on either sees the keys and
+the mouse controls of an action together, so this is [Keyboard](MicroEngine.Input.InputDevice.md) for both.
 
 ```csharp
 public InputDevice Device { get; }

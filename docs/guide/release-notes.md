@@ -23,6 +23,25 @@ optional, for agents that find their way through a level.
   hashes a scene's own machines.
 - For modules: `Lifecycle.Started` and `Stopping`, and `EngineBuilder.StateSections`, which adds a named section of
   a module's state to the state hash.
+- The mouse in actions ([The mouse in actions](../manual/input.md#the-mouse-in-actions)): mouse buttons (primary,
+  secondary, middle, back, forward), the wheel (`InputControl.WheelUp`, `WheelDown`, `WheelLeft`, `WheelRight`: pressed
+  for one update per notch) and pointer motion (`InputControl.PointerLeft` and its siblings: an analog value) are bound
+  to actions like keys, with `InputMap.Bind(action, params InputControl[])`. They are read, consumed by widgets and
+  on-screen controls, paired with players, rebound by listening (`ListenForPress(pressed, PressKinds.All)`,
+  `InputControl.FromPress`) and saved like keys. `InputMap.Motion` reads four actions as an amount with no limit,
+  `PointerSensitivity` scales pointer motion, `Unbind(action, control)` and `ActionsBoundTo(control)` serve a controls
+  screen, and `PointerNames` names the mouse's controls. `InputDevice.Mouse` is what `LastDevice` reports for them. `Game.Prompts` lists an action's mouse controls
+  after its keys (`PromptKind.Pointer`).
+- `Input.Pointer` reports every button with its edges (`Pressed(button)`, `Released(button)`, `Down(button)`), the
+  back and forward buttons, how far the pointer moved in the update (`Delta`) and what kind of pointer it is
+  (`Kind`).
+- `ICursorControl`, a platform capability: hide the system's cursor and lock it so the mouse reports motion only.
+  SDL offers it on desktops and in browsers, raylib too; `HeadlessPlatform.Cursor` remembers what a game asked.
+- `InputMap.BindStick` binds a direction of either stick read as a whole, and `RightStickDeadZone` is the right
+  stick's radial dead zone, for twin-stick aiming and menus on the right stick.
+- Input scripts press any mouse button (`mouse X,Y down secondary`), click (`click X,Y [button]`) and turn the wheel
+  sideways (`wheel D H`); `InputScript.Mouse` takes a button and `Click` and `Wheel` build the same in code.
+- The "Mouse actions" example: click to move, wheel to zoom, a locked drag and a mouse button rebound by pressing it.
 - `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets
   (`Assets.TiledMap(path)`): tile layers with each cell's flips, tilesets as sprites (`TiledSprites`), objects and
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
@@ -106,6 +125,15 @@ optional, for agents that find their way through a level.
 
 **Changed**
 
+- An action's bindings are one list of controls (`InputControl`). `ActionBindings.Controls` holds every control and
+  the lists by kind are views of it; binding a control an action already has adds nothing. Saved bindings use a second
+  format, one list of controls per action as text (`"Key:Space"`, `"Mouse:Secondary"`), and files of the first format
+  load unchanged. `InputMap.ExportBindings` fills `ActionBindingData.Controls` and leaves the lists of the first
+  format empty ([migration notes](../migrations.md#bindings-as-data-are-one-list-of-controls)).
+- On-screen touch controls set to appear automatically hide while the mouse plays, as they do for the keyboard and
+  the gamepad.
+- A scripted `wheel` turns where the script's mouse was put last, not at the canvas's corner, so it reaches the widget
+  or the game under the pointer.
 - A save slot is a plain name on every system. `SaveStore` and `FileSaveStorage` throw `ArgumentException` for a slot
   that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, ends
   with `.corrupt` (the name unreadable data is set aside under), or is a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file
@@ -130,6 +158,10 @@ optional, for agents that find their way through a level.
 
 **Fixed**
 
+- A secondary, middle or side mouse button pressed on a widget or another input layer kept the mouse with that layer
+  until the primary button was next released, so the next left click anywhere reached nothing. Each mouse button is a
+  press of its own: the layer gets that button's release and nothing else.
+- raylib windows ignored the mouse's back and forward buttons.
 - A scene's world of about 130,000 to 260,000 entities could take 5 to 7 ms to start every step, depending on where
   the runtime had placed two of the world's arrays in memory (seen on an AMD Zen 4 processor). It takes 0.2 to 0.4 ms.
 - `AchievementTracker` with a store threw `InvalidOperationException` in a game published trimmed or with NativeAOT,

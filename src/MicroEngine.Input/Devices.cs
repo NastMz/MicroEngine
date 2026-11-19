@@ -67,8 +67,16 @@ public enum PadButton
 public enum PadAxis { LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger }
 
 /// <summary>The kind of device that last pressed an action (see <see cref="InputMap.LastDevice"/>).</summary>
-/// <remarks><c>Other</c> covers scripted input and custom <see cref="IActionSource"/>s.</remarks>
-public enum InputDevice { None, Keyboard, Gamepad, Touch, Other }
+/// <remarks>
+/// <c>Other</c> covers scripted input and custom <see cref="IActionSource"/>s. <c>Mouse</c> is a mouse button, the wheel
+/// or pointer motion bound to an action; prompts show the keyboard and the mouse together.
+/// </remarks>
+public enum InputDevice
+{
+    None, Keyboard, Gamepad, Touch, Other,
+    // Added after the first set, so the numbers of the devices above never change.
+    Mouse,
+}
 
 /// <summary>
 /// The button names of a gamepad family, for prompts: <see cref="PadButton"/> uses Xbox names, which PlayStation pads
@@ -93,9 +101,33 @@ public enum StickDirections
     Four,
 }
 
-/// <summary>The mouse (or another pointer) over the game's virtual canvas.</summary>
+/// <summary>A set of pointer buttons (<see cref="PointerState.Buttons"/>).</summary>
+[Flags]
+public enum PointerButtons
+{
+    /// <summary>No button.</summary>
+    None = 0,
+    /// <summary>The primary button (left), or a finger or pen on the screen.</summary>
+    Primary = 1,
+    /// <summary>The secondary button (right).</summary>
+    Secondary = 2,
+    /// <summary>The middle button (the wheel's click).</summary>
+    Middle = 4,
+    /// <summary>The back button on the side of the mouse.</summary>
+    Back = 8,
+    /// <summary>The forward button on the side of the mouse.</summary>
+    Forward = 16,
+}
+
+/// <summary>
+/// The mouse (or another pointer) over the game's virtual canvas: where it is, which buttons are held, how far it and
+/// the wheel moved in this update, and which buttons went down or up in it.
+/// </summary>
 /// <param name="Present">Whether the pointer is over the window at all.</param>
 /// <param name="Position">Position in virtual canvas pixels (may lie outside the canvas, in the letterbox).</param>
+/// <param name="Primary">Whether the primary button is held (or a finger or pen touches).</param>
+/// <param name="Secondary">Whether the secondary button is held.</param>
+/// <param name="Middle">Whether the middle button is held.</param>
 public readonly record struct PointerState(bool Present, Vector2 Position, bool Primary, bool Secondary, bool Middle)
 {
     /// <summary>
@@ -103,6 +135,45 @@ public readonly record struct PointerState(bool Present, Vector2 Position, bool 
     /// the right, in notches (fractions for smooth wheels and touchpads).
     /// </summary>
     public Vector2 Wheel { get; init; }
+    /// <summary>Whether the back button on the side of the mouse is held.</summary>
+    public bool Back { get; init; }
+    /// <summary>Whether the forward button on the side of the mouse is held.</summary>
+    public bool Forward { get; init; }
+    /// <summary>
+    /// How far the pointer moved since the previous update, in virtual canvas pixels. While the cursor is locked
+    /// (<see cref="ICursorControl.Relative"/>) the position stays and this is the mouse's own motion.
+    /// </summary>
+    public Vector2 Delta { get; init; }
+    /// <summary>Whether this is the mouse, a finger or a pen.</summary>
+    public PointerKind Kind { get; init; }
+    /// <summary>
+    /// The buttons that went down in this update. A map computes it once per update (<see cref="InputMap.Pointer"/>); a
+    /// raw source leaves it empty.
+    /// </summary>
+    public PointerButtons PressedButtons { get; init; }
+    /// <summary>The buttons that went up in this update (see <see cref="PressedButtons"/>).</summary>
+    public PointerButtons ReleasedButtons { get; init; }
+
+    /// <summary>Every button held, as one value.</summary>
+    public PointerButtons Buttons => (Primary ? PointerButtons.Primary : 0) | (Secondary ? PointerButtons.Secondary : 0) | (Middle ? PointerButtons.Middle : 0)
+        | (Back ? PointerButtons.Back : 0) | (Forward ? PointerButtons.Forward : 0);
+
+    /// <summary>Whether <paramref name="button"/> is held. Also true in the update after a click that started and ended within one frame.</summary>
+    public bool Down(PointerButton button) => (Buttons & Flag(button)) != 0;
+    /// <summary>True during the first update after <paramref name="button"/> went down (as <see cref="InputMap.Pointer"/> reports it).</summary>
+    public bool Pressed(PointerButton button) => (PressedButtons & Flag(button)) != 0;
+    /// <summary>True during the first update after <paramref name="button"/> went up (as <see cref="InputMap.Pointer"/> reports it).</summary>
+    public bool Released(PointerButton button) => (ReleasedButtons & Flag(button)) != 0;
+
+    internal static PointerButtons Flag(PointerButton button) => button switch
+    {
+        PointerButton.Primary => PointerButtons.Primary,
+        PointerButton.Secondary => PointerButtons.Secondary,
+        PointerButton.Middle => PointerButtons.Middle,
+        PointerButton.Back => PointerButtons.Back,
+        PointerButton.Forward => PointerButtons.Forward,
+        _ => PointerButtons.None,
+    };
 }
 
 /// <summary>The raw device state a backend reports once per polled frame.</summary>
@@ -125,6 +196,8 @@ public interface IInputSource
         PadAxis.LeftY => LeftStick.Y,
         _ => 0,
     };
+    /// <summary>Right stick, each axis in -1..1. Sources keep the default, which reads the two axes.</summary>
+    Vector2 RightStick => new(GetPadAxis(PadAxis.RightX), GetPadAxis(PadAxis.RightY));
     /// <summary>Whether a gamepad is connected. Sources without gamepads keep the default.</summary>
     bool PadConnected => false;
     /// <summary>The family of the connected gamepad, for button names in prompts; sources that cannot tell keep Xbox.</summary>

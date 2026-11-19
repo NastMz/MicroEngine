@@ -223,6 +223,10 @@ public sealed class InputSystem : IStateHashed
     {
         InputEventKind.KeyDown or InputEventKind.KeyUp => (e.Device.Value, InputEventKind.KeyDown, (long)e.Key),
         InputEventKind.ButtonDown or InputEventKind.ButtonUp => (e.Device.Value, InputEventKind.ButtonDown, (long)e.Button),
+        // Each of the mouse's other buttons is a press of its own: the layer that took a right click gets that click's
+        // release and nothing else. The primary button shares its capture with the pointer's moves (a drag).
+        InputEventKind.PointerDown or InputEventKind.PointerUp when e.PointerKind == PointerKind.Mouse && e.PointerButton is not (PointerButton.None or PointerButton.Primary)
+            => (e.Device.Value, InputEventKind.PointerUp, (long)e.PointerButton),
         InputEventKind.PointerDown or InputEventKind.PointerUp or InputEventKind.PointerMove or InputEventKind.PointerCancel
             => (e.Device.Value, InputEventKind.PointerDown, e.Pointer),
         _ => null,
@@ -230,8 +234,7 @@ public sealed class InputSystem : IStateHashed
 
     private static bool Starts(in InputEvent e) => e.Kind is InputEventKind.PointerDown or InputEventKind.ButtonDown || e.Kind == InputEventKind.KeyDown && !e.Repeat;
 
-    private static bool Ends(in InputEvent e) => e.Kind is InputEventKind.KeyUp or InputEventKind.ButtonUp or InputEventKind.PointerCancel
-        || e.Kind == InputEventKind.PointerUp && (e.PointerKind != PointerKind.Mouse || e.PointerButton == PointerButton.Primary);
+    private static bool Ends(in InputEvent e) => e.Kind is InputEventKind.KeyUp or InputEventKind.ButtonUp or InputEventKind.PointerCancel or InputEventKind.PointerUp;
 
     /// <summary>
     /// Samples every player's actions from the devices they hear and makes the pending events this update's
@@ -270,25 +273,40 @@ public sealed class InputSystem : IStateHashed
     }
 
     /// <summary>
-    /// Takes the next key or gamepad-button press of any device away from everything else and hands it to
-    /// <paramref name="pressed"/>, once: the "press a key for jump" step of a rebinding screen
-    /// (<see cref="InputMap.BindFrom"/>). Dispose the result to stop listening before a press came.
+    /// Takes the next press of any device away from everything else and hands it to <paramref name="pressed"/>, once:
+    /// the "press a key for jump" step of a rebinding screen (<see cref="InputMap.BindFrom"/>,
+    /// <see cref="InputControl.FromPress"/>). Dispose the result to stop listening before a press came.
     /// </summary>
-    public IDisposable ListenForPress(Action<InputEvent> pressed)
+    /// <param name="pressed">Receives the press: a key-down, a gamepad button-down, a mouse button-down or a wheel turn.</param>
+    /// <param name="kinds">
+    /// Which presses count. Keys and gamepad buttons by default, so the mouse still works the screen's own buttons;
+    /// <see cref="PressKinds.All"/> also takes the next mouse click and wheel turn, wherever the pointer is.
+    /// </param>
+    public IDisposable ListenForPress(Action<InputEvent> pressed, PressKinds kinds = PressKinds.Keys | PressKinds.PadButtons)
     {
         ArgumentNullException.ThrowIfNull(pressed);
-        var listener = new PressListener(Layers, pressed);
+        var listener = new PressListener(Layers, pressed, kinds);
         Layers.Add(listener, int.MaxValue);
         return listener;
     }
 
-    private sealed class PressListener(InputLayers layers, Action<InputEvent> pressed) : IInputLayer, IDisposable
+    private sealed class PressListener(InputLayers layers, Action<InputEvent> pressed, PressKinds kinds) : IInputLayer, IDisposable
     {
         private bool _done;
 
         public bool Handle(in InputEvent e)
         {
-            if (_done || e.Kind is not (InputEventKind.KeyDown or InputEventKind.ButtonDown) || e.Repeat) return false;
+            if (_done || e.Repeat) return false;
+            var kind = e.Kind switch
+            {
+                InputEventKind.KeyDown => PressKinds.Keys,
+                InputEventKind.ButtonDown => PressKinds.PadButtons,
+                // A finger is not a control to rebind: touches stay with the screen's own buttons.
+                InputEventKind.PointerDown when e.PointerKind == PointerKind.Mouse && e.PointerButton != PointerButton.None => PressKinds.PointerButtons,
+                InputEventKind.Wheel when e.Wheel != Vector2.Zero => PressKinds.Wheel,
+                _ => PressKinds.None,
+            };
+            if ((kinds & kind) == 0) return false;
             _done = true;
             // Gone at once; the press's release still comes here, as the press's owner, so gameplay never sees it.
             layers.Remove(this);
@@ -374,6 +392,21 @@ public sealed class InputSystem : IStateHashed
             }
         }
 
+        public Vector2 RightStick
+        {
+            get
+            {
+                var best = devices.RightStick;
+                foreach (var (id, s) in input._polled)
+                {
+                    if (!owns(id)) continue;
+                    var v = s.RightStick;
+                    if (v.LengthSquared() > best.LengthSquared()) best = v;
+                }
+                return best;
+            }
+        }
+
         public bool PadConnected
         {
             get
@@ -412,6 +445,24 @@ public sealed class InputSystem : IStateHashed
 
         public IReadOnlyList<PointerInfo> Pointers => devices.Pointers;
     }
+}
+
+/// <summary>The presses <see cref="InputSystem.ListenForPress"/> can take.</summary>
+[Flags]
+public enum PressKinds
+{
+    /// <summary>Nothing.</summary>
+    None = 0,
+    /// <summary>Keyboard keys.</summary>
+    Keys = 1,
+    /// <summary>Gamepad buttons.</summary>
+    PadButtons = 2,
+    /// <summary>Mouse buttons (never a finger or a pen).</summary>
+    PointerButtons = 4,
+    /// <summary>The wheel turning.</summary>
+    Wheel = 8,
+    /// <summary>Every kind of press.</summary>
+    All = Keys | PadButtons | PointerButtons | Wheel,
 }
 
 /// <summary>One event of the frame and where it went (<see cref="InputSystem.Routed"/>).</summary>

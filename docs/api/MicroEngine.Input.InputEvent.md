@@ -45,6 +45,19 @@ public PadButton Button { get; init; }
 
  [PadButton](MicroEngine.Input.PadButton.md)
 
+### <a id="MicroEngine_Input_InputEvent_Delta"></a> Delta
+
+For a pointer move: how far the pointer moved, in virtual canvas pixels, when the backend knows it apart from the
+position (a locked cursor moves without changing place). Zero means "the difference to the previous position".
+
+```csharp
+public Vector2 Delta { get; init; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ### <a id="MicroEngine_Input_InputEvent_Device"></a> Device
 
 The device it happened on.
@@ -433,12 +446,12 @@ public static InputEvent PointerDown(DeviceId device, long pointer, PointerKind 
 
  [InputEvent](MicroEngine.Input.InputEvent.md)
 
-### <a id="MicroEngine_Input_InputEvent_PointerMove_MicroEngine_Input_DeviceId_System_Int64_MicroEngine_Input_PointerKind_System_Numerics_Vector2_System_Double_"></a> PointerMove\(DeviceId, long, PointerKind, Vector2, double\)
+### <a id="MicroEngine_Input_InputEvent_PointerMove_MicroEngine_Input_DeviceId_System_Int64_MicroEngine_Input_PointerKind_System_Numerics_Vector2_System_Double_System_Numerics_Vector2_"></a> PointerMove\(DeviceId, long, PointerKind, Vector2, double, Vector2\)
 
-A pointer moved.
+A pointer moved; <code class="paramref">delta</code> is its own motion when the backend knows it (a locked cursor), else zero.
 
 ```csharp
-public static InputEvent PointerMove(DeviceId device, long pointer, PointerKind kind, Vector2 position, double time = 0)
+public static InputEvent PointerMove(DeviceId device, long pointer, PointerKind kind, Vector2 position, double time = 0, Vector2 delta = default)
 ```
 
 #### Parameters
@@ -452,6 +465,8 @@ public static InputEvent PointerMove(DeviceId device, long pointer, PointerKind 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 `time` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+`delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 #### Returns
 

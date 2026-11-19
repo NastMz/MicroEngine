@@ -59,8 +59,8 @@ public void Apply(in InputEvent e)
 
 ### <a id="MicroEngine_Input_InputDevices_EndSample"></a> EndSample\(\)
 
-Ends a sample: presses that were already released stop reading as held, the wheel starts again from 0 and
-lifted fingers go. Called once after every update has read the devices.
+Ends a sample: presses that were already released stop reading as held, the wheel and the pointers' motion start
+again from 0 and lifted fingers go. Called once after every update has read the devices.
 
 ```csharp
 public void EndSample()

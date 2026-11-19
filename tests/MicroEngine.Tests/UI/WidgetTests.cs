@@ -297,6 +297,48 @@ public sealed class WidgetTests
         Assert.IsFalse(recorder.IsPressed);
     }
 
+    private sealed class PointerScene(Action<UiRoot> build) : Scene
+    {
+        public int Selects, Orders, Zooms;
+        public override void Enter() => build(Widgets);
+        public override void Update(float dt)
+        {
+            if (Input.Pressed("select")) Selects++;
+            if (Input.Pressed("order")) Orders++;
+            if (Input.Pressed("zoom-in")) Zooms++;
+        }
+        public override void Draw(IRenderer renderer) { }
+    }
+
+    [TestMethod]
+    public void A_click_or_a_wheel_turn_on_a_widget_presses_no_action_bound_to_the_mouse()
+    {
+        int clicks = 0;
+        Button? button = null;
+        var scene = new PointerScene(ui => ui.Content = new WheelBox(button = new Button("BUILD", () => clicks++)));
+        var (game, platform) = Start(scene, () => InputMap.CreateDefault()
+            .Bind("select", PointerButton.Primary).Bind("order", PointerButton.Secondary).Bind("zoom-in", InputControl.WheelUp));
+        var on = game.Views.UiToCanvas(Center(button!));
+        Click(game, platform, Center(button!));
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, on, PointerButton.Secondary));
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, on, PointerButton.Secondary));
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, 1), on));
+        Frame(game, platform);
+        Frame(game, platform);
+        Assert.AreEqual(1, clicks, "the button was clicked");
+        Assert.AreEqual((0, 0, 0), (scene.Selects, scene.Orders, scene.Zooms), "and the game below did not act on any of it");
+
+        var off = new Vector2(1, 1);
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, off));
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, off));
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, off, PointerButton.Secondary));
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, off, PointerButton.Secondary));
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, 1), off));
+        Frame(game, platform);
+        Assert.AreEqual((1, 1, 1), (scene.Selects, scene.Orders, scene.Zooms), "away from the widgets the same controls are the game's");
+        Assert.AreEqual(1, clicks);
+    }
+
     [TestMethod]
     public void The_wheel_reaches_the_widget_under_it_and_goes_up_to_the_first_that_takes_it()
     {

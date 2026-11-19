@@ -27,6 +27,20 @@ public sealed class InputBindingSet
 public InputBindingSet()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Input_InputBindingSet_CurrentVersion"></a> CurrentVersion
+
+The current format version: each action has one list of controls.
+
+```csharp
+public const int CurrentVersion = 2
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ## Properties
 
 ### <a id="MicroEngine_Input_InputBindingSet_Actions"></a> Actions
@@ -43,7 +57,8 @@ public List<ActionBindingData> Actions { get; set; }
 
 ### <a id="MicroEngine_Input_InputBindingSet_Version"></a> Version
 
-The format version (1).
+The format version: 2 ([CurrentVersion](MicroEngine.Input.InputBindingSet.md#MicroEngine_Input_InputBindingSet_CurrentVersion)) for a set this version wrote; 1 for a file of the first
+format, which is read the same way.
 
 ```csharp
 public int Version { get; set; }
@@ -57,7 +72,7 @@ public int Version { get; set; }
 
 ### <a id="MicroEngine_Input_InputBindingSet_FromJson_System_String_"></a> FromJson\(string\)
 
-Reads a set written by [ToJson](MicroEngine.Input.InputBindingSet.md#MicroEngine_Input_InputBindingSet_ToJson).
+Reads a set written by [ToJson](MicroEngine.Input.InputBindingSet.md#MicroEngine_Input_InputBindingSet_ToJson), of this format or of the first one.
 
 ```csharp
 public static InputBindingSet FromJson(string json)
@@ -79,7 +94,8 @@ The text is not a binding set.
 
 ### <a id="MicroEngine_Input_InputBindingSet_ToJson"></a> ToJson\(\)
 
-The set as JSON text.
+The set as JSON text. Written by hand with a JSON writer, never by reflection, so it works in trimmed and
+NativeAOT builds.
 
 ```csharp
 public string ToJson()

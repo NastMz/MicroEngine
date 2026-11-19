@@ -146,6 +146,71 @@ public sealed class ScriptedDeviceTests
         }, game.Lines);
     }
 
+    private sealed class MouseGame : Game
+    {
+        public override GameSettings Settings { get; } = new("mouse", 160, 90);
+        public List<string> Lines { get; } = [];
+        public bool? Locked;
+        protected override InputMap CreateInput() => InputMap.CreateDefault()
+            .Bind("select", PointerButton.Primary).Bind("order", PointerButton.Secondary).Bind("back", PointerButton.Back)
+            .Bind("zoom-in", InputControl.WheelUp).Bind("zoom-out", InputControl.WheelDown).Bind("pan-right", InputControl.WheelRight);
+        protected override void Load() => Scenes.Push(new MouseWatch(this));
+    }
+
+    private sealed class MouseWatch(MouseGame game) : Scenes.Scene
+    {
+        public override void Update(float dt)
+        {
+            long u = game.UpdateCount;
+            foreach (var action in new[] { "select", "order", "back", "zoom-in", "zoom-out", "pan-right" })
+            {
+                if (Input.Pressed(action)) game.Lines.Add(FormattableString.Invariant($"{u} {action} at {Input.Pointer.Position.X},{Input.Pointer.Position.Y}"));
+                if (Input.Released(action)) game.Lines.Add($"{u} {action} up");
+            }
+            if (Input.Pressed("order") && Game.TryGetCapability<ICursorControl>(out var cursor)) game.Locked = cursor.SetRelative(true) && cursor.Relative;
+        }
+
+        public override void Draw(Graphics.IRenderer renderer) { }
+    }
+
+    [TestMethod]
+    public void A_script_presses_any_mouse_button_clicks_and_turns_the_wheel_both_ways()
+    {
+        var game = new MouseGame();
+        var script = InputScript.Parse("""
+            3 mouse 20,30 down secondary
+            5 mouse 20,30 up secondary
+            8 click 40,50
+            12 click 41,51 back
+            16 wheel 1
+            18 wheel -2
+            20 wheel 0 1
+            24 mouse 60,70
+            25 wheel 1
+            30 quit
+            """);
+        var platform = new HeadlessPlatform();
+        GameRunner.Run(game, platform, new RunOptions { Script = script });
+        CollectionAssert.AreEqual(new[]
+        {
+            "4 order at 20,30", "6 order up", "9 select at 40,50", "11 select up", "13 back at 41,51", "15 back up",
+            "17 zoom-in at 41,51", "18 zoom-in up", "19 zoom-out at 41,51", "20 zoom-out up", "21 pan-right at 41,51", "22 pan-right up",
+            "26 zoom-in at 60,70", "27 zoom-in up",
+        }, game.Lines);
+        Assert.AreEqual(true, game.Locked, "the headless platform has a cursor a game can lock");
+        Assert.IsTrue(platform.Cursor.Relative && platform.Cursor.Visible);
+    }
+
+    [TestMethod]
+    public void A_script_built_in_code_presses_mouse_buttons_and_turns_the_wheel()
+    {
+        var game = new MouseGame();
+        var script = new InputScript().Mouse(2, new Vector2(10, 10), true, PointerButton.Back).Mouse(4, new Vector2(10, 10), false, PointerButton.Back)
+            .Click(6, new Vector2(12, 12), PointerButton.Secondary).Wheel(10, new Vector2(1, 0)).QuitAfter(14);
+        GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { Script = script });
+        CollectionAssert.AreEqual(new[] { "3 back at 10,10", "5 back up", "7 order at 12,12", "9 order up", "11 pan-right at 12,12", "12 pan-right up" }, game.Lines);
+    }
+
     [TestMethod]
     public void A_layer_sees_scripted_device_events_before_gameplay()
     {
@@ -175,7 +240,7 @@ public sealed class ScriptedDeviceTests
     [TestMethod]
     public void Malformed_device_commands_name_their_line()
     {
-        foreach (var line in new[] { "5 key Space sideways", "5 key Nope down", "5 pad 0 add", "5 pad 1 Jump down", "5 mouse 1 down", "5 text" })
+        foreach (var line in new[] { "5 key Space sideways", "5 key Nope down", "5 pad 0 add", "5 pad 1 Jump down", "5 mouse 1 down", "5 text", "5 mouse 1,1 down ring", "5 click 1,1 thumb", "5 click", "5 wheel", "5 wheel up" })
         {
             var e = Assert.ThrowsExactly<FormatException>(() => InputScript.Parse("1 press confirm\n" + line), line);
             StringAssert.Contains(e.Message, "line 2", line);

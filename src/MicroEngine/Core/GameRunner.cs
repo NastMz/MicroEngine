@@ -555,7 +555,10 @@ public sealed class GameLoop
 /// 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
 /// 450 pad 2 remove
 /// 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
-/// 470 wheel 1               # the wheel turns one notch away from the player
+/// 462 mouse 160,90 down secondary  # another button: primary, secondary, middle, back or forward
+/// 464 click 160,90 secondary       # the mouse moves there and the button goes down, then up 2 updates later
+/// 470 wheel 1               # the wheel turns one notch away from the player (negative: towards them)
+/// 472 wheel 0 1             # a second number turns it sideways: one notch to the right
 /// 480 text Ana              # text typed (the rest of the line), read while text input is on
 /// 900 quit
 /// </code>
@@ -579,6 +582,7 @@ public sealed class InputScript
     private readonly Dictionary<long, string> _captures = [];
     private readonly List<(long Update, int Finger, string? Target, Vector2 Offset, bool Lift)> _touches = [];
     private readonly List<(long Update, Input.InputDevice? Device, Input.GamepadStyle? Style)> _prompts = [];
+    private Vector2 _mouse; // where the script's mouse was put last: the wheel turns there
     private long? _quit;
 
     /// <summary>Parses the text format described above.</summary>
@@ -631,18 +635,19 @@ public sealed class InputScript
                     case "pad": script.ParsePad(at, parts); break;
                     case "mouse":
                     {
-                        var xy = parts[2].Split(',');
-                        var position = new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture));
                         bool? down = parts.Length > 3 ? parts[3] switch
                         {
                             "down" => true,
                             "up" => false,
                             _ => throw new FormatException("The mouse button goes 'down' or 'up'."),
                         } : null;
-                        script.Mouse(at, position, down);
+                        script.Mouse(at, Point(parts[2]), down, parts.Length > 4 ? MouseButton(parts[4]) : Input.PointerButton.Primary);
                         break;
                     }
-                    case "wheel": script.Send(at, Input.InputEvent.WheelMoved(ScriptMouse, new Vector2(0, float.Parse(parts[2], CultureInfo.InvariantCulture)))); break;
+                    case "click": script.Click(at, Point(parts[2]), parts.Length > 3 ? MouseButton(parts[3]) : Input.PointerButton.Primary); break;
+                    case "wheel":
+                        script.Wheel(at, new Vector2(parts.Length > 3 ? float.Parse(parts[3], CultureInfo.InvariantCulture) : 0, float.Parse(parts[2], CultureInfo.InvariantCulture)));
+                        break;
                     case "text":
                     {
                         if (parts.Length < 3) throw new FormatException("text needs the text to type.");
@@ -668,6 +673,17 @@ public sealed class InputScript
     }
 
     private static int ParseFinger(string text) => int.Parse(text, CultureInfo.InvariantCulture);
+
+    private static Vector2 Point(string text)
+    {
+        var xy = text.Split(',');
+        return new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture));
+    }
+
+    private static Input.PointerButton MouseButton(string text) =>
+        Enum.TryParse<Input.PointerButton>(text, ignoreCase: true, out var button) && Enum.IsDefined(button) && button != Input.PointerButton.None && !char.IsAsciiDigit(text[0])
+            ? button
+            : throw new FormatException($"'{text}' is not a mouse button (primary, secondary, middle, back or forward).");
 
     private void ParsePad(long at, string[] parts)
     {
@@ -748,13 +764,29 @@ public sealed class InputScript
     }
 
     /// <summary>The script's mouse moves to <paramref name="position"/> (canvas pixels) and, when <paramref name="down"/> is set, its primary button goes down or up.</summary>
-    public InputScript Mouse(long at, Vector2 position, bool? down = null)
+    public InputScript Mouse(long at, Vector2 position, bool? down = null) => Mouse(at, position, down, Input.PointerButton.Primary);
+
+    /// <summary>The script's mouse moves to <paramref name="position"/> (canvas pixels) and, when <paramref name="down"/> is set, <paramref name="button"/> goes down or up.</summary>
+    /// <exception cref="ArgumentException"><paramref name="button"/> is <see cref="Input.PointerButton.None"/>.</exception>
+    public InputScript Mouse(long at, Vector2 position, bool? down, Input.PointerButton button)
     {
+        if (button == Input.PointerButton.None) throw new ArgumentException("A mouse press needs a button.", nameof(button));
+        _mouse = position;
         Send(at, Input.InputEvent.PointerMove(ScriptMouse, 0, Input.PointerKind.Mouse, position));
         if (down is { } pressed)
-            Send(at, pressed ? Input.InputEvent.PointerDown(ScriptMouse, 0, Input.PointerKind.Mouse, position) : Input.InputEvent.PointerUp(ScriptMouse, 0, Input.PointerKind.Mouse, position));
+            Send(at, pressed ? Input.InputEvent.PointerDown(ScriptMouse, 0, Input.PointerKind.Mouse, position, button) : Input.InputEvent.PointerUp(ScriptMouse, 0, Input.PointerKind.Mouse, position, button));
         return this;
     }
+
+    /// <summary>The script's mouse moves to <paramref name="position"/> (canvas pixels) and clicks <paramref name="button"/>: down at update <paramref name="at"/>, up 2 updates later.</summary>
+    public InputScript Click(long at, Vector2 position, Input.PointerButton button = Input.PointerButton.Primary) =>
+        Mouse(at, position, true, button).Mouse(at + 2, position, false, button);
+
+    /// <summary>
+    /// The wheel of the script's mouse turns by <paramref name="wheel"/> notches at update <paramref name="at"/> (Y
+    /// positive away from the player, X positive to the right), where the mouse was put last.
+    /// </summary>
+    public InputScript Wheel(long at, Vector2 wheel) => Send(at, Input.InputEvent.WheelMoved(ScriptMouse, wheel, _mouse));
 
     /// <summary>Sends the device events scheduled for the update about to run to <paramref name="input"/> (routed with the frame's events).</summary>
     public void ApplyDevices(long update, Input.InputSystem input)
