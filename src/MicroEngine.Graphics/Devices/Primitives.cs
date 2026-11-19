@@ -100,15 +100,26 @@ public static class PremultipliedColor
     /// <param name="rgba">Tightly packed R, G, B, A bytes.</param>
     public static void PremultiplyInPlace(Span<byte> rgba)
     {
+        // Most texels of game art are opaque or fully transparent: those need no arithmetic.
         for (int i = 0; i + 3 < rgba.Length; i += 4)
         {
-            int a = rgba[i + 3];
+            uint a = rgba[i + 3];
             if (a == 255) continue;
+            if (a == 0)
+            {
+                rgba[i] = rgba[i + 1] = rgba[i + 2] = 0;
+                continue;
+            }
             rgba[i] = Mul(rgba[i], a);
             rgba[i + 1] = Mul(rgba[i + 1], a);
             rgba[i + 2] = Mul(rgba[i + 2], a);
         }
     }
 
-    private static byte Mul(int c, int a) => (byte)((c * a + 127) / 255);
+    // round(c × a / 255) without a division: exact for every pair of bytes (the test checks all of them).
+    private static byte Mul(uint c, uint a)
+    {
+        uint x = c * a + 128;
+        return (byte)((x + (x >> 8)) >> 8);
+    }
 }

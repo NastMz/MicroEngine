@@ -48,6 +48,28 @@ public sealed class CoreContractTests
     }
 
     [TestMethod]
+    public void Premultiply_IsTheNearestValueForEveryChannelAndAlpha()
+    {
+        // Every colour value against every alpha: round(c × a / 255), written here without the method's own arithmetic
+        // (255 is odd, so no product falls exactly between two values).
+        var texels = new byte[256 * 4];
+        for (int a = 0; a < 256; a++)
+        {
+            for (int c = 0; c < 256; c++) (texels[c * 4], texels[c * 4 + 1], texels[c * 4 + 2], texels[c * 4 + 3]) = ((byte)c, (byte)(255 - c), (byte)(c ^ 0x55), (byte)a);
+            PremultipliedColor.PremultiplyInPlace(texels);
+            for (int c = 0; c < 256; c++)
+            {
+                static byte Nearest(int value, int alpha) => (byte)Math.Round(value * alpha / 255.0, MidpointRounding.AwayFromZero);
+                Assert.AreEqual((Nearest(c, a), Nearest(255 - c, a), Nearest(c ^ 0x55, a), (byte)a), (texels[c * 4], texels[c * 4 + 1], texels[c * 4 + 2], texels[c * 4 + 3]), $"colour {c}, alpha {a}");
+            }
+        }
+        // A length that is not a whole number of texels leaves the last bytes alone.
+        byte[] odd = [200, 100, 50, 128, 9, 9];
+        PremultipliedColor.PremultiplyInPlace(odd);
+        CollectionAssert.AreEqual(new byte[] { 100, 50, 25, 128, 9, 9 }, odd);
+    }
+
+    [TestMethod]
     public void Disposal_IsDeferredUntilTheBackendCompletesTheSubmissionsThatMayUseTheResource()
     {
         using var device = new LaggingDevice();
