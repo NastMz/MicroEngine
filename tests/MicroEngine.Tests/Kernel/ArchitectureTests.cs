@@ -133,7 +133,7 @@ public sealed class ArchitectureTests
     private static readonly string[] EcsPackages =
         ["Arch", "Friflo.Engine.ECS", "DefaultEcs", "Flecs.NET", "fennecs", "TinyEcs", "Leopotam.Ecs", "Frent", "Svelto.ECS", "Scellecs.Morpeh", "MonoGame.Extended.Entities"];
     /// <summary>The only projects that may reference one: the benchmark that compares them and the sample that shows the way.</summary>
-    private static readonly string[] EcsConsumers = ["benchmarks/EcsBench/EcsBench.csproj", "samples/EcsSwarm/EcsSwarm.csproj"];
+    private static readonly string[] EcsConsumers = ["benchmarks/EcsBench/EcsBench.csproj", "benchmarks/EcsModel/EcsModel.csproj", "samples/EcsSwarm/EcsSwarm.csproj"];
 
     private static bool IsEcsPackage(string name) =>
         EcsPackages.Any(p => name.Equals(p, StringComparison.OrdinalIgnoreCase) || name.StartsWith(p + ".", StringComparison.OrdinalIgnoreCase));

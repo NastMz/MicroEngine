@@ -15,5 +15,7 @@
     <!-- The entity workloads of ENTITY-1: every store must end a workload in the same state. -->
     <ProjectReference Include="../../benchmarks/EcsBench/EcsBench.csproj" />
     <ProjectReference Include="../../benchmarks/FsmCompare/FsmCompare.csproj" />
+    <!-- The modelling comparison of ENTITY-1: both models must show the same slice at every step. -->
+    <ProjectReference Include="../../benchmarks/EcsModel/EcsModel.csproj" />
   </ItemGroup>
 </Project>
