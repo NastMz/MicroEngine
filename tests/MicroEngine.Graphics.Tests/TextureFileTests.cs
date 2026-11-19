@@ -147,6 +147,27 @@ public sealed class TextureFileTests
     }
 
     [TestMethod]
+    public void Parse_RefusesASizeItCannotHold_BeforeReservingItsMemory()
+    {
+        static void Refused(byte[] data, string expected)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            var error = Assert.ThrowsExactly<InvalidDataException>(() => TextureFile.Parse(data));
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            StringAssert.Contains(error.Message, expected);
+            Assert.IsLessThan(1 << 20, allocated, "a few bytes of header must not reserve the texture they announce");
+        }
+        // Sizes whose byte count does not fit an array: the count must not wrap to a small or negative number.
+        Refused(ByHand(width: 32768, height: 32768, payload: 0), "more than can be read");
+        Refused(ByHand(width: 65536, height: 65536, payload: 0), "more than can be read");
+        Refused(ByHand(vkFormat: 145, width: 65536, height: 65536, payload: 0), "more than can be read");
+        Refused(ByHand(width: 30000, height: 30000, scheme: 3, payload: 11), "more than can be read");
+        // A deflated level that announces far more than its stored bytes can inflate to.
+        Refused(ByHand(width: 16384, height: 16384, scheme: 3, payload: 11), "cannot inflate");
+        Assert.ThrowsExactly<ArgumentException>(() => new TextureFile(32768, 32768, TextureFormat.Rgba8Unorm, [Array.Empty<byte>()]), "the constructor counts the same way");
+    }
+
+    [TestMethod]
     public void Constructor_RefusesLevelsThatDoNotMatchTheirSize()
     {
         Assert.ThrowsExactly<ArgumentException>(() => new TextureFile(4, 4, TextureFormat.Rgba8Unorm, [new byte[60]]));

@@ -116,3 +116,20 @@ needed the machine to this session's one campaign at a time, which rules out par
   external-project checks (`sdk/tests`: packing the SDK and the tool, building the samples outside the repository),
   packaging, and anything in a browser, on a phone, on Linux or on macOS. Scratch (kept): the campaign's content and
   outputs under the temporary folder named in the task's report.
+- L9 (2026-11-18) Independent verification (a separate clone; risk items 3 and 5) and its one correction batch.
+  Demonstrated and unchanged: both shared conversions give the base's bytes (65,536 pairs, odd lengths); the tool
+  packs with its two encoder assemblies and the installed tool converts both formats; `ktx-parse` 2.0.0 accepts
+  eleven files written here and `Parse` reads three it wrote; ten existing commands print what the base printed.
+  Blocker, fixed with `Parse_RefusesASizeItCannotHold_BeforeReservingItsMemory` (failed first): `TextureFile.Parse`
+  counted a level's bytes in 32 bits, so a header of about a hundred bytes announcing 30000 × 30000 threw an
+  overflow error instead of the documented one, 32768 × 32768 and 65536 × 65536 were accepted as empty textures, and
+  a deflated 16384 × 16384 reserved a gigabyte before reading anything. The count is now 64-bit, a level larger than
+  an array is refused, and a deflated level that announces more than deflate can produce from its stored bytes is
+  refused before its memory is reserved. Advisories fixed: two images that differ only by extension became one file
+  silently (now refused, nothing written; `WhatCannotBeConverted_IsRefusedWithTheReason` failed first); `Color`'s
+  byte layout, which `PixelImage.ToRgba` relies on, is pinned by `AColorIsFourBytesInRedGreenBlueAlphaOrder`; the
+  guide's device table no longer says Vulkan samples BC7 without asking the device; the encoding times agree across
+  the ADR, the evaluation and the guide; the ADR and evaluation say which other reader was run. Left as they are: a
+  BC7 run that fails on one image keeps the files it had already written; a trailing unknown option reports that it
+  needs a value (the shared option parser); raylib and browsers with a file of pixels rest on the device contract
+  (`Rgba8Unorm` is mandatory), not on a run.

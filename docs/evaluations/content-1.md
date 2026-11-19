@@ -370,7 +370,9 @@ at three times); on other art, and at full size, it was not judged by eye.
   where CI runs them (Linux with a software Vulkan, where BC7 support decides whether the block test is
   inconclusive).
 - **Real art and other encoders.** One encoder, three kinds of synthetic art.
-- **Files from other tools**, and Khronos's validator on the files written here.
+- **Files from Khronos's tools**, and Khronos's validator on the files written here. The independent verification
+  ran one other reader and writer, `ktx-parse` 2.0.0: it reported no problem on eleven files written here (pixels
+  and BC7, one and five levels, plain and deflated), and `TextureFile.Parse` read three files it wrote.
 - **raylib's device** with a texture file (the contract makes `Rgba8Unorm` mandatory; not run).
 - **ASTC and ETC2** end to end: the reader maps their formats (tested on headers), no data was sampled.
 - **Fidelity by eye** beyond the emblem; alpha-heavy art such as smoke or glows.

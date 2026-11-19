@@ -51,11 +51,15 @@ public static class Textures
         var files = Directory.GetFiles(source, "*", SearchOption.AllDirectories)
             .Where(f => ImageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)).Order(StringComparer.Ordinal).ToList();
         if (files.Count == 0) throw new CliException($"no image ({string.Join(", ", ImageExtensions)}) in {source}.", 2);
+        string ResultOf(string file) => Path.Combine(output, Path.ChangeExtension(Path.GetRelativePath(source, file), TextureFile.FileExtension));
+        var shared = files.GroupBy(ResultOf, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
+        if (shared is not null)
+            throw new CliException($"{string.Join(" and ", shared.Select(f => Path.GetRelativePath(source, f)))} would both become {Path.GetRelativePath(output, shared.Key)}. Rename one.", 2);
         var written = new List<string>();
         var unchanged = new List<string>();
         foreach (var file in files)
         {
-            string result = Path.Combine(output, Path.ChangeExtension(Path.GetRelativePath(source, file), TextureFile.FileExtension));
+            string result = ResultOf(file);
             if (UpToDate(file, result, target)) { unchanged.Add(result); continue; }
             written.Add(result);
             if (check) continue;

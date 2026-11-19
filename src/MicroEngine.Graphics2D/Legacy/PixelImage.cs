@@ -384,6 +384,6 @@ public sealed class PixelImage
     }
 
     /// <summary>Raw RGBA8 bytes, row-major, for backends.</summary>
-    // Color is four bytes in R, G, B, A order (the decoder relies on it too), so the pixels are copied as they lie.
+    // Color is four bytes in R, G, B, A order (a test pins that layout), so the pixels are copied as they lie.
     public byte[] ToRgba() => System.Runtime.InteropServices.MemoryMarshal.AsBytes(_pixels.AsSpan()).ToArray();
 }

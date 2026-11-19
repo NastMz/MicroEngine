@@ -123,6 +123,13 @@ public sealed class TexturesTests
         Refused(() => Textures.Convert(Source, Output, "bc7", "balanced", check: false), "odd.png is 10x7");
         Assert.HasCount(1, Textures.Convert(Source, Output, "rgba", "balanced", check: false).Written, "any size can be stored as pixels");
         Refused(() => Textures.Convert(Source, Output, "dxt1", "balanced", check: false), "--format");
+        // Two images that differ only by extension would become one file: refused before anything is written.
+        Directory.Delete(Output, recursive: true);
+        File.Copy(Path.Combine(Source, "odd.png"), Path.Combine(Source, "odd.bmp"));
+        Refused(() => Textures.Convert(Source, Output, "rgba", "balanced", check: false), "odd.bmp and odd.png");
+        Refused(() => Textures.Convert(Source, Output, "rgba", "balanced", check: true), "odd.bmp and odd.png");
+        Assert.IsFalse(Directory.Exists(Output), "nothing is written when two images share a name");
+        File.Delete(Path.Combine(Source, "odd.bmp"));
         Refused(() => Textures.Convert(Source, Output, "bc7", "ultra", check: false), "--quality");
         File.WriteAllBytes(Path.Combine(Source, "broken.png"), [1, 2, 3]);
         Refused(() => Textures.Convert(Source, Output, "rgba", "balanced", check: false), "broken.png");

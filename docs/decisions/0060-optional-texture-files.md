@@ -43,7 +43,7 @@ What the measurements say:
   memory (measured through DXGI: 52 MB against 196 MB), from files smaller than the PNG files (20 MB against 34 MB
   for the twelve pages). Stored without deflating, the blocks load in 27 ms and take 48 MB on disk.
 - **BC7 costs encoding time and a little fidelity.** The managed encoder took 9 to 26 s for a 2048 × 2048 page and
-  32 to 93 s for a 4096 × 4096 one; the decoded blocks are 47.6 to 58.1 dB from the pixels (peak signal-to-noise
+  32 to 90 s for a 4096 × 4096 one; the decoded blocks are 47.6 to 58.1 dB from the pixels (peak signal-to-noise
   ratio), and on a real device a picture with hard outlines over transparency came back with a mean error of 0.29
   of 255 and a worst pixel of 52, on an outline's edge.
 - **Mipmaps need no offline step.** A whole chain takes 2 to 14 ms on the CPU for a 2048 × 2048 page. What they would
@@ -85,8 +85,9 @@ Not evaluated:
 - **Fidelity by eye.** Error is reported as numbers; no art director judged BC7 against the source.
 - **Fonts, atlases, meshes and audio ahead of time** (baked glyph pages, packed atlases, converted models,
   transcoded audio). ASSET-1 measured their loads in milliseconds; nothing here measured a gain from converting them.
-- **Files written by other tools.** `TextureFile` follows the KTX 2.0 specification as read for this work; no file
-  from Khronos's tools was read by it, and its own files were not run through Khronos's validator.
+- **Khronos's own tools.** `TextureFile` follows the KTX 2.0 specification as read for this work. One independent
+  reader and writer (`ktx-parse` 2.0.0) accepted eleven of its files and wrote three it read correctly; no file from
+  Khronos's tools was read by it, and its own files were not run through Khronos's validator.
 
 ## Decision
 

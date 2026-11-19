@@ -36,10 +36,14 @@ in your build; a file is converted again only when its image is newer or another
 - **`bc7`** stores 4 × 4 blocks of pixels in 16 bytes each. The picture is close to the image, not equal: smooth
   areas and flat colour keep within a level or two of 255, and the largest differences fall on hard edges between a
   dark outline and transparency. The image's width and height must be multiples of 4. Encoding is slow: tens of
-  seconds for a 2048 × 2048 page and a minute or more for a 4096 × 4096 one on a desktop processor. `--quality fast`
+  seconds for a 2048 × 2048 page and from half a minute to a minute and a half for a 4096 × 4096 one on a desktop
+  processor. `--quality fast`
   about halves that for detailed art, at a small cost in fidelity; `balanced` is the default and `best` searches
   longer.
 - **`rgba`** stores the image's pixels exactly, any size. It saves no memory; it saves the decoding.
+
+Two images in one folder that differ only by extension (`hero.png` and `hero.bmp`) would become the same file: the
+command refuses them and writes nothing.
 
 ## Loading and drawing
 
@@ -102,8 +106,8 @@ Dispose the texture when its scene ends: it belongs to the code that created it,
 | Device | `rgba` files | `bc7` files |
 | --- | --- | --- |
 | SDL's default device (`sdl-renderer`), browsers included | yes | no |
-| `sdl-gpu` on Direct3D 12 or Vulkan with a desktop graphics card | yes | yes |
-| `sdl-gpu` on other adapters (phones, some integrated or software adapters) | yes | where `Capabilities.Supports(TextureFormat.Bc7, TextureUsage.Sampled)` says so |
+| `sdl-gpu` on Direct3D 12 with a desktop graphics card | yes | yes |
+| `sdl-gpu` on Vulkan and on other adapters (phones, some integrated or software adapters) | yes | where `Capabilities.Supports(TextureFormat.Bc7, TextureUsage.Sampled)` says so |
 | raylib | yes | no |
 | The headless platform | no graphics device: draw the image |
 

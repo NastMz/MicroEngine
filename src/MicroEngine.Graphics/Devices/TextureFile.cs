@@ -53,8 +53,8 @@ public sealed class TextureFile
         for (int i = 0; i < _levels.Length; i++)
         {
             var (w, h) = SizeOf(i);
-            if (_levels[i].Length != TextureFormats.ByteCount(format, w, h))
-                throw new ArgumentException($"level {i} ({w}x{h}, {format}) must be {TextureFormats.ByteCount(format, w, h)} bytes, not {_levels[i].Length}", nameof(levels));
+            if (_levels[i].Length != ByteCount(format, w, h))
+                throw new ArgumentException($"level {i} ({w}x{h}, {format}) must be {ByteCount(format, w, h)} bytes, not {_levels[i].Length}", nameof(levels));
         }
     }
 
@@ -161,11 +161,16 @@ public sealed class TextureFile
         {
             var entry = data.Slice(HeaderLength + i * LevelEntryLength, LevelEntryLength);
             ulong offset = BinaryPrimitives.ReadUInt64LittleEndian(entry), length = BinaryPrimitives.ReadUInt64LittleEndian(entry[8..]);
-            int expected = TextureFormats.ByteCount(format, Math.Max(1, (int)width >> i), Math.Max(1, (int)height >> i));
+            int levelWidth = Math.Max(1, (int)width >> i), levelHeight = Math.Max(1, (int)height >> i);
+            long size = ByteCount(format, levelWidth, levelHeight);
+            if (size > Array.MaxLength) throw new InvalidDataException($"level {i} ({levelWidth}x{levelHeight}, {format}) is {size} bytes, more than can be read");
+            int expected = (int)size;
             if (offset > (ulong)data.Length || length > (ulong)data.Length - offset) throw new InvalidDataException($"level {i} is outside the file");
             var stored = data.Slice((int)offset, (int)length);
+            // Deflate shrinks data at most about 1032 times: a level that announces more is refused before its memory is reserved.
+            if (scheme == SchemeZlib && size > (stored.Length + 1L) * MaxDeflateRatio) throw new InvalidDataException($"level {i} cannot inflate to its {expected} bytes from {stored.Length}");
             if (scheme == SchemeZlib) levels[i] = Inflate(stored, expected, i);
-            else if (stored.Length != expected) throw new InvalidDataException($"level {i} is {stored.Length} bytes; a {Math.Max(1, (int)width >> i)}x{Math.Max(1, (int)height >> i)} {format} level is {expected} bytes");
+            else if (stored.Length != expected) throw new InvalidDataException($"level {i} is {stored.Length} bytes; a {levelWidth}x{levelHeight} {format} level is {expected} bytes");
             else levels[i] = stored.ToArray();
         }
         return new TextureFile((int)width, (int)height, format, levels, alpha);
@@ -270,6 +275,13 @@ public sealed class TextureFile
     }
 
     private static int MaxLevels(int width, int height) => 32 - int.LeadingZeroCount(Math.Max(width, height));
+
+    private const int MaxDeflateRatio = 1032;
+
+    // TextureFormats.ByteCount in 64 bits: a size read from a file may announce more bytes than an int counts.
+    private static long ByteCount(TextureFormat format, int width, int height) => TextureFormats.IsCompressed(format)
+        ? ((width + 3L) / 4) * ((height + 3L) / 4) * 16
+        : (long)width * height * TextureFormats.ByteCount(format, 1, 1);
 
     /// <inheritdoc/>
     public override string ToString() => $"{Width}x{Height} {Format}, {Levels} level{(Levels == 1 ? "" : "s")}, {(Alpha == AlphaMode.Premultiplied ? "premultiplied" : "straight")} alpha";
