@@ -26,4 +26,9 @@ public interface IStorage
     void Delete(string slot);
     /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws for a failure of the medium.</summary>
     void SetAside(string slot);
+    /// <summary>
+    /// Every slot that has data, in no particular order, with what the storage knows about each without reading the
+    /// save in it. A copy set aside by <see cref="SetAside"/> is not a slot and is not listed.
+    /// </summary>
+    IReadOnlyList<SlotInfo> List();
 }

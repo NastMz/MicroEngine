@@ -17,6 +17,7 @@ public sealed class SavesModuleTests
         public bool Exists(string slot) => Slots.ContainsKey(slot);
         public void Delete(string slot) => Slots.Remove(slot);
         public void SetAside(string slot) => Slots.Remove(slot);
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 
     private sealed class Progress { public int Level { get; set; } }

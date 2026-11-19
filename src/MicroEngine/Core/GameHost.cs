@@ -50,7 +50,8 @@ public static class HostBuilderExtensions
 
     /// <summary>
     /// A save store for <paramref name="gameId"/> on the composition's medium (<see cref="HostBuilder.Storage"/>), else the
-    /// platform's default (<see cref="SaveStore.DefaultStorage(string)"/>).
+    /// platform's default (<see cref="SaveStore.DefaultStorage(string)"/>): for a game that takes its store as a
+    /// constructor argument. A game that uses <see cref="Game.Saves"/> gets the same medium without it.
     /// </summary>
     public static SaveStore SaveStore(this HostBuilder host, string gameId)
     {
@@ -127,8 +128,17 @@ public sealed class GameHost
         return new GameHost(builder);
     }
 
-    /// <summary>A new game, built by the composition's <see cref="HostBuilderExtensions.UseGame"/>.</summary>
-    public Game CreateGame() => _parts.CreateGame!() ?? throw new InvalidOperationException("The composition's game factory returned null.");
+    /// <summary>
+    /// A new game, built by the composition's <see cref="HostBuilderExtensions.UseGame"/> and given the composition's
+    /// save medium (<see cref="HostBuilder.Storage"/>) for its <see cref="Game.Saves"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The factory returned null, or the game used <see cref="Game.Saves"/> in its constructor while the composition has a save medium.</exception>
+    public Game CreateGame()
+    {
+        var game = _parts.CreateGame!() ?? throw new InvalidOperationException("The composition's game factory returned null.");
+        game.AttachHost(Builder);
+        return game;
+    }
 
     /// <summary>The launch's input script, parsed: <see cref="LaunchRequest.ScriptText"/>, else the file <see cref="LaunchRequest.ScriptPath"/>; null without one.</summary>
     /// <exception cref="FormatException">The script is invalid.</exception>

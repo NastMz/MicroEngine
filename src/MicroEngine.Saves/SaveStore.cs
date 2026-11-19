@@ -49,11 +49,18 @@ namespace MicroEngine.Core;
 public sealed class SaveStore
 {
     private const string ReflectionMessage = "Serializes the saved type with reflection, which trimmed and NativeAOT applications do not have. Declare the type in a JsonSerializerContext and pass its JsonTypeInfo<T> to the overload that takes one.";
-    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+    internal static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
     // The text of a slot is the store's choice, not the metadata's: indented, like the slots written without metadata.
-    private static readonly JsonWriterOptions WriterOptions = new() { Indented = true };
+    internal static readonly JsonWriterOptions WriterOptions = new() { Indented = true };
     private readonly Platform.IStorage _storage;
+    // Slots that hold something this store could not use and must not replace: unreadable, written by a newer version
+    // of the game, or an older save whose steps failed.
     private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
+    // Slots loaded from an older version (the version each was written in): the first save keeps a copy of the original.
+    private readonly Dictionary<string, int> _older = new(StringComparer.Ordinal);
+    // Slots whose stored version this store has seen, by loading or writing them: a versioned save looks before it
+    // replaces any other.
+    private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
 
     /// <summary>The save folder for file storage; otherwise a description of where saves live.</summary>
     public string Directory => _storage.Location;
@@ -159,7 +166,7 @@ public sealed class SaveStore
     /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     [RequiresUnreferencedCode(ReflectionMessage)]
     [RequiresDynamicCode(ReflectionMessage)]
-    public T? Load<T>(string slot) where T : class => Read(SlotName.Checked(slot), static text => JsonSerializer.Deserialize<T>(text, Options));
+    public T? Load<T>(string slot) where T : class => Read(SlotName.CheckedForGame(slot), static text => JsonSerializer.Deserialize<T>(text, Options));
 
     /// <summary>
     /// Reads and deserializes a slot with the game's own metadata for <typeparamref name="T"/>, without reflection: the
@@ -176,7 +183,7 @@ public sealed class SaveStore
     /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public T? Load<T>(string slot, JsonTypeInfo<T> typeInfo) where T : class
     {
-        SlotName.Check(slot);
+        SlotName.CheckForGame(slot);
         ArgumentNullException.ThrowIfNull(typeInfo);
         return Read(slot, text => JsonSerializer.Deserialize(text, typeInfo));
     }
@@ -213,7 +220,7 @@ public sealed class SaveStore
     [RequiresDynamicCode(ReflectionMessage)]
     public bool Save<T>(string slot, T data)
     {
-        SlotName.Check(slot);
+        SlotName.CheckForGame(slot);
         if (_unreadable.Contains(slot)) return false;
         return Write(slot, JsonSerializer.Serialize(data, Options));
     }
@@ -231,7 +238,7 @@ public sealed class SaveStore
     /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public bool Save<T>(string slot, T data, JsonTypeInfo<T> typeInfo)
     {
-        SlotName.Check(slot);
+        SlotName.CheckForGame(slot);
         ArgumentNullException.ThrowIfNull(typeInfo);
         if (_unreadable.Contains(slot)) return false;
         var buffer = new ArrayBufferWriter<byte>();
@@ -243,7 +250,14 @@ public sealed class SaveStore
     {
         try
         {
+            // The slot still holds the save an older version wrote: keep it before it is replaced, or do not replace it.
+            if (_older.TryGetValue(slot, out int version))
+            {
+                if (_storage.Read(slot) is { } original) _storage.Write(SlotName.Backup(slot, version), original);
+                _older.Remove(slot);
+            }
             _storage.Write(slot, text);
+            _seen.Add(slot);
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -252,9 +266,121 @@ public sealed class SaveStore
         }
     }
 
+    /// <summary>
+    /// The medium this store keeps its slots in, for what stores its own text beside the saves
+    /// (<c>InputMap.SaveBindings(store.Storage)</c>). Reading and writing it directly has none of the store's care.
+    /// </summary>
+    public Platform.IStorage Storage => _storage;
+
+    /// <summary>
+    /// Reads a versioned save: brings a save of an older version up to the current one through the schema's steps, and
+    /// says what it found when there is no value to return. Nothing is written: a migrated save reaches the slot with
+    /// the next save.
+    /// </summary>
+    /// <remarks>
+    /// Corrupt data is set aside, as <see cref="Load{T}(string, JsonTypeInfo{T})"/> does. A save from a newer version of
+    /// the game, an older save whose steps failed and a slot the medium could not read are left exactly as they are, and
+    /// every save to that slot through this store returns false until <see cref="Delete"/>
+    /// (<see cref="SaveLoadResult{T}.Protected"/>).
+    /// </remarks>
+    /// <typeparam name="T">The saved type.</typeparam>
+    /// <param name="slot">The slot name.</param>
+    /// <param name="schema">The current version of <typeparamref name="T"/> and the steps from earlier ones.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="schema"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
+    /// <exception cref="InvalidOperationException">The schema has a step missing.</exception>
+    public SaveLoadResult<T> Load<T>(string slot, SaveSchema<T> schema) where T : class
+    {
+        SlotName.CheckForGame(slot);
+        ArgumentNullException.ThrowIfNull(schema);
+        schema.CheckComplete();
+        try
+        {
+            if (_storage.Read(slot) is not { } text) return new(SaveLoadStatus.Missing);
+            var result = schema.Read(text);
+            if (result.Status == SaveLoadStatus.Corrupt) _storage.SetAside(slot);
+            else if (result.Protected) _unreadable.Add(slot);
+            else if (result.Status == SaveLoadStatus.Migrated) _older[slot] = result.Version;
+            _seen.Add(slot);
+            return result;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            _unreadable.Add(slot);
+            return new(SaveLoadStatus.Unreadable);
+        }
+    }
+
+    /// <summary>
+    /// Writes a versioned save: the whole slot at once, as <see cref="Save{T}(string, T, JsonTypeInfo{T})"/> writes it,
+    /// with the schema's version as the first property. Returns false when the medium refused the write, or when the
+    /// slot holds a save this store must not replace.
+    /// </summary>
+    /// <remarks>
+    /// The store never replaces a save written by a newer version of the game: one it loaded as
+    /// <see cref="SaveLoadStatus.TooNew"/>, and also one it never loaded, because the first save to a slot looks at what
+    /// the slot holds. The first save over a slot that was loaded from an older version first copies the original to
+    /// the slot <c>&lt;slot&gt;.v&lt;version&gt;.backup</c>; if the copy cannot be written, neither is the save.
+    /// </remarks>
+    /// <typeparam name="T">The saved type.</typeparam>
+    /// <param name="slot">The slot name.</param>
+    /// <param name="data">The value to save.</param>
+    /// <param name="schema">The current version of <typeparamref name="T"/> and the steps from earlier ones.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> or <paramref name="schema"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
+    /// <exception cref="InvalidOperationException">The schema has a step missing, or <typeparamref name="T"/> does not serialize to a JSON object.</exception>
+    public bool Save<T>(string slot, T data, SaveSchema<T> schema) where T : class
+    {
+        SlotName.CheckForGame(slot);
+        ArgumentNullException.ThrowIfNull(schema);
+        string text = schema.Write(data);
+        if (_unreadable.Contains(slot)) return false;
+        if (!_seen.Contains(slot))
+        {
+            try
+            {
+                if (_storage.Read(slot) is { } stored && SaveSchema.DeclaredVersion(stored) > schema.Version)
+                {
+                    _unreadable.Add(slot);
+                    return false;
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                _unreadable.Add(slot);
+                return false;
+            }
+        }
+        return Write(slot, text);
+    }
+
+    /// <summary>
+    /// The slots that hold a save, by name, with what the medium knows about each without reading it (size, last write):
+    /// what a "load game" screen lists. Copies the store keeps (corrupt data set aside, the original of a migrated save)
+    /// are not slots. Empty when the medium could not be listed.
+    /// </summary>
+    /// <param name="prefix">Only the slots whose name starts with it ("save-" when settings and achievements share the store); empty for all.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="prefix"/> is null.</exception>
+    public IReadOnlyList<Platform.SlotInfo> Slots(string prefix = "")
+    {
+        ArgumentNullException.ThrowIfNull(prefix);
+        try
+        {
+            var slots = new List<Platform.SlotInfo>();
+            foreach (var slot in _storage.List())
+                if (slot.Name.StartsWith(prefix, StringComparison.Ordinal) && SlotName.IsForGame(slot.Name)) slots.Add(slot);
+            slots.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
+            return slots;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>Whether the slot has saved data.</summary>
     /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
-    public bool Exists(string slot) => _storage.Exists(SlotName.Checked(slot));
+    public bool Exists(string slot) => _storage.Exists(SlotName.CheckedForGame(slot));
     /// <summary>
     /// Removes the slot's data; does nothing when it does not exist. A slot that could not be read can be saved again
     /// after it is deleted: deleting is the game's explicit choice to start over.
@@ -262,9 +388,10 @@ public sealed class SaveStore
     /// <exception cref="ArgumentException"><paramref name="slot"/> is not a valid slot name (see the class remarks).</exception>
     public void Delete(string slot)
     {
-        SlotName.Check(slot);
+        SlotName.CheckForGame(slot);
         _storage.Delete(slot);
         _unreadable.Remove(slot);
+        _older.Remove(slot);
     }
 }
 
@@ -292,6 +419,35 @@ internal static class SlotName
 
     /// <summary>What a slot's unreadable data is set aside under, after the slot's name; no slot may end with it.</summary>
     public const string SetAsideSuffix = ".corrupt";
+
+    /// <summary>What the original of a migrated save is kept under, after the slot's name and the version; no game slot may end with it.</summary>
+    public const string BackupSuffix = ".backup";
+
+    /// <summary>The slot that keeps the save version <paramref name="version"/> wrote in <paramref name="slot"/>.</summary>
+    public static string Backup(string slot, int version) => $"{slot}.v{version}{BackupSuffix}";
+
+    /// <summary>Whether <paramref name="slot"/> passes the storage's rule (<see cref="Check"/>), without throwing.</summary>
+    public static bool IsValid(string slot) => !string.IsNullOrEmpty(slot) && Problem(slot) is null;
+
+    /// <summary>Whether a name a storage lists is a slot a game can use: a valid name that is not one of the store's copies.</summary>
+    public static bool IsForGame(string slot) => IsValid(slot) && !slot.EndsWith(BackupSuffix, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Returns <paramref name="slot"/> when a game may use it as a slot name; throws otherwise.</summary>
+    public static string CheckedForGame(string slot)
+    {
+        CheckForGame(slot);
+        return slot;
+    }
+
+    /// <summary>The storage's rule (<see cref="Check"/>) and the store's own: a game's slot does not end with ".backup".</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="slot"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="slot"/> is not a name a game can give a slot.</exception>
+    public static void CheckForGame(string slot)
+    {
+        Check(slot);
+        if (slot.EndsWith(BackupSuffix, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException($"\"{slot}\" is not a valid slot name: it ends with \"{BackupSuffix}\", the name the original of a migrated save is kept under. A slot is a plain name such as \"progress\" or \"profile.v2\", not a path.", nameof(slot));
+    }
 
     /// <summary>Returns <paramref name="slot"/> when it is a valid slot name; throws otherwise.</summary>
     public static string Checked(string slot)
@@ -339,7 +495,7 @@ public sealed class FileSaveStorage(string directory) : ISaveStorage
     /// <summary>The directory that holds the slot files.</summary>
     public string Location { get; } = directory ?? throw new ArgumentNullException(nameof(directory));
 
-    private string PathFor(string slot) => Path.Combine(Location, SlotName.Checked(slot) + ".json");
+    private string PathFor(string slot) => Path.Combine(Location, SlotName.Checked(slot) + Extension);
 
     /// <inheritdoc/>
     public string? Read(string slot)
@@ -362,6 +518,28 @@ public sealed class FileSaveStorage(string directory) : ISaveStorage
     public bool Exists(string slot) => File.Exists(PathFor(slot));
     /// <inheritdoc/>
     public void Delete(string slot) { if (File.Exists(PathFor(slot))) File.Delete(PathFor(slot)); }
+
+    /// <summary>
+    /// The slot files in the directory (<c>&lt;slot&gt;.json</c>) with their size in bytes and last write time; empty
+    /// when the directory does not exist yet. Copies set aside (<c>&lt;slot&gt;.corrupt.json</c>) and files that are not
+    /// slots are left out.
+    /// </summary>
+    public IReadOnlyList<Platform.SlotInfo> List()
+    {
+        var folder = new DirectoryInfo(Location);
+        if (!folder.Exists) return [];
+        var slots = new List<Platform.SlotInfo>();
+        foreach (var file in folder.EnumerateFiles("*" + Extension))
+        {
+            // "*.json" also matches longer extensions on Windows ("x.json~").
+            if (!file.Name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase)) continue;
+            string slot = file.Name[..^Extension.Length];
+            if (SlotName.IsValid(slot)) slots.Add(new(slot, file.Length, new DateTimeOffset(file.LastWriteTimeUtc, TimeSpan.Zero)));
+        }
+        return slots;
+    }
+
+    private const string Extension = ".json";
 
     /// <summary>Renames <c>&lt;slot&gt;.json</c> to <c>&lt;slot&gt;.corrupt.json</c>, replacing an earlier copy; leaves the file in place if that fails.</summary>
     public void SetAside(string slot)

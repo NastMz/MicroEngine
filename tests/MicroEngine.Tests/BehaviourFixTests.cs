@@ -163,6 +163,7 @@ public sealed class BehaviourFixTests
         public bool Exists(string slot) => Text is not null;
         public void Delete(string slot) => Text = null;
         public void SetAside(string slot) { }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => Text is null ? [] : [new("slot", Text.Length, null)];
     }
 
     [TestMethod]

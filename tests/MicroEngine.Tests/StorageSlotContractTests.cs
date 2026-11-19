@@ -25,6 +25,7 @@ public sealed class StorageSlotContractTests
         public bool Exists(string slot) { Touch(); return Slots.ContainsKey(slot); }
         public void Delete(string slot) { Touch(); Slots.Remove(slot); }
         public void SetAside(string slot) { Calls++; Slots.Remove(slot); }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
         private void Touch()
         {
             Calls++;
@@ -225,6 +226,29 @@ public sealed class StorageSlotContractTests
         // A browser key is one flat text: nothing in a slot shortens or leaves the prefix.
         foreach (var slot in new[] { "../other/progress", "..", "/rooted", "a/b", "\\x" })
             Assert.AreEqual("microengine/game/" + slot, BrowserStorage.Key("microengine/game/", slot), slot);
+    }
+
+    [TestMethod]
+    public void BrowserStorageListsTheSlotsUnderItsPrefixWithTheTimeItStamped()
+    {
+        var page = new Dictionary<string, string>
+        {
+            ["microengine/game/progress"] = "{ }",
+            ["microengine/game/slot 2"] = "{ \"a\": 1 }",
+            ["microengine/game/progress.corrupt"] = "{",
+            ["microengine/game/"] = "not a slot: the prefix itself",
+            ["microengine/gamer/progress"] = "another game",
+            ["microengine.time/game/progress"] = "1795082400000",
+            ["microengine.time/game/slot 2"] = "yesterday",
+            ["unrelated"] = "x",
+        };
+        var slots = BrowserStorage.Slots("microengine/game/", "microengine.time/game/", page.Keys, key => page.GetValueOrDefault(key));
+        CollectionAssert.AreEquivalent(new[] { "progress", "slot 2" }, slots.Select(s => s.Name).ToArray());
+        var progress = slots.Single(s => s.Name == "progress");
+        Assert.AreEqual(3, progress.Size, "the length of the stored text");
+        Assert.AreEqual(DateTimeOffset.FromUnixTimeMilliseconds(1795082400000), progress.LastWrite);
+        Assert.IsNull(slots.Single(s => s.Name == "slot 2").LastWrite, "a slot with no usable stamp has no time");
+        Assert.AreEqual("microengine.time/game/progress", BrowserStorage.Key(BrowserStorage.TimePrefix("game"), "progress"), "stamps live outside every game's slot keys");
     }
 #pragma warning restore CA1416
 }

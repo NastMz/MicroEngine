@@ -751,5 +751,6 @@ public sealed class InputMapFeatureTests
             SetAsideSlots.Add(slot);
             _slots.Remove(slot);
         }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. _slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 }
