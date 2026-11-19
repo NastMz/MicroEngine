@@ -35,7 +35,8 @@ What the figures say:
   comes first: 150,000 objects drawn take 12 to 22 ms of CPU work plus 13 to 27 ms of presentation on every store
   (PERF-3 placed the renderer's limit at 180,000 sprites and physics at 3,250 bodies).
 - **From a few hundred thousand objects the scene world stops fitting and a component store does not**: with churn
-  the world's objects (one heap object per attachment, 80 bytes of transforms per entity) end up scattered in memory,
+  the world's objects (one heap object per attachment, 80 bytes of transforms per entity) cost more to walk than their count suggests
+  (measured; that they end up scattered in memory is the likely cause, not isolated),
   and at 375,000 objects the same game step takes three and a half times longer and misses a 60 Hz update that the
   stores finish in 40% of it. A component store also needs a quarter of the memory (57 to 66 MB per million objects
   against 238).
@@ -67,8 +68,9 @@ demo.
   ([Many alike objects and Entity Component Systems](../guide/entity-component-systems.md)), shown by a sample
   (`samples/EcsSwarm`, on Arch: the candidate that publishes trimmed and with NativeAOT without warnings) and tested
   (`tests/Samples.Tests/EcsSwarmTests.cs`).
-- **No engine assembly, tool, template or demo game references an ECS library.** The architecture test fails if one
-  does (`No_engine_project_tool_template_or_demo_references_an_entity_component_system`,
+- **No engine assembly, tool, template or demo game references an ECS library.** The architecture test fails if a project,
+  props or targets file names one, if an engine, tool, template or demo project references a consumer, or if a
+  compiled engine assembly it loads references one (`No_engine_project_tool_template_or_demo_references_an_entity_component_system`,
   `No_compiled_engine_assembly_references_an_entity_component_system`); the benchmark and the sample are the two
   consumers it allows.
 - **No engine contract changes.** `IWorld`, the scene hooks and the physics contract are what they were; nothing

@@ -479,7 +479,7 @@ Nothing under `src/` changed: no public API was added, changed or removed.
 
 - **A player** of a game with a few thousand objects perceives nothing either way: the store's share of a frame is
   under a tenth of a millisecond. With a new attachment per spawn and thousands of spawns a step, a player on a
-  60 Hz display could see a dropped frame when a 3.6 ms pause lands on a frame that was already near its budget
+  60 Hz display could see a dropped frame when a 3.1 ms pause lands on a frame that was already near its budget
   (**hypothesis**: no end-to-end run with a display was made for this).
 - **A developer** with a bullet-heavy game keeps the scene world and pools attachments. A developer with a
   simulation of hundreds of thousands of creatures adds a package reference and writes the scene the sample shows;

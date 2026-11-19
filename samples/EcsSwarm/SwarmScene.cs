@@ -48,6 +48,7 @@ public sealed class SwarmScene : Scene
     #region store
     // The store belongs to the scene: created when the scene enters, destroyed when it exits. The engine never sees it.
     private World _rows = null!;
+    private Predicate<EntityId>? _gone;   // kept, so asking each step allocates nothing
     private static readonly QueryDescription Moving = new QueryDescription().WithAll<Position, Previous, Velocity>();
     private static readonly QueryDescription Chasers = new QueryDescription().WithAll<Position, Velocity, Chase>();
     private static readonly QueryDescription Sparks = new QueryDescription().WithAll<Spark>();
@@ -207,7 +208,7 @@ public sealed class SwarmScene : Scene
         foreach (var row in _spent) _rows.Destroy(row);
         _caught.Clear();
         _spent.Clear();
-        CarrierTwins.RemoveAll(twin => !Objects.IsAlive(twin));
+        CarrierTwins.RemoveAll(_gone ??= twin => !Objects.IsAlive(twin));
     }
     #endregion
 

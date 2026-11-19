@@ -199,6 +199,20 @@ public sealed class EcsSwarmTests
         long before = GC.GetAllocatedBytesForCurrentThread();
         Step(game, 60);
         long perStep = (GC.GetAllocatedBytesForCurrentThread() - before) / 60;
-        Assert.IsTrue(perStep < 2_048, $"{perStep} bytes a step");
+        Assert.AreEqual(0, perStep, $"{perStep} bytes a step");
+    }
+
+    [TestMethod]
+    public void Leaving_the_scene_releases_the_store()
+    {
+        var (game, scene) = Start();
+        Step(game, 5);
+        var rows = scene.Rows;
+        Assert.AreSame(rows, World.Worlds[rows.Id], "the library lists the store while the scene runs");
+
+        game.Scenes.Pop();
+        Step(game, 1);
+
+        Assert.AreNotSame(rows, World.Worlds[rows.Id], "the library no longer lists the store the scene left");
     }
 }

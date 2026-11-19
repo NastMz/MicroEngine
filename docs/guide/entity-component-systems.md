@@ -56,8 +56,8 @@ side. Compared with the scene's world on the same work, on a desktop:
 
 So the store matters when the objects are very many. Under about 75,000 objects simulated per step the difference
 is a fraction of a millisecond, and the world's hierarchy, attachments of any class and interpolation are worth more.
-From about 200,000 objects that are created and destroyed as the game goes, the world's objects end up scattered
-in memory and a step costs more than their count suggests, while a store keeps its rows packed; there, or when
+From about 200,000 objects that are created and destroyed as the game goes, a step of the world costs more
+than their count suggests (its objects are likely scattered in memory by then), while a store keeps its rows packed; there, or when
 memory is tight (a browser tab), a store gives a game back milliseconds and megabytes. It does not make drawing or
 physics cheaper.
 
@@ -89,6 +89,7 @@ public struct Twin { public EntityId Id; }
 ```csharp
 // The store belongs to the scene: created when the scene enters, destroyed when it exits. The engine never sees it.
 private World _rows = null!;
+private Predicate<EntityId>? _gone;   // kept, so asking each step allocates nothing
 private static readonly QueryDescription Moving = new QueryDescription().WithAll<Position, Previous, Velocity>();
 private static readonly QueryDescription Chasers = new QueryDescription().WithAll<Position, Velocity, Chase>();
 private static readonly QueryDescription Sparks = new QueryDescription().WithAll<Spark>();
@@ -206,7 +207,7 @@ public override void Update(float dt)
     foreach (var row in _spent) _rows.Destroy(row);
     _caught.Clear();
     _spent.Clear();
-    CarrierTwins.RemoveAll(twin => !Objects.IsAlive(twin));
+    CarrierTwins.RemoveAll(_gone ??= twin => !Objects.IsAlive(twin));
 }
 ```
 

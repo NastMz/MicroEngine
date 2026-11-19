@@ -155,3 +155,14 @@ one's result), and the measurements needed the machine to itself, which rules ou
   this task's edit surfaces, and the two libraries are not shipped by the SDK or the demos; noted in the ADR). Not
   run: a browser build of either library, the site build, the SDK's external-project checks that need packed
   packages (`sdk/tests/docs.mjs` lists the new sample; it was not run here).
+- L8 (2026-11-18) Independent verification (Risk item 5): no blocker. The stress harness prints the same output,
+  exit codes and checksums at the base and at the head; the figures quoted match the campaign files; the sample
+  builds against the published packages. Corrected after it: the architecture test also reads props and targets
+  files, central package versions, package ids that extend a listed one and project references to the two consumers
+  (a package given through an imported props file passed before); `SwarmScene` keeps its predicate, so a step
+  allocates 0 bytes where it allocated about 65, and the test asserts 0; a new test pins that leaving the scene
+  releases the store; the ADR and the guide state the scattered-memory cause as likely, not as fact; the pause the
+  evaluation quotes is the recorded run's (3.1 ms). RED by mutation: an empty `Exit` and the capturing lambda fail
+  two tests; a props file naming `Arch.Extended` under `src/` fails the architecture test. Left as is: `EcsBench help`
+  prints the harness's usage and its `suite` also runs the harness's scenarios; the compiled-assembly test loads the
+  18 engine assemblies this test project references, not all of them.
