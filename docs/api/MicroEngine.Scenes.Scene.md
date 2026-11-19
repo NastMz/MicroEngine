@@ -182,6 +182,19 @@ public virtual bool IsOverlay { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Scenes_Scene_Machines"></a> Machines
+
+The scene's state machines ([StateMachines](MicroEngine.Scenes.StateMachines.md)), a system added the first time it is read: a machine
+added to it is stepped before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) and hashed with the scene. Read it first outside drawing.
+
+```csharp
+public StateMachines Machines { get; }
+```
+
+#### Property Value
+
+ [StateMachines](MicroEngine.Scenes.StateMachines.md)
+
 ### <a id="MicroEngine_Scenes_Scene_Objects"></a> Objects
 
 The scene's objects ([IWorld](MicroEngine.Scenes.IWorld.md)), created the first time it is read. While the scene is updated the

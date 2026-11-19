@@ -209,7 +209,8 @@ single delayed or repeated call and a coroutine for a sequence of steps.
 A scene system is a part of a scene that the engine runs for it. Derive from `SceneSystem`, add it with
 `Systems.Add`, and the engine starts it, steps it before the scene's `Update` (and once more after it, in
 `LateUpdate`), adds its `HashState` to the scene's state hash and stops it when the scene leaves the stack. The scene
-writes none of those calls. `Timers` is one; a component store, a physics world or a set of state machines are others.
+writes none of those calls. `Timers` is one and so is `Machines`, which steps the scene's own
+[state machines](../guide/state-machines.md); a component store or a physics world are others.
 
 <!-- code: samples/Examples/Examples/SystemsExample.cs#system -->
 ```csharp
@@ -218,7 +219,7 @@ public sealed class DayCycle : SceneSystem
 {
     /// <summary>0 at dawn, 0.5 at dusk, back to 0 after a full day.</summary>
     public float Time { get; private set; }
-    public float DayLength { get; init; } = 8f;
+    public float DayLength { get; init; } = 4f;
     public bool IsNight => Time >= 0.5f;
 
     // Called by the engine before the scene's Update, with the same step.

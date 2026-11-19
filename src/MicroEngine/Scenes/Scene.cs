@@ -97,6 +97,11 @@ public abstract class Scene : IStateHashed
     /// time or at intervals on the scene's time. Read it first outside drawing, like <see cref="Objects"/>.
     /// </summary>
     public SceneTimers Timers => Systems.GetOrAdd<SceneTimers>();
+    /// <summary>
+    /// The scene's state machines (<see cref="StateMachines"/>), a system added the first time it is read: a machine
+    /// added to it is stepped before <see cref="Update"/> and hashed with the scene. Read it first outside drawing.
+    /// </summary>
+    public StateMachines Machines => Systems.GetOrAdd<StateMachines>();
     /// <summary>Whether the scene is on the stack: from just before <see cref="Enter"/> until its systems stopped after <see cref="Exit"/>.</summary>
     public bool OnStack { get; private set; }
     private long _tickedAt = -1;

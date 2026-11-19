@@ -56,6 +56,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Post-processing (shader passes)", g => new PostProcessExample()),
         ("Nearby objects (spatial index)", g => new NearbyExample()),
         ("Day and night (a scene system)", g => new SystemsExample()),
+        ("A guard (state machine)", g => new StateMachineExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

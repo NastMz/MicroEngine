@@ -831,7 +831,7 @@ public sealed class DayCycle : SceneSystem
 {
     /// <summary>0 at dawn, 0.5 at dusk, back to 0 after a full day.</summary>
     public float Time { get; private set; }
-    public float DayLength { get; init; } = 8f;
+    public float DayLength { get; init; } = 4f;
     public bool IsNight => Time >= 0.5f;
 
     // Called by the engine before the scene's Update, with the same step.
@@ -861,3 +861,43 @@ public override void Update(float dt)
 ```
 
 Manual: [Scene systems](../manual/scenes.md#scene-systems).
+
+## A state machine
+
+A guard that patrols, chases what comes near, winds up, strikes, and is stunned by a stomp whatever it was doing.
+Its states, what each does and the ways out of them are declared once; the machine keeps the time in the state and
+runs a state's exit however it ends. Source:
+[`StateMachineExample.cs`](../../samples/Examples/Examples/StateMachineExample.cs).
+
+<!-- code: samples/Examples/Examples/StateMachineExample.cs#declare -->
+```csharp
+public override void Enter()
+{
+    // What every waking state shares: a stomp interrupts any of them.
+    _guard.State(Guard.Awake)
+        .On(Blow.Stomp, Guard.Stunned);
+
+    _guard.State(Guard.Patrol).SubstateOf(Guard.Awake)
+        .OnUpdate(dt => Walk(_patrolDirection, 30, dt))
+        .When(() => Distance < 90, Guard.Chase);
+
+    _guard.State(Guard.Chase).SubstateOf(Guard.Awake)
+        .OnEnter(() => Audio.TryPlay("select", 0.4f))
+        .OnUpdate(dt => Walk(MathF.Sign(_playerAt.X - _guardAt.X), 55, dt))
+        .When(() => Distance < 22, Guard.WindUp)         // declared first: checked first
+        .When(() => Distance > 130, Guard.Patrol);
+
+    _guard.State(Guard.WindUp).SubstateOf(Guard.Awake)
+        .After(0.35f, Guard.Strike);                      // the machine keeps the time in the state
+
+    _guard.State(Guard.Strike).SubstateOf(Guard.Awake)
+        .OnEnter(() => _flash = 1)
+        .OnExit(() => _flash = 0)                         // runs however the state ends, a stomp included
+        .After(0.2f, Guard.Chase);
+
+    _guard.State(Guard.Stunned)                           // not a part of Awake: a second stomp is not taken
+        .After(1.2f, Guard.Patrol);
+}
+```
+
+Guide: [State machines](../guide/state-machines.md).

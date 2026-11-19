@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- FSM-1 (docs/evaluations/fsm-1.md): the same enemy written three ways, by hand with a switch, on the Stateless
+       library and on the engine's StateMachine, driven by one script so their behaviour can be compared step by step
+       and the code a game owns in each can be read side by side. A program of its own so no engine assembly, sample
+       or game takes the third-party dependency. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>FsmCompare</RootNamespace>
+    <Version>1.0.0</Version>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsPackable>false</IsPackable>
+    <Description>One enemy as a hand-written machine, on Stateless and on the engine's StateMachine.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <!-- Pinned, so the evaluation's observations stay those of this version. Stateless: Apache-2.0. -->
+  <ItemGroup>
+    <PackageReference Include="Stateless" Version="[5.20.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Benchmarks.Tests" />
+  </ItemGroup>
+</Project>

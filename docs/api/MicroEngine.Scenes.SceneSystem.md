@@ -24,7 +24,8 @@ public abstract class SceneSystem : IStateHashed
 
 #### Derived
 
-[SceneTimers](MicroEngine.Scenes.SceneTimers.md)
+[SceneTimers](MicroEngine.Scenes.SceneTimers.md), 
+[StateMachines](MicroEngine.Scenes.StateMachines.md)
 
 #### Implements
 
