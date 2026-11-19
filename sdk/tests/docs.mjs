@@ -56,6 +56,7 @@ const samples = [
   ['samples/TiledLevel', 'TiledLevel.csproj', 'scripts/tour.script'],
   ['samples/Pathfinding', 'Pathfinding.csproj', 'scripts/tour.script'],
   ['samples/EcsSwarm', 'EcsSwarm.csproj', 'scripts/tour.script'],
+  ['samples/EcsEffects', 'EcsEffects.csproj', 'scripts/tour.script'],
 ];
 
 const tail = text => text.trim().split('\n').slice(-4).join(' | ');
@@ -111,7 +112,7 @@ async function main() {
       const referenced = csproj.match(/<PackageReference Include="MicroEngine\.Desktop" Version="([^"]+)"/)?.[1];
       // The repository's samples reference the documented version (what a reader installs).
       if (!check(`${name}: references MicroEngine.Desktop ${documented}`, referenced === documented && !/ProjectReference/.test(csproj), referenced ?? 'no package reference')) continue;
-      // Every SDK package it references (MicroEngine.Desktop, MicroEngine.Text.Shaping for the examples, MicroEngine.Tiled for the Tiled level, MicroEngine.Navigation for the pathfinding sample) moves to the version under test.
+      // Every SDK package it references (MicroEngine.Desktop, MicroEngine.Text.Shaping for the examples, MicroEngine.Tiled for the Tiled level, MicroEngine.Navigation for the pathfinding sample, MicroEngine.Ecs for the two component-store samples) moves to the version under test.
       if (version !== referenced) fs.writeFileSync(file, csproj.replaceAll(new RegExp(`(<PackageReference Include="MicroEngine(?:\\.[A-Za-z]+)*" Version=")${referenced.replaceAll('.', '\\.')}"`, 'g'), `$1${version}"`));
       let r = run(['build', project, '-c', 'Release', '-v', 'q', '-nologo'], target, env);
       if (!check(`${name}: builds against ${what}`, r.code === 0, r.code === 0 ? '' : tail(r.out), required)) continue;

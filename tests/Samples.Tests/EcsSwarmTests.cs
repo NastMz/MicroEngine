@@ -3,20 +3,21 @@ using Arch.Core;
 using EcsSwarm;
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Ecs;
 using MicroEngine.Scenes;
 
 namespace Samples.Tests;
 
 /// <summary>
-/// The ECS sample, played headlessly: a third-party component store runs beside the scene's world through the
-/// scene's own hooks (enter and exit, the fixed step, drawing, the state hash), and the two stay in step.
+/// The ECS sample, played headlessly: a component store (the optional package) runs beside the scene's world as one
+/// of the scene's systems, and the two stay in step.
 /// </summary>
 [TestClass]
 public sealed class EcsSwarmTests
 {
     private static readonly QueryDescription Members = new QueryDescription().WithAll<Chase>();
     private static readonly QueryDescription Sparks = new QueryDescription().WithAll<Spark>();
-    private static readonly QueryDescription Twins = new QueryDescription().WithAll<Position, Twin>();
+    private static readonly QueryDescription Twins = new QueryDescription().WithAll<Position, SceneLink>();
     private static readonly QueryDescription MemberPlaces = new QueryDescription().WithAll<Position, Chase>();
 
     private static (SwarmGame Game, SwarmScene Scene) Start(int seed = 1)
@@ -88,11 +89,11 @@ public sealed class EcsSwarmTests
         foreach (ref var chunk in scene.Rows.Query(in Twins))
         {
             var positions = chunk.GetSpan<Position>()[..chunk.Count];
-            var twins = chunk.GetSpan<Twin>()[..chunk.Count];
+            var twins = chunk.GetSpan<SceneLink>()[..chunk.Count];
             for (int i = 0; i < positions.Length; i++)
             {
-                Assert.AreEqual(positions[i].Value, scene.Objects.Local(twins[i].Id).Position2D, "the row's place is the entity's");
-                var flag = scene.Objects.Children(twins[i].Id).First();
+                Assert.AreEqual(positions[i].Value, scene.Objects.Local(twins[i].Entity).Position2D, "the row's place is the entity's");
+                var flag = scene.Objects.Children(twins[i].Entity).First();
                 Assert.AreEqual(positions[i].Value + new Vector2(0, -7), scene.Objects.DrawPosition2D(flag), "the child follows through the hierarchy");
                 carriers++;
             }
@@ -105,7 +106,7 @@ public sealed class EcsSwarmTests
     {
         var (game, scene) = Start();
         var twin = scene.CarrierTwins[0];
-        var row = scene.Objects.Get<Carrier>(twin).Row;
+        var row = scene.Objects.Get<EcsRow>(twin).Row;
         Assert.IsTrue(scene.Rows.IsAlive(row));
 
         scene.Objects.Destroy(twin);
@@ -123,21 +124,23 @@ public sealed class EcsSwarmTests
     {
         var (game, scene) = Start();
         var twin = scene.CarrierTwins[2];
-        var row = scene.Objects.Get<Carrier>(twin).Row;
+        var row = scene.Objects.Get<EcsRow>(twin).Row;
 
-        scene.RemoveRow(row);
+        scene.Rows.Destroy(row);   // the library's own call: the store finds the link broken when the step ends
         Assert.IsFalse(scene.Rows.IsAlive(row));
-        Assert.IsFalse(scene.Objects.IsAlive(twin), "destroyed at once for every question");
-        // A new row takes the removed row's place in the store before the world tells the carrier's attachment.
+        Assert.IsFalse(scene.Ecs.TryGetRow(twin, out _), "the entity has no row any more, for every question");
+        // A new row takes the removed row's place in the store before the step ends.
         var newcomer = scene.Rows.Create(new Position { Value = new Vector2(1, 2) });
         Assert.AreEqual(row.Id, newcomer.Id, "the store reuses the place");
         Step(game, 1);
 
+        Assert.IsFalse(scene.Objects.IsAlive(twin), "the entity went with its row");
         Assert.IsTrue(scene.Rows.IsAlive(newcomer), "the stale handle did not reach the row that reused its place");
         Assert.AreEqual(new Vector2(1, 2), scene.Rows.Get<Position>(newcomer).Value);
         Assert.AreEqual(SwarmScene.Carriers - 1, scene.Rows.CountEntities(in Twins));
         Assert.AreEqual(2 + 2 * (SwarmScene.Carriers - 1), scene.Objects.Count);
-        scene.RemoveRow(row);   // again: nothing
+        Assert.IsFalse(scene.Ecs.Unlink(row), "the old handle names no row");
+        Step(game, 1);
         Assert.IsTrue(scene.Rows.IsAlive(newcomer));
         Assert.AreEqual(SwarmScene.Carriers - 1, scene.Rows.CountEntities(in Twins));
     }
@@ -171,7 +174,7 @@ public sealed class EcsSwarmTests
         Step(other, 90);
         Assert.AreNotEqual(first.ComputeStateHash().Hash, other.ComputeStateHash().Hash);
 
-        // A change only the store knows about changes the hash: the scene adds the store to it.
+        // A change only the store knows about changes the hash: the store is one of the scene's systems.
         ulong before = first.ComputeStateHash().Hash;
         foreach (ref var chunk in firstScene.Rows.Query(in MemberPlaces))
         {

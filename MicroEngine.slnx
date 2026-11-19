@@ -50,6 +50,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
     <Project Path="samples/EcsSwarm/EcsSwarm.csproj" />
+    <Project Path="samples/EcsEffects/EcsEffects.csproj" />
     <Project Path="samples/Examples/Examples.csproj" />
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
     <Project Path="samples/Slice3D/Slice3D.csproj" />

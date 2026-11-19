@@ -1,0 +1,13 @@
+# A fire bolt at the guard between the crates: its shield takes the first, the second sets it alight, and the fire
+# spreads from crate to crate. Ice at the walker on the left stops it. Then the caster walks up to the fire, where the
+# burning things near it are counted and outlined.
+5 press confirm
+45 press confirm
+100 press cancel
+105 hold left 45
+155 press confirm
+165 capture spreading.png
+200 hold right 45
+245 hold up 40
+290 capture among.png
+292 quit
