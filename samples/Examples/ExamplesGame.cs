@@ -69,7 +69,13 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         Presentation = MicroEngine.Graphics.Presentation.PixelArt with { UiScale = 3 },
     };
 
-    protected override void Load() => Scenes.Push(new MenuScene());
+    protected override void Load()
+    {
+        // The shader examples' materials, loaded before play: reading a shader and creating it on the device takes
+        // longer than a frame. The scenes ask for them again and get these.
+        foreach (var shader in new[] { "water", "glow", "combine" }) Assets.Material($"shaders/{shader}.frag.shader");
+        Scenes.Push(new MenuScene());
+    }
 }
 
 /// <summary>The list of examples: a button per example in a scrolling view, so the list may grow past the screen.</summary>
