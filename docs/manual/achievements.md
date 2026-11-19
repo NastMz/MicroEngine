@@ -48,12 +48,13 @@ with .NET's `PublishTrimmed` or `PublishAot`; the game declares nothing for them
 
 ## Turning it on
 
-Call `TrackAchievements(catalog, store)` before the engine is composed: from the game's constructor or from its
-`Configure(EngineBuilder)` override. It creates the tracker over the `"achievements"` slot of the store. What only
-exists once the game runs (sounds) stays in `Load`:
+Call `TrackAchievements(catalog)` before the engine is composed, from the game's `Configure(EngineBuilder)`
+override. It creates the tracker over the `"achievements"` slot of the game's store (`Saves`);
+`TrackAchievements(catalog, store)` keeps them in a store of your choice, and can also be called from the
+constructor. What only exists once the game runs (sounds) stays in `Load`:
 
 ```csharp
-public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(RiftAchievements.Catalog, Store));
+public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(RiftAchievements.Catalog));
 
 protected override void Load()
 {

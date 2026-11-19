@@ -287,8 +287,8 @@ Manual: [Text](../manual/text.md).
 
 ## Saving
 
-A save slot with a small class: loading it on entry, saving and deleting it, and where the file lives. Source:
-[`SaveExample.cs`](../../samples/Examples/Examples/SaveExample.cs).
+A save slot with a small class in the game's store (`Game.Saves`): loading it on entry, saving and deleting it, and
+where the file lives. Source: [`SaveExample.cs`](../../samples/Examples/Examples/SaveExample.cs).
 
 <!-- code: samples/Examples/Examples/SaveExample.cs#data -->
 ```csharp
@@ -309,8 +309,8 @@ private string _status = "";
 
 public override void Enter()
 {
-    // One store per game: the id names the save folder (or the browser's storage keys).
-    _store = new SaveStore("MicroEngineExamples", saveDirectory);
+    // The game's store: one per game, in the save folder of the system it runs on (the page's storage in a browser).
+    _store = Game.Saves;
     _progress = _store.Load<Progress>("example") ?? new Progress();   // null: no save yet, or unreadable
     _status = _store.Exists("example") ? "LOADED" : "NO SAVE YET";
 }
@@ -333,6 +333,68 @@ public override void Update(float dt)
         _status = "DELETED";
     }
 }
+```
+
+A save whose shape changed between releases declares its version and one step per earlier version; the store brings
+an old save up to date when it loads it and never replaces one from a newer release. Source:
+[`SaveVersions.cs`](../../samples/Examples/SaveVersions.cs).
+
+<!-- code: samples/Examples/SaveVersions.cs#schema -->
+```csharp
+public const string Slot = "profile";
+
+/// <summary>
+/// This build writes version 3. One step for each earlier version: append a step for every change, and never edit
+/// one that has shipped.
+/// </summary>
+public static readonly SaveSchema<Profile> Schema = new SaveSchema<Profile>(version: 3, SaveTypes.Default.Profile)
+    .Migrate(from: 1, AddLives)
+    .Migrate(from: 2, RenameCoins);
+
+/// <summary>1 to 2: lives arrived; saves from before start with three.</summary>
+public static void AddLives(JsonObject save) => save["Lives"] = 3;
+
+/// <summary>2 to 3: "Coins" was renamed "Gold".</summary>
+public static void RenameCoins(JsonObject save)
+{
+    save["Gold"] = save["Coins"]?.DeepClone();
+    save.Remove("Coins");
+}
+```
+
+<!-- code: samples/Examples/SaveVersions.cs#use -->
+```csharp
+/// <summary>The saved profile, or a new one; <paramref name="notice"/> is what to tell the player, if anything.</summary>
+public static Profile Load(SaveStore store, out string notice)
+{
+    var loaded = store.Load(Slot, Schema);
+    notice = loaded.Status switch
+    {
+        SaveLoadStatus.Migrated => $"Your save was updated from version {loaded.Version}.",
+        SaveLoadStatus.TooNew => "This save is from a newer version of the game. Progress will not be saved.",
+        SaveLoadStatus.MigrationFailed or SaveLoadStatus.Unreadable => "The save could not be read. Progress will not be saved.",
+        SaveLoadStatus.Corrupt => "The save was damaged and has been set aside.",
+        _ => "",   // Loaded, Missing
+    };
+    return loaded.Value ?? new Profile();
+}
+
+/// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+public static bool Save(SaveStore store, Profile profile) => store.Save(Slot, profile, Schema);
+```
+
+The save games for a "load game" screen, and the settings as one more slot of the same store. Source:
+[`SaveSlots.cs`](../../samples/Examples/SaveSlots.cs).
+
+<!-- code: samples/Examples/SaveSlots.cs#slots -->
+```csharp
+/// <summary>The save games, newest first: every slot whose name starts with "save-".</summary>
+public static IReadOnlyList<SlotInfo> SaveGames(SaveStore store) =>
+    [.. store.Slots("save-").OrderByDescending(slot => slot.LastWrite)];
+
+/// <summary>A line of the list: the slot and when it was last saved, when the medium knows.</summary>
+public static string Describe(SlotInfo slot) =>
+    slot.LastWrite is { } time ? $"{slot.Name}   {time.LocalDateTime:g}" : slot.Name;
 ```
 
 Manual: [Saving data](../manual/persistence.md).

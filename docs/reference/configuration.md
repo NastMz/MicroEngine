@@ -144,8 +144,8 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine.Input/InputMap.cs`](../../s
 | Achievements | `Achievement.Icon`; the game's own banners and list, drawn from `Unlocked` and `All` ([Achievements](../manual/achievements.md#showing-achievements)) | Neon Rift closes its list with `fire` too |
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
 | Content location | `host.Content` in the composition, for every host (default: the `Content` folder next to the program) | Tests can point at another folder |
-| Save medium | Implement `IStorage` (namespace `MicroEngine.Platform`); pass it to `SaveStore`, or set `host.Storage` in the composition and use `host.SaveStore(gameId)` | `BrowserStorage`, `FileSaveStorage` |
-| Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
+| Save medium | Implement `IStorage` (namespace `MicroEngine.Platform`); set `host.Storage` in the composition and `Game.Saves` uses it, or pass it to a `SaveStore` built by hand | `BrowserStorage`, `FileSaveStorage` |
+| Save location | Override `Game.CreateSaves()` and return `new SaveStore(SaveId, directory)` | Every game's `*_SAVE_DIR` variable |
 | Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile`; `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
 | Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame; `GameHost` gives a host of your own the shared launch rules and the game's composition | The browser host |
 

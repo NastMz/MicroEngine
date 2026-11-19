@@ -102,7 +102,7 @@ write how to read and write them:
 /// </summary>
 [JsonSerializable(typeof(SaveExample.Progress))]
 [JsonSerializable(typeof(Profile))]
-[JsonSerializable(typeof(JsonObject))]   // a slot read as JSON, to upgrade old saves
+[JsonSerializable(typeof(GameSaves.Settings))]
 public partial class SaveTypes : JsonSerializerContext;
 ```
 

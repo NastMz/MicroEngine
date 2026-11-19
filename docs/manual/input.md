@@ -161,7 +161,7 @@ saved, and also when the data is unreadable; unreadable data is set aside first:
 ```csharp
 public override void Enter()
 {
-    _storage = saveDirectory is null ? SaveStore.DefaultStorage("MicroEngineExamples") : new FileSaveStorage(saveDirectory);
+    _storage = Game.Saves.Storage;   // the bindings are kept where the game's saves are
     BindDefaults(Input);
     // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
     _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";

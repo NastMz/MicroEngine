@@ -42,6 +42,20 @@ optional, for agents that find their way through a level.
 - Input scripts press any mouse button (`mouse X,Y down secondary`), click (`click X,Y [button]`) and turn the wheel
   sideways (`wheel D H`); `InputScript.Mouse` takes a button and `Click` and `Wheel` build the same in code.
 - The "Mouse actions" example: click to move, wheel to zoom, a locked drag and a mouse button rebound by pressing it.
+- Versioned saves. A `SaveSchema<T>` declares the version a saved type is written in and one step per earlier version
+  (`Migrate(from, step)`, a change to the save as JSON); `Saves.Load(slot, schema)` brings an older save up to date
+  and reports what it found (`SaveLoadResult<T>`: loaded, migrated from which version, written by a newer release,
+  corrupt, missing), and `Saves.Save(slot, data, schema)` writes the version. A save from a newer release of the game
+  is never loaded and never replaced; the original of a migrated save is kept beside it. Saves written before a type
+  had a schema are version 1 and load unchanged. With the type's `JsonTypeInfo<T>` it works in games published
+  trimmed or with NativeAOT ([Versions and migrations](../manual/persistence.md#versions-and-migrations)).
+- `Game.Saves`: every game has its store, on the medium its host composed (`host.Storage`), else the platform's
+  default, under `Game.SaveId` (the application id). `Game.CreateSaves()` builds it by hand, and
+  `TrackAchievements(catalog)` keeps the achievements in it ([The game's store](../manual/persistence.md#the-games-store)).
+- `SaveStore.Slots(prefix)` lists the slots that hold a save, with their size and last write time, for a "load game"
+  screen; `IStorage.List()` is the storage's side of it ([Listing slots](../manual/persistence.md#listing-slots)).
+  `SaveStore.Storage` is the store's medium, so key bindings are saved where the saves are
+  (`Input.SaveBindings(Saves.Storage)`).
 - `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets
   (`Assets.TiledMap(path)`): tile layers with each cell's flips, tilesets as sprites (`TiledSprites`), objects and
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax
@@ -134,6 +148,9 @@ optional, for agents that find their way through a level.
   the gamepad.
 - A scripted `wheel` turns where the script's mouse was put last, not at the canvas's corner, so it reaches the widget
   or the game under the pointer.
+- A storage lists its slots: `IStorage` (and `ISaveStorage`) has a seventh member, `List()`. A slot name cannot end
+  with `.backup`, where the store keeps the original of a migrated save
+  ([migration notes](../migrations.md#a-storage-lists-its-slots)).
 - A save slot is a plain name on every system. `SaveStore` and `FileSaveStorage` throw `ArgumentException` for a slot
   that is empty, holds a path separator or another character file names cannot hold, ends with a dot or a space, ends
   with `.corrupt` (the name unreadable data is set aside under), or is a Windows device name; names such as `"progress"` and `"profile.v2"` keep their file

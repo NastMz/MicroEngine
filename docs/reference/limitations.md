@@ -53,7 +53,10 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | `localStorage` holds about 5 MB per site, shared with everything on that site; browsers may evict it under storage pressure, private windows discard it, and Safari may delete it for sites not visited for seven days | [Persistence](../manual/persistence.md) |
 
 When storage is full or blocked, the game keeps running and the page says progress could not be saved;
-`SaveStore` never overwrites a slot it could not read.
+`SaveStore` never overwrites a slot it could not read, nor a save written by a newer release of the game.
+A save carries a version only when the game declares one for its type
+([Versions and migrations](../manual/persistence.md#versions-and-migrations)); a step migrates one save at a time,
+never across slots.
 
 ## Browsers
 
