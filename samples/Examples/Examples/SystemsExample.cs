@@ -16,7 +16,7 @@ public sealed class SystemsExample : Scene
     {
         /// <summary>0 at dawn, 0.5 at dusk, back to 0 after a full day.</summary>
         public float Time { get; private set; }
-        public float DayLength { get; init; } = 8f;
+        public float DayLength { get; init; } = 4f;
         public bool IsNight => Time >= 0.5f;
 
         // Called by the engine before the scene's Update, with the same step.

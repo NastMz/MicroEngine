@@ -189,6 +189,12 @@
 3726 press pause
 3740 press down
 3750 press confirm
-3850 capture 33-systems.png
-3856 press pause
-3870 quit
+3940 capture 33-systems.png
+3946 press pause
+3960 press down
+3970 press confirm
+3990 hold right 70
+4090 press action
+4130 capture 34-state-machine.png
+4136 press pause
+4150 quit

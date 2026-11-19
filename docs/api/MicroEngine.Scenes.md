@@ -70,6 +70,14 @@ what it needs to find (enemies for the towers, neighbours for a swarm, what is i
 the screen), moves an item's place when the item moves and removes it when it goes. A world has none unless the
 game makes one, and the physics world is not involved: items need no body.
 
+ [StateMachines](MicroEngine.Scenes.StateMachines.md)
+
+Runs state machines for a scene ([Machines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Machines)): each machine added is stepped every update before
+the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), with the same step, in the order they were added, and is part of the
+scene's state hash. It suits the machines of the scene itself (the flow of a level, a boss fight's phases, a
+cutscene). A machine that belongs to an object is better stepped by that object, where its place among the object's
+rules is explicit; such a machine needs no runner, only a call to its <code>Update</code>.
+
  [Timeline](MicroEngine.Scenes.Timeline.md)
 
 A playhead that drives several `Track`1`s together and raises named events at set times: a sequence

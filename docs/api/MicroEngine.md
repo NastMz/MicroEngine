@@ -56,6 +56,23 @@ Standard easing curves mapping 0..1 to 0..1 (some overshoot).
 
 Small numeric helpers that games repeatedly need for feel and motion.
 
+ [StateMachine<TState, TEvent\>.StateConfig](MicroEngine.StateMachine\-2.StateConfig.md)
+
+The declaration of one state (or of `Any`); every call returns it, to chain them.
+
+ [StateMachine<TState, TEvent\>](MicroEngine.StateMachine\-2.md)
+
+A state machine for gameplay: a character's moves, an enemy's behaviour, a boss's phases, the flow of a level. Each
+state has what runs when it is entered, every step while it lasts and when it is left, and the ways out of it: a
+condition checked every step (<code>When</code>), a time in the state (<code>After</code>) or an event the game fires
+(<code>On</code>). The machine keeps the seconds spent in the current state, runs on whatever step it is given (so it
+follows a scene's clock through slow motion and a hitstop), takes part in the state hash and can be saved and
+restored. Stepping and firing allocate nothing.
+
+ [StateMachine<TState\>](MicroEngine.StateMachine\-1.md)
+
+A state machine without events: its states change by conditions, by time and by <code>Go</code>.
+
  [Track<T\>](MicroEngine.Track\-1.md)
 
 An immutable value that changes over time through keys: `At` gives the value at any time, blended
@@ -82,8 +99,24 @@ An 8-bit-per-channel, non-premultiplied RGBA color.
 
 One key of a `Track`1`: the value the track has at a time.
 
+ [MachineSnapshot<TState\>](MicroEngine.MachineSnapshot\-1.md)
+
+A machine's state and the seconds it has been in it, to save and restore (`Restore`).
+
  [RectF](MicroEngine.RectF.md)
 
 Axis-aligned rectangle in world or screen units (Y grows downward).
+
+### Interfaces
+
+ [IStateMachine](MicroEngine.IStateMachine.md)
+
+Something stepped like a state machine: what a scene's <code>StateMachines</code> system runs.
+
+### Enums
+
+ [NoEvent](MicroEngine.NoEvent.md)
+
+The event type of a state machine that has no events (`StateMachine`1`).
 
 </div>

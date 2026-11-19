@@ -21,8 +21,9 @@ flowchart LR
 ```
 
 Each screen with its own input and drawing is a scene; moving between them is a stack operation. State *inside* a
-scene (the time left, a hero's hurt timer) is ordinary fields. MicroEngine has no state-machine type: the scene stack
-covers screens, and plain C# covers the rest.
+scene (the time left, a hero's hurt timer) is ordinary fields here. When an object has several states with their
+own entries, exits and ways out (an enemy that patrols, chases and attacks), declare them with a
+[state machine](../guide/state-machines.md); the scene stack covers screens.
 
 ## The round timer
 

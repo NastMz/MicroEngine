@@ -17,6 +17,10 @@ optional, for agents that find their way through a level.
   `Scenes.Entered` and `Exited` report scenes going onto and off the stack.
 - `Scene.Timers`: `After` and `Every` call an action after a time or at intervals on the scene's time, with
   `Cancel`, an unscaled option and their state in the state hash ([Timers](../manual/scenes.md#timers)).
+- `StateMachine<TState>` and `StateMachine<TState, TEvent>` ([State machines](state-machines.md)): a state's entry,
+  update and exit, ways out by condition (`When`), by time (`After`) and by event (`On`, `Fire`), substates, the time in
+  the state, the state hash and snapshots for saves. Stepping and firing allocate nothing. `Scene.Machines` steps and
+  hashes a scene's own machines.
 - For modules: `Lifecycle.Started` and `Stopping`, and `EngineBuilder.StateSections`, which adds a named section of
   a module's state to the state hash.
 - `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets

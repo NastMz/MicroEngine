@@ -38,7 +38,8 @@ skeletal tool with a managed runtime (Spine) carries a licence condition on ever
   events from a timeline of its length.
 - **Out of the engine.** Skeletal runtimes (bones with skins and mesh deformation) are not in the core; one may become
   an optional package only by an owner decision that accepts its licence. State machines and blend trees that choose
-  which animation plays are game rules. There is no animation editor and no file format for tracks.
+  which animation plays are game rules. (Amended by [ADR 0061](0061-state-machine-in-the-core.md): the engine has a
+  gameplay state machine; which animation a state plays is still the game's rule.) There is no animation editor and no file format for tracks.
 
 ## Consequences
 
