@@ -72,6 +72,12 @@ optional, for agents that find their way through a level.
   every step fits in a 60 Hz frame on a desktop, where a walk over all of them for each one stops under 2,000, and a
   query with `Camera2D.VisibleBounds` gives what a world much larger than the view should update and draw. The
   "Nearby objects" example of the Examples sample moves, of 3,000 fireflies, the ones near the view.
+- A guide for games with very many alike objects ([Many alike objects and Entity Component Systems](entity-component-systems.md)):
+  how far a scene's world goes (100,000 entities walked and moved in about half a millisecond on a desktop), when a
+  component store pays for itself, and how a game runs the Entity Component System it chooses beside the scene's
+  world: the scene owns the store, steps it in `Update`, draws it with `Objects.Blend`, adds it to the state hash,
+  and links a row to an entity when it needs a child or a physics body. The SDK itself has no ECS and no package
+  depends on one. The `EcsSwarm` sample keeps a swarm of 20,000 in Arch beside a scene's entities.
 
 **Changed**
 

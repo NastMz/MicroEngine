@@ -126,6 +126,83 @@ public sealed class ArchitectureTests
         Assert.IsFalse(File.ReadAllText(Path.Combine(root, "MicroEngine.slnx")).Contains(Migration, StringComparison.Ordinal), "the solution lists no adapter project");
     }
 
+    /// <summary>
+    /// Entity Component System libraries (ADR 0059). A game may use one beside the scene's world; the engine, the
+    /// tools, the templates and the demo games never do, so no subsystem can come to depend on one.
+    /// </summary>
+    private static readonly string[] EcsPackages =
+        ["Arch", "Friflo.Engine.ECS", "DefaultEcs", "Flecs.NET", "fennecs", "TinyEcs", "Leopotam.Ecs", "Frent", "Svelto.ECS", "Scellecs.Morpeh", "MonoGame.Extended.Entities"];
+    /// <summary>The only projects that may reference one: the benchmark that compares them and the sample that shows the way.</summary>
+    private static readonly string[] EcsConsumers = ["benchmarks/EcsBench/EcsBench.csproj", "samples/EcsSwarm/EcsSwarm.csproj"];
+
+    private static bool IsEcsPackage(string name) =>
+        EcsPackages.Any(p => name.Equals(p, StringComparison.OrdinalIgnoreCase) || name.StartsWith(p + ".", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The ECS packages a project, props or targets file names, as a reference or as a central version.</summary>
+    private static List<string> EcsPackagesNamedIn(string file) =>
+        [.. XDocument.Load(file).Descendants()
+            .Where(e => e.Name.LocalName is "PackageReference" or "PackageVersion")
+            .Select(e => e.Attribute("Include")?.Value ?? e.Attribute("Update")?.Value ?? "")
+            .Where(IsEcsPackage)];
+
+    private static bool IsSkipped(string relative) =>
+        relative.Split('/').Any(part => part is "bin" or "obj" or "experiments" or "node_modules" || part.StartsWith('.'));
+
+    [TestMethod]
+    public void No_engine_project_tool_template_or_demo_references_an_entity_component_system()
+    {
+        var root = Repository();
+        var offenders = new List<string>();
+        var consumers = new List<string>();
+        foreach (var project in Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories))
+        {
+            string relative = Path.GetRelativePath(root, project).Replace('\\', '/');
+            if (IsSkipped(relative)) continue;
+            // The engine, the tools, the templates and the demos do not reach one through a consumer either.
+            if (relative.StartsWith("src/", StringComparison.Ordinal) || relative.StartsWith("games/", StringComparison.Ordinal) || relative.StartsWith("templates/", StringComparison.Ordinal))
+                foreach (var reference in XDocument.Load(project).Descendants().Where(e => e.Name.LocalName == "ProjectReference"))
+                {
+                    string target = (reference.Attribute("Include")?.Value ?? "").Replace('\\', '/');
+                    if (EcsConsumers.Any(c => target.EndsWith(Path.GetFileName(c), StringComparison.OrdinalIgnoreCase))) offenders.Add($"{relative} -> {target}");
+                }
+            var packages = EcsPackagesNamedIn(project);
+            if (packages.Count == 0) continue;
+            if (EcsConsumers.Contains(relative)) consumers.Add(relative);
+            else offenders.Add($"{relative} -> {string.Join(", ", packages)}");
+        }
+        // A props or targets file would give the package to every project that imports it: none names one.
+        foreach (string pattern in (string[])["*.props", "*.targets"])
+            foreach (var shared in Directory.GetFiles(root, pattern, SearchOption.AllDirectories))
+            {
+                string relative = Path.GetRelativePath(root, shared).Replace('\\', '/');
+                if (IsSkipped(relative)) continue;
+                var packages = EcsPackagesNamedIn(shared);
+                if (packages.Count > 0) offenders.Add($"{relative} -> {string.Join(", ", packages)}");
+            }
+        Assert.AreEqual(0, offenders.Count, "An Entity Component System is a game's choice (ADR 0059); these projects reference one: " + string.Join("; ", offenders));
+        CollectionAssert.AreEquivalent(EcsConsumers, consumers, "the benchmark and the sample are the consumers the check knows");
+    }
+
+    [TestMethod]
+    public void No_compiled_engine_assembly_references_an_entity_component_system()
+    {
+        // The engine assemblies built beside this test project: the ones it references, not every package of the SDK
+        // (the project check above covers those). It sees a reference the compiler kept, so an unused one passes.
+        var folder = Path.GetDirectoryName(typeof(Game).Assembly.Location)!;
+        var engine = Directory.GetFiles(folder, "MicroEngine*.dll").Where(f => !Path.GetFileName(f).Contains(".Tests", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.Count >= 10, string.Join(", ", engine.Select(Path.GetFileName)));
+        var offenders = new List<string>();
+        foreach (string file in engine)
+        {
+            System.Reflection.AssemblyName[] references;
+            try { references = System.Reflection.Assembly.LoadFrom(file).GetReferencedAssemblies(); }
+            catch (BadImageFormatException) { continue; }   // a native library named like the engine
+            foreach (var reference in references)
+                if (IsEcsPackage(reference.Name!)) offenders.Add($"{Path.GetFileName(file)} -> {reference.Name}");
+        }
+        Assert.AreEqual(0, offenders.Count, string.Join("; ", offenders));
+    }
+
     [TestMethod]
     public void The_core_no_longer_carries_the_legacy_entities()
     {

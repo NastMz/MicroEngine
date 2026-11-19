@@ -12,7 +12,7 @@ namespace StressBench;
 /// <summary>The workloads by name: what each one's load counts and how much of it a default run uses.</summary>
 public static class Scenarios
 {
-    private static readonly (string Name, int Load, string What, Func<int, string, StressScene> Create)[] All =
+    private static readonly List<(string Name, int Load, string What, Func<int, string, StressScene> Create)> All =
     [
         ("entity-churn", 10_000, "live entities with two attachments; a tenth destroyed and created again every step", (n, _) => new EntityChurnScene(n)),
         ("entity-trickle", 100_000, "live entities with two attachments; eight destroyed and created again every step", (n, _) => new EntityChurnScene(n, replaced: 8)),
@@ -35,7 +35,7 @@ public static class Scenarios
     ];
 
     /// <summary>Every scenario, in the order a suite runs them.</summary>
-    public static IReadOnlyList<string> Names { get; } = [.. All.Select(s => s.Name)];
+    public static IReadOnlyList<string> Names => [.. All.Select(s => s.Name)];
 
     /// <summary>The load a run uses when none is given.</summary>
     public static int DefaultLoad(string name) => Find(name).Load;
@@ -44,6 +44,12 @@ public static class Scenarios
     public static string Describe(string name) => Find(name).What;
 
     internal static StressScene Create(string name, int load, string backend) => Find(name).Create(load, backend);
+
+    /// <summary>Adds a scenario from another program built on this harness (benchmarks/EcsBench); a name is added once.</summary>
+    internal static void Add(string name, int load, string what, Func<int, StressScene> create)
+    {
+        if (!All.Exists(s => s.Name == name)) All.Add((name, load, what, (n, _) => create(n)));
+    }
 
     private static (string Name, int Load, string What, Func<int, string, StressScene> Create) Find(string name)
     {

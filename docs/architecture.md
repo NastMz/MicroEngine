@@ -174,7 +174,10 @@ a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked i
 drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
 the per-step state hash. Beside the world, and used only by a game that creates one, is `SpatialIndex2D<T>`: the
 game's own items under a point or a rectangle, found by rectangle or by circle
-([Large worlds and nearby objects](guide/large-worlds.md)).
+([Large worlds and nearby objects](guide/large-worlds.md)). The engine has no Entity Component System and no assembly
+references one (the architecture test checks it): a game with hundreds of thousands of alike objects runs the
+library it chooses beside the scene's world, through the scene's own hooks
+([Many alike objects and Entity Component Systems](guide/entity-component-systems.md)).
 
 Physics is two more assemblies of the
 `MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies

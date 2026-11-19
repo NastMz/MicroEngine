@@ -36,6 +36,7 @@
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
+    <Project Path="benchmarks/EcsBench/EcsBench.csproj" />
     <Project Path="benchmarks/MapBench/MapBench.csproj" />
     <Project Path="benchmarks/NavBench/NavBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
@@ -45,6 +46,7 @@
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
+    <Project Path="samples/EcsSwarm/EcsSwarm.csproj" />
     <Project Path="samples/Examples/Examples.csproj" />
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
     <Project Path="samples/Slice3D/Slice3D.csproj" />

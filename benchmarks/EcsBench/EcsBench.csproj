@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ENTITY-1 (docs/evaluations/entity-1.md): the same workloads written on the engine's simple world, on two
+       third-party Entity Component Systems and on a first-party archetype prototype, run by the stress harness
+       (benchmarks/StressBench) through the real game loop. A program of its own so the harness, and with it the
+       engine's baseline, takes no third-party dependency. Run it in Release (Program.cs lists the commands). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>EcsBench</RootNamespace>
+    <Version>1.0.0</Version>
+    <ApplicationTitle>MicroEngine EcsBench</ApplicationTitle>
+    <ApplicationId>dev.microengine.ecsbench</ApplicationId>
+    <MicroEngineSplash>false</MicroEngineSplash>
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Description>Entity workloads on the simple world, third-party ECS libraries and a first-party prototype.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../StressBench/StressBench.csproj" />
+  </ItemGroup>
+  <!-- The candidates measured (benchmark only: no engine assembly, sample or game references them). Pinned, so the
+       figures of the evaluation stay those of these versions. Arch: Apache-2.0. Friflo.Engine.ECS: MIT. -->
+  <ItemGroup>
+    <PackageReference Include="Arch" Version="[2.1.0]" />
+    <PackageReference Include="Friflo.Engine.ECS" Version="[3.6.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Benchmarks.Tests" />
+  </ItemGroup>
+</Project>

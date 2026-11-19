@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- An Entity Component System beside the scene's world: twenty thousand alike objects live in a component store of
+       a third-party library (Arch, Apache-2.0), the few objects that need a transform hierarchy stay entities
+       of the scene's world, and the scene joins the two. The engine knows nothing of the library: the scene owns the
+       store, steps it in Update, draws it in Draw and adds it to the state hash. It references the packages a game
+       outside this repository references; inside the repository the engine's projects replace MicroEngine's
+       (samples/Directory.Build.targets). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>EcsSwarm</RootNamespace>
+    <ApplicationTitle>ECS Swarm</ApplicationTitle>
+    <ApplicationId>com.example.ecsswarm</ApplicationId>
+    <Version>1.0.0</Version>
+    <Description>A swarm in a third-party Entity Component System, beside the objects of a MicroEngine scene.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
+    <!-- The component store. Any Entity Component System fits the same five places of SwarmScene. -->
+    <PackageReference Include="Arch" Version="2.1.0" />
+  </ItemGroup>
+</Project>

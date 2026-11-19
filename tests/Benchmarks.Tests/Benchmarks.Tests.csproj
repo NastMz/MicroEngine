@@ -12,5 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../benchmarks/StressBench/StressBench.csproj" />
+    <!-- The entity workloads of ENTITY-1: every store must end a workload in the same state. -->
+    <ProjectReference Include="../../benchmarks/EcsBench/EcsBench.csproj" />
   </ItemGroup>
 </Project>

@@ -16,6 +16,7 @@
     <ProjectReference Include="../../samples/AssetGallery/AssetGallery.csproj" />
     <ProjectReference Include="../../samples/TiledLevel/TiledLevel.csproj" />
     <ProjectReference Include="../../samples/Pathfinding/Pathfinding.csproj" />
+    <ProjectReference Include="../../samples/EcsSwarm/EcsSwarm.csproj" />
   </ItemGroup>
   <!-- The simulation-determinism helper shared with the engine's and the games' test projects. -->
   <ItemGroup>
