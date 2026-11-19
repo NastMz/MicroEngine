@@ -7,17 +7,21 @@ namespace MicroEngine.Core;
 
 /// <summary>
 /// The image and atlas loaders of <see cref="AssetCache"/>, and the font loader of text (<see cref="FontLoader"/>), registered in its store under the kinds "texture",
-/// "atlas", "folder atlas" and "font". They read through the store's content source and create textures on the game's
-/// graphics device. Their keys: the sampling filter is the key's variant; an atlas's <see cref="AtlasOptions"/>, a
-/// folder atlas's pivot (a <see cref="Vector2"/>) and a font's <see cref="FontOptions"/> are its options.
+/// "atlas", "folder atlas" and "font", and the loaders of what a game draws with: "shader" (a compiled shader file),
+/// "material" (a material from a compiled fragment shader) and "render target" (a picture to draw into, which no file
+/// describes: its path is a name the game gives it). They read through the store's content source and create their
+/// resources on the game's graphics device. Their keys: the sampling filter is the key's variant; an atlas's
+/// <see cref="AtlasOptions"/>, a folder atlas's pivot (a <see cref="Vector2"/>), a font's <see cref="FontOptions"/>, a
+/// material's <see cref="MaterialFallback"/> and a render target's <see cref="RenderTargetSize"/> are its options.
 /// </summary>
 /// <remarks>These loaders move to the 2D graphics module when it exists; the kinds and keys stay.</remarks>
 internal static class GraphicsAssetLoaders
 {
     public const string Texture = "texture", Atlas = "atlas", FolderAtlas = "folder atlas", Font = FontLoader.Kind;
+    public const string Shader = "shader", Material = "material", RenderTarget = "render target";
 
     /// <summary>Whether <paramref name="kind"/> is one of these loaders' kinds, whose sizes are texture memory.</summary>
-    public static bool IsGraphics(string kind) => kind is Texture or Atlas or FolderAtlas or Font;
+    public static bool IsGraphics(string kind) => kind is Texture or Atlas or FolderAtlas or Font or RenderTarget;
 
     public static void Register(AssetLoaderRegistry loaders, IGraphicsDevice device)
     {
@@ -44,6 +48,28 @@ internal static class GraphicsAssetLoaders
         }, size: AtlasBytes));
         // Scalable fonts are text's: its loader registers itself under the same kind.
         FontLoader.Register(loaders, device);
+        loaders.Add(new AssetLoader<Graphics.Devices.CompiledShader>(Shader, c => ParseShader(c.Source, c.Path, c.Key.Kind), [Graphics.Devices.CompiledShader.FileExtension]));
+        loaders.Add(new AssetLoader<Material2D>(Material, c =>
+        {
+            var shader = ParseShader(c.Source, c.Path, c.Key.Kind);
+            if (shader.Stage != Graphics.Devices.ShaderStage.Fragment)
+                throw new AssetLoadException(c.Path, c.Key.Kind, "a material is made from a fragment shader (a .frag.shader file); the engine supplies the vertex stage.");
+            return device.CreateMaterial(shader, c.Options is MaterialFallback fallback ? fallback : default);
+        }));
+        loaders.Add(new AssetLoader<RenderTarget2D>(RenderTarget, c =>
+        {
+            if (c.Options is not RenderTargetSize size)
+                throw new AssetLoadException(c.Path, c.Key.Kind, "a render target is not a file: ask for it with Assets.RenderTarget(name, width, height).");
+            if (size.Width <= 0 || size.Height <= 0) throw new AssetLoadException(c.Path, c.Key.Kind, $"its size must be positive, not {size.Width} x {size.Height}.");
+            return device.CreateRenderTarget(size.Width, size.Height, (TextureFilter)c.Key.Variant);
+        }, size: t => t.IsDisposed ? 0 : t.SizeInBytes));
+    }
+
+    private static Graphics.Devices.CompiledShader ParseShader(IContentSource source, string path, string kind)
+    {
+        var bytes = Read(source, path, kind);
+        try { return Graphics.Devices.CompiledShader.Parse(bytes); }
+        catch (InvalidDataException e) { throw new AssetLoadException(path, kind, e.Message, e); }
     }
 
     private static long AtlasBytes(SpriteAtlas a) => a.Texture.IsDisposed ? 0 : a.Texture.SizeInBytes;

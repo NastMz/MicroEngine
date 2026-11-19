@@ -579,6 +579,10 @@ public abstract class Game : IEngineModule, IStateHashed
         public void PopCamera() => Ui.PopCamera();
         public void SetBlendMode(BlendMode mode) => Ui.SetBlendMode(mode);
         public void SetClip(RectF? screenRect) => Ui.SetClip(screenRect);
+        public void PushState(in DrawState state) => Ui.PushState(state);
+        public void PopState() => Ui.PopState();
+        public void PushTarget(RenderTarget2D target) => Ui.PushTarget(target);
+        public void PopTarget() => Ui.PopTarget();
     }
 
     private bool _pausedMusicForSuspension;

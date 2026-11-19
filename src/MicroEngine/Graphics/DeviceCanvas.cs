@@ -4,10 +4,11 @@ using Dev = MicroEngine.Graphics.Devices;
 namespace MicroEngine.Graphics;
 
 /// <summary>
-/// The textures of the drawing API (<see cref="IGraphicsDevice"/>) made on a graphics device of the device contract: each
-/// texture is a device texture whose straight-alpha pixels are premultiplied when they are uploaded, and its
-/// <see cref="Texture.Filter"/> chooses the sampler it is drawn with. Backends built on a device use it as their
-/// <see cref="Core.IPlatform.Graphics"/>.
+/// The textures, render targets and materials of the drawing API (<see cref="IGraphicsDevice"/>) made on a graphics
+/// device of the device contract: each texture is a device texture whose straight-alpha pixels are premultiplied when
+/// they are uploaded, and its <see cref="Texture.Filter"/> chooses the sampler it is drawn with. A device texture or
+/// render target the game made itself becomes a texture of the drawing API with <see cref="Wrap(Dev.Texture, TextureFilter?, bool)"/>.
+/// Backends built on a device use it as their <see cref="Core.IPlatform.Graphics"/>.
 /// </summary>
 public sealed class DeviceGraphics : IGraphicsDevice
 {
@@ -35,7 +36,70 @@ public sealed class DeviceGraphics : IGraphicsDevice
         var rgba = image.ToRgba();
         Dev.PremultipliedColor.PremultiplyInPlace(rgba);
         var native = Device.CreateTexture(new Dev.TextureDescription(image.Width, image.Height), rgba);
-        var texture = new DeviceTexture(this, native, filter);
+        return Track(new DeviceTexture(this, native, null, filter, true));
+    }
+
+    /// <inheritdoc/>
+    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
+
+    /// <inheritdoc/>
+    public RenderTarget2D CreateRenderTarget(int width, int height) => CreateRenderTarget(width, height, DefaultFilter);
+
+    /// <inheritdoc/>
+    public RenderTarget2D CreateRenderTarget(int width, int height, TextureFilter filter)
+    {
+        if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width), "A render target needs a positive size.");
+        var native = Device.CreateRenderTarget(new Dev.RenderTargetDescription(width, height));
+        // A new target is transparent until the game draws into it.
+        var clear = Device.BeginCommands();
+        clear.BeginPass(new Dev.PassDescription(new Dev.ColorAttachment(native, Dev.LoadOp.Clear, Dev.StoreOp.Store, default)));
+        clear.EndPass();
+        Device.Submit(clear);
+        return new RenderTarget2D(Track(new DeviceTexture(this, native.Color!, native, filter, true)));
+    }
+
+    /// <inheritdoc/>
+    public Material2D CreateMaterial(Dev.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(Device, fragment, fallback);
+
+    /// <summary>
+    /// A device texture the game created itself (in any format the device samples: a single channel, a compressed
+    /// format, with mip levels) as a texture of the drawing API, so <see cref="IRenderer"/> draws it and a
+    /// <see cref="Sprite"/> can cut from it. Its pixels are taken as premultiplied, as the device holds them.
+    /// </summary>
+    /// <param name="native">A texture of <see cref="Device"/>, not a render target's colour (wrap the target instead).</param>
+    /// <param name="filter">How it is sampled; null for <see cref="DefaultFilter"/>.</param>
+    /// <param name="ownsNative">Whether disposing the returned texture disposes <paramref name="native"/> too.</param>
+    /// <exception cref="ArgumentException">A texture of another device, or a render target's colour texture.</exception>
+    /// <exception cref="ObjectDisposedException">A disposed texture.</exception>
+    public Texture Wrap(Dev.Texture native, TextureFilter? filter = null, bool ownsNative = false)
+    {
+        ArgumentNullException.ThrowIfNull(native);
+        if (!ReferenceEquals(native.Device, Device)) throw new ArgumentException($"'{native.Name}' belongs to another graphics device.", nameof(native));
+        ObjectDisposedException.ThrowIf(native.IsDisposed, native);
+        if (native.OwnerTarget is not null) throw new ArgumentException($"'{native.Name}' is a render target's picture; wrap the render target.", nameof(native));
+        return Track(new DeviceTexture(this, native, null, filter ?? DefaultFilter, ownsNative));
+    }
+
+    /// <summary>
+    /// A device render target the game created itself as a render target of the drawing API: <see cref="IRenderer.PushTarget"/>
+    /// draws into it and its texture is drawn like any other.
+    /// </summary>
+    /// <param name="native">An offscreen target of <see cref="Device"/>.</param>
+    /// <param name="filter">How its texture is sampled; null for <see cref="DefaultFilter"/>.</param>
+    /// <param name="ownsNative">Whether disposing the returned target disposes <paramref name="native"/> too.</param>
+    /// <exception cref="ArgumentException">A target of another device, or the surface target.</exception>
+    /// <exception cref="ObjectDisposedException">A disposed target.</exception>
+    public RenderTarget2D Wrap(Dev.RenderTarget native, TextureFilter? filter = null, bool ownsNative = false)
+    {
+        ArgumentNullException.ThrowIfNull(native);
+        if (!ReferenceEquals(native.Device, Device)) throw new ArgumentException($"'{native.Name}' belongs to another graphics device.", nameof(native));
+        ObjectDisposedException.ThrowIf(native.IsDisposed, native);
+        if (native.Color is not { } color) throw new ArgumentException("The surface target cannot be sampled, so it is not a render target of the drawing API.", nameof(native));
+        return new RenderTarget2D(Track(new DeviceTexture(this, color, native, filter ?? DefaultFilter, ownsNative)));
+    }
+
+    private DeviceTexture Track(DeviceTexture texture)
+    {
         _live.Add(texture);
         return texture;
     }
@@ -60,22 +124,54 @@ public sealed class DeviceGraphics : IGraphicsDevice
     }
 }
 
-/// <summary>A texture of the drawing API backed by a device texture (<see cref="DeviceGraphics"/>).</summary>
+/// <summary>
+/// A texture of the drawing API backed by a device texture (<see cref="DeviceGraphics"/>): an uploaded image, a render
+/// target's picture, or a device texture the game wrapped.
+/// </summary>
 public sealed class DeviceTexture : Texture
 {
     private readonly DeviceGraphics _graphics;
+    private readonly bool _ownsNative;
 
-    internal DeviceTexture(DeviceGraphics graphics, Dev.Texture native, TextureFilter filter) : base(graphics, native.Width, native.Height, filter)
-        => (_graphics, Native) = (graphics, native);
+    internal DeviceTexture(DeviceGraphics graphics, Dev.Texture native, Dev.RenderTarget? target, TextureFilter filter, bool ownsNative)
+        : base(graphics, native.Width, native.Height, filter)
+        => (_graphics, Native, Target, _ownsNative) = (graphics, native, target, ownsNative);
 
     /// <summary>The device texture holding the premultiplied pixels.</summary>
-    public Dev.Texture Native { get; }
+    public override Dev.Texture Native { get; }
+
+    /// <summary>The device render target this texture is the picture of, or null for an ordinary texture.</summary>
+    public Dev.RenderTarget? Target { get; }
+
+    /// <inheritdoc/>
+    public override bool IsRenderTarget => Target is not null;
+
+    /// <summary>The memory of every mip level in the device texture's format.</summary>
+    public override long SizeInBytes
+    {
+        get
+        {
+            long bytes = 0;
+            int width = Width, height = Height;
+            for (int level = 0; level < Math.Max(1, Native.Description.MipLevels); level++)
+            {
+                bytes += Dev.TextureFormats.ByteCount(Native.Format, width, height);
+                (width, height) = (Math.Max(1, width / 2), Math.Max(1, height / 2));
+            }
+            return bytes;
+        }
+    }
 
     /// <summary>The sampler the texture's filter draws with (clamped at the edges).</summary>
     public Dev.SamplerDescription Sampler => Filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp;
 
     /// <inheritdoc/>
-    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels) => _graphics.Upload(this, x, y, width, height, pixels);
+    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+    {
+        if (Target is not null) throw new InvalidOperationException("A render target's pixels are drawn (IRenderer.PushTarget), not updated.");
+        if (Native.Format != Dev.TextureFormat.Rgba8Unorm) throw new InvalidOperationException($"Colours can only update an 8-bit RGBA texture; this one is {Native.Format}.");
+        _graphics.Upload(this, x, y, width, height, pixels);
+    }
 
     /// <inheritdoc/>
     protected override void ApplyFilter(TextureFilter filter) { } // the sampler is chosen per draw
@@ -84,7 +180,10 @@ public sealed class DeviceTexture : Texture
     protected override void Release()
     {
         _graphics.Forget(this);
-        Native.Dispose();
+        if (!_ownsNative) return;
+        // A target owns its colour texture: the two go together.
+        if (Target is not null) Target.Dispose();
+        else Native.Dispose();
     }
 }
 
@@ -92,7 +191,9 @@ public sealed class DeviceTexture : Texture
 /// The drawing API (<see cref="IRenderer"/>) as a façade over the 2D batcher (<see cref="Renderer2D"/>) on a graphics
 /// device: every call is recorded into the batcher, and the frame reaches the device in as few draw calls as the draws'
 /// textures and states allow. Straight-alpha colours are premultiplied on the way in, so the blend modes keep their
-/// written equations (see <see cref="IRenderer.SetBlendMode"/>).
+/// written equations (see <see cref="IRenderer.SetBlendMode"/>). States and materials (<see cref="PushState"/>) become
+/// the batcher's state, and a pushed render target (<see cref="PushTarget"/>) becomes the batch's target, so a frame
+/// that uses them is still one batch in recording order.
 /// </summary>
 public sealed class DeviceRenderer : IRenderer
 {
@@ -100,16 +201,33 @@ public sealed class DeviceRenderer : IRenderer
     private static readonly Vector2[] Rim = [.. Enumerable.Range(0, CircleSegments + 1).Select(i => new Vector2(MathF.Cos(i * MathF.Tau / CircleSegments), MathF.Sin(i * MathF.Tau / CircleSegments)))];
     private readonly Renderer2D _batcher;
     private readonly DeviceGraphics _graphics;
-    private readonly Dev.RenderTarget _target;
+    private readonly Dev.RenderTarget _canvas;
+    private readonly float _canvasScale;
     private readonly Stack<Matrix3x2> _cameras = new();
+    private readonly Stack<Drawing> _states = new();
+    private readonly Stack<Saved> _targets = new();
     private readonly Dev.Vertex2D[] _fan = new Dev.Vertex2D[CircleSegments + 2];
     private readonly ushort[] _fanIndices = BuildFanIndices();
+    private Dev.RenderTarget _target;
+    private float _scale;
     private Matrix3x2 _camera = Matrix3x2.Identity;
-    private readonly float _scale;
     private Matrix3x2 _view = Matrix3x2.Identity;
-    private BlendMode _blend;
+    private Drawing _drawing = Drawing.Default;
     private Dev.RectI? _clip;
-    private bool _drawing;
+    // What the current material's fallback does to draws, when its shader cannot run on this device.
+    private bool _hidden;
+    private Color? _tint;
+    private Material2D? _unsupported;
+    private bool _open;
+
+    /// <summary>What draws are made with: the blend state, the sampler that replaces each texture's own, and the material.</summary>
+    private readonly record struct Drawing(Dev.BlendState Blend, Dev.SamplerDescription? Sampler, Material2D? Material)
+    {
+        public static Drawing Default => new(Dev.BlendState.AlphaPremultiplied, null, null);
+    }
+
+    /// <summary>What a pushed target replaced, restored when it is popped.</summary>
+    private readonly record struct Saved(Dev.RenderTarget Target, float Scale, Matrix3x2 Camera, Dev.RectI? Clip, Drawing Drawing, int Cameras, int States);
 
     /// <summary>A renderer drawing into <paramref name="target"/> (the canvas) with the textures of <paramref name="graphics"/>.</summary>
     public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, Dev.RenderTarget target) : this(batcher, graphics, target, 1f) { }
@@ -121,11 +239,11 @@ public sealed class DeviceRenderer : IRenderer
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="scale"/> is not positive.</exception>
     public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, Dev.RenderTarget target, float scale)
     {
-        _scale = float.IsFinite(scale) && scale > 0 ? scale : throw new ArgumentOutOfRangeException(nameof(scale), "The scale must be positive.");
+        _canvasScale = _scale = float.IsFinite(scale) && scale > 0 ? scale : throw new ArgumentOutOfRangeException(nameof(scale), "The scale must be positive.");
         _batcher = batcher ?? throw new ArgumentNullException(nameof(batcher));
         _graphics = graphics ?? throw new ArgumentNullException(nameof(graphics));
-        _target = target ?? throw new ArgumentNullException(nameof(target));
-        _graphics.Uploading += () => { if (_drawing) _batcher.Flush(); };
+        _canvas = _target = target ?? throw new ArgumentNullException(nameof(target));
+        _graphics.Uploading += () => { if (_open) _batcher.Flush(); };
     }
 
     /// <inheritdoc/>
@@ -137,10 +255,11 @@ public sealed class DeviceRenderer : IRenderer
     public Renderer2DStatistics Statistics => _batcher.Statistics;
 
     /// <summary>
-    /// The render target this renderer draws into (the canvas, or the UI view's target). Valid only during the frame, between
-    /// <see cref="Begin"/> and <see cref="End"/>: the canvas can be replaced between frames (an expanding presentation
-    /// resizes it), so keep the renderer, not the target. Work submitted to the device into this target between two
-    /// <see cref="Flush"/> calls (a 3D pass) lands between the 2D drawn before and after it.
+    /// The device render target this renderer is drawing into: the canvas (or the UI view's target), or the target
+    /// pushed with <see cref="PushTarget"/>. Valid only during the frame, between <see cref="Begin"/> and
+    /// <see cref="End"/>: the canvas can be replaced between frames (an expanding presentation resizes it), so keep the
+    /// renderer, not the target. Work submitted to the device into this target between two <see cref="Flush"/> calls
+    /// (a 3D pass) lands between the 2D drawn before and after it.
     /// </summary>
     public Dev.RenderTarget Target => _target;
 
@@ -149,32 +268,37 @@ public sealed class DeviceRenderer : IRenderer
     /// <see cref="Clear"/> included, so a clear always lands before the first flush's other work) and keeps the frame
     /// open: state, camera and clip stay as they are, and draws recorded after the flush are submitted after anything
     /// submitted to the device in between. Use it to put device work (a 3D pass into <see cref="Target"/>) between 2D
-    /// draws. Outside a frame it does nothing.
+    /// draws; materials and render targets of the drawing API need no flush. Outside a frame it does nothing.
     /// </summary>
     public void Flush()
     {
-        if (_drawing) _batcher.Flush();
+        if (_open) _batcher.Flush();
     }
 
-    /// <summary>Starts a frame: the canvas keeps its pixels, blending is <see cref="BlendMode.Alpha"/>, no clip, no camera.</summary>
+    /// <summary>Starts a frame: the canvas keeps its pixels, blending is <see cref="BlendMode.Alpha"/>, no clip, no camera, no state.</summary>
     public void Begin()
     {
         _cameras.Clear();
+        _states.Clear();
+        _targets.Clear();
+        (_target, _scale) = (_canvas, _canvasScale);
         _camera = Matrix3x2.Identity;
         _view = Matrix3x2.CreateScale(_scale);
-        _blend = BlendMode.Alpha;
+        _drawing = Drawing.Default;
         _clip = null;
         _batcher.Begin(new BatchSettings(_target));
-        _drawing = true;
+        _open = true;
         ApplyState();
     }
 
     /// <summary>Ends the frame and submits it.</summary>
-    /// <exception cref="InvalidOperationException">A camera pushed this frame was not popped.</exception>
+    /// <exception cref="InvalidOperationException">A camera, a state or a target pushed this frame was not popped.</exception>
     public void End()
     {
-        _drawing = false;
+        _open = false;
         _batcher.End();
+        if (_targets.Count != 0) throw new InvalidOperationException("Unbalanced PushTarget/PopTarget in this frame.");
+        if (_states.Count != 0) throw new InvalidOperationException("Unbalanced PushState/PopState in this frame.");
         if (_cameras.Count != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in this frame.");
     }
 
@@ -203,15 +327,32 @@ public sealed class DeviceRenderer : IRenderer
 
     private void DrawTexture(DeviceTexture texture, RectF source, in Matrix3x2 world, Color tint, SpriteFlip flip)
     {
+        if (texture.Target is not null && ReferenceEquals(texture.Target, _target))
+            throw new InvalidOperationException("A render target cannot be drawn into itself. Pop it first, or draw it into another target.");
+        if (!Shown(ref tint)) return;
+        var sampler = _drawing.Sampler ?? texture.Sampler;
         var state = _batcher.State;
-        if (state.Sampler != texture.Sampler) _batcher.State = state with { Sampler = texture.Sampler };
+        if (state.Sampler != sampler) _batcher.State = state with { Sampler = sampler };
         _batcher.Draw(texture.Native, source, world * _view, Dev.PremultipliedColor.FromStraight(tint), 0, flip);
+    }
+
+    /// <summary>
+    /// Applies the fallback of a material whose shader cannot run here to a draw's colour, after checking the material
+    /// as a device that runs it would. Returns whether the draw is made at all.
+    /// </summary>
+    private bool Shown(ref Color color)
+    {
+        if (_unsupported is null) return true;
+        _unsupported.Validate();
+        if (_hidden) return false;
+        if (_tint is { } t) color = new Color((byte)((color.R * t.R + 127) / 255), (byte)((color.G * t.G + 127) / 255), (byte)((color.B * t.B + 127) / 255), (byte)((color.A * t.A + 127) / 255));
+        return true;
     }
 
     /// <inheritdoc/>
     public void FillRect(RectF rect, Color color)
     {
-        if (color.A == 0) return;
+        if (!Shown(ref color) || color.A == 0) return;
         _batcher.Draw(_batcher.White, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(rect.Width, rect.Height) * Matrix3x2.CreateTranslation(rect.X, rect.Y) * _view,
             Dev.PremultipliedColor.FromStraight(color));
     }
@@ -219,7 +360,7 @@ public sealed class DeviceRenderer : IRenderer
     /// <inheritdoc/>
     public void FillCircle(Vector2 center, float radius, Color color)
     {
-        if (color.A == 0 || radius <= 0) return;
+        if (!Shown(ref color) || color.A == 0 || radius <= 0) return;
         var c = Dev.PremultipliedColor.FromStraight(color);
         _fan[0] = new Dev.Vertex2D(Vector2.Transform(center, _view), default, c);
         for (int i = 0; i <= CircleSegments; i++) _fan[i + 1] = new Dev.Vertex2D(Vector2.Transform(center + Rim[i] * radius, _view), default, c);
@@ -229,7 +370,7 @@ public sealed class DeviceRenderer : IRenderer
     /// <inheritdoc/>
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
-        if (color.A == 0) return;
+        if (!Shown(ref color) || color.A == 0) return;
         var p = Dev.PremultipliedColor.FromStraight(color);
         _batcher.DrawGeometry(null, [new(Vector2.Transform(a, _view), default, p), new(Vector2.Transform(b, _view), default, p), new(Vector2.Transform(c, _view), default, p)], [0, 1, 2]);
     }
@@ -238,7 +379,7 @@ public sealed class DeviceRenderer : IRenderer
     public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
     {
         var d = to - from;
-        if (color.A == 0 || d.LengthSquared() == 0 || thickness <= 0) return;
+        if (!Shown(ref color) || color.A == 0 || d.LengthSquared() == 0 || thickness <= 0) return;
         var n = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (thickness / 2);
         var p = Dev.PremultipliedColor.FromStraight(color);
         _batcher.DrawGeometry(null,
@@ -259,14 +400,23 @@ public sealed class DeviceRenderer : IRenderer
     /// <inheritdoc/>
     public void PopCamera()
     {
-        _camera = _cameras.Count > 0 ? _cameras.Pop() : throw new InvalidOperationException("PopCamera without PushCamera.");
+        if (_cameras.Count <= (_targets.Count > 0 ? _targets.Peek().Cameras : 0)) throw new InvalidOperationException("PopCamera without PushCamera.");
+        _camera = _cameras.Pop();
         _view = _camera * Matrix3x2.CreateScale(_scale);
     }
 
     /// <inheritdoc/>
     public void SetBlendMode(BlendMode mode)
     {
-        _blend = mode;
+        _drawing = _drawing with
+        {
+            Blend = mode switch
+            {
+                BlendMode.Additive => Dev.BlendState.Additive,
+                BlendMode.Multiply => Dev.BlendState.Multiply,
+                _ => Dev.BlendState.AlphaPremultiplied,
+            },
+        };
         ApplyState();
     }
 
@@ -279,15 +429,76 @@ public sealed class DeviceRenderer : IRenderer
         ApplyState();
     }
 
+    /// <inheritdoc/>
+    public void PushState(in DrawState state)
+    {
+        if (state.Material is { } material)
+        {
+            ObjectDisposedException.ThrowIf(material.IsDisposed, material);
+            if (material.IsSupported && !ReferenceEquals(material.Device, _graphics.Device))
+                throw new ArgumentException("The material was created by another graphics device; create it with the game's Graphics or Assets.", nameof(state));
+        }
+        if (state.Blend is { } blend && !_graphics.Device.Capabilities.BuiltInBlendStates.Contains(blend) && !_graphics.Device.Capabilities.Has(Dev.GraphicsFeatures.CustomBlend))
+            throw new Dev.GraphicsCapabilityException("PushState(blend)", _graphics.Device.Capabilities.Backend, Dev.GraphicsFeatures.CustomBlend);
+        _states.Push(_drawing);
+        _drawing = new Drawing(state.Blend ?? _drawing.Blend, state.Sampler ?? _drawing.Sampler, state.Material ?? _drawing.Material);
+        ApplyState();
+    }
+
+    /// <inheritdoc/>
+    public void PopState()
+    {
+        if (_states.Count <= (_targets.Count > 0 ? _targets.Peek().States : 0)) throw new InvalidOperationException("PopState without PushState.");
+        _drawing = _states.Pop();
+        ApplyState();
+    }
+
+    /// <inheritdoc/>
+    public void PushTarget(RenderTarget2D target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        var texture = Texture.CheckDrawable<DeviceTexture>(target.Texture, _graphics);
+        var native = texture.Target ?? throw new ArgumentException("The texture is not a render target of this graphics device.", nameof(target));
+        if (ReferenceEquals(native, _target) || _targets.Any(saved => ReferenceEquals(saved.Target, native)))
+            throw new InvalidOperationException("The render target is already being drawn into; pop it before pushing it again.");
+        _targets.Push(new Saved(_target, _scale, _camera, _clip, _drawing, _cameras.Count, _states.Count));
+        (_target, _scale) = (native, 1f);
+        _camera = _view = Matrix3x2.Identity;
+        _clip = null;
+        _drawing = Drawing.Default;
+        if (_open) _batcher.SetTarget(native);
+        ApplyState();
+    }
+
+    /// <inheritdoc/>
+    public void PopTarget()
+    {
+        if (_targets.Count == 0) throw new InvalidOperationException("PopTarget without PushTarget.");
+        var saved = _targets.Peek();
+        if (_states.Count != saved.States) throw new InvalidOperationException("A state pushed inside the render target was not popped before PopTarget.");
+        if (_cameras.Count != saved.Cameras) throw new InvalidOperationException("A camera pushed inside the render target was not popped before PopTarget.");
+        _targets.Pop();
+        (_target, _scale, _camera, _clip, _drawing) = (saved.Target, saved.Scale, saved.Camera, saved.Clip, saved.Drawing);
+        _view = _camera * Matrix3x2.CreateScale(_scale);
+        if (_open) _batcher.SetTarget(_target);
+        ApplyState();
+    }
+
     private void ApplyState()
     {
-        var blend = _blend switch
+        var material = _drawing.Material;
+        var blend = _drawing.Blend;
+        (_unsupported, _hidden, _tint) = (null, false, null);
+        if (material is { IsSupported: false })
         {
-            BlendMode.Additive => Dev.BlendState.Additive,
-            BlendMode.Multiply => Dev.BlendState.Multiply,
-            _ => Dev.BlendState.AlphaPremultiplied,
-        };
-        _batcher.State = _batcher.State with { Blend = blend, Scissor = _clip };
+            // The device cannot run the shader: the draws are made the usual way, with the material's fallback.
+            var fallback = material.Fallback;
+            (_unsupported, _hidden, _tint) = (material, fallback.Hidden, fallback.Tint);
+            blend = fallback.Blend ?? blend;
+            material = null;
+        }
+        if (!_open) return;
+        _batcher.State = _batcher.State with { Blend = blend, Scissor = _clip, Material = material };
     }
 
     private static ushort[] BuildFanIndices()

@@ -8,15 +8,20 @@ namespace MicroEngine.Core;
 
 /// <summary>One loaded asset, as <see cref="AssetCache.Loaded"/> lists it.</summary>
 /// <param name="Path">Its content path.</param>
-/// <param name="Kind">"texture", "atlas", "font", "folder atlas", or the kind of another loader (<see cref="AssetLoaderRegistry"/>).</param>
+/// <param name="Kind">"texture", "atlas", "font", "folder atlas", "shader", "material", "render target", or the kind of another loader (<see cref="AssetLoaderRegistry"/>).</param>
 /// <param name="Bytes">Memory it takes now, as its loader reports it: device memory for textures (font pages grow as glyphs are drawn), decoded samples for sounds, the file for music.</param>
 /// <param name="LoadMilliseconds">Time spent reading, decoding and uploading it.</param>
 /// <param name="DuringPlay">Whether it was loaded after the game's first update, when a slow load shows as a hitch.</param>
 public readonly record struct AssetInfo(string Path, string Kind, long Bytes, double LoadMilliseconds, bool DuringPlay);
 
+/// <summary>The size of a render target of the assets (the options of a "render target" asset key).</summary>
+/// <param name="Width">Width in pixels.</param>
+/// <param name="Height">Height in pixels.</param>
+public readonly record struct RenderTargetSize(int Width, int Height);
+
 /// <summary>Totals over a scope and its children (<see cref="AssetCache.Statistics"/>).</summary>
 /// <param name="Count">Assets loaded and not released.</param>
-/// <param name="TextureBytes">Device memory of their textures (images, atlases, font pages).</param>
+/// <param name="TextureBytes">Device memory of their textures (images, atlases, font pages, render targets).</param>
 /// <param name="LoadMilliseconds">Time spent loading them.</param>
 /// <param name="LoadsDuringPlay">How many were loaded after the first update.</param>
 public readonly record struct AssetStatistics(int Count, long TextureBytes, double LoadMilliseconds, int LoadsDuringPlay)
@@ -109,7 +114,7 @@ public sealed class AssetCache : IDisposable
     /// <summary>The game's asset store: its content source, loaders and root scope.</summary>
     public AssetStore Store => _scope.Store;
 
-    /// <summary>The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "sound", "music" and any a game registers.</summary>
+    /// <summary>The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "shader", "material", "render target", "sound", "music" and any a game registers.</summary>
     public AssetLoaderRegistry Loaders => Store.Loaders;
 
     /// <summary>Where content files are read from (opened on first use): a folder, a zip archive or another source of the composition.</summary>
@@ -232,6 +237,41 @@ public sealed class AssetCache : IDisposable
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>
     public Audio.EncodedAudio Music(string path) =>
         _scope.Acquire<Audio.EncodedAudio>(new AssetKey(Audio.AudioAssetLoaders.Music, AssetPath.Normalize(path)));
+
+    /// <summary>
+    /// The compiled shader file at <paramref name="path"/> (written by <c>microengine shaders</c>), parsed once and
+    /// shared. A material needs only <see cref="Material"/>; this is the file itself, for a game that creates shaders
+    /// on the graphics device.
+    /// </summary>
+    /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not a compiled shader this engine reads.</exception>
+    public Graphics.Devices.CompiledShader Shader(string path) =>
+        _scope.Acquire<Graphics.Devices.CompiledShader>(new AssetKey(GraphicsAssetLoaders.Shader, AssetPath.Normalize(path)));
+
+    /// <summary>
+    /// A material from the compiled fragment shader at <paramref name="path"/> (<see cref="Material2D"/>): draw with it
+    /// through <see cref="IRenderer.PushState"/>. It is shared like any asset (the same path and fallback give the same
+    /// material, whose parameters each draw takes as they are when it is made) and released with its scope. Where the
+    /// graphics device cannot run shaders it draws with <paramref name="fallback"/>.
+    /// </summary>
+    /// <param name="path">A <c>.frag.shader</c> file of the content.</param>
+    /// <param name="fallback">What the material's draws become where shaders cannot run; plain draws by default.</param>
+    /// <exception cref="AssetLoadException">The file is missing, wrongly cased, not a compiled shader, or not a fragment shader.</exception>
+    public Material2D Material(string path, MaterialFallback fallback = default) =>
+        _scope.Acquire<Material2D>(new AssetKey(GraphicsAssetLoaders.Material, AssetPath.Normalize(path), fallback));
+
+    /// <summary>
+    /// A render target of <paramref name="width"/> x <paramref name="height"/> pixels that this scope owns: a picture to
+    /// draw into (<see cref="IRenderer.PushTarget"/>) and then draw like a texture. No file describes it, so it is known
+    /// by <paramref name="name"/>: the same name, size and filter give the same target, and it is released with the
+    /// scope like any asset.
+    /// </summary>
+    /// <param name="name">A name of the game's choosing ("water/reflection"); it is what diagnostics list.</param>
+    /// <param name="width">Width in pixels.</param>
+    /// <param name="height">Height in pixels.</param>
+    /// <param name="filter">How its texture is sampled; null for the game's default.</param>
+    /// <exception cref="AssetLoadException">A size that is not positive.</exception>
+    public RenderTarget2D RenderTarget(string name, int width, int height, TextureFilter? filter = null) =>
+        _scope.Acquire<RenderTarget2D>(new AssetKey(GraphicsAssetLoaders.RenderTarget, AssetPath.Normalize(name), new RenderTargetSize(width, height), (long)(filter ?? _device.DefaultFilter)));
 
     /// <summary>The bytes of any content file (not cached).</summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>

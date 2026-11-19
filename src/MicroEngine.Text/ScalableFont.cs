@@ -394,5 +394,9 @@ public sealed class SizedFont : IFont
         public void PopCamera() { }
         public void SetBlendMode(BlendMode mode) { }
         public void SetClip(RectF? screenRect) { }
+        public void PushState(in DrawState state) { }
+        public void PopState() { }
+        public void PushTarget(RenderTarget2D target) { }
+        public void PopTarget() { }
     }
 }

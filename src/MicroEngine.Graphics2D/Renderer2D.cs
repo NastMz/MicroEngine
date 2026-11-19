@@ -258,6 +258,22 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         _state = _savedStates.Count > 0 ? _savedStates.Pop() : throw new InvalidOperationException("PopState without PushState");
     }
 
+    /// <summary>
+    /// Directs the rest of the batch at another target: submits what was recorded for the current one (a pending clear
+    /// included), then records into <paramref name="target"/> with <paramref name="viewport"/> (null: the whole
+    /// target). The state, the transforms and the view stay, and <see cref="Statistics"/> keeps counting, so a frame
+    /// that draws into several targets is still one batch.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No batch is open.</exception>
+    public void SetTarget(RenderTarget target, RectI? viewport = null)
+    {
+        Begun();
+        ArgumentNullException.ThrowIfNull(target);
+        if (ReferenceEquals(target, _settings.Target) && viewport == _settings.Viewport) return;
+        if (_items.Count > 0 || _pendingClear is not null) Submit();
+        _settings = _settings with { Target = target, Viewport = viewport };
+    }
+
     /// <inheritdoc />
     public void Clear(ColorF color)
     {

@@ -303,7 +303,7 @@ public sealed class AssetScope : IDisposable
         object value;
         try
         {
-            var context = new AssetLoadContext(key, _store.Source);
+            var context = new AssetLoadContext(key, _store);
             value = load is not null ? load(context) : ((IAssetLoader<object>)loader!).Load(context);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
