@@ -53,6 +53,16 @@ shaders, never the compilers.
 | Silk.NET.SPIRV.Cross 2.22.0, Silk.NET.SPIRV 2.22.0, Silk.NET.Core 2.22.0 | C# bindings for SPIRV-Cross | MIT | Copyright (c) 2021- .NET Foundation and Contributors |
 | SPIRV-Cross (native, Silk.NET.SPIRV.Cross.Native 2.22.0) | SPIR-V to MSL translation and resource reflection | Apache License 2.0 | Copyright 2015-2021 Arm Limited and contributors |
 
+## The `microengine` tool's texture converter
+
+`microengine textures` ships with the libraries below, which encode BC7 blocks. Games carry only the texture files it
+writes (KTX 2.0), never the encoder: the engine reads those files with its own code.
+
+| Component | Use | Licence | Copyright |
+| --- | --- | --- | --- |
+| BCnEncoder.Net 2.3.0 | BC7 block encoding, in managed code | MIT or public domain (Unlicense) | Nominom (the package's author) |
+| CommunityToolkit.HighPerformance 8.4.0 | two-dimensional memory types (a dependency of BCnEncoder.Net) | MIT | Copyright (c) .NET Foundation and Contributors |
+
 ## Optional text shaping
 
 Games that add the optional `MicroEngine.Text.Shaping` package also ship HarfBuzz, as a native library on desktops

@@ -21,6 +21,7 @@ namespace MicroEngine.Cli
               info                  show the game's identity and what each target needs from it
               doctor [target]       check this machine's tools for every target (or one)
               shaders               compile the game's HLSL shaders ahead of time (Shaders/ to Content/shaders/)
+              textures              convert images ahead of time into KTX 2.0 textures (Textures/ to Content/textures/)
               version               print the tool's version
 
             Common options:
@@ -91,6 +92,24 @@ namespace MicroEngine.Cli
                 has Windows binaries only. The tool restores that package into the NuGet packages folder on first use;
                 MICROENGINE_DXC names another dxc.exe.
                 """,
+            ["textures"] = """
+                Usage: microengine textures [--project P] [--source DIR] [--out DIR] [--format bc7|rgba] [--quality fast|balanced|best] [--check]
+
+                Converts every image (PNG, JPEG, BMP, TGA, GIF, PSD) under the game's Textures folder (or --source),
+                subfolders included, into a KTX 2.0 file (.ktx2) at the same place under Content/textures (or --out).
+                The files hold the texture as the graphics device takes it, colour multiplied by alpha and deflated, so
+                a game loads them without decoding an image (TextureFile.Parse, then Create on the device). They are
+                optional: a game that ships only its images loads those as before.
+
+                --format bc7    BC7 blocks (the default): a quarter of the texture memory, close to the image but not
+                                equal to it; for devices that sample BC7 (the sdl-gpu device on desktop graphics cards).
+                                The image's width and height must be multiples of 4.
+                --format rgba   the image's own pixels, exactly: the same memory as the image, on every device
+                --quality Q     how long the BC7 encoder searches: fast, balanced (the default) or best
+                --check         write nothing; fail (exit code 1) when a .ktx2 file is missing or out of date
+
+                A file is up to date when it is not older than its image and already has the format asked for.
+                """,
         };
 
         public static async Task<int> RunAsync(string[] args)
@@ -125,6 +144,7 @@ namespace MicroEngine.Cli
                     "info" => Info(options),
                     "doctor" => Doctor.Check(options.Positional.FirstOrDefault()) ? 0 : 1,
                     "shaders" => CompileShaders(options),
+                    "textures" => ConvertTextures(options),
                     _ => throw new CliException($"unknown command '{command}'. Run 'microengine --help' for the list.", 2),
                 };
             }
@@ -225,6 +245,26 @@ namespace MicroEngine.Cli
             var result = Shaders.Compile(source, output, check);
             foreach (var file in result.Written) Console.WriteLine(check ? $"out of date: {file}" : $"wrote {file}");
             Console.WriteLine($"shaders: {result.Written.Count} {(check ? "out of date" : "written")}, {result.Unchanged.Count} unchanged ({Shaders.DxcVersion.Split('\n')[0].Trim()})");
+            return check && result.Written.Count > 0 ? 1 : 0;
+        }
+
+        private static int ConvertTextures(Options o)
+        {
+            string? sourceOption = o.Get("source"), outOption = o.Get("out"), projectOption = o.Get("project");
+            string format = o.Get("format") ?? "bc7", quality = o.Get("quality") ?? "balanced";
+            bool check = o.Has("check");
+            o.RejectUnknown("textures");
+            string source, output;
+            if (sourceOption is not null && outOption is not null && projectOption is null) (source, output) = (Path.GetFullPath(sourceOption), Path.GetFullPath(outOption));
+            else
+            {
+                string directory = Path.GetDirectoryName(GameProject.Locate(projectOption))!;
+                source = Path.GetFullPath(sourceOption ?? Path.Combine(directory, "Textures"));
+                output = Path.GetFullPath(outOption ?? Path.Combine(directory, "Content", "textures"));
+            }
+            var result = Textures.Convert(source, output, format, quality, check);
+            foreach (var file in result.Written) Console.WriteLine(check ? $"out of date: {file}" : $"wrote {file}");
+            Console.WriteLine($"textures: {result.Written.Count} {(check ? "out of date" : "written")}, {result.Unchanged.Count} unchanged ({format})");
             return check && result.Written.Count > 0 ? 1 : 0;
         }
 

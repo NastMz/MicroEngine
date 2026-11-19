@@ -12,6 +12,7 @@ microengine package <target> [--project P] [--out DIR] [options]
 microengine info [--project P]
 microengine doctor [target]
 microengine shaders [--project P] [--source DIR] [--out DIR] [--check]
+microengine textures [--project P] [--source DIR] [--out DIR] [--format bc7|rgba] [--quality Q] [--check]
 microengine version
 ```
 
@@ -84,6 +85,26 @@ Direct3D 12, SPIR-V for Vulkan, MSL for Metal and the resource counts the device
 `CompiledShader.Parse` and creates it with `CompiledShader.Create(device)`, which picks the format the device runs;
 nothing compiles while the game runs, and a device without custom shaders refuses with `GraphicsCapabilityException`.
 [Render targets and shaders](render-targets-and-shaders.md) shows a game drawing its sprites through such shaders.
+
+## textures
+
+`microengine textures` converts images ahead of time into texture files (KTX 2.0, `.ktx2`) that hold a texture as the
+graphics device takes it, so a game loads them without decoding an image and, as BC7 blocks, in a quarter of the
+graphics memory ([Textures made ahead of time](texture-files.md)). Every image (PNG, JPEG, BMP, TGA, GIF, PSD) under
+the game's `Textures` folder (or `--source`), subfolders included, becomes `name.ktx2` at the same place under
+`Content/textures` (or `--out`), with its colour multiplied by its alpha and its bytes deflated. The files are
+optional: a game that ships only its images loads those as before.
+
+| Option | |
+| --- | --- |
+| `--format bc7` | BC7 blocks (the default): a quarter of the memory, close to the image but not equal to it, for devices that sample BC7 (the `sdl-gpu` device on desktop graphics cards). The image's width and height must be multiples of 4 |
+| `--format rgba` | the image's own pixels, exactly, on every device |
+| `--quality fast\|balanced\|best` | how long the BC7 encoder searches (`balanced` by default) |
+| `--check` | writes nothing and fails (exit code 1) when a file is missing or out of date |
+
+A file is up to date when it is not older than its image and already has the format asked for. A game reads a file
+with `TextureFile.Parse` and creates it with `TextureFile.Create(device)`; a device that does not sample its format
+refuses with `GraphicsCapabilityException`. The command runs on every system the tool does.
 
 Write one HLSL file per stage with the entry point `main` (shader model 6.0) and the SDL_GPU binding rules: vertex
 inputs use `TEXCOORD0`, `TEXCOORD1`... for their locations; vertex-stage uniforms are `register(b0, space1)`;

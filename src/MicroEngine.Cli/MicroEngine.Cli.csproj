@@ -38,5 +38,8 @@
          does not ship it but finds it in the NuGet packages folder and restores this exact version there on first use
          (Shaders.cs). Referenced here without assets only so that repository builds and tests have it in the cache. -->
     <PackageReference Include="Microsoft.Direct3D.DXC" Version="[1.8.2505.32]" ExcludeAssets="all" PrivateAssets="all" />
+    <!-- `microengine textures`: the BC7 block encoder (managed code; MIT or Unlicense). It ships with the tool only:
+         games read the files it writes with MicroEngine.Graphics alone. -->
+    <PackageReference Include="BCnEncoder.Net" Version="[2.3.0]" />
   </ItemGroup>
 </Project>
