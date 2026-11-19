@@ -83,12 +83,13 @@ Tests pass a temporary folder this way, so they never touch the player's real sa
 
 | Member | Behaviour |
 | --- | --- |
-| `Save<T>(slot, data)` | Serialises `data` to indented JSON and writes the slot whole; `false` if refused |
+| `Save<T>(slot, data)` | Serialises `data` to indented JSON and writes the slot whole; `false` if refused, and for a slot that holds a versioned save |
 | `Load<T>(slot)` | The object, or `null` when missing, corrupt or unreadable |
 | `Save<T>(slot, data, typeInfo)`, `Load<T>(slot, typeInfo)` | The same, with the metadata of the game's `JsonSerializerContext` instead of reflection: for games published trimmed or with NativeAOT ([Trimmed and NativeAOT publishing](../guide/platforms.md#trimmed-and-nativeaot-publishing)) |
 | `Save<T>(slot, data, schema)`, `Load<T>(slot, schema)` | A versioned save: `Load` brings an older save up to date and reports what it found ([Versions and migrations](#versions-and-migrations)) |
 | `Exists(slot)`, `Delete(slot)` | Slot management |
 | `Slots(prefix = "")` | The slots that hold a save, with their size and last write time ([Listing slots](#listing-slots)) |
+| `Backups(slot)`, `LoadBackup(name, schema)`, `DeleteBackup(name)` | The copies kept of the saves older versions wrote ([Copies of older saves](#copies-of-older-saves)) |
 | `Directory` | The folder (file storage) or a description of the medium |
 | `Storage` | The medium itself (`IStorage`), for what keeps its own text beside the saves: `Input.SaveBindings(Saves.Storage)` ([A rebinding screen](input.md#a-rebinding-screen)) |
 | `new SaveStore(gameId, directory = null)` | A store built by hand: files under `directory`, or the platform's default medium (`DefaultStorage(gameId)`) |
@@ -115,7 +116,8 @@ the members of `FileSaveStorage`) throws `ArgumentException`, naming the slot, w
 - ends with `.corrupt`, in any letter case: that is the name a slot's unreadable data is set aside under
   ([Failure handling](#failure-handling)), so a set-aside copy is never a slot;
 - ends with `.backup`, in any letter case (`SaveStore` only): that is the name the original of a migrated save is
-  kept under ([Versions and migrations](#versions-and-migrations));
+  kept under ([Copies of older saves](#copies-of-older-saves)); `LoadBackup` and `DeleteBackup` take those names and
+  no others;
 - is a Windows device name, with or without an extension: `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, `COM0` to
   `COM9`, `LPT0` to `LPT9` and their superscript-digit forms (`"NUL"`, `"con.v2"`), in any letter case.
 
@@ -228,13 +230,15 @@ No such implementation exists today.
 | --- | --- | --- |
 | Slot missing | `null` | Writes normally |
 | Corrupt JSON (or deserialises to `null`) | `null`; data set aside as `<slot>.corrupt.json` (files) or `<slot>.corrupt` (browser) | Writes a fresh slot |
-| Slot exists but cannot be read (locked file, blocked storage) | `null`; slot remembered as unreadable | Refused, returns `false` |
+| Slot exists but cannot be read (locked file, blocked storage) | `null`; slot remembered as unreadable | Refused, returns `false`, until a later load of the slot succeeds |
+| Slot holds a versioned save ([Versions and migrations](#versions-and-migrations)) | The object; the version is ignored | Refused, returns `false`: save it through its schema |
 | Write refused (full disk, storage quota, read-only folder) | — | Returns `false`; the game keeps running with progress in memory |
 
 The third rule matters: a game that could not read a save is running with fresh progress, and writing it would
 replace the real save. If setting corrupt data aside fails, it stays in place and callers that check `Exists`
-will not overwrite it either. Deleting the slot is the game's explicit choice to start over: after `Delete`, the slot
-can be saved again. A versioned load tells these cases apart and adds two more
+will not overwrite it either. A later load of the slot that succeeds lifts the protection, and deleting the slot is
+the game's explicit choice to start over: after `Delete`, the slot can be saved again. A save reads the slot before
+it writes, to know whether it holds a versioned save. A versioned load tells these cases apart and adds two more
 ([What a load reports](#what-a-load-reports)).
 
 ## Versions and migrations
@@ -300,9 +304,10 @@ public static Profile Load(SaveStore store, out string notice)
 public static bool Save(SaveStore store, Profile profile) => store.Save(Slot, profile, Schema);
 ```
 
-- **Versions are whole numbers from 1.** The store writes the version as the first property of the saved JSON object,
-  `"$version"`, and removes it before the class is built: the class never sees it, and must not have a property
-  serialized under that name.
+- **Versions are whole numbers from 1.** The store writes the version as a property of the saved JSON object,
+  `"@version"`: the first one, or the first after the serializer's own (`"$type"` for a class with derived types). It
+  removes it before the class is built: the class never sees it, and must not have a property serialized under that
+  name. A build of the game without the schema reads past it like any property it does not know.
 - **A save with no version is version 1.** That is every save written before the type had a schema, and every save
   written by `Save(slot, data)`. So a game adopts a schema at version 1 with no steps, at any time, and its players'
   saves keep loading; declaring it from the first release is what lets that release refuse a save from a later one.
@@ -314,13 +319,21 @@ public static bool Save(SaveStore store, Profile profile) => store.Save(Slot, pr
   current class. A save from any release reaches the current shape through the same steps, in order. Never edit a step
   that has shipped: saves of that version are on players' machines.
 - **Loading writes nothing.** The slot changes with the next save, when the game knows it is running correctly.
-- **The original of a migrated save is kept.** The first save over a slot that was loaded from an older version first
-  copies what the slot held to `<slot>.v<version>.backup` (`profile.v1.backup.json` for files). If the copy cannot be
-  written, the save returns `false` and the slot is left alone. The copy is not a slot: it is not listed, and a slot
-  name cannot end with `.backup`. Nothing removes it.
+- **A save reads the slot first**, as a load would, whether or not the game loaded it, and acts on what it finds
+  ([What a save does with what the slot holds](#what-a-save-does-with-what-the-slot-holds)).
+- **The original of an older save is kept.** Before a save replaces a save of an older version, the store copies what
+  the slot held to `<slot>.v<version>.backup` (`profile.v1.backup.json` for files). If the copy cannot be written, the
+  save returns `false` and the slot is left alone ([Copies of older saves](#copies-of-older-saves)).
 - **A newer save is never replaced.** A save written by a newer release (a player who went back to an older one, or a
   folder shared by two machines) holds things this build does not know and would drop. The store refuses to load it
-  and refuses to save over it, also when the game saves without having loaded first.
+  and refuses to save over it, with or without a schema, also when the game saves without having loaded first.
+- **A versioned slot belongs to its schema.** `Save(slot, data)` and `Save(slot, data, typeInfo)` return `false`,
+  and leave the slot alone, when the slot holds a save with a version, or when the game has loaded or saved that slot
+  through a schema: written without the schema, the save would lose its version and be migrated again. The loads
+  without a schema read a versioned slot, ignoring the version, and change nothing. Use one way of saving per slot.
+- **The saved type is a JSON object**: a class with properties, or a dictionary. A schema for a list or a text
+  throws `InvalidOperationException` when it is declared, before any slot is touched; a type with a converter of its
+  own that writes something else throws the first time it is saved.
 
 With `new SaveSchema<T>(version, typeInfo)` nothing uses reflection: steps work on JSON nodes and the class is read
 and written with the game's own metadata, so versioned saves work in games published trimmed or with NativeAOT
@@ -343,9 +356,54 @@ the save was written in) and `Error` (what went wrong, to log).
 | `Corrupt` | Invalid JSON, something that is not a JSON object, a version that is not a whole number from 1, or a save of the current version that does not fit the class | `null` | Set aside (`<slot>.corrupt`) | Writes a fresh slot |
 | `Unreadable` | Something the medium could not read | `null` | Unchanged | Refused, returns `false` |
 
+"Does not fit the class" covers whatever building the class throws: the serializer on a value of the wrong kind,
+and the class's own code refusing a value (a property setter that throws). The exception is in `Error`.
+
 `result.Protected` is `true` for the three statuses the store refuses to save over. The game can still be played
-with a new save in memory; tell the player why progress will not be kept, as the example's `notice` does. `Delete`
-lifts the protection: it is the game's explicit choice to start over.
+with a new save in memory; tell the player why progress will not be kept, as the example's `notice` does. The
+protection follows the last load of the slot: a later load that succeeds lifts it (a file a synchronisation client
+held at startup, read again once it is free), and so does `Delete`, the game's explicit choice to start over. It is
+kept per store, and two names that differ only by letter case count as one slot.
+
+### What a save does with what the slot holds
+
+`Save(slot, data, schema)` reads the slot before it writes, as a load would, also when the game never loaded it or
+another program wrote it since:
+
+| The slot holds | The save |
+| --- | --- |
+| Nothing, or a save of the current version | Writes |
+| A save of an older version | Copies the original ([Copies of older saves](#copies-of-older-saves)), then writes; returns `false` and writes nothing if the copy is refused |
+| A save from a newer release | Returns `false`; the slot is left alone |
+| An older save its steps fail on | Returns `false`; the slot is left alone |
+| Something that is not a save (what a load reports as `Corrupt`) | Sets it aside (`<slot>.corrupt`), then writes |
+| Something the medium cannot read | Returns `false` |
+
+A slot the last load found `Protected` is refused before any of this. A save is therefore a read and a write; keep
+slots small.
+
+### Copies of older saves
+
+The copy of an older save is named `<slot>.v<version>.backup`. A copy is never written over: when that name already
+holds a different save of the same version, the new copy is `<slot>.v<version>.2.backup`, then `.3`, and a copy
+identical to one already kept is not made twice. Copies are not slots: `Slots()` does not list them, and a slot name
+cannot end with `.backup`. Nothing removes them but the game:
+
+| Member | Behaviour |
+| --- | --- |
+| `Backups(slot)` | The copies kept of a slot, by name, with size and last write time |
+| `LoadBackup(name, schema)` | Reads a copy through the schema and returns what a load would; it changes nothing (a copy is never set aside) |
+| `DeleteBackup(name)` | Removes a copy |
+
+To restore a copy, load it and save the value to the slot:
+
+```csharp
+var copy = Saves.LoadBackup("profile.v1.backup", ProfileSaves.Schema);
+if (copy.Value is { } profile) Saves.Save("profile", profile, ProfileSaves.Schema);
+```
+
+If the slot was refused as `Protected`, delete it first (`Saves.Delete("profile")`); that is the point of asking the
+player.
 
 ### Testing a schema
 
@@ -369,14 +427,14 @@ public void ASaveFromTheFirstReleaseStillLoads()
 ### A save that already has a version of its own
 
 A game that kept its own version number in the saved class (a `Version` property, say) reads that property in its
-first step. To the store those saves have no `"$version"`, so all of them are version 1: the step from 1 finds the
+first step. To the store those saves have no `"@version"`, so all of them are version 1: the step from 1 finds the
 game's own number in the JSON and brings each of its shapes up to date, and the schema is at version 2 or later. Then
 remove the property from the class; a property of a save that the class does not have is ignored.
 
 ## Listing slots
 
 `Saves.Slots()` returns the slots that hold a save, ordered by name, each with its `Name`, its `Size` and the time of
-its `LastWrite`, without reading the saves. That is what a "load game" screen lists:
+its `LastWrite`, without building any save. That is what a "load game" screen lists:
 
 <!-- code: samples/Examples/SaveSlots.cs#slots -->
 ```csharp
@@ -395,7 +453,9 @@ public static string Describe(SlotInfo slot) =>
 - `LastWrite` is the file's time on desktops and phones. A browser's `localStorage` keeps no times, so the storage
   stamps one on each write; a slot written before it did has `null`. A time that must survive copying a save to
   another machine belongs inside the save.
-- `Size` is the file's size in bytes, and the length of the stored text in a browser.
+- `Size` is the file's size in bytes. In a browser it is the length of the stored text, and listing reads each
+  slot's text to measure it, because `localStorage` has no size to ask for.
+- The `prefix` is compared exactly, letter case included: `Slots("save-")` does not list `"SAVE-1"`.
 - What a slot holds (the level reached, the play time, a save from a newer release) is in the save: load it, and
   show the `Status` when there is no value.
 - A medium that cannot be listed gives an empty list; `Slots` does not throw for it.
@@ -450,12 +510,24 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
 ## Limitations
 
 - Saves are local to one machine or one browser profile; there is no cloud sync, export or import.
-- JSON only, through `System.Text.Json`. A versioned save is a JSON object: a class with properties, not a list or a
-  single value.
+- JSON only, through `System.Text.Json`. A versioned save is a JSON object: a class with properties or a dictionary,
+  not a list or a single value.
 - A step changes one save at a time, as JSON; there is no migration across slots (splitting one slot into two, or
   merging two). A game does that itself, with `Load`, `Save` and `Delete`.
-- The store protects a newer save from being replaced through the store that met it. Two programs writing the same
-  slot at the same time are not coordinated.
+- A save reads the slot and then writes it; two programs writing the same slot between those two moments are not
+  coordinated.
+- A build of the game released before it used a schema knows nothing of versions: it reads a versioned save as it
+  reads any save, and saves over it. Only builds with the schema refuse a newer save.
+- A JSON object that names the same property twice at its root is `Corrupt` to a versioned load; a load without a
+  schema keeps the last one.
+- The loads without a schema catch what the serializer reports (`JsonException`) and set the slot aside; an exception
+  thrown by the saved class's own code (a setter that refuses a value) reaches the caller. A versioned load reports
+  both as a save that does not fit.
+- One copy of corrupt data is kept per slot: setting a slot aside again replaces the earlier `<slot>.corrupt`.
+- Text is read as UTF-8. Bytes that are not valid UTF-8 inside a text value load as the replacement character
+  (U+FFFD); they do not make the save corrupt.
+- A write the file system refuses after the temporary file was written (a read-only slot file) returns `false` and
+  can leave `<slot>.json.tmp` in the save folder. It is not a slot and is not listed.
 - `Save(slot, data)`, `Load<T>(slot)` and `new SaveSchema<T>(version)` find the saved type's properties by reflection,
   which a game published with .NET's `PublishTrimmed` or `PublishAot` does not have: such a game declares its saved
   types and passes their metadata (`Save(slot, data, typeInfo)`, `Load(slot, typeInfo)`,

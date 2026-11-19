@@ -33,12 +33,13 @@ public const int FirstVersion = 1
 
 ### <a id="MicroEngine_Core_SaveSchema_VersionProperty"></a> VersionProperty
 
-The name of the property that holds a save's version, the first one of the saved JSON object: <code>"$version"</code>.
-The store writes and removes it; the saved type never sees it and must not have a property serialized under
-this name.
+The name of the property of the saved JSON object that holds a save's version: <code>"@version"</code>, written
+after the serializer's own leading properties (<code>"$type"</code>) and before the type's. The store writes and
+removes it; the saved type never sees it and must not have a property serialized under this name. A build of
+the game without a schema reads past it as it reads past any property it does not know.
 
 ```csharp
-public const string VersionProperty = "$version"
+public const string VersionProperty = "@version"
 ```
 
 #### Field Value

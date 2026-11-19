@@ -84,11 +84,21 @@ longer compiles until it has one. Return every slot that holds data, without the
 the `microengine` JavaScript module, returning the `localStorage` keys that start with `prefix`; the tool's page has
 it.
 
+### Saves read the slot before writing it
+
+`SaveStore.Save` reads what the slot holds before it replaces it, so a storage of your own sees one `Read` for each
+`Write`. The calls without a schema, `Save(slot, data)` and `Save(slot, data, typeInfo)`, now return `false` and
+leave the slot alone when it holds a save with a version (a `"@version"` property), when the game has used that slot
+through a `SaveSchema<T>`, or when the medium cannot read it; a slot that never had a version is written as before,
+with the same text. A slot that could not be read is protected until a later load of it succeeds, where before only
+`Delete` lifted the protection.
+
 ### Slot names that end with `.backup` are refused
 
 `SaveStore` throws `ArgumentException` for a slot whose name ends with `.backup`, in any letter case: that is where it
-keeps the original of a save it migrated (`<slot>.v<version>.backup`). Rename such a slot; to keep its data, read it
-once through `Saves.Storage` under the old name and save it under the new one.
+keeps the original of a save it migrated (`<slot>.v<version>.backup`). `Backups`, `LoadBackup` and `DeleteBackup`
+take those names. Rename a slot of your own that ends that way; to keep its data, read it once through
+`Saves.Storage` under the old name and save it under the new one.
 
 ### A game has a member named `Saves`
 

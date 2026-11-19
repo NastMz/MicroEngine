@@ -105,7 +105,8 @@ public bool Exists(string slot)
 ### <a id="MicroEngine_Platform_BrowserStorage_List"></a> List\(\)
 
 The game's slots: every key under its prefix but the copies set aside, with the length of its text as the size and
-the time of its last write when one was stamped.
+the time of its last write when one was stamped. localStorage has no size to ask for, so listing reads each
+slot's text to measure it.
 
 ```csharp
 public IReadOnlyList<SlotInfo> List()

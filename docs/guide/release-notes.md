@@ -45,9 +45,10 @@ optional, for agents that find their way through a level.
 - Versioned saves. A `SaveSchema<T>` declares the version a saved type is written in and one step per earlier version
   (`Migrate(from, step)`, a change to the save as JSON); `Saves.Load(slot, schema)` brings an older save up to date
   and reports what it found (`SaveLoadResult<T>`: loaded, migrated from which version, written by a newer release,
-  corrupt, missing), and `Saves.Save(slot, data, schema)` writes the version. A save from a newer release of the game
-  is never loaded and never replaced; the original of a migrated save is kept beside it. Saves written before a type
-  had a schema are version 1 and load unchanged. With the type's `JsonTypeInfo<T>` it works in games published
+  corrupt, missing), and `Saves.Save(slot, data, schema)` writes the version (`"@version"`). A save from a newer
+  release of the game is never loaded and never replaced, with or without a schema; the original of an older save is
+  copied before it is replaced (`Backups`, `LoadBackup`, `DeleteBackup` reach the copies). Saves written before a
+  type had a schema are version 1 and load unchanged. With the type's `JsonTypeInfo<T>` it works in games published
   trimmed or with NativeAOT ([Versions and migrations](../manual/persistence.md#versions-and-migrations)).
 - `Game.Saves`: every game has its store, on the medium its host composed (`host.Storage`), else the platform's
   default, under `Game.SaveId` (the application id). `Game.CreateSaves()` builds it by hand, and
@@ -148,6 +149,9 @@ optional, for agents that find their way through a level.
   the gamepad.
 - A scripted `wheel` turns where the script's mouse was put last, not at the canvas's corner, so it reaches the widget
   or the game under the pointer.
+- A save reads the slot before it writes it. `Save(slot, data)` and `Save(slot, data, typeInfo)` return `false` for
+  a slot that holds a versioned save, and a slot a load could not read can be saved again once a later load of it
+  succeeds ([migration notes](../migrations.md#saves-read-the-slot-before-writing-it)).
 - A storage lists its slots: `IStorage` (and `ISaveStorage`) has a seventh member, `List()`. A slot name cannot end
   with `.backup`, where the store keeps the original of a migrated save
   ([migration notes](../migrations.md#a-storage-lists-its-slots)).

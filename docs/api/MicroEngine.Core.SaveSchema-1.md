@@ -199,7 +199,7 @@ A version below [Version](MicroEngine.Core.md) has no step.
 ### <a id="MicroEngine_Core_SaveSchema_1_Write__0_"></a> Write\(T\)
 
 The text of a save: the value as indented JSON, as [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) writes it, with the
-current version as its first property.
+current version as its first property (after the serializer's own, such as <code>"$type"</code>).
 
 ```csharp
 public string Write(T value)

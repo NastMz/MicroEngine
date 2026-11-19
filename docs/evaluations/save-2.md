@@ -75,15 +75,22 @@ foreach (var slot in Saves.Slots("save-")) List(slot.Name, slot.LastWrite);
 
 ## 7. Trade-offs
 
-- `"$version"` is a reserved property name in every versioned save; a type that serializes a property under it is
-  refused at save time.
+- `"@version"` is a reserved property name in every versioned save; a type that serializes a property under it is
+  refused at save time. `"$version"` was the first choice and was dropped: `System.Text.Json` rejects any unknown
+  `$` property in a type with derived types or preserved references, so a build without the schema could not read
+  the file at all.
 - Steps are untyped JSON edits. A mistake shows as `MigrationFailed` (the slot protected, the error reported), which
   is why the schema is testable without a store.
-- The copy of a migrated save costs one extra slot per migrated slot, kept until someone removes it.
-- A versioned load parses to a JSON tree and then builds the type: two passes over a few kilobytes.
+- Every save reads the slot first, and a versioned save runs the schema over what it read: a second parse of a few
+  kilobytes per save, in exchange for rules that do not depend on what the store remembers.
+- A slot belongs either to a schema or to the calls without one. Mixing them is refused instead of being made to
+  work.
+- Copies of older saves accumulate until the game deletes them.
 - `Game.Saves` cannot be used in a game's constructor when the composition has a medium; the alternative was
   ambient state.
-- The browser's write time is a second key per slot and best effort.
+- The browser's write time is a second key per slot and best effort; its listing reads every slot's text for the
+  size.
+- A build released before the game declared a schema cannot be taught to refuse a newer save.
 
 ## 8. Decision
 
@@ -94,21 +101,23 @@ settings as a slot, and the store reached through the game.
 
 Run on Windows x64, .NET SDK 11.0.100, this branch:
 
-- Unit tests: 27 in `SaveSchemaTests`, 6 in `GameSavesTests`, 1 added to `StorageSlotContractTests`; each was seen
-  failing against a stub before the implementation.
+- Unit tests: `SaveSchemaTests`, `SaveVersionRulesTests`, `GameSavesTests`, and the browser storage's key handling
+  and write order in `StorageSlotContractTests`; each rule was seen failing before it was implemented.
+- An independent verification probed the first implementation outside the repository and found that the calls
+  without a schema ignored versions, that protection outlived its cause, that a save without a load replaced older
+  and unmigratable saves, that a copy could be written over or mislabelled, and that a `$`-prefixed version property
+  broke polymorphic types. Each finding is a test in `SaveVersionRulesTests` and a decision in ADR 0063 (4 to 8).
 - Each demo loads a literal save in the format its previous release wrote, saves it back with only the version line
-  added, refuses a newer one, and saves on a storage its host composed (`tests/<Game>.Tests`).
-- A console program outside the repository, built from the packed packages with a schema at version 3, two steps and
-  a polymorphic property: published trimmed with warnings as errors and run; published with NativeAOT with warnings
-  as errors and run. Both printed the same lines (migrated from 1, copy kept, newer refused, corrupt set aside, slots
-  listed).
-- `node sdk/tests/trimmed.mjs --aot`: all checks passed.
+  added, refuses a newer one, and saves on a storage its host composed. Courtyard Key and Trail Duel do not offer a
+  save they cannot load as "continue", and say when a save was refused (`tests/<Game>.Tests`).
+- `node sdk/tests/trimmed.mjs --aot`, whose program now keeps a versioned save (two steps, a property with derived
+  types, a copy, a newer save refused): all checks passed, trimmed and as a NativeAOT executable.
 
 Not verified:
 
 - The browser: `BrowserStorage.List`, the time stamp and the page's `storage.keys` were not run in a browser. Their
-  key handling is unit-tested apart from the page.
+  key handling and write order are unit-tested apart from the page.
 - NativeAOT and trimming on any system but Windows x64.
-- `sdk/tests/trimmed.mjs` has no versioned save in its program; the run above was a one-off. Adding the schema calls
-  to that script would make it a standing check.
 - Android and iOS: nothing platform-specific changed, and nothing was run there.
+- The demos' new title entries ("Newer save", "Unreadable") and messages were checked by tests, not looked at on
+  screen.

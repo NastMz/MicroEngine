@@ -36,6 +36,12 @@ namespace MicroEngine.Core;
 /// <see cref="Save{T}(string, T, JsonTypeInfo{T})"/> and <see cref="Load{T}(string, JsonTypeInfo{T})"/>. Both pairs
 /// write the same text and read each other's slots.
 /// </para>
+/// <para>
+/// A saved type that changes between releases declares a <see cref="SaveSchema{T}"/> and is loaded and saved through
+/// it (<see cref="Load{T}(string, SaveSchema{T})"/>, <see cref="Save{T}(string, T, SaveSchema{T})"/>). Such a slot
+/// belongs to its schema: the calls without one read it, and return false instead of writing it, because they would
+/// drop its version. Every save reads the slot before it replaces it.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -254,7 +260,7 @@ public sealed class SaveStore
     /// Writes the whole slot at once with the game's own metadata for <typeparamref name="T"/>, without reflection: the
     /// way to save in a game published trimmed or with NativeAOT. The text is the same indented JSON
     /// <see cref="Save{T}(string, T)"/> writes, so either call reads the other's slots. Returns false when the medium
-    /// refused the write, or when the slot could not be read earlier (see the class remarks).
+    /// refused the write, when the slot could not be read, or when it holds a versioned save (see the class remarks).
     /// </summary>
     /// <param name="slot">The slot name.</param>
     /// <param name="data">The value to save.</param>
@@ -298,8 +304,8 @@ public sealed class SaveStore
     /// <remarks>
     /// Corrupt data is set aside, as <see cref="Load{T}(string, JsonTypeInfo{T})"/> does. A save from a newer version of
     /// the game, an older save whose steps failed and a slot the medium could not read are left exactly as they are, and
-    /// every save to that slot through this store returns false until <see cref="Delete"/>
-    /// (<see cref="SaveLoadResult{T}.Protected"/>).
+    /// every save to that slot through this store returns false until a later load of it succeeds, or
+    /// <see cref="Delete"/> (<see cref="SaveLoadResult{T}.Protected"/>).
     /// </remarks>
     /// <typeparam name="T">The saved type.</typeparam>
     /// <param name="slot">The slot name.</param>
@@ -335,14 +341,16 @@ public sealed class SaveStore
 
     /// <summary>
     /// Writes a versioned save: the whole slot at once, as <see cref="Save{T}(string, T, JsonTypeInfo{T})"/> writes it,
-    /// with the schema's version as the first property. Returns false when the medium refused the write, or when the
-    /// slot holds a save this store must not replace.
+    /// with the schema's version. Returns false when the medium refused the write, or when the slot holds a save this
+    /// store must not replace.
     /// </summary>
     /// <remarks>
-    /// The store never replaces a save written by a newer version of the game: one it loaded as
-    /// <see cref="SaveLoadStatus.TooNew"/>, and also one it never loaded, because the first save to a slot looks at what
-    /// the slot holds. The first save over a slot that was loaded from an older version first copies the original to
-    /// the slot <c>&lt;slot&gt;.v&lt;version&gt;.backup</c>; if the copy cannot be written, neither is the save.
+    /// The save first reads the slot as <see cref="Load{T}(string, SaveSchema{T})"/> would, whether or not the game
+    /// loaded it: a save from a newer version of the game, and an older one the schema's steps fail on, are left alone
+    /// and the save returns false; a save of an older version is copied to <c>&lt;slot&gt;.v&lt;version&gt;.backup</c>
+    /// before it is replaced (never over an existing copy: see <see cref="Backups"/>), and if the copy cannot be
+    /// written, neither is the save; text that is not a save is set aside. A slot the last load found protected is
+    /// refused without reading it.
     /// </remarks>
     /// <typeparam name="T">The saved type.</typeparam>
     /// <param name="slot">The slot name.</param>

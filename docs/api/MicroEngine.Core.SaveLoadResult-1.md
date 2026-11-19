@@ -36,7 +36,7 @@ public Exception? Error { get; }
 
 True when the slot holds a save this build could not use and must not replace ([TooNew](MicroEngine.Core.SaveLoadStatus.md),
 [MigrationFailed](MicroEngine.Core.SaveLoadStatus.md), [Unreadable](MicroEngine.Core.SaveLoadStatus.md)): the store returns false
-from every save to that slot until the game deletes it.
+from every save to that slot until a later load of it succeeds or the game deletes it.
 
 ```csharp
 public bool Protected { get; }

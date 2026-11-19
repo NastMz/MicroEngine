@@ -34,6 +34,9 @@ private readonly string? _saveDirectory;
 /// <param name="saveDirectory">A folder for the save file, for tests; null keeps it in the player's save folder.</param>
 public MainGame(string? saveDirectory = null) => _saveDirectory = saveDirectory;
 
+/// <summary>The id the saves are kept under: it names the save folder, so it never changes once players have saves.</summary>
+protected override string SaveId => "GemGarden";
+
 /// <summary>The store behind <c>Saves</c>: the one every game comes with, or one in the folder a test asked for.</summary>
 protected override SaveStore CreateSaves() =>
     _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
@@ -62,11 +65,12 @@ protected override void Load()
 protected override void Unload() => Sprites.Dispose();
 ```
 
-- `Saves` is the game's store. It keeps its slots under the game's application id (`com.example.gemgarden`, from the
-  project file), so two games never read each other's saves.
-- The store uses the player's data folder: `%LOCALAPPDATA%\MicroEngine\com.example.gemgarden` on Windows,
-  `~/.local/share/MicroEngine/com.example.gemgarden` on Linux (or `$XDG_DATA_HOME`),
-  `~/Library/Application Support/MicroEngine/com.example.gemgarden` on macOS, the app's own storage on phones, and
+- `Saves` is the game's store. It keeps its slots under `SaveId`, which names the folder (or the browser storage
+  keys), so two games never read each other's saves. Without the override it is the project's application id; Gem
+  Garden names its own, `"GemGarden"`. Use one id per game and never change it after release.
+- The store uses the player's data folder: `%LOCALAPPDATA%\MicroEngine\GemGarden` on Windows,
+  `~/.local/share/MicroEngine/GemGarden` on Linux (or `$XDG_DATA_HOME`),
+  `~/Library/Application Support/MicroEngine/GemGarden` on macOS, the app's own storage on phones, and
   `localStorage` in a browser. Each slot is `<slot>.json` there.
 - `CreateSaves` is where a game builds its store by hand. Gem Garden does it only when a folder was asked for: the
   optional `saveDirectory` lets tests use a temporary folder instead of the player's saves. Without it, the game gets

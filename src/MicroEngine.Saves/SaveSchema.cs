@@ -66,7 +66,7 @@ public readonly struct SaveLoadResult<T> where T : class
     /// <summary>
     /// True when the slot holds a save this build could not use and must not replace (<see cref="SaveLoadStatus.TooNew"/>,
     /// <see cref="SaveLoadStatus.MigrationFailed"/>, <see cref="SaveLoadStatus.Unreadable"/>): the store returns false
-    /// from every save to that slot until the game deletes it.
+    /// from every save to that slot until a later load of it succeeds or the game deletes it.
     /// </summary>
     public bool Protected => Status is SaveLoadStatus.TooNew or SaveLoadStatus.MigrationFailed or SaveLoadStatus.Unreadable;
 }
@@ -75,9 +75,10 @@ public readonly struct SaveLoadResult<T> where T : class
 public static class SaveSchema
 {
     /// <summary>
-    /// The name of the property that holds a save's version, the first one of the saved JSON object: <c>"@version"</c>.
-    /// The store writes and removes it; the saved type never sees it and must not have a property serialized under
-    /// this name.
+    /// The name of the property of the saved JSON object that holds a save's version: <c>"@version"</c>, written
+    /// after the serializer's own leading properties (<c>"$type"</c>) and before the type's. The store writes and
+    /// removes it; the saved type never sees it and must not have a property serialized under this name. A build of
+    /// the game without a schema reads past it as it reads past any property it does not know.
     /// </summary>
     public const string VersionProperty = "@version";
 
@@ -294,7 +295,7 @@ public sealed class SaveSchema<T> where T : class
 
     /// <summary>
     /// The text of a save: the value as indented JSON, as <see cref="SaveStore.Save{T}(string, T)"/> writes it, with the
-    /// current version as its first property.
+    /// current version as its first property (after the serializer's own, such as <c>"$type"</c>).
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
     /// <exception cref="InvalidOperationException">

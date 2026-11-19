@@ -346,6 +346,9 @@ public sealed class SaveStore
     public SaveLoadResult<T> Load<T>(string slot, SaveSchema<T> schema) where T : class
     public bool Save<T>(string slot, T data, SaveSchema<T> schema) where T : class
     public IReadOnlyList<SlotInfo> Slots(string prefix = "")
+    public IReadOnlyList<SlotInfo> Backups(string slot)
+    public SaveLoadResult<T> LoadBackup<T>(string backup, SaveSchema<T> schema) where T : class
+    public void DeleteBackup(string backup)
     public bool Exists(string slot)
     public void Delete(string slot)
 }
@@ -388,7 +391,7 @@ public readonly record struct SlotInfo(string Name, long Size, DateTimeOffset? L
 | Missing or corrupt slot | `Load` returns null; corrupt data is set aside (`<slot>.corrupt.json` for files) |
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
-| Versioned save (`SaveSchema<T>`) | The version is the first property, `"$version"`; a save without one is version 1; an older save runs its steps in order; a newer one is refused and never replaced; the first save over a migrated slot keeps the original as `<slot>.v<version>.backup` |
+| Versioned save (`SaveSchema<T>`) | The version is the property `"@version"`, after the serializer's own leading properties; a save without one is version 1; a save reads the slot as a load would before replacing it: an older save is copied to `<slot>.v<version>.backup` (never over an existing copy) and replaced, a newer one or one its steps fail on is refused, text that is not a save is set aside; the calls without a schema refuse to write a slot that holds a version; protection follows the last load of the slot |
 | A game's store | `Game.Saves`: `SaveId` (the application id, else the title) on the composition's medium (`host.Storage`), else the platform's default; `Game.CreateSaves()` builds it by hand |
 | Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); Android and iOS folders are part of `DefaultDirectory`; `DefaultStorage(gameId)` returns the platform's default medium, `BrowserStorage` (`localStorage`) in browsers |
 
