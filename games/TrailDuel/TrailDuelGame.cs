@@ -29,16 +29,22 @@ public sealed class TrailDuelGame : Game
         _saveDirectory = saveDirectory;
         _debugStart = debugStart;
         DebugEvolve = debugEvolve;
-        Saves = new SaveStore("TrailDuel", _saveDirectory);
-        // Declared before the engine is composed, so it adds the achievements module.
-        TrackAchievements(TrailAchievements.Catalog, Saves);
     }
+
+    /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+    protected override string SaveId => "TrailDuel";
+
+    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
+    protected override SaveStore CreateSaves() => _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = Ui.UiKit.Theme };
 
-    /// <summary>Advances the banners every step.</summary>
-    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, Achievements);
+    /// <summary>
+    /// Declares the achievements, kept in the game's saves, before the engine is composed (so it adds their module), and
+    /// advances the banners every step.
+    /// </summary>
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(TrailAchievements.Catalog));
 
     /// <summary>The unlock banners stay up while scenes change.</summary>
     protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
@@ -58,7 +64,6 @@ public sealed class TrailDuelGame : Game
     /// <summary>The art built at load: the sprite atlas and the creatures' measured heights.</summary>
     internal GameArt Art { get; private set; } = null!;
     internal SpriteAtlas Atlas => Art.Atlas;
-    internal SaveStore Saves { get; private set; } = null!;
     /// <summary>The adventure in progress (null on the title screen before starting).</summary>
     public GameState State { get; internal set; } = GameState.NewGame();
 

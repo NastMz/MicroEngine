@@ -58,7 +58,7 @@ public sealed class TitleScene : Scene
     public override void Enter()
     {
         Audio.PlayMusic("title", 0.6f);
-        bool hasSave = _game.Saves.HasSave;
+        bool hasSave = _game.Slots.HasSave;
         _menu.SetEnabled(1, hasSave);
         _menu.Index = hasSave ? 1 : 0;
     }
@@ -93,7 +93,7 @@ public sealed class TitleScene : Scene
         switch (choice)
         {
             case 0: Start(new Progress()); break;
-            case 1: Start(_game.Saves.Load() ?? new Progress()); break;
+            case 1: Start(_game.Slots.Load() ?? new Progress()); break;
             case 2: _showControls = true; break;
             case 3:
                 var list = new DemoKit.AchievementList(_game.Achievements, UiStyle.Theme);

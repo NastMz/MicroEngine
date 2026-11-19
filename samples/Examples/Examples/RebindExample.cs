@@ -13,7 +13,7 @@ namespace Examples;
 /// A controls screen: choose an action, press the key or gamepad button it should use. A control another gameplay
 /// action already had is swapped between them, the defaults come back on request, and the bindings are saved.
 /// </summary>
-public sealed class RebindExample(string? saveDirectory) : Scene
+public sealed class RebindExample : Scene
 {
     #region defaults
     /// <summary>The actions the player may rebind: gameplay only. Menu actions keep their keys, so menus always work.</summary>
@@ -33,7 +33,7 @@ public sealed class RebindExample(string? saveDirectory) : Scene
     #region load
     public override void Enter()
     {
-        _storage = saveDirectory is null ? SaveStore.DefaultStorage("MicroEngineExamples") : new FileSaveStorage(saveDirectory);
+        _storage = Game.Saves.Storage;   // the bindings are kept where the game's saves are
         BindDefaults(Input);
         // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
         _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";

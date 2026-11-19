@@ -57,17 +57,26 @@ public sealed record LaunchOptions(string Start = "title", int Level = 1, int Ch
 public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? launch = null) : Game
 {
     private const string SaveSlot = "progress";
+    /// <summary>
+    /// The progress's version and the steps from earlier ones: version 1 with no steps, so the saves every release has
+    /// written (none carries a version) load as they are.
+    /// </summary>
+    private static readonly SaveSchema<SaveData> SaveFormat = new(version: 1);
     private readonly LaunchOptions _launch = launch ?? new LaunchOptions();
 
     public override GameSettings Settings { get; } = new("Meadow Run") { Background = Pal.Ink };
     internal Assets Art { get; private set; } = null!;
     internal MicroEngine.Graphics.LightMap Lights { get; private set; } = null!;
-    public SaveStore Store { get; } = new("MeadowRun", saveDirectory);
+    /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+    protected override string SaveId => "MeadowRun";
+
+    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
+    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
     public SaveData Save { get; private set; } = new();
     public Session Session { get; private set; } = new();
     /// <summary>Sound names requested but not registered (should stay empty; checked by tests).</summary>
     public HashSet<string> MissingSounds { get; } = [];
-    public bool HasSave => Store.Exists(SaveSlot);
+    public bool HasSave => Saves.Exists(SaveSlot);
 
     protected override InputMap CreateInput() => InputMap.CreateDefault()
         .Bind("jump", [Key.Z, Key.Space, Key.J], [PadButton.A])
@@ -91,7 +100,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
     };
 
     // Achievements are declared before the engine is composed, so it adds their module.
-    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog, Store));
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog));
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = MeadowRun.Scenes.Ui.Theme };
@@ -109,7 +118,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         foreach (var (name, song, loop) in MusicBank.All()) Audio.AddMusic(name, song, loop);
         Banners.Top = 17;   // below the HUD row
         Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
-        Save = Store.Load<SaveData>(SaveSlot) ?? new SaveData();
+        Save = Saves.Load(SaveSlot, SaveFormat).Value ?? new SaveData();
         Normalize(Save);
         Session.Form = _launch.Form;
         Scenes.Push(_launch.Start switch
@@ -170,7 +179,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
 
     public void Persist()
     {
-        try { Store.Save(SaveSlot, Save); }
+        try { Saves.Save(SaveSlot, Save, SaveFormat); }
         catch (IOException) { /* A read-only disk must not crash the game; progress stays in memory. */ }
         catch (UnauthorizedAccessException) { }
     }

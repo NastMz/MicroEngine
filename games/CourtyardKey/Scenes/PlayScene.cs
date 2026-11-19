@@ -296,7 +296,7 @@ public sealed partial class PlayScene : Scene
     {
         Progress.Health = Hero.Health.Current;
         Progress.MaxHealth = Hero.Health.Max;
-        G.Saves.Save(Progress);
+        G.Slots.Save(Progress);
         if (toast) _hud.Toast("Progress saved");
     }
 }

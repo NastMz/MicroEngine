@@ -30,7 +30,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Touch controls", g => new TouchExample()),
         ("Sound and music", g => new SoundExample()),
         ("Text", g => new TextExample()),
-        ("Saving", g => new SaveExample(g.SaveDirectory)),
+        ("Saving", g => new SaveExample()),
         ("Camera", g => new CameraExample()),
         ("Platformer: tiles and collision", g => new PlatformerExample()),
         ("Diagnostics and debug drawing", g => new DiagnosticsExample()),
@@ -38,7 +38,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Tweens and coroutines", g => new TweensExample()),
         ("Dialogue", g => new DialogueExample()),
         ("Custom input source", g => new CustomSourceExample()),
-        ("Controls and rebinding", g => new RebindExample(g.SaveDirectory)),
+        ("Controls and rebinding", g => new RebindExample()),
         ("Settings screen (widgets)", g => new SettingsExample()),
         ("Long list (scrolling)", g => new LongListExample()),
         ("Inventory (grid)", g => new InventoryExample()),
@@ -60,7 +60,11 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
     ];
 
-    public string? SaveDirectory { get; } = saveDirectory;
+    /// <summary>
+    /// The examples that save use the game's store (<see cref="Game.Saves"/>). Tests keep it in a folder of their own;
+    /// without one it is the store every game comes with.
+    /// </summary>
+    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
 
     // The widgets' UI view at three window pixels per unit, the scale of the 320×180 canvas in the default window, so
     // the widget examples read at the size of everything else.

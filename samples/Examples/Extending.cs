@@ -3,6 +3,7 @@ using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 using MicroEngine.Scenes;
 
 namespace Examples;
@@ -10,7 +11,7 @@ namespace Examples;
 #region save-storage
 /// <summary>
 /// Where save slots live is an ISaveStorage: files on desktops and phones, localStorage in browsers. This one keeps them
-/// in memory (tests, a demo kiosk); a cloud service or a console's save API would implement the same six members.
+/// in memory (tests, a demo kiosk); a cloud service or a console's save API would implement the same seven members.
 /// </summary>
 public sealed class MemorySaveStorage : ISaveStorage
 {
@@ -25,6 +26,9 @@ public sealed class MemorySaveStorage : ISaveStorage
     {
         if (_slots.Remove(slot, out var text)) _slots[slot + ".corrupt"] = text;
     }
+    // A copy set aside is not a slot. This storage keeps no times, so LastWrite is null.
+    public IReadOnlyList<SlotInfo> List() =>
+        [.. _slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new SlotInfo(s.Key, s.Value.Length, null))];
 }
 #endregion
 

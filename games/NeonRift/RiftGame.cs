@@ -73,10 +73,18 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     public LaunchOptions Launch => _launch;
     /// <summary>A content folder of the game's own (tests); null reads the composition's content.</summary>
     protected override string? ContentRoot => contentRoot;
-    /// <summary>Where achievements persist (a private folder in tests).</summary>
-    public SaveStore Store { get; } = new("NeonRift", saveDirectory);
-    /// <summary>The <see cref="Store"/> slot of the high score (the achievements have their own).</summary>
+    /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+    protected override string SaveId => "NeonRift";
+
+    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
+    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
+    /// <summary>The slot of the high score in the game's saves (the achievements have their own).</summary>
     public const string RecordSlot = "record";
+    /// <summary>
+    /// The record's version and the steps from earlier ones: version 1 with no steps, so the records every release has
+    /// written (none carries a version) load as they are.
+    /// </summary>
+    private static readonly SaveSchema<RiftRecord> RecordFormat = new(version: 1);
     private int _savedHighScore;
 
     protected override InputMap CreateInput() => InputMap.CreateDefault()
@@ -103,7 +111,7 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     };
 
     // Achievements are declared before the engine is composed, so it adds their module.
-    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(RiftAchievements.Catalog, Store));
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(RiftAchievements.Catalog));
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = Ui.Theme };
@@ -119,7 +127,7 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         Sounds.Register(Audio, Assets);
         Banners.Top = 22;   // below the HUD gradient
         Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
-        _savedHighScore = Math.Max(0, Store.Load<RiftRecord>(RecordSlot)?.HighScore ?? 0);
+        _savedHighScore = Math.Max(0, Saves.Load(RecordSlot, RecordFormat).Value?.HighScore ?? 0);
         Session = new Session(_savedHighScore) { Weapon = _launch.Weapon };
         int stage = Math.Clamp(_launch.Stage, 1, Content.Stages.Count) - 1;
         Scenes.Push(_launch.Start switch
@@ -145,7 +153,7 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     /// </summary>
     public void SaveHighScore()
     {
-        if (Session.HighScore > _savedHighScore && Store.Save(RecordSlot, new RiftRecord(Session.HighScore)))
+        if (Session.HighScore > _savedHighScore && Saves.Save(RecordSlot, new RiftRecord(Session.HighScore), RecordFormat))
             _savedHighScore = Session.HighScore;
     }
 

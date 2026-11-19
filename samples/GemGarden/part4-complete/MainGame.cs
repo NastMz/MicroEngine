@@ -21,10 +21,15 @@ public sealed class MainGame : Game
     #region save-store
     private const string SaveSlot = "progress";
 
-    /// <param name="saveDirectory">Where the save file lives; null uses the player's save folder (tests pass a temporary one).</param>
-    public MainGame(string? saveDirectory = null) => Saves = new SaveStore("GemGarden", saveDirectory);
+    private readonly string? _saveDirectory;
 
-    public SaveStore Saves { get; }
+    /// <param name="saveDirectory">A folder for the save file, for tests; null keeps it in the player's save folder.</param>
+    public MainGame(string? saveDirectory = null) => _saveDirectory = saveDirectory;
+
+    /// <summary>The store behind <c>Saves</c>: the one every game comes with, or one in the folder a test asked for.</summary>
+    protected override SaveStore CreateSaves() =>
+        _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
+
     public int BestScore { get; private set; }
     #endregion
 

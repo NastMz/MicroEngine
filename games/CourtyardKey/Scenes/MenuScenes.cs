@@ -274,7 +274,7 @@ public sealed class GameOverScene : Scene
         {
             _play.Progress.Deaths++;
             _play.Progress.Health = _play.Hero.Health.Max;
-            _play.G.Saves.Save(_play.Progress);
+            _play.G.Slots.Save(_play.Progress);
             Game.Scenes.Reset(new TitleScene(_play.G), Transition.Fade(0.8f));
         }
     }
