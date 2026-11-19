@@ -31,7 +31,8 @@ namespace MicroEngine.Graphics;
 /// vertex shader declares one, the 4 × 4 matrix that takes those pixels to clip space; in fragment texture slot 0 the
 /// draw's texture with the state's sampler, and in the slots from 1 the material's textures; in the fragment uniform
 /// slots the material's values. The material creates one pipeline per blend state and target format it is drawn
-/// with and releases them when it is disposed.
+/// with and releases them when it is disposed. Dispose a material between frames, not in the frame that drew with
+/// it: the frame's draws reach the device when it ends.
 /// </para>
 /// </remarks>
 public sealed class Material2D : IDisposable

@@ -228,13 +228,13 @@ public interface IRenderer
     /// </summary>
     /// <remarks>
     /// A material whose shader the device cannot run (<see cref="Material2D.IsSupported"/> false) draws with its
-    /// <see cref="Material2D.Fallback"/> instead. The default implementation is for renderers that draw nothing with a
-    /// state (a test double that only records calls): it refuses.
+    /// <see cref="Material2D.Fallback"/> instead. A material whose shader samples a texture that was never given is
+    /// refused at the draw (<see cref="InvalidOperationException"/> naming the texture), on every device. The default
+    /// implementation is for renderers that draw nothing with a state (a test double that only records calls): it refuses.
     /// </remarks>
     /// <exception cref="ObjectDisposedException">The state's material was disposed.</exception>
     /// <exception cref="ArgumentException">The state's material belongs to another graphics device.</exception>
     /// <exception cref="Devices.GraphicsCapabilityException">A blend state that is not one of the four presets, on a device without custom blending.</exception>
-    /// <exception cref="InvalidOperationException">The material's shader samples a texture that was never set.</exception>
     void PushState(in DrawState state) => throw new NotSupportedException($"{GetType().Name} does not draw with states.");
     /// <summary>Returns to what was being drawn with before the last <see cref="PushState"/>.</summary>
     /// <exception cref="InvalidOperationException">No state was pushed (in this target).</exception>

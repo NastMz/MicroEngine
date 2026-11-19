@@ -8,7 +8,6 @@ cbuffer Blur : register(b0, space3)
 {
     float2 Step;      // one sample's distance in texture coordinates, along the blur's direction
     float Threshold;  // 0 keeps everything
-    float Unused;
 };
 
 struct Input
