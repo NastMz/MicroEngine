@@ -110,6 +110,18 @@ public bool CloseRequested { get; set; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Cursor"></a> Cursor
+
+The cursor (the [ICursorControl](MicroEngine.Input.ICursorControl.md) capability): it remembers whether the game hid or locked it.
+
+```csharp
+public MemoryCursor Cursor { get; }
+```
+
+#### Property Value
+
+ [MemoryCursor](MicroEngine.Input.MemoryCursor.md)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Devices"></a> Devices
 
 The platform's input backend (also its [IInputBackend](MicroEngine.Input.IInputBackend.md), [IKeyLabels](MicroEngine.Input.IKeyLabels.md),

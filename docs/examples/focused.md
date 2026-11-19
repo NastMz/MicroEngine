@@ -901,3 +901,50 @@ public override void Enter()
 ```
 
 Guide: [State machines](../guide/state-machines.md).
+## Mouse actions
+
+The mouse through actions, as a strategy or point-and-click game uses it: a click sends the scout to a place, the
+wheel zooms, holding the other button drags the view with the cursor locked, and the button that gives the order is
+chosen by pressing it. A click on the widget is the widget's, never an order. Source:
+[`MouseActionsExample.cs`](../../samples/Examples/Examples/MouseActionsExample.cs).
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#bind -->
+```csharp
+/// <summary>Mouse buttons and the wheel are bound like keys, next to the keys that do the same.</summary>
+public static void BindDefaults(InputMap map) => map
+    .Unbind("order").Bind("order", PointerButton.Primary)             // a click; on a touch screen, a tap
+    .Unbind("grab").Bind("grab", PointerButton.Secondary)             // held to drag the view
+    .Unbind("zoom-in").Bind("zoom-in", InputControl.WheelUp, Key.Equals)
+    .Unbind("zoom-out").Bind("zoom-out", InputControl.WheelDown, Key.Minus);
+```
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#rebind -->
+```csharp
+/// <summary>Waits for the next mouse button or wheel turn, wherever the pointer is, and gives it the order.</summary>
+public void Listen()
+{
+    if (_listening is not null) return;
+    // The press goes to the listener alone: it is not an order, and it does not click the button again.
+    _listening = Game.InputSystem.ListenForPress(press =>
+    {
+        _listening = null;
+        if (press.Kind != InputEventKind.KeyDown) Assign(Input, "order", press);   // a key keeps the binding
+    }, PressKinds.All);
+}
+
+/// <summary>
+/// Gives <paramref name="action"/> the mouse control of <paramref name="press"/> in place of the ones it had. An
+/// action that used that control gets the ones given up, so no button does two things.
+/// </summary>
+public static void Assign(InputMap map, string action, in InputEvent press)
+{
+    if (InputControl.FromPress(press) is not { Device: InputDevice.Mouse } control) return;
+    var given = map.GetBindings(action)!.Controls.Where(c => c.Device == InputDevice.Mouse).ToArray();
+    if (given.Contains(control)) return;
+    foreach (var other in Actions.Where(a => a != action))
+        if (map.Unbind(other, control)) map.Bind(other, given);
+    map.BindFrom(action, press, replace: true);
+}
+```
+
+Manual: [The mouse in actions](../manual/input.md#the-mouse-in-actions).

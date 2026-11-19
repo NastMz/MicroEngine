@@ -40,7 +40,7 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 | `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlRendererDevice`, or `SdlGpuDevice` when the game asks for the GPU device; see [the graphics device](rendering.md#the-graphics-device) | `RaylibDevice` | `HeadlessGraphicsDevice` |
 | `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
 | `IInputSource` | Keys, pad buttons and axes, gamepad connection, mouse ([Input](input.md)) | `SdlInput` | `RaylibInput` | `HeadlessInput` |
-| `IInputBackend` (a capability) | Device events: keys, text, mouse, wheel, every gamepad with hot-plug; with `IKeyLabels`, `IGamepadRumble`, `ITextInputControl` where the backend has them ([Devices, players and layers](input.md#devices-players-and-layers)) | `SdlInput` | `RaylibInput` | `HeadlessInputBackend` |
+| `IInputBackend` (a capability) | Device events: keys, text, mouse, wheel, every gamepad with hot-plug; with `IKeyLabels`, `IGamepadRumble`, `ITextInputControl`, `ICursorControl` where the backend has them ([Devices, players and layers](input.md#devices-players-and-layers)) | `SdlInput` | `RaylibInput` | `HeadlessInputBackend` |
 | `ITouchScreen` (optional, a capability: `TryGetCapability<ITouchScreen>`) | Touches, safe area, density, vibration, the overlay drawn over the frame ([Touch controls](input.md#touch-controls)) | `SdlTouchScreen` | `RaylibTouchScreen` | `HeadlessTouchScreen` |
 
 While the platform is suspended (between its `Suspending` and `Resumed` events) the loop neither simulates nor

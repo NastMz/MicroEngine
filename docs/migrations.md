@@ -6,6 +6,48 @@ it. Newest first.
 
 ## Next release
 
+### Bindings as data are one list of controls
+
+`InputMap.ExportBindings` returns each action's controls in `ActionBindingData.Controls`, as text (`"Key:Space"`,
+`"Pad:A"`, `"Mouse:Secondary"`, `"Stick:Left.Up"`, `"Axis:RightTrigger+"`, `"Chord:LeftAlt|RightAlt+Enter"`), and
+`InputBindingSet.Version` is 2. `Keys`, `Buttons`, `Stick`, `Axes` and `Chords` are the first format: they are still
+read by `ImportBindings`, `LoadBindings` and `InputBindingSet.FromJson`, so saved files and sets a game kept in its own
+save load as before, but an exported set leaves them empty. Before, an exported set filled those five and had no
+`Controls`.
+
+To update, code that edits an exported set (a controls screen that swaps a key between two actions) reads and writes
+`Controls`, or works on the map directly: `InputControl.FromPress(press)` is the control of a press,
+`ActionsBoundTo(control)` finds who has it, `Unbind(action, control)` takes it away and `Bind(action, control)` gives
+it. `GetBindings(action)` still returns `Keys`, `Buttons`, `Stick`, `Axes` and `Chords`.
+
+### A map never holds the same control twice for one action
+
+`Bind` skips a control the action already has. Before, `Bind("jump", Key.Space)` called twice listed Space twice in
+`GetBindings("jump").Keys`. To update, code that counted on the duplicate (none of the engine's did) needs no change
+other than its expectations.
+
+### Listening for a press and the mouse's other buttons
+
+`InputSystem.ListenForPress(pressed)` hears keys and gamepad buttons, as before; `ListenForPress(pressed,
+PressKinds.All)` also takes the next mouse button and wheel turn. `InputMap.BindFrom` returns true for those presses
+too and binds them; before, it returned false for anything but a key or a gamepad button. To update, a controls screen
+that passed every event of a custom listener to `BindFrom` and relied on false for mouse events checks
+`InputControl.FromPress(press)?.Device` first.
+
+A press of the mouse's secondary, middle, back or forward button that an input layer takes is captured by itself:
+the layer receives that button's release, and the pointer's moves and the primary button are routed as usual. Before,
+such a press sent every mouse event to that layer until the primary button was released. To update, a layer that
+relied on receiving the moves after a right click takes them in `Handle` itself.
+
+### `InputDevice.Mouse` and new members of input types
+
+`InputMap.LastDevice` reports `InputDevice.Mouse` when a mouse button, the wheel or pointer motion pressed an action
+(a finger that presses what the primary button is bound to reports `Touch`). A `switch` over `InputDevice` with no
+default case gets a new value; treat it as the keyboard for prompts. `PointerState` has new members (`Back`,
+`Forward`, `Delta`, `Kind`, `PressedButtons`, `ReleasedButtons`), which take part in its equality: code that compares
+a whole `PointerState` with one it built compares the members it means instead. `InputEvent.PointerMove` takes an
+optional `delta` after `time`, and `IInputSource` has `RightStick`, with a default that reads the two axes.
+
 ### A submitted command list holds nothing
 
 Once `IGraphicsDevice.Submit(commands)` returns, the `CommandList` is empty: `Commands` has no commands and `Payload`

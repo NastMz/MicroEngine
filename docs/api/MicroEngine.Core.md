@@ -267,7 +267,10 @@ A deterministic input script, keyed by update number. Text format, one command p
 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
 450 pad 2 remove
 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
-470 wheel 1               # the wheel turns one notch away from the player
+462 mouse 160,90 down secondary  # another button: primary, secondary, middle, back or forward
+464 click 160,90 secondary       # the mouse moves there and the button goes down, then up 2 updates later
+470 wheel 1               # the wheel turns one notch away from the player (negative: towards them)
+472 wheel 0 1             # a second number turns it sideways: one notch to the right
 480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```

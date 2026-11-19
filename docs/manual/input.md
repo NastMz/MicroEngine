@@ -1,7 +1,8 @@
 # Input
 
 Games never ask whether a key is down: they ask whether an *action* is, such as `"jump"` or `"confirm"`. An
-`InputMap` binds each action to keyboard keys, gamepad buttons, stick directions and analog axes, reads any number of
+`InputMap` binds each action to controls (keyboard keys, gamepad buttons, stick directions and analog axes, mouse
+buttons, the wheel and pointer motion), reads any number of
 *action sources* (the on-screen touch controls are one), samples everything once per fixed step and computes press and
 release edges per step. Scripted input forces the same actions and touches the same controls, so automated runs
 exercise exactly the code players do.
@@ -113,9 +114,19 @@ Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 | --- | --- |
 | `Bind(action, params Key[] keys)` | Keys only, e.g. `Bind("action", Key.X)` |
 | `Bind(action, Key[] keys, PadButton[] buttons, StickDirection stick = None)` | Keys, pad buttons and a left-stick direction |
-| `BindAxis(action, PadAxis axis, bool positive = true)` | One side of an analog axis: a trigger (`PadAxis.RightTrigger`) or the right stick (`PadAxis.RightX`, `positive: false` for left) |
+| `Bind(action, params InputControl[] controls)` | Any controls: `Bind("order", PointerButton.Secondary, Key.E)`, `Bind("zoom-in", InputControl.WheelUp)` ([The mouse in actions](#the-mouse-in-actions)) |
+| `BindAxis(action, PadAxis axis, bool positive = true)` | One side of an analog axis: a trigger (`PadAxis.RightTrigger`) or half of a stick axis (`PadAxis.RightX`, `positive: false` for left) |
+| `BindStick(action, PadStick stick, StickDirection direction)` | A direction of a stick read as a whole, with its radial dead zone: `BindStick("aim-up", PadStick.Right, StickDirection.Up)` |
 | `Unbind(action)` | Removes every binding of the action, to bind it again (a rebinding screen) |
-| `GetBindings(action)` | What the action is bound to (`ActionBindings`), to show it |
+| `Unbind(action, control)` | Removes one control; false when the action did not have it |
+| `ActionsBoundTo(control)` | The actions a control presses, to keep one control from doing two things |
+| `GetBindings(action)` | What the action is bound to (`ActionBindings`), to show it: `Controls` lists every control, and `Keys`, `Buttons`, `Stick`, `Axes` and `Chords` are views of it by kind |
+
+Every binding is an `InputControl`: a key, a key combination, a gamepad button, one side of a gamepad axis, a stick
+direction, a mouse button, the wheel turning one way or the pointer moving one way. A key, a chord, a gamepad button
+and a mouse button are controls by themselves (`Bind("jump", Key.Space, PadButton.A, PointerButton.Middle)`); the
+others have names (`InputControl.WheelUp`, `InputControl.PointerRight`, `InputControl.Of(PadStick.Right,
+StickDirection.Up)`, `InputControl.Of(PadAxis.RightTrigger)`). A control an action already has is not added twice.
 
 The `Key` enum covers a full-size keyboard: letters, digits, arrows, Space, Enter, Escape, Backspace, Tab, F1-F24,
 punctuation by position such as `Minus`, `Comma` and `Grave`, the ISO key `NonUsBackslash`, both Shift, Alt, Control and
@@ -206,9 +217,9 @@ public override void Update(float dt)
 
 One control pressing two actions that gameplay reads at the same time is usually a mistake, and the engine does not
 prevent it: `BindFrom` adds the press to one action and leaves the others as they are. The screen decides what
-happens instead. This one swaps: the action that used the control gets the ones the rebound action gave up. Editing
-the bindings as data (`ExportBindings`, then `ImportBindings` with only the changed actions) keeps their other
-controls (sticks, axes, chords) untouched:
+happens instead. This one swaps: the action that used the control gets the ones the rebound action gave up.
+`InputControl.FromPress` says which control a press is, `Unbind(action, control)` takes it from the action that had
+it, and every other control of that action (sticks, axes, chords) stays as it was:
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#assign -->
 ```csharp
@@ -219,22 +230,13 @@ controls (sticks, axes, chords) untouched:
 /// </summary>
 public static void Assign(InputMap map, string action, in InputEvent press)
 {
-    bool key = press.Kind == InputEventKind.KeyDown;
-    string control = key ? press.Key.ToString() : press.Button.ToString();
-    var set = map.ExportBindings();                            // every action's bindings as editable data
-    List<string> Controls(ActionBindingData a) => key ? a.Keys : a.Buttons;
-    var given = Controls(set.Actions.Single(a => a.Action == action));
+    if (InputControl.FromPress(press) is not { } control) return;
+    // What the action gives up: its controls of the same kind (its keys for a key, its buttons for a button).
+    var given = map.GetBindings(action)!.Controls.Where(c => c.Kind == control.Kind).ToArray();
     if (given.Contains(control)) return;                       // already this action's control: nothing to do
 
-    var changed = new InputBindingSet();
-    foreach (var other in set.Actions.Where(a => a.Action != action && Rebindable.Contains(a.Action)))
-    {
-        var controls = Controls(other);
-        if (!controls.Remove(control)) continue;
-        controls.AddRange(given.Except(controls));             // the swap
-        changed.Actions.Add(other);
-    }
-    map.ImportBindings(changed);                               // only the actions that lost the control
+    foreach (var other in Rebindable.Where(a => a != action))
+        if (map.Unbind(other, control)) map.Bind(other, given); // the swap
     map.BindFrom(action, press, replace: true);
 }
 ```
@@ -242,7 +244,10 @@ public static void Assign(InputMap map, string action, in InputEvent press)
 The same key in a menu action and in a gameplay action is not a conflict. Here `Z` is both `confirm` and `jump`, and
 each is read in its own scenes.
 
-Bindings are saved by name (`"Q"`, `"RightTrigger+"`), so they stay valid when the engine adds keys. `SaveBindings`
+Bindings are saved as text, one list of controls per action, each by its kind and name (`"Key:Q"`, `"Pad:A"`,
+`"Mouse:Secondary"`, `"Wheel:Up"`, `"Axis:RightTrigger+"`), so they stay valid when the engine adds keys, and a control
+a version does not know is skipped. A file saved in the first format (one list per kind of control, no mouse) loads
+unchanged. `SaveBindings`
 writes every action and throws `IOException` or `UnauthorizedAccessException` when the medium refuses; the change then
 lasts until the game quits:
 
@@ -264,11 +269,143 @@ private void Save(string done)
 
 | Member | Use |
 | --- | --- |
-| `InputSystem.ListenForPress(pressed)` | Hands the next key-down or button-down to `pressed`, once, and keeps it (and its release) from everything else; dispose the result to stop listening |
-| `BindFrom(action, press, replace)` | Binds the press's key or button; `replace` swaps the action's keys (for a key) or buttons (for a button) |
+| `InputSystem.ListenForPress(pressed, kinds)` | Hands the next press to `pressed`, once, and keeps it (and its release) from everything else; dispose the result to stop listening. Keys and gamepad buttons unless `kinds` says more: `PressKinds.All` adds mouse buttons and the wheel |
+| `InputControl.FromPress(press)` | The control a press is on (a key, a gamepad button, a mouse button, a wheel direction), or null |
+| `BindFrom(action, press, replace)` | Binds the press's control; `replace` swaps the action's keys (for a key), its gamepad buttons (for a button) or its mouse buttons and wheel directions (for a mouse button or the wheel) |
 | `SaveBindings(storage, slot)` | Writes every action's bindings to an `IStorage` slot (`input-bindings` by default; a plain name, see [Slot names](persistence.md#slot-names)). Throws `IOException` or `UnauthorizedAccessException` when the storage fails |
 | `LoadBindings(storage, slot)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back); false and the defaults stay when nothing was saved or the data is unreadable, which is set aside. A storage that cannot be read throws (`IOException`, `UnauthorizedAccessException`) and the current bindings stay |
 | `ExportBindings()`, `ImportBindings(set)` | The same data as an `InputBindingSet`, to keep inside a save of your own (`SaveStore.Save("bindings", Input.ExportBindings())`) |
+
+## The mouse in actions
+
+A strategy game orders with a click, a management game zooms with the wheel, a point-and-click adventure does
+everything with two buttons. They read actions like any other game, so the player rebinds those controls, a
+gamepad or a key can do the same, and the game never asks for a mouse button by name:
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#bind -->
+```csharp
+/// <summary>Mouse buttons and the wheel are bound like keys, next to the keys that do the same.</summary>
+public static void BindDefaults(InputMap map) => map
+    .Unbind("order").Bind("order", PointerButton.Primary)             // a click; on a touch screen, a tap
+    .Unbind("grab").Bind("grab", PointerButton.Secondary)             // held to drag the view
+    .Unbind("zoom-in").Bind("zoom-in", InputControl.WheelUp, Key.Equals)
+    .Unbind("zoom-out").Bind("zoom-out", InputControl.WheelDown, Key.Minus);
+```
+
+| Control | Presses the action | `Value` |
+| --- | --- | --- |
+| `PointerButton.Primary`, `Secondary`, `Middle`, `Back`, `Forward` | While held, like a key. The primary button is also a finger or a pen on the screen, so a click-to-move game plays on a phone | 1 |
+| `InputControl.WheelUp`, `WheelDown`, `WheelLeft`, `WheelRight` | For one update per notch: `Pressed` in the update the notch turned, `Released` in the next. Two notches in two updates are two presses. A touchpad or a smooth wheel, which turn by fractions, press once each time a whole notch has turned | The notches turned in that update (3 for a fast spin, 0.25 for a touchpad) |
+| `InputControl.PointerLeft`, `PointerRight`, `PointerUp`, `PointerDown` | Never: motion is an amount, not a press | The canvas pixels the pointer moved that way in the update, times `PointerSensitivity` (1 by default) |
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#read -->
+```csharp
+// A click on the button above never gets here: the widgets took it before the actions were read.
+if (Input.Pressed("order")) _target = Vector2.Clamp(_camera.ScreenToWorld(Input.Pointer.Position), Field.Position, Field.Position + Field.Size);
+
+// The wheel presses its action once per notch, like a key tapped once: the same line serves the wheel and the keys.
+if (Input.Pressed("zoom-in")) _camera.Zoom = Math.Min(3f, _camera.Zoom * 1.25f);
+if (Input.Pressed("zoom-out")) _camera.Zoom = Math.Max(0.5f, _camera.Zoom / 1.25f);
+
+// Dragging the view: how far the pointer moved in this update, in canvas pixels.
+if (Input.Down("grab")) _camera.Position -= Input.Pointer.Delta / _camera.Zoom;
+```
+
+A click or a wheel turn on a widget, or a finger on an on-screen control, belongs to that widget or control: it
+presses no action and is not in `Input.Pointer` ([Input layers](#input-layers)). Each mouse button is a press of its
+own, so a right click on a panel does not take the next left click with it. In local multiplayer a mouse is a
+device like any other: paired with a player, only that player's actions hear it.
+
+Pointer motion and the wheel are amounts that can exceed 1, so `Vector`, which limits its length to 1, is not the way
+to read them. `AnalogAxis("look-left", "look-right")` gives one axis and `Motion(left, right, up, down)` both, with
+no limit; a stick bound to the same four actions adds its deflection, so one line reads the mouse and the gamepad:
+
+```csharp
+// In CreateInput: .Bind("look-left", InputControl.PointerLeft).BindStick("look-left", PadStick.Right, InputMap.StickDirection.Left) ... for the four directions
+var look = Input.Motion("look-left", "look-right", "look-up", "look-down");
+yaw += look.X * 0.2f;
+```
+
+### The pointer itself
+
+`Input.Pointer` is the mouse, or the finger that moved last, as this update saw it:
+
+| Member | Meaning |
+| --- | --- |
+| `Present`, `Position`, `Kind` | Whether it is over the window, where (canvas pixels), and whether it is the mouse, a finger or a pen |
+| `Primary`, `Secondary`, `Middle`, `Back`, `Forward`, `Down(button)`, `Buttons` | The buttons held |
+| `Pressed(button)`, `Released(button)` | True for one update when the button went down or up, like an action's edges; a click shorter than a frame is still one press and one release |
+| `Delta` | How far it moved since the previous update, in canvas pixels |
+| `Wheel` | How far the wheel turned since the previous update, in notches: `Y` positive away from the player, `X` positive to the right |
+
+### The cursor
+
+Hiding the system's cursor and locking it are things only some platforms can do, so the game asks for the capability
+and goes on without it where there is none:
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#cursor -->
+```csharp
+// Where the platform has a cursor to control, lock it while dragging: it stays where the drag began and the
+// mouse never runs into the edge of the screen. Without one (a phone), the drag works all the same.
+if (Game.TryGetCapability<ICursorControl>(out var cursor))
+{
+    if (Input.Pressed("grab")) cursor.SetRelative(true);
+    if (Input.Released("grab")) cursor.SetRelative(false);
+}
+```
+
+`ICursorControl.Visible` hides the arrow while it is over the window, for a game that draws its own. `SetRelative(true)`
+locks it: it disappears, stays in the window, `Pointer.Position` stays where it was and `Pointer.Delta` (and the
+actions bound to pointer motion) report the mouse's own motion, which never runs out at the edge of the screen. That is
+how a first-person view turns and how a map is dragged. `SetRelative` returns whether the platform did it, and
+`Relative` says whether the cursor is still locked.
+
+| | Cursor |
+| --- | --- |
+| SDL on desktops | Hidden and locked at once |
+| SDL in a browser | Hidden at once. A page may lock the cursor only in answer to a click or a key press, and the player's Escape key always frees it: ask in the update the player clicked in, and read `Relative` afterwards instead of assuming it stayed on |
+| SDL on phones | No capability: `TryGetCapability` gives false |
+| raylib | Hidden and locked at once |
+| Headless | `HeadlessPlatform.Cursor` remembers what the game asked, so tests and scripted runs can check it |
+
+### Rebinding a mouse button
+
+`ListenForPress` hears keys and gamepad buttons unless it is told to hear more, so that on a controls screen worked
+with the mouse a click on its own buttons is not taken for a binding. With `PressKinds.All` the next mouse button or
+wheel turn, wherever the pointer is, goes to the listener and to nothing else:
+
+<!-- code: samples/Examples/Examples/MouseActionsExample.cs#rebind -->
+```csharp
+/// <summary>Waits for the next mouse button or wheel turn, wherever the pointer is, and gives it the order.</summary>
+public void Listen()
+{
+    if (_listening is not null) return;
+    // The press goes to the listener alone: it is not an order, and it does not click the button again.
+    _listening = Game.InputSystem.ListenForPress(press =>
+    {
+        _listening = null;
+        if (press.Kind != InputEventKind.KeyDown) Assign(Input, "order", press);   // a key keeps the binding
+    }, PressKinds.All);
+}
+
+/// <summary>
+/// Gives <paramref name="action"/> the mouse control of <paramref name="press"/> in place of the ones it had. An
+/// action that used that control gets the ones given up, so no button does two things.
+/// </summary>
+public static void Assign(InputMap map, string action, in InputEvent press)
+{
+    if (InputControl.FromPress(press) is not { Device: InputDevice.Mouse } control) return;
+    var given = map.GetBindings(action)!.Controls.Where(c => c.Device == InputDevice.Mouse).ToArray();
+    if (given.Contains(control)) return;
+    foreach (var other in Actions.Where(a => a != action))
+        if (map.Unbind(other, control)) map.Bind(other, given);
+    map.BindFrom(action, press, replace: true);
+}
+```
+
+`PointerNames.Of(control)` gives the short name of a mouse control for a controls screen (`"LMB"`, `"RMB"`, `"MMB"`,
+`"Mouse 4"`, `"Mouse 5"`, `"Wheel ↑"`, `"Mouse →"`). Example:
+[Mouse actions](../examples/focused.md#mouse-actions).
 
 ## Querying actions
 
@@ -277,13 +414,14 @@ private void Save(string done)
 | `Down(action)` | The action is held (or was tapped during this step) |
 | `Pressed(action)` | First step after it went down, even if it was released within the same frame |
 | `Released(action)` | First step after it went up |
-| `Value(action)` | Strength 0..1: 1 for a key or button, the deflection beyond the dead zone for a stick, trigger or touch joystick |
+| `Value(action)` | Strength: 1 for a key or button, the deflection beyond the dead zone (0..1) for a stick, trigger or touch joystick; for the wheel and pointer motion, the amount in this update, which may exceed 1 |
 | `Axis(negative, positive)` | -1, 0 or 1 from two opposing actions (digital) |
 | `AnalogAxis(negative, positive)` | -1..1 from two opposing actions (analog) |
 | `Vector(left, right, up, down)` | A 2D direction at most 1 long: keys give unit vectors with normalised diagonals, sticks their deflection |
-| `LastDevice` | `Keyboard`, `Gamepad`, `Touch` or `Other`: what pressed an action last |
+| `Motion(left, right, up, down)` | A 2D amount with no limit on its length: what pointer motion or the wheel moved in this update |
+| `LastDevice` | `Keyboard`, `Mouse`, `Gamepad`, `Touch` or `Other`: what pressed an action last |
 | `PadConnected` | Whether a gamepad is connected |
-| `Pointer` | The mouse over the virtual canvas, or a finger no on-screen control took: position in canvas pixels, buttons, and the wheel's turn since the previous step (`Wheel`) |
+| `Pointer` | The mouse over the virtual canvas, or a finger no on-screen control took: position in canvas pixels, every button with its edges, and its motion and the wheel's turn since the previous step ([The pointer itself](#the-pointer-itself)) |
 | `Pointers` | Every pointer (the mouse, each finger or pen no on-screen control took), with its id and position in canvas pixels |
 | `Consume(action)` | Takes the action for the reader that acted on it, see [Input layers](#input-layers) |
 | `Actions` | Every bound action name |
@@ -455,7 +593,8 @@ Which backends deliver what:
 | Keys | every key of a full-size keyboard, by position | the same keys, through GLFW's key codes | sent by tests (`HeadlessPlatform.Devices.Send`) |
 | Key labels of the layout (`IKeyLabels`) | yes (`SDL_GetKeyFromScancode`) | no: keys keep their US names | set by tests (`Devices.Labels`) |
 | Text and composition | text and input-method composition, the candidate list placed at the caret, the on-screen keyboard on phones | typed characters, no input methods | sent by tests |
-| Mouse and wheel | yes | yes | sent by tests |
+| Mouse | five buttons, motion, the wheel both ways | five buttons, motion, the wheel both ways | sent by tests |
+| Cursor (`ICursorControl`) | hidden and locked on desktops and in browsers; none on phones | hidden and locked | `HeadlessPlatform.Cursor` |
 | Gamepads | every pad, each with its own id, hot-plugged, its type (button names) and the player number it shows | pads 0 to 3, family from the pad's name | sent by tests |
 | Rumble (`IGamepadRumble`) | where the pad has motors | none | recorded (`Devices.Rumbles`) |
 | Clipboard text (`IClipboard`) | the system clipboard; in browsers, the page's latest paste, and copies sent to the system clipboard | the system clipboard | `HeadlessPlatform.Clipboard` |
@@ -470,9 +609,17 @@ test's `HeadlessPlatform.Keys`) are devices of their own, read every step.
 | Property | Default | Meaning |
 | --- | --- | --- |
 | `StickDeadZone` | 0.2 | Radial dead zone of the left stick; beyond it the deflection is rescaled to 0..1, so a light push is a slow walk, not a jump from 0 to 0.2 |
+| `RightStickDeadZone` | 0.2 | The same for the right stick, for the directions bound with `BindStick` |
 | `StickThreshold` | 0.35 | Deflection (after the dead zone) at which a stick direction action goes down |
 | `StickMode` | `Eight` | `Eight`: 45° sectors, diagonals press two directions. `Four`: only the dominant direction (grid movement, menus) |
 | `AxisDeadZone` | 0.1 | Dead zone of axes bound with `BindAxis` |
+| `PointerSensitivity` | 1 | The value one canvas pixel of pointer motion gives an action bound to it |
+
+The right stick is bound in one of two ways. `BindStick("aim-right", PadStick.Right, StickDirection.Right)` and its
+three siblings read the stick as a whole: a radial dead zone, a round `Vector("aim-left", "aim-right", "aim-up",
+"aim-down")` for twin-stick aiming, and direction presses for a menu worked with the right stick. `BindAxis("aim-right",
+PadAxis.RightX)` reads one axis alone with `AxisDeadZone`, as a trigger is read; a small push along one axis is then
+cut off whatever the other axis does.
 
 Trail Duel moves on a grid, so it sets `StickMode = StickDirections.Four`: a slightly diagonal push never steps
 sideways. `InputMap.ApplyDeadZone` and `InputMap.Directions` are public for code of your own.
@@ -724,6 +871,9 @@ by development web packages and by the phone checks.
 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
+460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels and its primary button goes down
+464 click 200,90 secondary # the mouse moves there and clicks another button (up 2 updates later)
+470 wheel 1               # the wheel turns one notch away from the player
 900 quit
 ```
 
@@ -745,8 +895,9 @@ Source: format documented on `InputScript` in [`src/MicroEngine/Core/GameRunner.
 | `N pad P add [style]` / `N pad P remove` | The script's gamepad `P` (1 and up) connects (`xbox`, `playstation`, `nintendo`) or disconnects |
 | `N pad P B down` / `N pad P B up` | Button `B` (a `PadButton` name) of pad `P`; a pad not added yet connects as an Xbox pad |
 | `N pad P A value` | Axis `A` (a `PadAxis` name: `LeftX`, `RightTrigger`) of pad `P` moves to `value` |
-| `N mouse X,Y [down\|up]` | The script's mouse moves to a point in canvas pixels, and its primary button goes down or up |
-| `N wheel D` | The wheel turns `D` notches (positive away from the player) |
+| `N mouse X,Y [down\|up [button]]` | The script's mouse moves to a point in canvas pixels, and a button goes down or up: `primary` unless it says `secondary`, `middle`, `back` or `forward` |
+| `N click X,Y [button]` | The script's mouse moves there and the button goes down, then up 2 updates later |
+| `N wheel D [H]` | The wheel turns `D` notches (positive away from the player) and, with `H`, that many sideways (positive to the right), where the mouse was put last |
 | `N text T` | The rest of the line is typed as text (read while text input is on; `#` starts a comment) |
 | `N quit` | End the run at update N |
 
@@ -756,8 +907,8 @@ mouse and pads (`InputScript.ScriptKeyboard`, `ScriptMouse`, `ScriptPad(n)`) thr
 backend's events, so a scripted run exercises the real input path, players and pairing included (a game can pair
 `ScriptPad(1)` with player 2). Scripts force actions through `InputMap.SetForced`, which tests can also call
 directly; scripted fingers go through `VirtualControls.ScriptTouch`, with the same hit testing as real fingers on the
-platform's real layout. In code the same script can be built with `Press`, `Hold`, `Touch`, `Lift`, `Capture` and
-`QuitAfter`. Each demo has a `touch.script` that plays two thumbs at once.
+platform's real layout. In code the same script can be built with `Press`, `Hold`, `Touch`, `Lift`, `Key`, `Button`,
+`Axis`, `Mouse`, `Click`, `Wheel`, `Capture` and `QuitAfter`. Each demo has a `touch.script` that plays two thumbs at once.
 
 On the desktop, a game started through `DesktopLauncher` plays a script when it is given
 `--script FILE`; `--hidden`, `--mute` and `--captures DIR` run it without a visible window or sound and choose
@@ -787,11 +938,18 @@ In a browser the same bindings and touch layouts apply. The page keeps keys that
 features (arrows, Space, Tab, `/`, `'`) away from the browser while playing, and leaves Ctrl/Cmd shortcuts and function
 keys to it; touches go to the game's controls as described above. On touch screens the page's own buttons (fullscreen,
 sound) move to the bottom centre, between the thumbs. Details: [Embedding](../examples/embedding.md#the-iframe).
+The mouse's buttons, wheel and motion arrive as on a desktop; locking the cursor follows the browser's rule
+([The cursor](#the-cursor)).
 
 ## Limitations
 
 - raylib reads pads 0 to 3 and has no rumble; SDL reads every pad, each a device of its own.
-- The mouse is readable (`Input.Pointer`) but cannot be bound to actions; no game uses it.
+- Gestures are not recognised: a tap, a long press, a swipe or a pinch is the game's to tell from `Input.Pointers`
+  (every finger, with its id and position) and `InputSystem.Events`.
+- Pointer motion bound to an action gives it a value and never presses it; a wheel direction presses for one update
+  per notch and cannot be held.
+- In a browser the cursor is locked only after a click or a key press, and Escape frees it. Phones have no cursor to
+  control.
 - No rebinding screen and no layout editor in the engine: bindings and touch layouts are code. `ListenForPress`,
   `BindFrom` and `SaveBindings` are the parts of a rebinding screen; [A rebinding screen](#a-rebinding-screen)
   builds one.

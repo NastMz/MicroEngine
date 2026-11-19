@@ -10,8 +10,8 @@ Guide: [Input](../manual/input.md)
 
  [ActionBindingData](MicroEngine.Input.ActionBindingData.md)
 
-The bindings of one action as data, by name (keys, buttons and axes are their enum names), so saved bindings stay
-valid when the engine adds keys. Part of [InputBindingSet](MicroEngine.Input.InputBindingSet.md).
+The bindings of one action as data: its controls as text ([ToString](MicroEngine.Input.InputControl.md#MicroEngine_Input_InputControl_ToString)), by enum name, so
+saved bindings stay valid when the engine adds keys. Part of [InputBindingSet](MicroEngine.Input.InputBindingSet.md).
 
  [ActionBindings](MicroEngine.Input.ActionBindings.md)
 
@@ -81,8 +81,9 @@ Events no layer takes become the polled state actions read ([InputDevices](Micro
 
  [InputMap](MicroEngine.Input.InputMap.md)
 
-Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
-(touch controls, custom sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
+Named actions bound to controls ([InputControl](MicroEngine.Input.InputControl.md): keys, gamepad buttons, stick directions and analog
+axes, mouse buttons, the wheel and pointer motion), plus any number of action sources (touch controls, custom
+sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
 scripted input stay in one place. Every action is both digital ([Down](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Down_System_String_), [Pressed](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Pressed_System_String_),
 [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_)) and analog ([Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_), [Vector](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Vector_System_String_System_String_System_String_System_String_)): a key is 0 or 1, a stick or a
 virtual joystick gives the deflection beyond its dead zone.
@@ -109,6 +110,11 @@ backends that report HID usages map them with one table.
 
 A clipboard that only remembers its text: the headless platform's, and a stand-in where there is no system clipboard.
 
+ [MemoryCursor](MicroEngine.Input.MemoryCursor.md)
+
+A cursor that only remembers what it was asked: the headless platform's, so a game's cursor handling runs in tests
+and scripted runs.
+
  [OverlayShapes](MicroEngine.Input.OverlayShapes.md)
 
 Shapes built from [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) triangles and rectangles, which never overlap, so translucent colours stay even.
@@ -123,6 +129,11 @@ The local players. With no setup there is one player who owns every device, so a
 with players at all (<code>Game.Input</code> is player 1's map). For local multiplayer, pair devices explicitly: a
 device paired with a player is heard only by that player, and once player 1 has a device of their own they stop
 hearing the devices nobody was given.
+
+ [PointerNames](MicroEngine.Input.PointerNames.md)
+
+The names prompts show for the mouse's controls, in the same short style as key and gamepad names: <code>"LMB"</code>,
+<code>"Wheel ↑"</code>, <code>"Mouse →"</code>.
 
  [TextInput](MicroEngine.Input.TextInput.md)
 
@@ -185,6 +196,13 @@ Identifies one input device for as long as it is connected: a keyboard, a mouse,
 are chosen by whoever reports the device (a backend's own ids are positive; the engine's polled sources and touch
 screen use negative ones) and are never reused while the game runs.
 
+ [InputControl](MicroEngine.Input.InputControl.md)
+
+One physical control an action can be bound to: a key, a key combination, a gamepad button, one side of a gamepad
+axis, a stick direction, a mouse button, the wheel turning one way or the pointer moving one way. Bindings, rebinding
+by listening, saved bindings and prompts all work on this one value, so a mouse button is rebound and saved exactly
+like a key.
+
  [InputEvent](MicroEngine.Input.InputEvent.md)
 
 One thing that happened on an input device, in the order it happened, with the time it happened on the host's
@@ -198,7 +216,8 @@ A pointer the game can read: the mouse while it is over the window, or a finger 
 
  [PointerState](MicroEngine.Input.PointerState.md)
 
-The mouse (or another pointer) over the game's virtual canvas.
+The mouse (or another pointer) over the game's virtual canvas: where it is, which buttons are held, how far it and
+the wheel moved in this update, and which buttons went down or up in it.
 
  [RoutedEvent](MicroEngine.Input.RoutedEvent.md)
 
@@ -224,6 +243,12 @@ cannot tell which produced an action.
 
 The system clipboard's text: a platform capability (<code>Game.TryGetCapability</code>). Text fields copy, cut and paste
 through it (<code>MicroEngine.UI.TextField</code>); a game may use it for its own "copy the seed" or "paste a code" buttons.
+
+ [ICursorControl](MicroEngine.Input.ICursorControl.md)
+
+The mouse cursor over the game's window: shown or hidden, free or locked. A platform capability
+(<code>Game.TryGetCapability</code>): platforms with no cursor to control (phones, a console) do not offer it, so a game
+asks and goes on without it.
 
  [IGamepadRumble](MicroEngine.Input.IGamepadRumble.md)
 
@@ -287,6 +312,11 @@ The kind of an input device.
 The button names of a gamepad family, for prompts: [PadButton](MicroEngine.Input.PadButton.md) uses Xbox names, which PlayStation pads
 show as shapes and Nintendo pads with A/B and X/Y swapped.
 
+ [InputControlKind](MicroEngine.Input.InputControlKind.md)
+
+What kind of physical control an [InputControl](MicroEngine.Input.InputControl.md) is. The order is the order a map reads an action's
+controls in: the digital ones first (a key before a gamepad button before a mouse button), then the analog ones.
+
  [InputDevice](MicroEngine.Input.InputDevice.md)
 
 The kind of device that last pressed an action (see [LastDevice](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LastDevice)).
@@ -297,9 +327,10 @@ What an [InputEvent](MicroEngine.Input.InputEvent.md) reports.
 
  [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
 
-The direction of the left stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
+The direction of a stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
 <code>Down</code>). The action is down when the stick points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold), and its
-[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction.
+[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction. The wheel and pointer motion name their directions
+with it too ([Direction](MicroEngine.Input.InputControl.md#MicroEngine_Input_InputControl_Direction)).
 
  [Key](MicroEngine.Input.Key.md)
 
@@ -317,13 +348,25 @@ Analog gamepad axes. Sticks are -1..1 (right and down positive), triggers 0..1.
 Gamepad buttons by position, using Xbox names ([A](MicroEngine.Input.PadButton.md) is the bottom face button on every pad); backends map
 their own codes. [GamepadStyle](MicroEngine.Input.GamepadStyle.md) says what the pad prints there.
 
+ [PadStick](MicroEngine.Input.PadStick.md)
+
+The two sticks of a gamepad.
+
  [PointerButton](MicroEngine.Input.PointerButton.md)
 
 Pointer buttons. A finger or pen tip is [Primary](MicroEngine.Input.PointerButton.md).
 
+ [PointerButtons](MicroEngine.Input.PointerButtons.md)
+
+A set of pointer buttons ([Buttons](MicroEngine.Input.PointerState.md#MicroEngine_Input_PointerState_Buttons)).
+
  [PointerKind](MicroEngine.Input.PointerKind.md)
 
 What kind of pointer moved or pressed: the mouse, a finger on a touch screen or a pen.
+
+ [PressKinds](MicroEngine.Input.PressKinds.md)
+
+The presses [ListenForPress](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__MicroEngine_Input_PressKinds_) can take.
 
  [PromptKind](MicroEngine.Input.PromptKind.md)
 

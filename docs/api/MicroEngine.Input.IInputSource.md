@@ -79,6 +79,18 @@ IReadOnlyList<PointerInfo> Pointers { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PointerInfo](MicroEngine.Input.PointerInfo.md)\>
 
+### <a id="MicroEngine_Input_IInputSource_RightStick"></a> RightStick
+
+Right stick, each axis in -1..1. Sources keep the default, which reads the two axes.
+
+```csharp
+Vector2 RightStick { get; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ## Methods
 
 ### <a id="MicroEngine_Input_IInputSource_GetPadAxis_MicroEngine_Input_PadAxis_"></a> GetPadAxis\(PadAxis\)

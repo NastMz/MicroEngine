@@ -18,6 +18,8 @@ public enum InputDevice
 
 `Keyboard = 1` 
 
+`Mouse = 5` 
+
 `None = 0` 
 
 `Other = 4` 
@@ -26,6 +28,7 @@ public enum InputDevice
 
 ## Remarks
 
-<code>Other</code> covers scripted input and custom [IActionSource](MicroEngine.Input.IActionSource.md)s.
+<code>Other</code> covers scripted input and custom [IActionSource](MicroEngine.Input.IActionSource.md)s. <code>Mouse</code> is a mouse button, the wheel
+or pointer motion bound to an action; prompts show the keyboard and the mouse together.
 
 </div>

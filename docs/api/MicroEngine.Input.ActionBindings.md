@@ -35,15 +35,25 @@ public ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadButton> Buttons,
 
 `Keys` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Key](MicroEngine.Input.Key.md)\>
 
+The keys that press the action.
+
 `Buttons` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PadButton](MicroEngine.Input.PadButton.md)\>
+
+The gamepad buttons that press it.
 
 `Stick` [InputMap](MicroEngine.Input.InputMap.md).[StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
 
+The left-stick direction that presses it, or <code>None</code>.
+
 `Axes` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<\([PadAxis](MicroEngine.Input.PadAxis.md) [Axis](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.padaxis,system.boolean\-.axis), [bool](https://learn.microsoft.com/dotnet/api/system.boolean) [Positive](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.padaxis,system.boolean\-.positive)\)\>
+
+The gamepad axis sides that press it.
 
 ## Properties
 
 ### <a id="MicroEngine_Input_ActionBindings_Axes"></a> Axes
+
+The gamepad axis sides that press it.
 
 ```csharp
 public IReadOnlyList<(PadAxis Axis, bool Positive)> Axes { get; init; }
@@ -54,6 +64,8 @@ public IReadOnlyList<(PadAxis Axis, bool Positive)> Axes { get; init; }
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<\([PadAxis](MicroEngine.Input.PadAxis.md) [Axis](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.padaxis,system.boolean\-.axis), [bool](https://learn.microsoft.com/dotnet/api/system.boolean) [Positive](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.padaxis,system.boolean\-.positive)\)\>
 
 ### <a id="MicroEngine_Input_ActionBindings_Buttons"></a> Buttons
+
+The gamepad buttons that press it.
 
 ```csharp
 public IReadOnlyList<PadButton> Buttons { get; init; }
@@ -75,7 +87,23 @@ public IReadOnlyList<KeyChord> Chords { get; init; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[KeyChord](MicroEngine.Input.KeyChord.md)\>
 
+### <a id="MicroEngine_Input_ActionBindings_Controls"></a> Controls
+
+Every control bound to the action, mouse buttons, the wheel, pointer motion and the right stick included, in
+the order the map reads them: by [InputControlKind](MicroEngine.Input.InputControlKind.md), then in the order they were bound. The other
+members are views of this list by kind.
+
+```csharp
+public IReadOnlyList<InputControl> Controls { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[InputControl](MicroEngine.Input.InputControl.md)\>
+
 ### <a id="MicroEngine_Input_ActionBindings_Keys"></a> Keys
+
+The keys that press the action.
 
 ```csharp
 public IReadOnlyList<Key> Keys { get; init; }
@@ -86,6 +114,8 @@ public IReadOnlyList<Key> Keys { get; init; }
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Key](MicroEngine.Input.Key.md)\>
 
 ### <a id="MicroEngine_Input_ActionBindings_Stick"></a> Stick
+
+The left-stick direction that presses it, or <code>None</code>.
 
 ```csharp
 public InputMap.StickDirection Stick { get; init; }

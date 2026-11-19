@@ -26,7 +26,10 @@ A deterministic input script, keyed by update number. Text format, one command p
 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
 450 pad 2 remove
 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
-470 wheel 1               # the wheel turns one notch away from the player
+462 mouse 160,90 down secondary  # another button: primary, secondary, middle, back or forward
+464 click 160,90 secondary       # the mouse moves there and the button goes down, then up 2 updates later
+470 wheel 1               # the wheel turns one notch away from the player (negative: towards them)
+472 wheel 0 1             # a second number turns it sideways: one notch to the right
 480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```
@@ -247,6 +250,26 @@ public string? CaptureAt(long update)
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
+### <a id="MicroEngine_Core_InputScript_Click_System_Int64_System_Numerics_Vector2_MicroEngine_Input_PointerButton_"></a> Click\(long, Vector2, PointerButton\)
+
+The script's mouse moves to <code class="paramref">position</code> (canvas pixels) and clicks <code class="paramref">button</code>: down at update <code class="paramref">at</code>, up 2 updates later.
+
+```csharp
+public InputScript Click(long at, Vector2 position, PointerButton button = PointerButton.Primary)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`button` [PointerButton](MicroEngine.Input.PointerButton.md)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
 ### <a id="MicroEngine_Core_InputScript_Hold_System_Int64_System_String_System_Int64_"></a> Hold\(long, string, long\)
 
 Holds <code class="paramref">action</code> down from update <code class="paramref">at</code> for <code class="paramref">duration</code> updates (at least 1).
@@ -324,6 +347,34 @@ public InputScript Mouse(long at, Vector2 position, bool? down = null)
 #### Returns
 
  [InputScript](MicroEngine.Core.InputScript.md)
+
+### <a id="MicroEngine_Core_InputScript_Mouse_System_Int64_System_Numerics_Vector2_System_Nullable_System_Boolean__MicroEngine_Input_PointerButton_"></a> Mouse\(long, Vector2, bool?, PointerButton\)
+
+The script's mouse moves to <code class="paramref">position</code> (canvas pixels) and, when <code class="paramref">down</code> is set, <code class="paramref">button</code> goes down or up.
+
+```csharp
+public InputScript Mouse(long at, Vector2 position, bool? down, PointerButton button)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)?
+
+`button` [PointerButton](MicroEngine.Input.PointerButton.md)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">button</code> is [None](MicroEngine.Input.PointerButton.md).
 
 ### <a id="MicroEngine_Core_InputScript_Parse_System_String_"></a> Parse\(string\)
 
@@ -448,6 +499,25 @@ public InputScript Touch(long at, int finger, string control, Vector2 offset = d
 `control` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `offset` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
+### <a id="MicroEngine_Core_InputScript_Wheel_System_Int64_System_Numerics_Vector2_"></a> Wheel\(long, Vector2\)
+
+The wheel of the script's mouse turns by <code class="paramref">wheel</code> notches at update <code class="paramref">at</code> (Y
+positive away from the player, X positive to the right), where the mouse was put last.
+
+```csharp
+public InputScript Wheel(long at, Vector2 wheel)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`wheel` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 #### Returns
 
