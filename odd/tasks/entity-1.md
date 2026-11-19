@@ -166,3 +166,28 @@ one's result), and the measurements needed the machine to itself, which rules ou
   two tests; a props file naming `Arch.Extended` under `src/` fails the architecture test. Left as is: `EcsBench help`
   prints the harness's usage and its `suite` also runs the harness's scenarios; the compiled-assembly test loads the
   18 engine assemblies this test project references, not all of them.
+- L9 (2026-11-18) The owner's correction after reading the pull request, verbatim:
+
+  > La PR #170 me parece bien sustentada y podemos integrarla, pero quiero ajustar el alcance de la conclusión del
+  > ADR 0059 antes de cerrar ENTITY-1. Mi preocupación es que la evaluación se centró principalmente en rendimiento,
+  > memoria y viabilidad técnica de integrar un ECS externo. Son dimensiones válidas, pero ECS también aporta un
+  > paradigma de modelado: composición dinámica, organización de sistemas, consultas y reutilización de
+  > comportamientos. No estoy proponiendo incorporar ECS al SDK ni desarrollar uno propio. Quiero que la decisión de
+  > no ofrecer una integración oficial opcional tenga fundamentos arquitectónicos, no solamente métricas de
+  > rendimiento. [...] 2. Revisar el ADR 0059 para dejar explícito qué dimensiones se evaluaron y cuáles quedaron
+  > pendientes. La decisión de diferir ECS sigue siendo válida, pero provisional. 3. Añadir entre las condiciones
+  > para reconsiderar la decisión la complejidad de modelado, composición, coordinación de sistemas y ergonomía de
+  > integración, no únicamente rendimiento o problemas técnicos. 4. Identificar la issue existente de la futura demo
+  > compleja (mini Hollow Knight) y añadir allí un criterio de evaluación: comprobar si el modelo actual y la guía de
+  > integración externa son suficientes para implementar mecánicas complejas sin duplicación ni complejidad
+  > excesiva. 5. Si durante esa demo aparecen limitaciones reales, comparar el modelo actual con una integración
+  > externa siguiendo la guía y, si se justifica, con un adaptador oficial experimental. No quiero crear otra issue
+  > de ECS por ahora ni implementar funcionalidades adicionales sin evidencia. [...] En resumen: aceptamos la
+  > decisión actual, pero no damos por demostrada la ausencia de valor arquitectónico de un ECS opcional.
+
+  Done: ADR 0059 is Accepted and provisional, with a "Scope of the evaluation" section (what was evaluated, the five
+  modelling dimensions that were not), reopening conditions 5 (modelling) and 6 (ergonomics of the external
+  integration) and where they are looked for; the evaluation says the same in its summary and in section 11; the
+  decision index and AGENTS name it provisional. The check is a criterion of the substantial demo game
+  (NastMz/MicroEngine#114, DEMO-5; the issue names no genre yet). No new issue, no code. S7 is unchanged: the
+  decision is still to defer.

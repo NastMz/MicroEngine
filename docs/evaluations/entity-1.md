@@ -13,7 +13,8 @@ objects: under about 75,000 the choice of store moves a frame by less than a mil
 store does the same work in a quarter of the time and memory, and two maintained libraries (Arch, Friflo.Engine.ECS)
 and a first-party prototype all reach the same speed. A scene already has every hook a store needs. Decision:
 **defer** a first-party module; a game adopts a library beside the scene world, which is documented, sampled and
-tested; the engine may not reference one (ADR 0059). The libraries differ where the figures do not show it: in what
+tested; the engine may not reference one (ADR 0059). The decision is provisional: what was evaluated is speed,
+memory and the integration of a store, not what an ECS gives as a way to model a game (section 11). The libraries differ where the figures do not show it: in what
 they need to publish trimmed or with NativeAOT (section 6).
 
 ## 1. Conditions
@@ -489,6 +490,12 @@ Nothing under `src/` changed: no public API was added, changed or removed.
 
 ## 11. Not run, and limitations
 
+- **Modelling was not evaluated.** Every workload is a swarm: one behaviour over very many alike objects. Nothing
+  here compares the two models for a game with many kinds of object and interacting mechanics: composition of an
+  object at run time, the organization and ordering of systems, queries as a way to select what a behaviour works
+  on, reuse of behaviour across kinds of object, or how the external integration reads when rows and entities are
+  linked in many places. The decision is provisional for that reason; the check is a criterion of the substantial
+  demo game (NastMz/MicroEngine#114), and ADR 0059 lists what it would take to reopen it.
 - **No browser run**: neither library was built or run for WebAssembly here; their fit there is their own
   statement, and a trimmed desktop publish of the sample is the nearest thing measured.
 - **No phone, no ARM, no second machine.** One x64 desktop processor with a large cache; the point where locality

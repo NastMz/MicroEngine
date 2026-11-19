@@ -34,7 +34,8 @@ sufficient without previous chats or agent memory.
   [`odd/tasks/world-1.md`](odd/tasks/world-1.md) (large worlds and nearby objects: `SpatialIndex2D`, the tile broad
   phase on it, a world whose release and step copy follow the work, ADR 0058) and
   [`odd/tasks/entity-1.md`](odd/tasks/entity-1.md) (Entity Component Systems: no first-party module; a game runs a
-  third-party one beside the scene's world, the `EcsSwarm` sample, the comparison `benchmarks/EcsBench`, ADR 0059).
+  third-party one beside the scene's world, the `EcsSwarm` sample, the comparison `benchmarks/EcsBench`, ADR 0059, provisional until a game with complex mechanics
+  tests the modelling side).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos

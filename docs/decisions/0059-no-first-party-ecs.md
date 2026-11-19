@@ -1,7 +1,9 @@
 # 0059 — No first-party Entity Component System for now; a game runs one beside the scene world
 
-Status: Accepted (2026-11-18). The SDK is in Alpha. Evidence: [ENTITY-1](../evaluations/entity-1.md). Task record:
-[`odd/tasks/entity-1.md`](../../odd/tasks/entity-1.md). Issue NastMz/MicroEngine#151.
+Status: Accepted (2026-11-18), provisional: it rests on the dimensions listed under "Scope of the evaluation" and is
+looked at again with the evidence of the substantial demo game (NastMz/MicroEngine#114). The SDK is in Alpha.
+Evidence: [ENTITY-1](../evaluations/entity-1.md). Task record: [`odd/tasks/entity-1.md`](../../odd/tasks/entity-1.md).
+Issue NastMz/MicroEngine#151.
 
 ## Context
 
@@ -57,6 +59,36 @@ What the figures say:
 Both libraries are maintained and permissively licensed (Arch: Apache-2.0, six dependencies; Friflo.Engine.ECS: MIT,
 managed code only, one dependency).
 
+## Scope of the evaluation
+
+An Entity Component System is two things: a way to store many alike objects, and a way to model a game (objects
+composed from components that come and go, behaviour organized as systems, queries that select what a system works
+on, behaviours reused across kinds of object). ENTITY-1 evaluated the first and not the second.
+
+Evaluated, with measurements or runs:
+
+- CPU work per frame, limits within a 60 Hz update, memory and garbage, on four workloads of alike objects.
+- Whether a third-party store can run beside the scene world with the hooks a scene has, and what that costs to
+  write (the sample, about 300 lines) and to keep correct (its tests).
+- Publishing: trimmed and NativeAOT builds of both libraries.
+- Whether a store of the engine's own would be faster (the prototype).
+
+Not evaluated:
+
+- **Modelling.** Whether a game with many kinds of object and interacting mechanics is clearer, shorter or less
+  repetitive as components and systems than as entities with attachments of the game's classes.
+- **Composition at run time.** Adding and removing capabilities of a live object (a status effect, a carried item, a
+  changed control scheme) in each model.
+- **Coordination of systems.** Ordering, dependencies between behaviours and the events between them, which the
+  scene world leaves to the scene's `Update` and to each attachment.
+- **Reuse of behaviour** across kinds of object, and what duplication the attachment model leads to in a large game.
+- **Ergonomics of the external integration** in a game where rows and entities are both many and linked in many
+  places, rather than in a sample with one link.
+
+The workloads are swarms: one kind of behaviour over very many objects. None of them is a game with complex
+mechanics, so they say nothing about these five. The decision below is therefore a decision to defer on the evidence
+there is. It does not show that an optional official integration would have no architectural value.
+
 ## Decision
 
 **Defer.** MicroEngine does not implement an Entity Component System and does not adopt one as a dependency or as an
@@ -92,9 +124,23 @@ demo.
    with NativeAOT and in browsers.
 4. The integration proves error-prone in practice: games outside the repository that get the link between a row and
    an entity, the interpolation or the state hash wrong in ways a first-party module would prevent.
+5. Modelling asks for it: a game with complex mechanics written on the scene world shows recurring problems that
+   components and systems would remove. The signs are the same behaviour written again for several kinds of object,
+   capabilities of a live object that are awkward to add and remove, an order of updates or a set of dependencies
+   between behaviours that the scene keeps by hand and gets wrong, or questions about combinations of capabilities
+   answered by walking everything.
+6. The external integration is not ergonomic in such a game: following the guide takes glue that grows with the
+   number of links between rows and entities, or that each game writes again in the same way.
 
-If it is reopened, the module is an optional package that references the engine and that nothing in the engine
-references, like `MicroEngine.Navigation`.
+**Where conditions 5 and 6 are looked for.** The substantial demo game (NastMz/MicroEngine#114) carries the check as
+one of its evaluation criteria: whether the scene world and the guide for an external store are enough to build its
+mechanics without duplication or excessive complexity. If real limits appear there, the same mechanics are compared
+on the scene world and on an external library integrated as the guide says and, if that comparison justifies it, on
+an experimental official adapter. If the scene world and the guide prove enough, that is evidence for this decision,
+and it is recorded here. No separate issue tracks this, and nothing is implemented ahead of that evidence.
+
+If it is reopened, what is added is optional: a package, or first an experimental adapter over a library, that
+references the engine and that nothing in the engine references, like `MicroEngine.Navigation`.
 
 ## Alternatives considered
 
@@ -125,3 +171,5 @@ references, like `MicroEngine.Navigation`.
   the SDK and the demos ship) does not list them.
 - The sample depends on Arch 2.1.0 keeping its API; a new major version is a change to the sample.
 - What the measurements do not cover is listed in the evaluation, first of all a browser.
+- The question of modelling stays open until a game with complex mechanics answers it; this record is revised with
+  what the substantial demo game finds, whichever way it points.
