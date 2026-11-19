@@ -175,7 +175,7 @@ assembles a platform ([Backends](../manual/backends.md#choosing-a-platform)).
 
 ### Device interfaces
 
-[`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Legacy/IGraphics.cs):
+[`src/MicroEngine.Graphics2D/Drawing/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Drawing/IGraphics.cs):
 
 ```csharp
 public interface IRenderer
