@@ -23,5 +23,7 @@
     <!-- The physics level PhysicsBench times, shared so both measure the same world. -->
     <Compile Include="../Shared/PhysicsLevel.cs" Link="Shared/PhysicsLevel.cs" />
     <InternalsVisibleTo Include="Benchmarks.Tests" />
+    <!-- The entity workloads of ENTITY-1 are scenarios of this harness in a program of their own. -->
+    <InternalsVisibleTo Include="EcsBench" />
   </ItemGroup>
 </Project>
