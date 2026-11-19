@@ -186,7 +186,7 @@ work independently and a thumb that slides a little stays on its control.
 
  [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
-How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"A"</code> on an Xbox pad,
+How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"LMB"</code> for a mouse button, <code>"A"</code> on an Xbox pad,
 <code>"×"</code> on a PlayStation pad, the button's own label on a touch screen. [Text](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Text) is what to print;
 [Kind](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Kind) and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
 
@@ -370,7 +370,7 @@ The presses [ListenForPress](MicroEngine.Input.InputSystem.md#MicroEngine_Input_
 
  [PromptKind](MicroEngine.Input.PromptKind.md)
 
-What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a gamepad control, an on-screen control, or a plain label.
+What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a mouse control, a gamepad control, an on-screen control, or a plain label.
 
  [StickDirections](MicroEngine.Input.StickDirections.md)
 

@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Input](MicroEngine.Input.md)
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
 
-How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"A"</code> on an Xbox pad,
+How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"LMB"</code> for a mouse button, <code>"A"</code> on an Xbox pad,
 <code>"×"</code> on a PlayStation pad, the button's own label on a touch screen. [Text](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Text) is what to print;
 [Kind](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Kind) and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
 
@@ -22,7 +22,7 @@ public readonly struct ActionPrompt : IEquatable<ActionPrompt>
 
 ### <a id="MicroEngine_Input_ActionPrompt__ctor_System_String_MicroEngine_Input_InputDevice_MicroEngine_Input_PromptKind_System_String_"></a> ActionPrompt\(string, InputDevice, PromptKind, string\)
 
-How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"A"</code> on an Xbox pad,
+How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"LMB"</code> for a mouse button, <code>"A"</code> on an Xbox pad,
 <code>"×"</code> on a PlayStation pad, the button's own label on a touch screen. [Text](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Text) is what to print;
 [Kind](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Kind) and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
 
@@ -133,6 +133,18 @@ public GamepadStyle PadStyle { get; init; }
 #### Property Value
 
  [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+
+### <a id="MicroEngine_Input_ActionPrompt_Pointer"></a> Pointer
+
+The mouse control, for [Pointer](MicroEngine.Input.PromptKind.md).
+
+```csharp
+public InputControl Pointer { get; init; }
+```
+
+#### Property Value
+
+ [InputControl](MicroEngine.Input.InputControl.md)
 
 ### <a id="MicroEngine_Input_ActionPrompt_Text"></a> Text
 
