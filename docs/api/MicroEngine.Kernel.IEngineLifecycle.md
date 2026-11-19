@@ -62,6 +62,30 @@ event Action? Resumed
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action)?
 
+### <a id="MicroEngine_Kernel_IEngineLifecycle_Started"></a> Started
+
+The game started: every service exists and the game loaded; raised once, before the first frame.
+
+```csharp
+event Action? Started
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
+### <a id="MicroEngine_Kernel_IEngineLifecycle_Stopping"></a> Stopping
+
+The game is shutting down, after every scene left; raised once, while every service still exists. Release what a module owns here.
+
+```csharp
+event Action? Stopping
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
 ### <a id="MicroEngine_Kernel_IEngineLifecycle_Suspending"></a> Suspending
 
 The system is taking the game away (a phone app sent to the background); nothing runs until [Resumed](MicroEngine.Kernel.IEngineLifecycle.md#MicroEngine_Kernel_IEngineLifecycle_Resumed).

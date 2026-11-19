@@ -35,6 +35,10 @@ public interface IEngineLifecycle
     event Action? Resumed;
     /// <summary>Something outside the game asked it to quit; a handler may <see cref="QuitRequest.Veto"/> it.</summary>
     event Action<QuitRequest>? QuitRequested;
+    /// <summary>The game started: every service exists and the game loaded; raised once, before the first frame.</summary>
+    event Action? Started;
+    /// <summary>The game is shutting down, after every scene left; raised once, while every service still exists. Release what a module owns here.</summary>
+    event Action? Stopping;
 }
 
 /// <summary>
@@ -53,6 +57,10 @@ public sealed class EngineLifecycle : IEngineLifecycle
     public event Action? Resumed;
     /// <inheritdoc/>
     public event Action<QuitRequest>? QuitRequested;
+    /// <inheritdoc/>
+    public event Action? Started;
+    /// <inheritdoc/>
+    public event Action? Stopping;
 
     /// <summary>Raises <see cref="Resized"/>.</summary>
     public void RaiseResized(SurfaceResized size) => Resized?.Invoke(size);
@@ -62,6 +70,10 @@ public sealed class EngineLifecycle : IEngineLifecycle
     public void RaiseSuspending() => Suspending?.Invoke();
     /// <summary>Raises <see cref="Resumed"/>.</summary>
     public void RaiseResumed() => Resumed?.Invoke();
+    /// <summary>Raises <see cref="Started"/>.</summary>
+    public void RaiseStarted() => Started?.Invoke();
+    /// <summary>Raises <see cref="Stopping"/>.</summary>
+    public void RaiseStopping() => Stopping?.Invoke();
 
     /// <summary>Raises <see cref="QuitRequested"/>; every handler runs even after a veto.</summary>
     /// <returns>True when the game should quit (no handler vetoed).</returns>

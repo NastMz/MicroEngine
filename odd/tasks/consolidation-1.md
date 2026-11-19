@@ -67,7 +67,7 @@ Route is inline unless a line says otherwise. Status: `[ ]` pending, `[~]` in pr
 | ID | Initiative | Specs | Issue | Depends on | Status |
 | --- | --- | --- | --- | --- | --- |
 | T1 | Cross-cutting audit and diagnosis | S3 | — | — | [x] `docs/evaluations/consolidation-1.md` |
-| T2 | MODULE-1: scene systems and module lifecycle | S3, S7 | #173 | — | [ ] |
+| T2 | MODULE-1: scene systems and module lifecycle | S3, S7 | #173 | — | [~] PR pending; ADR 0060; `tests/MicroEngine.Tests/SceneSystemTests.cs` 16/16 |
 | T3 | RENDER-1: one texture type, state and material on the draw path, graphics resources as assets | S3, S4, S7 | #174 | — | [ ] |
 | T4 | FSM-1: state machines | S4, S5 | #171 | T2 | [ ] |
 | T5 | INPUT-2: pointer in actions and rebinding | S4 | #175 | — | [ ] |
@@ -75,11 +75,11 @@ Route is inline unless a line says otherwise. Status: `[ ]` pending, `[~]` in pr
 | T7 | AUDIO-2: submix, effects, ramps, position, decoders, listener | S4 | #177 | — | [ ] |
 | T8 | CONTENT-1: content production | S4, S5 | #113 | T3 | [ ] |
 | T9 | ENTITY-1: optional ECS module | S4, S5 | #151 | T2, T4 | [ ] |
-| T10 | PHYS-2: dynamics, joints, queries, character controller | S4 | #173 | T2 | [ ] |
+| T10 | PHYS-2: dynamics, joints, queries, character controller | S4 | #173 | T2 | [~] PR pending; ADR 0060; `tests/MicroEngine.Tests/SceneSystemTests.cs` 16/16 |
 | T11 | NAV-2: following, steering, clearance, reachability | S4 | #179 | — | [ ] |
 | T12 | LOC-1: localization | S4 | #180 | T8 | [ ] |
 | T13 | GRAPHICS-3: post-processing, present stage, mipmaps | S4 | #174 | T3 | [ ] |
-| T14 | DEMO-MODERN-1: demos and samples on the current SDK | S8 | #173 | T2 to T13 | [ ] |
+| T14 | DEMO-MODERN-1: demos and samples on the current SDK | S8 | #173 | T2 to T13 | [~] PR pending; ADR 0060; `tests/MicroEngine.Tests/SceneSystemTests.cs` 16/16 |
 | T15 | Closure: ADRs, limitations page, done-when review | S10 | — | all | [ ] |
 
 ## Log
@@ -95,3 +95,4 @@ Route is inline unless a line says otherwise. Status: `[ ]` pending, `[~]` in pr
   and physics; the demos do not use the engine's contracts. Order: MODULE-1 and RENDER-1 first.
 - L4 (2026-11-19): decided against a blanket interface over every façade service (audit 2.6): the seams that matter
   exist below the façades; each capability adds the seam it needs.
+- L5 (2026-11-19): T2 MODULE-1 implemented inline on `feat/module-1`: `SceneSystem`, `Scene.Systems`, `Scene.Timers`, `SceneManager.AddSystem`, `Entered` and `Exited`, `Lifecycle.Started` and `Stopping`, `EngineBuilder.StateSections` (achievements moved onto it, same section name and content). The built-in coroutines, tweens, world and widgets were left as fixed members: making them list entries changes nothing a developer can do and puts the step order behind a mutable list (ADR 0060). Checks: `dotnet test MicroEngine.slnx -c Release` 15 projects, 0 failed except `TheTourOpensEveryExampleOfTheList`, which read the example list while I was editing it during the run; `tests/Samples.Tests` rerun alone 76/76. Not run: the site build, a browser build. Physics per scene through this mechanism is left to T10.

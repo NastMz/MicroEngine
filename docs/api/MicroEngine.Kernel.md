@@ -84,6 +84,13 @@ Accumulates a 64-bit hash (FNV-1a) of simulation state in named sections. Values
 values in the same order give the same hash on every machine and run. Nothing is read by reflection: the engine and
 the game add what they choose ([IStateHashed](MicroEngine.Kernel.IStateHashed.md)).
 
+ [StateSections](MicroEngine.Kernel.StateSections.md)
+
+The parts of the per-step state hash that modules own: each is a named section hashed after the engine's own
+sections and before the scenes, in the order they were added. A module that holds simulation state outside scenes
+(progress, a shared world) adds one from its <code>Configure</code>, so a deterministic run covers it without the game
+hashing it by hand.
+
  [StateTrace](MicroEngine.Kernel.StateTrace.md)
 
 A run's per-step state hashes: the loop records one [StepHash](MicroEngine.Kernel.StepHash.md) after every fixed step when a run is given

@@ -11,6 +11,14 @@ optional, for agents that find their way through a level.
 
 **Added**
 
+- Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
+  added to the scene's state hash and stopped when the scene leaves, with no call from the scene
+  ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and
+  `Scenes.Entered` and `Exited` report scenes going onto and off the stack.
+- `Scene.Timers`: `After` and `Every` call an action after a time or at intervals on the scene's time, with
+  `Cancel`, an unscaled option and their state in the state hash ([Timers](../manual/scenes.md#timers)).
+- For modules: `Lifecycle.Started` and `Stopping`, and `EngineBuilder.StateSections`, which adds a named section of
+  a module's state to the state hash.
 - `MicroEngine.Tiled` loads `.tmx` and `.tmj` maps with their tilesets and templates through the game's assets
   (`Assets.TiledMap(path)`): tile layers with each cell's flips, tilesets as sprites (`TiledSprites`), objects and
   typed custom properties as data, a collision grid from a tile property the game names, and tile objects and parallax

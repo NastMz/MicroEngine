@@ -8,7 +8,7 @@ Guide: [Scenes](../manual/scenes.md)
 
 A screen of the game (title, level, battle, pause menu...). Scenes live on a stack:
 an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
-Each scene owns its coroutines and tweens, which stop when it leaves the stack.
+Each scene owns its coroutines, tweens and systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), which stop when it leaves the stack.
 
 ```csharp
 public abstract class Scene : IStateHashed
@@ -211,6 +211,46 @@ depend on the display; the first read from [Draw](MicroEngine.Scenes.Scene.md#Mi
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 Read for the first time while the game draws.
+
+### <a id="MicroEngine_Scenes_Scene_OnStack"></a> OnStack
+
+Whether the scene is on the stack: from just before [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) until its systems stopped after [Exit](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Exit).
+
+```csharp
+public bool OnStack { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Scenes_Scene_Systems"></a> Systems
+
+The scene's systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), created the first time it is read: parts of the scene that the
+engine starts, steps, hashes and stops with it. They run after the scene's coroutines, tweens and widgets and
+before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), then once more after it ([LateUpdate](MicroEngine.Scenes.SceneSystem.md#MicroEngine_Scenes_SceneSystem_LateUpdate_System_Single_)), and stop after
+[Exit](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Exit). A scene that never reads it has none and pays nothing.
+
+```csharp
+public SceneSystems Systems { get; }
+```
+
+#### Property Value
+
+ [SceneSystems](MicroEngine.Scenes.SceneSystems.md)
+
+### <a id="MicroEngine_Scenes_Scene_Timers"></a> Timers
+
+The scene's timers ([SceneTimers](MicroEngine.Scenes.SceneTimers.md)), a system added the first time it is read: actions called after a
+time or at intervals on the scene's time. Read it first outside drawing, like [Objects](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Objects).
+
+```csharp
+public SceneTimers Timers { get; }
+```
+
+#### Property Value
+
+ [SceneTimers](MicroEngine.Scenes.SceneTimers.md)
 
 ### <a id="MicroEngine_Scenes_Scene_TouchActions"></a> TouchActions
 

@@ -323,6 +323,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Scenes = services.Get<SceneManager>();
         Load();
         Scenes.ApplyPending();
+        engine.Lifecycle.RaiseStarted();
     }
 
     /// <summary>
@@ -604,6 +605,7 @@ public abstract class Game : IEngineModule, IStateHashed
     internal void Shutdown()
     {
         Scenes.Clear();
+        _engine?.Lifecycle.RaiseStopping();
         _achievements?.Flush();
         Unload();
         Assets.Dispose();
@@ -625,8 +627,9 @@ public abstract class Game : IEngineModule, IStateHashed
     /// Hashes the simulation state now (<see cref="StateHasher"/>), in sections: <c>engine.time</c> (update count and
     /// time), <c>engine.random</c> (<see cref="Random"/>), <c>engine.input</c> (<see cref="Input"/> after sampling, then the other players and the pairings when there are any),
     /// <c>engine.audio</c> (the music playing or paused and the volumes), <c>engine.assets</c> (how many assets are
-    /// loaded), <c>engine.achievements</c> (when on), <c>engine.scenes</c> (the stack and the transition), one
-    /// <c>scene[i]:Type</c> per scene from the bottom (its age, coroutines and tweens, then <see cref="Scene.HashState"/>)
+    /// loaded), the sections modules added (<see cref="Kernel.StateSections"/>: <c>engine.achievements</c> when on, then
+    /// any other), <c>engine.scenes</c> (the stack and the transition), one
+    /// <c>scene[i]:Type</c> per scene from the bottom (its age, coroutines, tweens, objects, widgets and systems, then <see cref="Scene.HashState"/>)
     /// and <c>game</c> (<see cref="HashState"/>). The loop records it after every fixed step of a run given a
     /// <see cref="RunOptions.StateTrace"/>; drawing never changes it.
     /// </summary>
@@ -655,16 +658,8 @@ public abstract class Game : IEngineModule, IStateHashed
         hash.Add(Audio.SfxVolume);
         hash.Section("engine.assets");
         hash.Add(Assets.Count);
-        if (_achievements is { } achievements)
-        {
-            hash.Section("engine.achievements");
-            foreach (var status in achievements.All)
-            {
-                hash.Add(status.Id);
-                hash.Add(status.Progress);
-                hash.Add(status.Unlocked);
-            }
-        }
+        // What modules own: achievements when on, then the sections other modules added, in the order they were added.
+        Engine.StateSections.HashAll(hash);
         Scenes.HashState(hash);
         hash.Section("game");
         HashState(hash);

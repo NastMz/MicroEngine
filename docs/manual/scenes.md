@@ -196,6 +196,74 @@ Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene
 goes through more than two keys, several values moving together, or named moments along the way are a `Track<T>` and
 a `Timeline`: [Animation](../guide/animation.md).
 
+## Timers
+
+`Timers.After(seconds, action)` calls an action once and `Timers.Every(seconds, action, times)` calls it at
+intervals, until its count ends or `Timers.Cancel(handle)` stops it. Timers run before the scene's `Update` on the
+step it receives, so a hitstop or slow motion on the world's clock holds them too; pass `unscaled: true` for one that
+must keep running (a pause menu's blink). They end with the scene and are part of its state hash. Use a timer for a
+single delayed or repeated call and a coroutine for a sequence of steps.
+
+## Scene systems
+
+A scene system is a part of a scene that the engine runs for it. Derive from `SceneSystem`, add it with
+`Systems.Add`, and the engine starts it, steps it before the scene's `Update` (and once more after it, in
+`LateUpdate`), adds its `HashState` to the scene's state hash and stops it when the scene leaves the stack. The scene
+writes none of those calls. `Timers` is one; a component store, a physics world or a set of state machines are others.
+
+<!-- code: samples/Examples/Examples/SystemsExample.cs#system -->
+```csharp
+/// <summary>The time of day, shared by whatever in the scene wants to read it.</summary>
+public sealed class DayCycle : SceneSystem
+{
+    /// <summary>0 at dawn, 0.5 at dusk, back to 0 after a full day.</summary>
+    public float Time { get; private set; }
+    public float DayLength { get; init; } = 8f;
+    public bool IsNight => Time >= 0.5f;
+
+    // Called by the engine before the scene's Update, with the same step.
+    protected override void Update(float dt) => Time = (Time + dt / DayLength) % 1f;
+
+    // The engine adds it to the scene's state hash: a deterministic run covers the system with no code in the scene.
+    public override void HashState(StateHasher hash) => hash.Add(Time);
+}
+```
+
+<!-- code: samples/Examples/Examples/SystemsExample.cs#use -->
+```csharp
+public override void Enter()
+{
+    _day = Systems.Add(new DayCycle());          // started now, stepped every update, stopped when the scene leaves
+    Timers.Every(0.5f, () =>                     // the scene's time: it slows and freezes with the world's clock
+    {
+        if (_day.IsNight) _stars.Add(new Vector2(Game.Random.Next(20, 300), Game.Random.Next(30, 110)));
+        else _stars.Clear();
+    });
+}
+
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) Game.Scenes.Pop();
+}
+```
+
+| Hook | Called |
+| --- | --- |
+| `Start()` | once, when the scene is on the stack: before `Enter` for a system added earlier, at once for one added later |
+| `Update(dt)` | every step the scene is updated, after its coroutines, tweens and widgets and before `Scene.Update`, with the same step |
+| `LateUpdate(dt)` | after `Scene.Update` in the same step, before the world releases what was destroyed |
+| `BeginDraw(blend)` | once per drawn frame before `Scene.Draw`; it must not change simulation state |
+| `HashState(hash)` | when the state hash is computed, after the scene's world and widgets and before `Scene.HashState` |
+| `Stop()` | once, after `Exit`, or when the system is removed |
+
+A scene has one system per type: `Systems.Get<T>()` finds it. Systems run by `Order` (lower first), then in the order
+they were added, and stop in reverse. A scene under a blocking overlay is not updated and neither are its systems.
+
+`Game.Scenes.AddSystem(scene => ...)` gives a system to every scene that is pushed (return null for a scene that gets
+none), and `Game.Scenes.Entered` and `Exited` report scenes going onto and off the stack. A module uses them from its
+`Configure` so that it lives in the game's scenes with no code in them
+([Modules and the frame schedule](lifecycle.md#modules-and-the-frame-schedule)).
+
 ## The scene world
 
 Every scene can hold its objects in a world,

@@ -467,8 +467,9 @@ public int Width { get; }
 Hashes the simulation state now ([StateHasher](MicroEngine.Kernel.StateHasher.md)), in sections: <code>engine.time</code> (update count and
 time), <code>engine.random</code> ([Random](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Random)), <code>engine.input</code> ([Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) after sampling, then the other players and the pairings when there are any),
 <code>engine.audio</code> (the music playing or paused and the volumes), <code>engine.assets</code> (how many assets are
-loaded), <code>engine.achievements</code> (when on), <code>engine.scenes</code> (the stack and the transition), one
-<code>scene[i]:Type</code> per scene from the bottom (its age, coroutines and tweens, then [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_))
+loaded), the sections modules added ([StateSections](MicroEngine.Kernel.StateSections.md): <code>engine.achievements</code> when on, then
+any other), <code>engine.scenes</code> (the stack and the transition), one
+<code>scene[i]:Type</code> per scene from the bottom (its age, coroutines, tweens, objects, widgets and systems, then [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_))
 and <code>game</code> ([HashState](MicroEngine.Core.Game.md#MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_)). The loop records it after every fixed step of a run given a
 [StateTrace](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_StateTrace); drawing never changes it.
 

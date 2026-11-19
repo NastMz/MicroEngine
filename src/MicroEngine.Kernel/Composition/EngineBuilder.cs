@@ -39,6 +39,8 @@ public sealed class EngineBuilder
     public CapabilityRegistry Capabilities { get; } = new();
     /// <summary>The engine's events; modules may subscribe while they are configured.</summary>
     public EngineLifecycle Lifecycle { get; } = new();
+    /// <summary>The sections modules add to the per-step state hash (<see cref="Kernel.StateSections"/>).</summary>
+    public StateSections StateSections { get; } = new();
 
     /// <summary>Adds <paramref name="module"/> and runs its <see cref="IEngineModule.Configure"/> now.</summary>
     /// <returns>This builder, to chain calls.</returns>
@@ -99,7 +101,7 @@ public sealed class EngineBuilder
         if (!Services.Contains<IEngineLifecycle>()) Services.Add<IEngineLifecycle>(Lifecycle);
         Services.Replace(clock);
         _built = true;
-        var engine = new Engine(Services, Schedule, Capabilities, Lifecycle, clock);
+        var engine = new Engine(Services, Schedule, Capabilities, Lifecycle, clock) { StateSections = StateSections };
         Services.Replace(engine);
         return engine;
     }
@@ -134,6 +136,8 @@ public sealed class Engine
     public CapabilityRegistry Capabilities { get; }
     /// <summary>The engine's events; the loop and hosts raise them.</summary>
     public EngineLifecycle Lifecycle { get; }
+    /// <summary>The sections modules added to the per-step state hash.</summary>
+    public StateSections StateSections { get; internal init; } = new();
     /// <summary>The loop's clock, following the engine's <see cref="TimeSettings"/>.</summary>
     public FrameClock Clock { get; }
     /// <summary>The engine's log (<see cref="ILog"/> service).</summary>
