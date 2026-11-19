@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- CONTENT-1 (docs/evaluations/content-1.md): what loading image files directly costs on HD content (time, disk,
+       garbage, texture memory) and what the candidates of an offline step would change. It draws its own content, so
+       it ships and reads no art, and holds the two prototypes of a leaner direct loader that ADR 0060 defers. Run it
+       in Release (Program.cs lists the commands; docs/evaluations/content-1/campaign.sh runs the campaign). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ContentBench</RootNamespace>
+    <Version>1.0.0</Version>
+    <ApplicationTitle>MicroEngine ContentBench</ApplicationTitle>
+    <ApplicationId>dev.microengine.contentbench</ApplicationId>
+    <MicroEngineSplash>false</MicroEngineSplash>
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Description>Direct image loading on HD content against the candidates of an offline step.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+  </ItemGroup>
+  <!-- The block encoder measured, the one `microengine textures` uses (no engine assembly, sample or game references
+       it). Pinned, so the figures of the evaluation stay those of this version. BCnEncoder.Net: MIT or Unlicense,
+       managed code. -->
+  <ItemGroup>
+    <PackageReference Include="BCnEncoder.Net" Version="[2.3.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Benchmarks.Tests" />
+  </ItemGroup>
+</Project>

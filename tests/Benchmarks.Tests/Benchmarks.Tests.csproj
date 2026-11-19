@@ -14,5 +14,7 @@
     <ProjectReference Include="../../benchmarks/StressBench/StressBench.csproj" />
     <!-- The entity workloads of ENTITY-1: every store must end a workload in the same state. -->
     <ProjectReference Include="../../benchmarks/EcsBench/EcsBench.csproj" />
+    <!-- The content benchmark of CONTENT-1: the content it draws, its PNG files, its prototype decoder, its mipmaps. -->
+    <ProjectReference Include="../../benchmarks/ContentBench/ContentBench.csproj" />
   </ItemGroup>
 </Project>
