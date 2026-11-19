@@ -44,6 +44,40 @@ public sealed class ActionPromptTests
     }
 
     [TestMethod]
+    public void MouseControlsAreNamedWithTheKeyboardsAndTheRightStickWithTheGamepads()
+    {
+        var rig = new Rig();
+        rig.Map.Bind("order", PointerButton.Secondary)
+            .Bind("zoom", Key.Equals, InputControl.WheelUp)
+            .Bind("look", InputControl.PointerRight, InputControl.Of(PadStick.Right, InputMap.StickDirection.Right))
+            .Bind("back", PointerButton.Back);
+        Assert.AreEqual("RMB", rig.Prompts.Text("order"));
+        Assert.AreEqual(PromptKind.Pointer, rig.Prompts.Get("order").Kind);
+        Assert.AreEqual(InputControl.Of(PointerButton.Secondary), rig.Prompts.Get("order").Pointer);
+        Assert.AreEqual("= / Wheel ↑", rig.Prompts.TextAll("zoom"), "keys first, then the mouse");
+        Assert.AreEqual("Mouse →", rig.Prompts.Text("look"));
+        Assert.AreEqual("Mouse 4", rig.Prompts.Text("back"));
+        Assert.AreEqual("Press RMB to order", rig.Prompts.Format("Press {order} to order"));
+        Assert.AreEqual("R→", rig.Prompts.Text("look", InputDevice.Gamepad));
+        Assert.AreEqual("RMB", rig.Prompts.Text("order", InputDevice.Gamepad), "a pad has no control for it: the desktop's is better than nothing");
+        Assert.AreEqual("RMB", rig.Prompts.Text("order", InputDevice.Mouse), "asking for the mouse is asking for the desktop's prompts");
+
+        int version = rig.Prompts.Version;
+        rig.Devices.Pointer = new PointerState(true, new Vector2(10, 10), false, true, false);
+        rig.Step();
+        Assert.AreEqual(InputDevice.Mouse, rig.Map.LastDevice);
+        Assert.AreEqual(InputDevice.Keyboard, rig.Prompts.Device, "the keyboard and the mouse are one device for prompts");
+        Assert.AreEqual("Z", rig.Prompts.Text("attack"));
+        Assert.AreEqual(version, rig.Prompts.Version, "moving from the keys to the mouse changes no prompt");
+        rig.Devices.Pointer = default;
+        rig.Step();
+        rig.PressPad(PadButton.A);
+        Assert.AreEqual(InputDevice.Gamepad, rig.Prompts.Device);
+        rig.Prompts.Override = InputDevice.Mouse;
+        Assert.AreEqual(InputDevice.Keyboard, rig.Prompts.Device);
+    }
+
+    [TestMethod]
     public void TheKeyboardIsTheDefaultOnADesktop()
     {
         var rig = new Rig();

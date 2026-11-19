@@ -30,7 +30,8 @@ optional, for agents that find their way through a level.
   on-screen controls, paired with players, rebound by listening (`ListenForPress(pressed, PressKinds.All)`,
   `InputControl.FromPress`) and saved like keys. `InputMap.Motion` reads four actions as an amount with no limit,
   `PointerSensitivity` scales pointer motion, `Unbind(action, control)` and `ActionsBoundTo(control)` serve a controls
-  screen, and `PointerNames` names the mouse's controls. `InputDevice.Mouse` is what `LastDevice` reports for them.
+  screen, and `PointerNames` names the mouse's controls. `InputDevice.Mouse` is what `LastDevice` reports for them. `Game.Prompts` lists an action's mouse controls
+  after its keys (`PromptKind.Pointer`).
 - `Input.Pointer` reports every button with its edges (`Pressed(button)`, `Released(button)`, `Down(button)`), the
   back and forward buttons, how far the pointer moved in the update (`Delta`) and what kind of pointer it is
   (`Kind`).

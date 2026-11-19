@@ -441,7 +441,9 @@ Source: [`games/CourtyardKey/Entities/Hero.cs`](../../games/CourtyardKey/Entitie
 ## Showing controls to the player
 
 Text that names a control ("press Z to jump") is wrong for a player holding a gamepad or touching a phone. Name the
-action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played:
+action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played.
+The keyboard and the mouse count as one device: an action bound to both shows its keys and then its mouse controls
+("E / RMB", "= / Wheel ↑"), and the right stick shows as "R→" on a gamepad:
 
 ```csharp
 // Formatted again only when the prompts change (another device or pad family).

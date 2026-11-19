@@ -2,7 +2,7 @@ using System.Text;
 
 namespace MicroEngine.Input;
 
-/// <summary>What an <see cref="ActionPrompt"/> shows: a key, a gamepad control, an on-screen control, or a plain label.</summary>
+/// <summary>What an <see cref="ActionPrompt"/> shows: a key, a mouse control, a gamepad control, an on-screen control, or a plain label.</summary>
 public enum PromptKind
 {
     /// <summary>A keyboard key (<see cref="ActionPrompt.Key"/>).</summary>
@@ -15,10 +15,13 @@ public enum PromptKind
     Touch,
     /// <summary>A label set with <see cref="ActionPrompts.SetLabel"/>, or the action's name when nothing presses it on the device.</summary>
     Label,
+    // Added after the first set, so the numbers of the kinds above never change.
+    /// <summary>A mouse button, the wheel turning one way or the pointer moving one way (<see cref="ActionPrompt.Pointer"/>), shown with the keyboard's prompts.</summary>
+    Pointer,
 }
 
 /// <summary>
-/// How to show one action to the player on one device: <c>"Z"</c> on a keyboard, <c>"A"</c> on an Xbox pad,
+/// How to show one action to the player on one device: <c>"Z"</c> on a keyboard, <c>"LMB"</c> for a mouse button, <c>"A"</c> on an Xbox pad,
 /// <c>"×"</c> on a PlayStation pad, the button's own label on a touch screen. <see cref="Text"/> is what to print;
 /// <see cref="Kind"/> and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
 /// </summary>
@@ -36,6 +39,8 @@ public readonly record struct ActionPrompt(string Action, InputDevice Device, Pr
     public GamepadStyle PadStyle { get; init; }
     /// <summary>The touch control's id, for <see cref="PromptKind.Touch"/>.</summary>
     public string? Control { get; init; }
+    /// <summary>The mouse control, for <see cref="PromptKind.Pointer"/>.</summary>
+    public InputControl Pointer { get; init; }
 
     /// <inheritdoc/>
     public override string ToString() => Text;
@@ -85,13 +90,15 @@ public sealed class ActionPrompts
     /// <summary>
     /// The device prompts are shown for: <see cref="Override"/>, else the device that last pressed an action; before any
     /// press (or after scripted input), touch when the on-screen controls are shown or the screen is touch-first,
-    /// otherwise the keyboard.
+    /// otherwise the keyboard. The keyboard and the mouse are one device here: a player on either sees the keys and
+    /// the mouse controls of an action together, so this is <see cref="InputDevice.Keyboard"/> for both.
     /// </summary>
     public InputDevice Device
     {
         get
         {
-            if (Override is { } forced and not (InputDevice.None or InputDevice.Other)) return forced;
+            if (Override is { } forced and not (InputDevice.None or InputDevice.Other)) return forced == InputDevice.Mouse ? InputDevice.Keyboard : forced;
+            if (_input.LastDevice == InputDevice.Mouse) return InputDevice.Keyboard;
             if (_input.LastDevice is InputDevice.Keyboard or InputDevice.Gamepad or InputDevice.Touch)
                 return _input.LastDevice == InputDevice.Touch && _touch is null ? InputDevice.Keyboard : _input.LastDevice;
             if (_touch is { } t && (t.Shown || t.TouchFirst)) return InputDevice.Touch;
@@ -140,6 +147,7 @@ public sealed class ActionPrompts
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
         var d = device ?? Device;
+        if (d == InputDevice.Mouse) d = InputDevice.Keyboard;
         if (_labels.TryGetValue((action, d), out var label) || _labels.TryGetValue((action, null), out label))
             return [new ActionPrompt(action, d, PromptKind.Label, label)];
         var list = new List<ActionPrompt>();
@@ -152,6 +160,9 @@ public sealed class ActionPrompts
                     list.Add(new ActionPrompt(action, d, PromptKind.PadButton, ButtonName(b, style)) { Button = b, PadStyle = style });
                 if (bindings?.Stick is { } stick and not InputMap.StickDirection.None)
                     list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, "L" + Arrow(stick)) { PadStyle = style });
+                foreach (var c in bindings?.Controls ?? [])
+                    if (c is { Kind: InputControlKind.Stick, Stick: PadStick.Right })
+                        list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, "R" + Arrow(c.Direction)) { PadStyle = style });
                 foreach (var (axis, positive) in bindings?.Axes ?? [])
                     list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, AxisName(axis, positive, style)) { PadStyle = style });
                 break;
@@ -179,6 +190,10 @@ public sealed class ActionPrompts
                 // A chord shows its first modifier and its key: "Alt+Enter".
                 foreach (var c in bindings?.Chords ?? [])
                     list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Key, $"{KeyText(c.Modifiers[0])}+{KeyText(c.Key)}") { Key = c.Key });
+                // The mouse's controls after the keys: "E / RMB".
+                foreach (var c in bindings?.Controls ?? [])
+                    if (PointerNames.Of(c) is { } name)
+                        list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Pointer, name) { Pointer = c });
                 break;
         }
         return list;

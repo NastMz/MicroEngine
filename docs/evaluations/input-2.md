@@ -151,7 +151,7 @@ All **run** on the development machine unless marked.
 | State hashes of a map with no mouse control, recorded on `main` | identical |
 | `tests/MicroEngine.Desktop.Tests` input conformance: side buttons; cursor hidden, locked, a locked mouse's motion | pass on SDL (events pushed into SDL's queue, hidden window) and headless; on raylib only what needs no injected event (the cursor capability) |
 | `samples/Examples` tour, played hidden, capture `33-mouse.png` looked at | the scout walks to the click, zoom 1.25, the view dragged, "ORDER: LMB" |
-| `Game.Prompts` naming the mouse's controls | **not in this change**: `ActionPrompts` is outside the files this unit edits. `PointerNames` gives the names, and the change to `ActionPrompts` (the keyboard's prompts list an action's mouse controls after its keys) is written and passes its tests in a copy of the repository; it is applied separately |
+| `Game.Prompts` naming the mouse's controls | done: the keyboard's prompts list an action's mouse controls after its keys (`PromptKind.Pointer`), `LastDevice == Mouse` counts as the keyboard for prompts, and the right stick shows as "R→"; `ActionPromptTests` covers it |
 | A real mouse on a visible SDL or raylib window | **not run**: no person at the machine. raylib's mapping of its two side buttons to back and forward follows GLFW's order and is **desk** |
 | A browser (pointer lock after a click, Escape) | **not run** here; the behaviour documented is SDL's on Emscripten and the browsers' rule, **desk** |
 | Android, iOS, macOS, Linux | **not run** here |
