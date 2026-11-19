@@ -10,6 +10,19 @@ namespace EcsBench;
 /// </summary>
 internal sealed class ArchScene(int load, Workload workload) : EcsScene(load, workload)
 {
+    // The library makes its component arrays by reflection unless a factory is registered. A NativeAOT build needs the
+    // factories (without them it throws for any component type the program itself never makes an array of).
+    static ArchScene()
+    {
+        if (System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled) return;
+        ArrayRegistry.Add<Position>();
+        ArrayRegistry.Add<Previous>();
+        ArrayRegistry.Add<Velocity>();
+        ArrayRegistry.Add<Life>();
+        ArrayRegistry.Add<Health>();
+        ArrayRegistry.Add<Burning>();
+    }
+
     private World _world = null!;
     private readonly List<Entity> _dead = [], _deadShots = [];
     private static readonly QueryDescription Movers = new QueryDescription().WithAll<Position, Previous, Velocity>();

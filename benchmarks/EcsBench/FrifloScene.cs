@@ -10,6 +10,21 @@ namespace EcsBench;
 /// </summary>
 internal sealed class FrifloScene(int load, Workload workload) : EcsScene(load, workload)
 {
+    // The library finds component types by reflection the first time a store is made. A NativeAOT build has to name
+    // them before that (the library says so at run time, and fails in a type initializer otherwise).
+    static FrifloScene()
+    {
+        if (System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled) return;
+        var aot = new NativeAOT();
+        aot.RegisterComponent<Position>();
+        aot.RegisterComponent<Previous>();
+        aot.RegisterComponent<Velocity>();
+        aot.RegisterComponent<Life>();
+        aot.RegisterComponent<Health>();
+        aot.RegisterComponent<Burning>();
+        aot.CreateSchema();
+    }
+
     private EntityStore _store = null!;
     private readonly List<int> _dead = [], _deadShots = [];
     private ArchetypeQuery<Position, Previous, Velocity> _movers = null!;
