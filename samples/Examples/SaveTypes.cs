@@ -10,6 +10,7 @@ namespace Examples;
 /// </summary>
 [JsonSerializable(typeof(SaveExample.Progress))]
 [JsonSerializable(typeof(Profile))]
+[JsonSerializable(typeof(GameSaves.Settings))]
 public partial class SaveTypes : JsonSerializerContext;
 #endregion
 

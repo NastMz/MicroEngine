@@ -133,6 +133,19 @@ public string Directory { get; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Core_SaveStore_Storage"></a> Storage
+
+The medium this store keeps its slots in, for what stores its own text beside the saves
+(<code>InputMap.SaveBindings(store.Storage)</code>). Reading and writing it directly has none of the store's care.
+
+```csharp
+public IStorage Storage { get; }
+```
+
+#### Property Value
+
+ [IStorage](MicroEngine.Platform.IStorage.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Core_SaveStore_DefaultDirectory_System_String_"></a> DefaultDirectory\(string\)
@@ -310,6 +323,57 @@ The saved type.
 
 <code class="paramref">slot</code> is not a valid slot name (see the class remarks).
 
+### <a id="MicroEngine_Core_SaveStore_Load__1_System_String_MicroEngine_Core_SaveSchema___0__"></a> Load<T\>\(string, SaveSchema<T\>\)
+
+Reads a versioned save: brings a save of an older version up to the current one through the schema's steps, and
+says what it found when there is no value to return. Nothing is written: a migrated save reaches the slot with
+the next save.
+
+```csharp
+public SaveLoadResult<T> Load<T>(string slot, SaveSchema<T> schema) where T : class
+```
+
+#### Parameters
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The slot name.
+
+`schema` [SaveSchema](MicroEngine.Core.SaveSchema\-1.md)<T\>
+
+The current version of <code class="typeparamref">T</code> and the steps from earlier ones.
+
+#### Returns
+
+ [SaveLoadResult](MicroEngine.Core.SaveLoadResult\-1.md)<T\>
+
+#### Type Parameters
+
+`T` 
+
+The saved type.
+
+#### Remarks
+
+Corrupt data is set aside, as [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_) does. A save from a newer version of
+the game, an older save whose steps failed and a slot the medium could not read are left exactly as they are, and
+every save to that slot through this store returns false until [Delete](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Delete_System_String_)
+([Protected](MicroEngine.Core.md)).
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">schema</code> is null.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The schema has a step missing.
+
 ### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_"></a> Save<T\>\(string, T\)
 
 Writes the whole slot at once, so a crash never leaves a half-written save, finding the properties of
@@ -388,5 +452,86 @@ The metadata of <code class="typeparamref">T</code>, from the game's `JsonSerial
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
 <code class="paramref">slot</code> is not a valid slot name (see the class remarks).
+
+### <a id="MicroEngine_Core_SaveStore_Save__1_System_String___0_MicroEngine_Core_SaveSchema___0__"></a> Save<T\>\(string, T, SaveSchema<T\>\)
+
+Writes a versioned save: the whole slot at once, as [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) writes it,
+with the schema's version as the first property. Returns false when the medium refused the write, or when the
+slot holds a save this store must not replace.
+
+```csharp
+public bool Save<T>(string slot, T data, SaveSchema<T> schema) where T : class
+```
+
+#### Parameters
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The slot name.
+
+`data` T
+
+The value to save.
+
+`schema` [SaveSchema](MicroEngine.Core.SaveSchema\-1.md)<T\>
+
+The current version of <code class="typeparamref">T</code> and the steps from earlier ones.
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T` 
+
+The saved type.
+
+#### Remarks
+
+The store never replaces a save written by a newer version of the game: one it loaded as
+[TooNew](MicroEngine.Core.SaveLoadStatus.md), and also one it never loaded, because the first save to a slot looks at what
+the slot holds. The first save over a slot that was loaded from an older version first copies the original to
+the slot <code>&lt;slot&gt;.v&lt;version&gt;.backup</code>; if the copy cannot be written, neither is the save.
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">data</code> or <code class="paramref">schema</code> is null.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">slot</code> is not a valid slot name (see the class remarks).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The schema has a step missing, or <code class="typeparamref">T</code> does not serialize to a JSON object.
+
+### <a id="MicroEngine_Core_SaveStore_Slots_System_String_"></a> Slots\(string\)
+
+The slots that hold a save, by name, with what the medium knows about each without reading it (size, last write):
+what a "load game" screen lists. Copies the store keeps (corrupt data set aside, the original of a migrated save)
+are not slots. Empty when the medium could not be listed.
+
+```csharp
+public IReadOnlyList<SlotInfo> Slots(string prefix = "")
+```
+
+#### Parameters
+
+`prefix` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+Only the slots whose name starts with it ("save-" when settings and achievements share the store); empty for all.
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SlotInfo](MicroEngine.Platform.SlotInfo.md)\>
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">prefix</code> is null.
 
 </div>

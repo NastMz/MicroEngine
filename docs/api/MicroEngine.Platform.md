@@ -13,7 +13,8 @@ Guide: [The platform host](../manual/backends.md#the-platform-host)
 Save slots in the page's localStorage under "microengine/&lt;game&gt;/&lt;slot&gt;": the default save medium in
 browsers. The browser's file system is in memory and vanishes on reload; localStorage writes are synchronous and
 survive it. The page registers the "microengine" JavaScript module (its <code>storage.get</code>, <code>storage.set</code> and
-<code>storage.remove</code> functions) before the game starts; the browser host's page does.
+<code>storage.remove</code> functions, and <code>storage.keys</code> to list the slots) before the game starts; the browser
+host's page does.
 
  [FolderContentSource](MicroEngine.Platform.FolderContentSource.md)
 
@@ -33,6 +34,10 @@ sink's [Resized](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_I
 
 The PCM format a sink plays: interleaved 32-bit float samples, [Channels](MicroEngine.Platform.AudioFormat.md#MicroEngine_Platform_AudioFormat_Channels) per frame, at
 [SampleRate](MicroEngine.Platform.AudioFormat.md#MicroEngine_Platform_AudioFormat_SampleRate) frames per second.
+
+ [SlotInfo](MicroEngine.Platform.SlotInfo.md)
+
+What a storage knows about one of its slots without reading the save in it.
 
 ### Interfaces
 

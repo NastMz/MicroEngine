@@ -208,8 +208,7 @@ are independent: VSync waits for the display, the limit caps frames per second, 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
 A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
-creations, uploads and live textures are counted. Render targets are textures too; materials are created without a
-shader to run, so they draw with their fallback ([IsSupported](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_IsSupported) is false).
+creations, uploads and live textures are counted.
 
  [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
 
@@ -233,8 +232,7 @@ run or a game overrides. Nothing the platform does depends on the time mode.
 
 Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
 device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
-[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly. Render
-targets are rasterized the same way; a material draws with its fallback, since nothing here runs shaders.
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
@@ -269,10 +267,7 @@ A deterministic input script, keyed by update number. Text format, one command p
 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
 450 pad 2 remove
 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
-462 mouse 160,90 down secondary  # another button: primary, secondary, middle, back or forward
-464 click 160,90 secondary       # the mouse moves there and the button goes down, then up 2 updates later
-470 wheel 1               # the wheel turns one notch away from the player (negative: towards them)
-472 wheel 0 1             # a second number turns it sideways: one notch to the right
+470 wheel 1               # the wheel turns one notch away from the player
 480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```
@@ -334,6 +329,17 @@ platform behaves the same whatever the mode the run ends up with.
 
 How a run ended.
 
+ [SaveSchema<T\>](MicroEngine.Core.SaveSchema\-1.md)
+
+How a saved type changes between releases of a game: the version this build writes and one step for each earlier
+version, which turns a save of that version into the next. [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_)
+runs the steps a save needs, in order, and [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) stamps the
+current version.
+
+ [SaveSchema](MicroEngine.Core.SaveSchema.md)
+
+What every [SaveSchema`1](MicroEngine.Core.md) shares.
+
  [SaveStore](MicroEngine.Core.SaveStore.md)
 
 Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
@@ -393,9 +399,9 @@ Percentiles of one frame measurement, in milliseconds.
 
 One recorded drawing call.
 
- [RenderTargetSize](MicroEngine.Core.RenderTargetSize.md)
+ [SaveLoadResult<T\>](MicroEngine.Core.SaveLoadResult\-1.md)
 
-The size of a render target of the assets (the options of a "render target" asset key).
+The outcome of loading a versioned save: the value when there is one, and otherwise why there is none.
 
  [SystemTiming](MicroEngine.Core.SystemTiming.md)
 
@@ -468,6 +474,10 @@ renderers; raylib's OpenGL ignores it.
  [PlatformParts](MicroEngine.Core.PlatformParts.md)
 
 The subsystems a host may supply to a profile instead of the profile's own.
+
+ [SaveLoadStatus](MicroEngine.Core.SaveLoadStatus.md)
+
+What [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_) found in a slot.
 
  [WindowMode](MicroEngine.Core.WindowMode.md)
 

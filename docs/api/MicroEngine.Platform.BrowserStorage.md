@@ -9,7 +9,8 @@ Guide: [The platform host](../manual/backends.md#the-platform-host)
 Save slots in the page's localStorage under "microengine/&lt;game&gt;/&lt;slot&gt;": the default save medium in
 browsers. The browser's file system is in memory and vanishes on reload; localStorage writes are synchronous and
 survive it. The page registers the "microengine" JavaScript module (its <code>storage.get</code>, <code>storage.set</code> and
-<code>storage.remove</code> functions) before the game starts; the browser host's page does.
+<code>storage.remove</code> functions, and <code>storage.keys</code> to list the slots) before the game starts; the browser
+host's page does.
 
 ```csharp
 public sealed class BrowserStorage : IStorage
@@ -30,6 +31,12 @@ A key is the game's prefix followed by the slot as given. localStorage keys are 
 with <code>/</code> or <code>..</code> is one more key under the game's prefix and never another game's. Every member throws
 `ArgumentException` for a slot that is null or empty, which would be the prefix itself. Names are not
 otherwise restricted here: <code>SaveStore</code> is what keeps slots to names every system can store.
+
+<p>
+localStorage keeps no times, so each write also stamps when it happened under
+"microengine.time/&lt;game&gt;/&lt;slot&gt;" (milliseconds since 1970), outside every game's slot keys;
+[List](MicroEngine.Platform.BrowserStorage.md#MicroEngine_Platform_BrowserStorage_List) reads it back. The stamp is best effort: a slot without one lists with no time.
+</p>
 
 ## Constructors
 
@@ -94,6 +101,19 @@ public bool Exists(string slot)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Platform_BrowserStorage_List"></a> List\(\)
+
+The game's slots: every key under its prefix but the copies set aside, with the length of its text as the size and
+the time of its last write when one was stamped.
+
+```csharp
+public IReadOnlyList<SlotInfo> List()
+```
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SlotInfo](MicroEngine.Platform.SlotInfo.md)\>
 
 ### <a id="MicroEngine_Platform_BrowserStorage_Read_System_String_"></a> Read\(string\)
 

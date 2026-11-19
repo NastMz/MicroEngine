@@ -60,11 +60,14 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
     ];
 
+    #region saves
     /// <summary>
-    /// The examples that save use the game's store (<see cref="Game.Saves"/>). Tests keep it in a folder of their own;
-    /// without one it is the store every game comes with.
+    /// The store behind <c>Saves</c>, built by hand when a folder was asked for (tests pass a temporary one); without
+    /// one it is the store every game comes with, on the medium of the platform it runs on.
     /// </summary>
-    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
+    protected override SaveStore CreateSaves() =>
+        saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
+    #endregion
 
     // The widgets' UI view at three window pixels per unit, the scale of the 320×180 canvas in the default window, so
     // the widget examples read at the size of everything else.

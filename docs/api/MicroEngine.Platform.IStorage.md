@@ -66,6 +66,19 @@ bool Exists(string slot)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Platform_IStorage_List"></a> List\(\)
+
+Every slot that has data, in no particular order, with what the storage knows about each without reading the
+save in it. A copy set aside by [SetAside](MicroEngine.Platform.IStorage.md#MicroEngine_Platform_IStorage_SetAside_System_String_) is not a slot and is not listed.
+
+```csharp
+IReadOnlyList<SlotInfo> List()
+```
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SlotInfo](MicroEngine.Platform.SlotInfo.md)\>
+
 ### <a id="MicroEngine_Platform_IStorage_Read_System_String_"></a> Read\(string\)
 
 The slot's text, or null when it does not exist.

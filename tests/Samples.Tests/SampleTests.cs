@@ -768,6 +768,47 @@ public sealed class SaveVersionTests
     }
 }
 
+/// <summary>The save games of a "load game" screen, and the settings as one more slot of the same store.</summary>
+[TestClass]
+public sealed class GameSavesTests
+{
+    [TestMethod]
+    public void TheSaveGamesAreListedNewestFirstWithoutTheOtherSlots()
+    {
+        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
+        var store = new SaveStore("Examples", saves);
+        Assert.IsTrue(ProfileSaves.Save(store, new Profile()));
+        Assert.IsTrue(GameSaves.SaveSettings(store, new GameSaves.Settings { Fullscreen = true }));
+        foreach (var (slot, hour) in new[] { ("save-1", 9), ("save-2", 11), ("save-3", 10) })
+        {
+            Assert.IsTrue(store.Save(slot, new Profile { Gold = hour }, ProfileSaves.Schema));
+            File.SetLastWriteTimeUtc(Path.Combine(saves, slot + ".json"), new DateTime(2026, 11, 19, hour, 0, 0, DateTimeKind.Utc));
+        }
+
+        var games = GameSaves.SaveGames(store);
+        CollectionAssert.AreEqual(new[] { "save-2", "save-3", "save-1" }, games.Select(s => s.Name).ToArray());
+        StringAssert.StartsWith(GameSaves.Describe(games[0]), "save-2   ");
+        Assert.AreEqual("save-9", GameSaves.Describe(new MicroEngine.Platform.SlotInfo("save-9", 2, null)), "a medium that keeps no times");
+        Directory.Delete(saves, true);
+    }
+
+    [TestMethod]
+    public void TheSettingsDefaultUntilSavedAndComeBack()
+    {
+        var store = new SaveStore(new MemorySaveStorage());
+        var settings = GameSaves.LoadSettings(store);
+        Assert.AreEqual(1f, settings.MusicVolume);
+        Assert.IsFalse(settings.Fullscreen);
+
+        settings.MusicVolume = 0.25f;
+        settings.Fullscreen = true;
+        Assert.IsTrue(GameSaves.SaveSettings(store, settings));
+        var again = GameSaves.LoadSettings(store);
+        Assert.AreEqual(0.25f, again.MusicVolume);
+        Assert.IsTrue(again.Fullscreen);
+    }
+}
+
 [TestClass]
 public sealed class PlatformerExampleTests
 {
