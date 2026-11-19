@@ -107,6 +107,11 @@ public readonly record struct InputEvent
     public Vector2 Position { get; init; }
     /// <summary>The pointer's position in the window's pixels, for overlays drawn in screen pixels (touches; the mouse when known).</summary>
     public Vector2 ScreenPosition { get; init; }
+    /// <summary>
+    /// For a pointer move: how far the pointer moved, in virtual canvas pixels, when the backend knows it apart from the
+    /// position (a locked cursor moves without changing place). Zero means "the difference to the previous position".
+    /// </summary>
+    public Vector2 Delta { get; init; }
     /// <summary>How far the wheel turned: Y positive away from the player, X positive to the right, in notches.</summary>
     public Vector2 Wheel { get; init; }
     /// <summary>The gamepad button of button events.</summary>
@@ -139,9 +144,9 @@ public readonly record struct InputEvent
     /// <summary>A pointer button went up or a finger lifted.</summary>
     public static InputEvent PointerUp(DeviceId device, long pointer, PointerKind kind, Vector2 position, PointerButton button = PointerButton.Primary, double time = 0) =>
         new() { Kind = InputEventKind.PointerUp, Device = device, Pointer = pointer, PointerKind = kind, Position = position, PointerButton = button, Time = time };
-    /// <summary>A pointer moved.</summary>
-    public static InputEvent PointerMove(DeviceId device, long pointer, PointerKind kind, Vector2 position, double time = 0) =>
-        new() { Kind = InputEventKind.PointerMove, Device = device, Pointer = pointer, PointerKind = kind, Position = position, Time = time };
+    /// <summary>A pointer moved; <paramref name="delta"/> is its own motion when the backend knows it (a locked cursor), else zero.</summary>
+    public static InputEvent PointerMove(DeviceId device, long pointer, PointerKind kind, Vector2 position, double time = 0, Vector2 delta = default) =>
+        new() { Kind = InputEventKind.PointerMove, Device = device, Pointer = pointer, PointerKind = kind, Position = position, Time = time, Delta = delta };
     /// <summary>The wheel turned.</summary>
     public static InputEvent WheelMoved(DeviceId device, Vector2 wheel, Vector2 position = default, double time = 0) =>
         new() { Kind = InputEventKind.Wheel, Device = device, Wheel = wheel, Position = position, Time = time };

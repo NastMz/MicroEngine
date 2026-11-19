@@ -362,6 +362,24 @@ public sealed class TouchControlsTests
     }
 
     [TestMethod]
+    public void AMouseButtonThatPressesAnActionHidesTheControlsLikeAKey()
+    {
+        var rig = new Rig();
+        rig.Map.Bind("fire", PointerButton.Secondary);
+        rig.Screen.TouchFirst = false;
+        rig.Screen.Down(1, rig.At("jump"));
+        rig.Step();
+        Assert.IsTrue(rig.Controls.Shown);
+        rig.Screen.Up(1);
+        rig.Step();
+        rig.Devices.Pointer = new PointerState(true, new Vector2(10, 10), false, true, false);
+        rig.Step();
+        rig.Step();
+        Assert.AreEqual(InputDevice.Mouse, rig.Map.LastDevice);
+        Assert.IsFalse(rig.Controls.Shown, "playing with the mouse hides them");
+    }
+
+    [TestMethod]
     public void AutoVisibilityFollowsTheDeviceInUse()
     {
         var rig = new Rig();

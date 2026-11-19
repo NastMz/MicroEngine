@@ -45,22 +45,32 @@ public sealed record ActionNames
 }
 
 /// <summary>
-/// The bindings of one action as data, by name (keys, buttons and axes are their enum names), so saved bindings stay
-/// valid when the engine adds keys. Part of <see cref="InputBindingSet"/>.
+/// The bindings of one action as data: its controls as text (<see cref="InputControl.ToString"/>), by enum name, so
+/// saved bindings stay valid when the engine adds keys. Part of <see cref="InputBindingSet"/>.
 /// </summary>
+/// <remarks>
+/// <see cref="Keys"/>, <see cref="Buttons"/>, <see cref="Stick"/>, <see cref="Axes"/> and <see cref="Chords"/> are the
+/// first format (version 1), which had one list per kind of control and no place for the mouse. They are still read,
+/// so files saved by earlier versions load; <see cref="InputMap.ExportBindings"/> fills <see cref="Controls"/> only.
+/// </remarks>
 public sealed class ActionBindingData
 {
     /// <summary>The action.</summary>
     public string Action { get; set; } = "";
-    /// <summary>Keys by name ("A", "Space").</summary>
+    /// <summary>
+    /// Every control bound to the action, as text: "Key:Space", "Pad:A", "Mouse:Secondary", "Wheel:Up",
+    /// "Stick:Right.Up", "Axis:RightTrigger+", "Chord:LeftAlt|RightAlt+Enter", "Motion:Left".
+    /// </summary>
+    public List<string> Controls { get; set; } = [];
+    /// <summary>Version 1: keys by name ("A", "Space").</summary>
     public List<string> Keys { get; set; } = [];
-    /// <summary>Gamepad buttons by name ("A", "RightShoulder").</summary>
+    /// <summary>Version 1: gamepad buttons by name ("A", "RightShoulder").</summary>
     public List<string> Buttons { get; set; } = [];
-    /// <summary>A left-stick direction ("Left"...), or "None".</summary>
+    /// <summary>Version 1: a left-stick direction ("Left"...), or "None".</summary>
     public string Stick { get; set; } = "None";
-    /// <summary>Axes as "RightTrigger+" or "LeftX-".</summary>
+    /// <summary>Version 1: axes as "RightTrigger+" or "LeftX-".</summary>
     public List<string> Axes { get; set; } = [];
-    /// <summary>Key combinations as "LeftAlt|RightAlt+Enter": the modifiers (any one of them), then the key.</summary>
+    /// <summary>Version 1: key combinations as "LeftAlt|RightAlt+Enter": the modifiers (any one of them), then the key.</summary>
     public List<string> Chords { get; set; } = [];
 }
 
@@ -71,12 +81,21 @@ public sealed class ActionBindingData
 /// </summary>
 public sealed class InputBindingSet
 {
-    /// <summary>The format version (1).</summary>
-    public int Version { get; set; } = 1;
+    /// <summary>The current format version: each action has one list of controls.</summary>
+    public const int CurrentVersion = 2;
+
+    /// <summary>
+    /// The format version: 2 (<see cref="CurrentVersion"/>) for a set this version wrote; 1 for a file of the first
+    /// format, which is read the same way.
+    /// </summary>
+    public int Version { get; set; } = CurrentVersion;
     /// <summary>The actions, in ordinal order of their names.</summary>
     public List<ActionBindingData> Actions { get; set; } = [];
 
-    /// <summary>The set as JSON text.</summary>
+    /// <summary>
+    /// The set as JSON text. Written by hand with a JSON writer, never by reflection, so it works in trimmed and
+    /// NativeAOT builds.
+    /// </summary>
     public string ToJson()
     {
         using var stream = new MemoryStream();
@@ -89,11 +108,13 @@ public sealed class InputBindingSet
             {
                 w.WriteStartObject();
                 w.WriteString("action", a.Action);
-                Strings(w, "keys", a.Keys);
-                Strings(w, "buttons", a.Buttons);
-                w.WriteString("stick", a.Stick);
-                Strings(w, "axes", a.Axes);
-                Strings(w, "chords", a.Chords);
+                Strings(w, "controls", a.Controls);
+                // The first format's lists are written only for a set that still carries them.
+                if (a.Keys.Count > 0) Strings(w, "keys", a.Keys);
+                if (a.Buttons.Count > 0) Strings(w, "buttons", a.Buttons);
+                if (a.Stick is { Length: > 0 } and not "None") w.WriteString("stick", a.Stick);
+                if (a.Axes.Count > 0) Strings(w, "axes", a.Axes);
+                if (a.Chords.Count > 0) Strings(w, "chords", a.Chords);
                 w.WriteEndObject();
             }
             w.WriteEndArray();
@@ -109,7 +130,7 @@ public sealed class InputBindingSet
         }
     }
 
-    /// <summary>Reads a set written by <see cref="ToJson"/>.</summary>
+    /// <summary>Reads a set written by <see cref="ToJson"/>, of this format or of the first one.</summary>
     /// <exception cref="FormatException">The text is not a binding set.</exception>
     public static InputBindingSet FromJson(string json)
     {
@@ -122,6 +143,7 @@ public sealed class InputBindingSet
                 set.Actions.Add(new ActionBindingData
                 {
                     Action = a.GetProperty("action").GetString() ?? "",
+                    Controls = Strings(a, "controls"),
                     Keys = Strings(a, "keys"),
                     Buttons = Strings(a, "buttons"),
                     Stick = a.TryGetProperty("stick", out var stick) ? stick.GetString() ?? "None" : "None",
@@ -151,16 +173,9 @@ public sealed partial class InputMap
         var set = new InputBindingSet();
         foreach (var action in _bindings.Keys.Order(StringComparer.Ordinal))
         {
-            var b = _bindings[action];
-            set.Actions.Add(new ActionBindingData
-            {
-                Action = action,
-                Keys = [.. b.Keys.Select(k => k.ToString())],
-                Buttons = [.. b.Buttons.Select(k => k.ToString())],
-                Stick = b.Stick.ToString(),
-                Axes = [.. b.Axes.Select(a => a.Axis + (a.Positive ? "+" : "-"))],
-                Chords = [.. b.Chords.Select(c => string.Join('|', c.Modifiers) + "+" + c.Key)],
-            });
+            var data = new ActionBindingData { Action = action };
+            foreach (var c in _bindings[action].Controls) data.Controls.Add(c.ToString());
+            set.Actions.Add(data);
         }
         return set;
     }
@@ -168,7 +183,8 @@ public sealed partial class InputMap
     /// <summary>
     /// Replaces the bindings of the actions this map has with those in <paramref name="set"/>. Actions the set does not
     /// mention keep theirs; actions the map does not have are ignored (a renamed or removed action does not come back),
-    /// and so are names of keys, buttons or axes this version does not know.
+    /// and so are controls this version does not know. A set of the first format (one list per kind of control) is read
+    /// the same way.
     /// </summary>
     /// <returns>The number of actions whose bindings were replaced.</returns>
     public int ImportBindings(InputBindingSet set)
@@ -179,47 +195,42 @@ public sealed partial class InputMap
         {
             if (!_bindings.ContainsKey(data.Action)) continue;
             var b = new Binding();
-            foreach (var k in data.Keys) if (Enum.TryParse<Key>(k, out var key) && Enum.IsDefined(key)) b.Keys.Add(key);
-            foreach (var k in data.Buttons) if (Enum.TryParse<PadButton>(k, out var button) && Enum.IsDefined(button)) b.Buttons.Add(button);
-            if (Enum.TryParse<StickDirection>(data.Stick, out var stick) && Enum.IsDefined(stick)) b.Stick = stick;
-            foreach (var a in data.Axes)
-                if (a.Length > 1 && a[^1] is '+' or '-' && Enum.TryParse<PadAxis>(a[..^1], out var axis) && Enum.IsDefined(axis))
-                    b.Axes.Add((axis, a[^1] == '+'));
-            foreach (var c in data.Chords)
-            {
-                int plus = c.LastIndexOf('+');
-                if (plus <= 0 || !Enum.TryParse<Key>(c[(plus + 1)..], out var key) || !Enum.IsDefined(key)) continue;
-                var modifiers = c[..plus].Split('|').Select(m => Enum.TryParse<Key>(m, out var k) && Enum.IsDefined(k) ? k : Key.None).Where(k => k != Key.None).ToArray();
-                if (modifiers.Length > 0) b.Chords.Add(new KeyChord(key, modifiers));
-            }
+            foreach (var k in data.Keys) if (InputControl.TryParse("Key:" + k, out var key)) b.Add(key);
+            foreach (var k in data.Buttons) if (InputControl.TryParse("Pad:" + k, out var button)) b.Add(button);
+            if (InputControl.TryParse("Stick:Left." + data.Stick, out var stick)) b.Add(stick);
+            foreach (var a in data.Axes) if (InputControl.TryParse("Axis:" + a, out var axis)) b.Add(axis);
+            foreach (var c in data.Chords) if (InputControl.TryParse("Chord:" + c, out var chord)) b.Add(chord);
+            foreach (var c in data.Controls) if (InputControl.TryParse(c, out var control)) b.Add(control);
             _bindings[data.Action] = b;
             replaced++;
         }
+        _usesChanged = true;
         return replaced;
     }
 
     /// <summary>
-    /// Binds the key or gamepad button of <paramref name="press"/> (a key-down or button-down event, such as the one
-    /// <see cref="InputSystem.ListenForPress"/> hands over) to <paramref name="action"/>, adding to its bindings; with
-    /// <paramref name="replace"/>, the action's keys (for a key) or buttons (for a button) are replaced.
+    /// Binds the control of <paramref name="press"/> (a key-down, a gamepad button-down, a mouse button-down or a wheel
+    /// turn, such as the one <see cref="InputSystem.ListenForPress"/> hands over) to <paramref name="action"/>, adding
+    /// to its bindings. With <paramref name="replace"/>, the new control takes the place of the action's controls of
+    /// the same sort: its keys for a key, its gamepad buttons for a button, its mouse buttons and wheel directions for
+    /// a mouse button or the wheel.
     /// </summary>
-    /// <returns>False when the event is neither a key-down nor a button-down.</returns>
+    /// <returns>False when the event is none of those presses (<see cref="InputControl.FromPress"/>).</returns>
     public bool BindFrom(string action, in InputEvent press, bool replace = false)
     {
+        if (InputControl.FromPress(press) is not { } control) return false;
         var b = Get(action);
-        switch (press.Kind)
+        if (replace) b.Controls.RemoveAll(c => Sort(c) == Sort(control));
+        b.Add(control);
+        _usesChanged = true;
+        return true;
+
+        // What "the same sort" is for a replacement.
+        static int Sort(InputControl c) => c.Kind switch
         {
-            case InputEventKind.KeyDown:
-                if (replace) b.Keys.Clear();
-                if (!b.Keys.Contains(press.Key)) b.Keys.Add(press.Key);
-                return true;
-            case InputEventKind.ButtonDown:
-                if (replace) b.Buttons.Clear();
-                if (!b.Buttons.Contains(press.Button)) b.Buttons.Add(press.Button);
-                return true;
-            default:
-                return false;
-        }
+            InputControlKind.PointerButton or InputControlKind.Wheel => 100,
+            _ => (int)c.Kind,
+        };
     }
 
     /// <summary>Writes every action's bindings to <paramref name="storage"/> (the slot <paramref name="slot"/>), for a rebinding screen.</summary>

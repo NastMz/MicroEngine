@@ -150,6 +150,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _capabilities.Add<IInputBackend>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
         _capabilities.Add<ITextInputControl>(_input);
+        _capabilities.Add<ICursorControl>(_input);
         _capabilities.Add<IClipboard>(new RaylibClipboard());
         if (CanBlock) _capabilities.Add<IPreciseDelay>(this);
     }
@@ -408,10 +409,11 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
 /// backend compares each frame with the one before: keys come from raylib's queue of presses (in order, so a key pressed
 /// and released within one frame is a press then a release) and its key states; text from its character queue while
 /// text input is on; the mouse and wheel from its state; gamepads 0 to 3 from their state, connecting and disconnecting
-/// with ids of their own. Also the <see cref="IGamepadRumble"/> and <see cref="ITextInputControl"/> capabilities; raylib
-/// cannot tell the keyboard layout or compose text with an input method.
+/// with ids of their own. Also the <see cref="IGamepadRumble"/>, <see cref="ITextInputControl"/> and
+/// <see cref="ICursorControl"/> capabilities; raylib cannot tell the keyboard layout or compose text with an input
+/// method.
 /// </summary>
-internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextInputControl
+internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextInputControl, ICursorControl
 {
     public static readonly DeviceId Keyboard = new(1), Mouse = new(2);
     private const int Pads = 4, PadBase = 100;
@@ -431,9 +433,15 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
     private readonly bool[] _padOn = new bool[Pads];
     private readonly HashSet<PadButton>[] _padHeld = [[], [], [], []];
     private readonly float[,] _axes = new float[Pads, 6];
-    private readonly bool[] _mouseHeld = new bool[3];
-    private Vector2 _mouse = new(float.NaN);
-    private bool _mouseInside, _text;
+    private static readonly (Raylib_cs.MouseButton Raylib, PointerButton Button)[] MouseButtons =
+    [
+        (Raylib_cs.MouseButton.Left, PointerButton.Primary), (Raylib_cs.MouseButton.Right, PointerButton.Secondary), (Raylib_cs.MouseButton.Middle, PointerButton.Middle),
+        // raylib names the two side buttons by their order: the first is the one browsers and SDL call "back".
+        (Raylib_cs.MouseButton.Side, PointerButton.Back), (Raylib_cs.MouseButton.Extra, PointerButton.Forward),
+    ];
+    private readonly bool[] _mouseHeld = new bool[MouseButtons.Length];
+    private Vector2 _mouse = new(float.NaN), _mouseScreen;
+    private bool _mouseInside, _text, _cursorVisible = true, _relative;
 
     public RaylibInput()
     {
@@ -521,13 +529,20 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
 
     private void CollectMouse(double now)
     {
-        bool inside = Rl.IsCursorOnScreen();
-        var screen = Rl.GetMousePosition();
-        var at = FrameLayout.ToCanvas(screen, Frame, CanvasWidth, CanvasHeight);
-        if (inside && (at != _mouse || !_mouseInside)) Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, at, now) with { ScreenPosition = screen });
+        // A locked cursor has no place of its own: it stays where it was locked and reports how far the mouse moved.
+        bool inside = _relative ? _mouseInside : Rl.IsCursorOnScreen();
+        var screen = _relative ? _mouseScreen : Rl.GetMousePosition();
+        var at = _relative && !float.IsNaN(_mouse.X) ? _mouse : FrameLayout.ToCanvas(screen, Frame, CanvasWidth, CanvasHeight);
+        if (_relative)
+        {
+            var moved = Rl.GetMouseDelta();
+            var delta = FrameLayout.ToCanvas(screen + moved, Frame, CanvasWidth, CanvasHeight) - FrameLayout.ToCanvas(screen, Frame, CanvasWidth, CanvasHeight);
+            if (delta != Vector2.Zero) Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, at, now, delta) with { ScreenPosition = screen });
+        }
+        else if (inside && (at != _mouse || !_mouseInside)) Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, at, now) with { ScreenPosition = screen });
         _mouse = at;
-        (Raylib_cs.MouseButton Raylib, PointerButton Button)[] buttons =
-            [(Raylib_cs.MouseButton.Left, PointerButton.Primary), (Raylib_cs.MouseButton.Right, PointerButton.Secondary), (Raylib_cs.MouseButton.Middle, PointerButton.Middle)];
+        _mouseScreen = screen;
+        var buttons = MouseButtons;
         for (int i = 0; i < buttons.Length; i++)
         {
             var (raylib, button) = buttons[i];
@@ -620,4 +635,33 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
 
     /// <inheritdoc/>
     public void Stop() => _text = false;
+
+    /// <inheritdoc/>
+    public bool Visible
+    {
+        get => _cursorVisible;
+        set
+        {
+            _cursorVisible = value;
+            if (_relative) return; // a locked cursor is hidden already; the choice applies when it is freed
+            if (value) Rl.ShowCursor(); else Rl.HideCursor();
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool Relative => _relative;
+
+    /// <summary>raylib locks the cursor by disabling it (hidden, kept in the window, unbounded motion) and frees it by enabling it.</summary>
+    public bool SetRelative(bool relative)
+    {
+        if (relative == _relative) return true;
+        _relative = relative;
+        if (relative) Rl.DisableCursor();
+        else
+        {
+            Rl.EnableCursor();
+            if (!_cursorVisible) Rl.HideCursor();
+        }
+        return true;
+    }
 }

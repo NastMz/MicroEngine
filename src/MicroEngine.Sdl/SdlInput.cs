@@ -7,13 +7,13 @@ namespace MicroEngine.Sdl;
 
 /// <summary>
 /// SDL's input as device events (<see cref="IInputBackend"/>): the keyboard by scancode (every key of a full-size
-/// keyboard), text and input-method composition while text input is on, the mouse with its wheel, and every gamepad
-/// with its own id, hot-plugged, with its type, the player number it shows and rumble. Fingers stay with the touch
-/// screen (<see cref="SdlTouchScreen"/>), which the engine turns into pointers. Also the platform's
-/// <see cref="IKeyLabels"/> (the layout's label for a scancode), <see cref="IGamepadRumble"/> and
-/// <see cref="ITextInputControl"/>.
+/// keyboard), text and input-method composition while text input is on, the mouse with its five buttons, its motion
+/// and its wheel, and every gamepad with its own id, hot-plugged, with its type, the player number it shows and rumble.
+/// Fingers stay with the touch screen (<see cref="SdlTouchScreen"/>), which the engine turns into pointers. Also the
+/// platform's <see cref="IKeyLabels"/> (the layout's label for a scancode), <see cref="IGamepadRumble"/>,
+/// <see cref="ITextInputControl"/> and <see cref="ICursorControl"/> (SDL's cursor visibility and relative mouse mode).
 /// </summary>
-internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamepadRumble, ITextInputControl, IDisposable
+internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamepadRumble, ITextInputControl, ICursorControl, IDisposable
 {
     /// <summary>The keyboard: SDL merges every keyboard into one state, and so does the engine.</summary>
     public static readonly DeviceId Keyboard = new(1);
@@ -23,7 +23,9 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
 
     private readonly SdlPlatform _platform;
     private readonly Dictionary<SDL_JoystickID, nint> _pads = [];
-    private bool _mouseInside;
+    private bool _mouseInside, _cursorVisible = true;
+    // Where the cursor was when it was locked: a locked cursor reports motion only, so its position stays there.
+    private Vector2 _lockedAt, _lockedPixels;
 
     public SdlInput(SdlPlatform platform)
     {
@@ -65,10 +67,20 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 if (e.motion.which == SDL_TOUCH_MOUSEID) return true;
+            {
                 _mouseInside = true;
-                Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, _platform.ToCanvas(e.motion.x, e.motion.y), _platform.Seconds(e.motion.timestamp))
-                    with { ScreenPosition = _platform.ToPixels(e.motion.x, e.motion.y) });
+                // The motion in canvas pixels: the same scale as the position, taken from SDL's own relative motion.
+                var at = _platform.ToCanvas(e.motion.x, e.motion.y);
+                var delta = at - _platform.ToCanvas(e.motion.x - e.motion.xrel, e.motion.y - e.motion.yrel);
+                double t = _platform.Seconds(e.motion.timestamp);
+                if (Relative)
+                {
+                    if (delta != Vector2.Zero) Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, _lockedAt, t, delta) with { ScreenPosition = _lockedPixels });
+                    return true;
+                }
+                Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, at, t, delta) with { ScreenPosition = _platform.ToPixels(e.motion.x, e.motion.y) });
                 return true;
+            }
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
             {
@@ -79,10 +91,11 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
                     4 => PointerButton.Back, 5 => PointerButton.Forward, _ => PointerButton.None,
                 };
                 if (button == PointerButton.None) return true;
-                var at = _platform.ToCanvas(e.button.x, e.button.y);
+                bool locked = Relative;
+                var at = locked ? _lockedAt : _platform.ToCanvas(e.button.x, e.button.y);
                 double t = _platform.Seconds(e.button.timestamp);
                 var ev = e.button.down ? InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, at, button, t) : InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, at, button, t);
-                Emit(ev with { ScreenPosition = _platform.ToPixels(e.button.x, e.button.y) });
+                Emit(ev with { ScreenPosition = locked ? _lockedPixels : _platform.ToPixels(e.button.x, e.button.y) });
                 return true;
             }
             case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
@@ -90,7 +103,7 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
                 if (e.wheel.which == SDL_TOUCH_MOUSEID) return true;
                 var turn = new Vector2(e.wheel.x, e.wheel.y);
                 if (e.wheel.direction == SDL_MouseWheelDirection.SDL_MOUSEWHEEL_FLIPPED) turn = -turn;
-                Emit(InputEvent.WheelMoved(Mouse, turn, _platform.ToCanvas(e.wheel.mouse_x, e.wheel.mouse_y), _platform.Seconds(e.wheel.timestamp)));
+                Emit(InputEvent.WheelMoved(Mouse, turn, Relative ? _lockedAt : _platform.ToCanvas(e.wheel.mouse_x, e.wheel.mouse_y), _platform.Seconds(e.wheel.timestamp)));
                 return true;
             }
             case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
@@ -239,6 +252,34 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
 
     /// <inheritdoc/>
     public void Stop() => SDL_StopTextInput(_platform.Window);
+
+    /// <inheritdoc/>
+    public bool Visible
+    {
+        get => _cursorVisible;
+        set
+        {
+            _cursorVisible = value;
+            if (value) SDL_ShowCursor(); else SDL_HideCursor();
+        }
+    }
+
+    /// <summary>Whether SDL holds the window in relative mouse mode now (a browser may have ended it: the player's Escape key).</summary>
+    public bool Relative => SDL_GetWindowRelativeMouseMode(_platform.Window);
+
+    /// <inheritdoc/>
+    public bool SetRelative(bool relative)
+    {
+        if (relative == Relative) return true;
+        if (relative)
+        {
+            float x, y;
+            SDL_GetMouseState(&x, &y);
+            _lockedAt = _platform.ToCanvas(x, y);
+            _lockedPixels = _platform.ToPixels(x, y);
+        }
+        return SDL_SetWindowRelativeMouseMode(_platform.Window, relative);
+    }
 
     public void Dispose()
     {

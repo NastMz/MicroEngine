@@ -4,10 +4,20 @@ using MicroEngine.Kernel;
 namespace MicroEngine.Input;
 
 /// <summary>What an action is bound to, for display or a rebinding screen (<see cref="InputMap.GetBindings"/>).</summary>
+/// <param name="Keys">The keys that press the action.</param>
+/// <param name="Buttons">The gamepad buttons that press it.</param>
+/// <param name="Stick">The left-stick direction that presses it, or <c>None</c>.</param>
+/// <param name="Axes">The gamepad axis sides that press it.</param>
 public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadButton> Buttons, InputMap.StickDirection Stick, IReadOnlyList<(PadAxis Axis, bool Positive)> Axes)
 {
     /// <summary>The key combinations that press the action (Alt+Enter).</summary>
     public IReadOnlyList<KeyChord> Chords { get; init; } = [];
+    /// <summary>
+    /// Every control bound to the action, mouse buttons, the wheel, pointer motion and the right stick included, in
+    /// the order the map reads them: by <see cref="InputControlKind"/>, then in the order they were bound. The other
+    /// members are views of this list by kind.
+    /// </summary>
+    public IReadOnlyList<InputControl> Controls { get; init; } = [];
 }
 
 /// <summary>
@@ -32,8 +42,9 @@ public sealed record KeyChord
 }
 
 /// <summary>
-/// Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
-/// (touch controls, custom sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
+/// Named actions bound to controls (<see cref="InputControl"/>: keys, gamepad buttons, stick directions and analog
+/// axes, mouse buttons, the wheel and pointer motion), plus any number of action sources (touch controls, custom
+/// sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
 /// scripted input stay in one place. Every action is both digital (<see cref="Down"/>, <see cref="Pressed"/>,
 /// <see cref="Released"/>) and analog (<see cref="Value"/>, <see cref="Vector"/>): a key is 0 or 1, a stick or a
 /// virtual joystick gives the deflection beyond its dead zone.
@@ -54,11 +65,24 @@ public sealed partial class InputMap : IStateHashed
 {
     private sealed class Binding
     {
-        public List<Key> Keys { get; } = [];
-        public List<PadButton> Buttons { get; } = [];
-        public StickDirection Stick { get; set; }
-        public List<(PadAxis Axis, bool Positive)> Axes { get; } = [];
-        public List<KeyChord> Chords { get; } = [];
+        /// <summary>The controls, kept in reading order: by kind, then as bound.</summary>
+        public List<InputControl> Controls { get; } = [];
+
+        public bool Add(InputControl control)
+        {
+            if (control.Kind == InputControlKind.None || Controls.Contains(control)) return false;
+            int at = Controls.Count;
+            while (at > 0 && Controls[at - 1].Kind > control.Kind) at--;
+            Controls.Insert(at, control);
+            return true;
+        }
+
+        public InputControl? LeftStick()
+        {
+            foreach (var c in Controls)
+                if (c.Kind == InputControlKind.Stick && c.Stick == PadStick.Left) return c;
+            return null;
+        }
     }
 
     private readonly Dictionary<string, Binding> _bindings = new(StringComparer.Ordinal);
@@ -77,23 +101,39 @@ public sealed partial class InputMap : IStateHashed
     private readonly List<IActionSource> _sources = [];
     private readonly List<PointerInfo> _pointers = [];
     private PointerState _pointer;
+    // Wheel controls press once per whole notch: what a smooth wheel has turned towards the next one, per direction
+    // (indexed by StickDirection), and the directions that completed a notch in this update.
+    private readonly float[] _wheelTurned = new float[5];
+    private readonly bool[] _wheelNotch = new bool[5];
+    private readonly HashSet<string> _impulses = new(StringComparer.Ordinal);
+    private PointerButtons _previousButtons;
+    // What the bindings use, found again after they change: maps with no wheel or pointer control do none of that work.
+    private bool _usesChanged = true, _usesWheel, _usesPointer;
 
     /// <summary>
-    /// The direction of the left stick an action is bound to (<c>None</c>, <c>Left</c>, <c>Right</c>, <c>Up</c>,
+    /// The direction of a stick an action is bound to (<c>None</c>, <c>Left</c>, <c>Right</c>, <c>Up</c>,
     /// <c>Down</c>). The action is down when the stick points that way beyond <see cref="StickThreshold"/>, and its
-    /// <see cref="Value"/> is the deflection along that direction.
+    /// <see cref="Value"/> is the deflection along that direction. The wheel and pointer motion name their directions
+    /// with it too (<see cref="InputControl.Direction"/>).
     /// </summary>
     public enum StickDirection { None, Left, Right, Up, Down }
 
     /// <summary>Radial dead zone of the left stick, as a fraction of full deflection (default 0.2). Values beyond it are rescaled to 0..1.</summary>
     public float StickDeadZone { get; set; } = 0.2f;
+    /// <summary>Radial dead zone of the right stick, for the directions bound with <see cref="BindStick"/> (default 0.2). An axis bound with <see cref="BindAxis"/> uses <see cref="AxisDeadZone"/>.</summary>
+    public float RightStickDeadZone { get; set; } = 0.2f;
     /// <summary>Deflection (after the dead zone) at which a stick direction counts as down (default 0.35).</summary>
     public float StickThreshold { get; set; } = 0.35f;
-    /// <summary>How the left stick presses direction actions: eight sectors (default) or four.</summary>
+    /// <summary>
+    /// The <see cref="Value"/> one virtual canvas pixel of pointer motion gives an action bound to it (default 1):
+    /// the game's mouse sensitivity.
+    /// </summary>
+    public float PointerSensitivity { get; set; } = 1f;
+    /// <summary>How a stick presses direction actions: eight sectors (default) or four.</summary>
     public StickDirections StickMode { get; set; } = StickDirections.Eight;
     /// <summary>Dead zone of bound triggers and other single axes (default 0.1).</summary>
     public float AxisDeadZone { get; set; } = 0.1f;
-    /// <summary>The device that most recently pressed an action. Touch controls use it to hide while a keyboard or gamepad plays.</summary>
+    /// <summary>The device that most recently pressed an action. Touch controls use it to hide while a keyboard, mouse or gamepad plays.</summary>
     public InputDevice LastDevice { get; private set; }
     /// <summary>Whether a gamepad was connected at the last sample.</summary>
     public bool PadConnected { get; private set; }
@@ -101,7 +141,10 @@ public sealed partial class InputMap : IStateHashed
     public GamepadStyle PadStyle { get; private set; }
     /// <summary>
     /// The pointer at the last sample: the mouse over the virtual canvas, or a finger on the screen that no on-screen
-    /// control took (whichever moved last), with the wheel's turn since the previous update.
+    /// control took (whichever moved last), with every button's state and edges
+    /// (<see cref="PointerState.Pressed"/>, <see cref="PointerState.Released"/>) and the wheel's turn and the pointer's
+    /// motion since the previous update. Clicks and wheel turns an input layer took (a widget, an on-screen control) are
+    /// not in it.
     /// </summary>
     public PointerState Pointer => _pointer;
     /// <summary>
@@ -125,7 +168,7 @@ public sealed partial class InputMap : IStateHashed
     /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Bind(string action, params Key[] keys) => Bind(action, keys, [], StickDirection.None);
 
-    /// <summary>Binds keys, gamepad buttons and optionally a left-stick direction to <paramref name="action"/>, adding to its existing bindings (use <see cref="Unbind"/> first to replace them).</summary>
+    /// <summary>Binds keys, gamepad buttons and optionally a left-stick direction to <paramref name="action"/>, adding to its existing bindings (use <see cref="Unbind(string)"/> first to replace them).</summary>
     /// <param name="action">The action name (case-sensitive, not empty).</param>
     /// <param name="keys">Keys that press the action.</param>
     /// <param name="buttons">Gamepad buttons that press the action.</param>
@@ -135,9 +178,15 @@ public sealed partial class InputMap : IStateHashed
     public InputMap Bind(string action, Key[] keys, PadButton[] buttons, StickDirection stick = StickDirection.None)
     {
         var b = Get(action);
-        b.Keys.AddRange(keys);
-        b.Buttons.AddRange(buttons);
-        if (stick != StickDirection.None) b.Stick = stick;
+        foreach (var key in keys) b.Add(key);
+        foreach (var button in buttons) b.Add(button);
+        if (stick != StickDirection.None)
+        {
+            // An action follows one direction of the left stick: a new one replaces it.
+            if (b.LeftStick() is { } old) b.Controls.Remove(old);
+            b.Add(InputControl.Of(PadStick.Left, stick));
+        }
+        _usesChanged = true;
         return this;
     }
 
@@ -145,7 +194,33 @@ public sealed partial class InputMap : IStateHashed
     /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Bind(string action, params KeyChord[] chords)
     {
-        Get(action).Chords.AddRange(chords);
+        var b = Get(action);
+        foreach (var chord in chords) b.Add(chord);
+        _usesChanged = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Binds any controls to <paramref name="action"/>, adding to its existing bindings: keys, gamepad buttons and
+    /// mouse buttons by themselves, the rest by name
+    /// (<c>Bind("zoom-in", InputControl.WheelUp, Key.Equals)</c>, <c>Bind("order", PointerButton.Secondary)</c>).
+    /// A control the action already has is not added again.
+    /// </summary>
+    /// <remarks>
+    /// A mouse button presses the action like a key. The primary button is also a finger or pen on the screen. A wheel
+    /// direction presses it for one update per notch, and the action's <see cref="Value"/> is the notches turned in
+    /// that update. Pointer motion gives the action a <see cref="Value"/> (pixels moved in the update times
+    /// <see cref="PointerSensitivity"/>) and never presses it; read it with <see cref="AnalogAxis"/> or
+    /// <see cref="Motion"/>. Clicks and wheel turns an input layer took (a widget under the pointer, an on-screen
+    /// control) press nothing.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
+    public InputMap Bind(string action, params InputControl[] controls)
+    {
+        ArgumentNullException.ThrowIfNull(controls);
+        var b = Get(action);
+        foreach (var control in controls) b.Add(control);
+        _usesChanged = true;
         return this;
     }
 
@@ -154,29 +229,64 @@ public sealed partial class InputMap : IStateHashed
     /// (<c>BindAxis("fire", PadAxis.RightTrigger)</c>). The action is down beyond half travel and its
     /// <see cref="Value"/> follows the axis.
     /// </summary>
-    public InputMap BindAxis(string action, PadAxis axis, bool positive = true)
-    {
-        Get(action).Axes.Add((axis, positive));
-        return this;
-    }
+    public InputMap BindAxis(string action, PadAxis axis, bool positive = true) => Bind(action, InputControl.Of(axis, positive));
 
     /// <summary>
-    /// Removes every key, chord, button, stick and axis bound to the action (the action stays, unbound), to rebind or
-    /// turn it off. An action the map does not have yet becomes one with no binding, so the engine adds no default
-    /// binding to it (<see cref="ActionNames.Fullscreen"/>).
+    /// Binds a direction of a stick: <c>BindStick("aim-up", PadStick.Right, StickDirection.Up)</c>. The stick is read
+    /// as a whole, with its radial dead zone (<see cref="StickDeadZone"/>, <see cref="RightStickDeadZone"/>): the
+    /// action is down when it points that way beyond <see cref="StickThreshold"/> and its <see cref="Value"/> is the
+    /// deflection along that direction, so four actions give <see cref="Vector"/> a round aim.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty, or <paramref name="direction"/> is <c>None</c>.</exception>
+    public InputMap BindStick(string action, PadStick stick, StickDirection direction) => Bind(action, InputControl.Of(stick, direction));
+
+    /// <summary>
+    /// Removes every control bound to the action (the action stays, unbound), to rebind or turn it off. An action the
+    /// map does not have yet becomes one with no binding, so the engine adds no default binding to it
+    /// (<see cref="ActionNames.Fullscreen"/>).
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Unbind(string action)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
         _bindings[action] = new Binding();
+        _usesChanged = true;
         return this;
     }
 
+    /// <summary>Removes one control from the action's bindings; false when the action does not have it.</summary>
+    public bool Unbind(string action, InputControl control)
+    {
+        if (!_bindings.TryGetValue(action, out var b) || !b.Controls.Remove(control)) return false;
+        _usesChanged = true;
+        return true;
+    }
+
+    /// <summary>The actions <paramref name="control"/> is bound to, for a rebinding screen that must not give one control to two actions.</summary>
+    public IEnumerable<string> ActionsBoundTo(InputControl control)
+    {
+        foreach (var (action, b) in _bindings)
+            if (b.Controls.Contains(control)) yield return action;
+    }
+
     /// <summary>What the action is bound to; null for an unknown action.</summary>
-    public ActionBindings? GetBindings(string action) => _bindings.TryGetValue(action, out var b)
-        ? new ActionBindings([.. b.Keys], [.. b.Buttons], b.Stick, [.. b.Axes]) { Chords = [.. b.Chords] }
-        : null;
+    public ActionBindings? GetBindings(string action)
+    {
+        if (!_bindings.TryGetValue(action, out var b)) return null;
+        var keys = new List<Key>();
+        var buttons = new List<PadButton>();
+        var axes = new List<(PadAxis, bool)>();
+        var chords = new List<KeyChord>();
+        foreach (var c in b.Controls)
+            switch (c.Kind)
+            {
+                case InputControlKind.Key: keys.Add(c.Key); break;
+                case InputControlKind.Chord: chords.Add(c.Chord!); break;
+                case InputControlKind.PadButton: buttons.Add(c.Button); break;
+                case InputControlKind.PadAxis: axes.Add((c.Axis, c.Positive)); break;
+            }
+        return new ActionBindings(keys, buttons, b.LeftStick()?.Direction ?? StickDirection.None, axes) { Chords = chords, Controls = [.. b.Controls] };
+    }
 
     private Binding Get(string action)
     {
@@ -185,7 +295,7 @@ public sealed partial class InputMap : IStateHashed
         return b;
     }
 
-    /// <summary>The names of every bound action (including actions unbound with <see cref="Unbind"/>).</summary>
+    /// <summary>The names of every bound action (including actions unbound with <see cref="Unbind(string)"/>).</summary>
     public IEnumerable<string> Actions => _bindings.Keys;
 
     /// <summary>Adds an action source read with the devices at every sample. Its actions need no binding, but unbound names are listed in <see cref="Actions"/> only once bound.</summary>
@@ -204,41 +314,93 @@ public sealed partial class InputMap : IStateHashed
     {
         PadConnected = source.PadConnected;
         PadStyle = source.PadStyle;
-        _pointer = source.Pointer;
+        var pointer = source.Pointer;
+        var buttons = pointer.Buttons;
+        _pointer = pointer with { PressedButtons = buttons & ~_previousButtons, ReleasedButtons = _previousButtons & ~buttons };
         _pointers.Clear();
         _pointers.AddRange(source.Pointers);
+        if (_usesChanged) FindUses();
         UpdateChords(source);
+        if (_usesWheel) UpdateWheel(pointer.Wheel);
+        _impulses.Clear();
         var stick = ApplyDeadZone(source.LeftStick, StickDeadZone);
         var stickDown = Directions(stick, StickThreshold, StickMode);
+        // The right stick is read only by the maps that bind a direction of it.
+        Vector2 rightStick = default;
+        IReadOnlySet<StickDirection>? rightDown = null;
         foreach (var (action, b) in _bindings)
         {
             var device = InputDevice.None;
             float value = 0;
-            bool down = false;
+            bool down = false, impulse = false;
             if (_forced.Contains(action)) { down = true; value = 1; device = InputDevice.Other; }
-            // Plain loops: this runs for every action at every update, and LINQ would allocate each time.
-            if (!down)
-                foreach (var key in b.Keys)
-                    if (source.IsKeyDown(key) && !_chorded.Contains(key)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
-            if (!down)
-                foreach (var chord in b.Chords)
-                    if (_chorded.Contains(chord.Key) && source.IsKeyDown(chord.Key) && AnyDown(source, chord.Modifiers)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
-            if (!down)
-                foreach (var button in b.Buttons)
-                    if (source.IsPadDown(button)) { down = true; value = 1; device = InputDevice.Gamepad; break; }
-            if (b.Stick != StickDirection.None)
-            {
-                float v = Component(stick, b.Stick);
-                if (v > value) value = v;
-                if (!down && stickDown.Contains(b.Stick)) { down = true; device = InputDevice.Gamepad; }
-            }
-            foreach (var (axis, positive) in b.Axes)
-            {
-                float raw = source.GetPadAxis(axis);
-                float v = Rescale(positive ? raw : -raw, AxisDeadZone);
-                if (v > value) value = v;
-                if (!down && v >= 0.5f) { down = true; device = InputDevice.Gamepad; }
-            }
+            // One pass over the controls, which are kept in reading order: digital ones first (the first one down
+            // decides the device), then the analog ones, whose largest value wins. A plain loop, no LINQ: this runs for
+            // every action at every update.
+            foreach (var c in b.Controls)
+                switch (c.Kind)
+                {
+                    case InputControlKind.Key:
+                        if (!down && source.IsKeyDown(c.Key) && !_chorded.Contains(c.Key)) { down = true; value = 1; device = InputDevice.Keyboard; }
+                        break;
+                    case InputControlKind.Chord:
+                        if (!down && _chorded.Contains(c.Key) && source.IsKeyDown(c.Key) && AnyDown(source, c.Chord!.Modifiers)) { down = true; value = 1; device = InputDevice.Keyboard; }
+                        break;
+                    case InputControlKind.PadButton:
+                        if (!down && source.IsPadDown(c.Button)) { down = true; value = 1; device = InputDevice.Gamepad; }
+                        break;
+                    case InputControlKind.PointerButton:
+                        if (!down && pointer.Down(c.PointerButton)) { down = true; value = 1; device = pointer.Kind == PointerKind.Touch ? InputDevice.Touch : InputDevice.Mouse; }
+                        break;
+                    case InputControlKind.Wheel:
+                    {
+                        float v = Component(pointer.Wheel, c.Direction, wheel: true);
+                        if (v > value) value = v;
+                        if (_wheelNotch[(int)c.Direction])
+                        {
+                            impulse = true;
+                            if (!down) { down = true; device = InputDevice.Mouse; }
+                        }
+                        break;
+                    }
+                    case InputControlKind.Stick:
+                    {
+                        bool pressed;
+                        float v;
+                        if (c.Stick == PadStick.Left)
+                        {
+                            v = Component(stick, c.Direction);
+                            pressed = stickDown.Contains(c.Direction);
+                        }
+                        else
+                        {
+                            if (rightDown is null)
+                            {
+                                rightStick = ApplyDeadZone(source.RightStick, RightStickDeadZone);
+                                rightDown = Directions(rightStick, StickThreshold, StickMode);
+                            }
+                            v = Component(rightStick, c.Direction);
+                            pressed = rightDown.Contains(c.Direction);
+                        }
+                        if (v > value) value = v;
+                        if (!down && pressed) { down = true; device = InputDevice.Gamepad; }
+                        break;
+                    }
+                    case InputControlKind.PadAxis:
+                    {
+                        float raw = source.GetPadAxis(c.Axis);
+                        float v = Rescale(c.Positive ? raw : -raw, AxisDeadZone);
+                        if (v > value) value = v;
+                        if (!down && v >= 0.5f) { down = true; device = InputDevice.Gamepad; }
+                        break;
+                    }
+                    case InputControlKind.PointerMotion:
+                    {
+                        float v = Component(pointer.Delta, c.Direction) * PointerSensitivity;
+                        if (v > value) value = v;
+                        break;
+                    }
+                }
             foreach (var s in _sources)
             {
                 float v = s.Value(action);
@@ -246,6 +408,7 @@ public sealed partial class InputMap : IStateHashed
                 if (!down && s.IsDown(action)) { down = true; value = Math.Max(value, v); device = s.Device; }
             }
             Set(action, down, value, device);
+            if (impulse) _impulses.Add(action);
         }
         // Actions only a source knows (not bound) still work, so a touch layout can add "aim" without a key.
         foreach (var s in _sources)
@@ -265,6 +428,49 @@ public sealed partial class InputMap : IStateHashed
             if (!_bindings.ContainsKey(action)) Set(action, true, 1, InputDevice.Other);
     }
 
+    private void FindUses()
+    {
+        _usesChanged = false;
+        _usesWheel = _usesPointer = false;
+        foreach (var b in _bindings.Values)
+            foreach (var c in b.Controls)
+            {
+                if (c.Kind == InputControlKind.Wheel) _usesWheel = true;
+                if (c.Device == InputDevice.Mouse) _usesPointer = true;
+            }
+        if (!_usesWheel)
+        {
+            Array.Clear(_wheelTurned);
+            Array.Clear(_wheelNotch);
+        }
+    }
+
+    /// <summary>
+    /// The wheel as presses: a notch presses once, and a smooth wheel or a touchpad, which turns by fractions, presses
+    /// once each time those add up to a notch. Turning the other way starts again.
+    /// </summary>
+    private void UpdateWheel(Vector2 wheel)
+    {
+        Turn(StickDirection.Up, StickDirection.Down, wheel.Y);
+        Turn(StickDirection.Right, StickDirection.Left, wheel.X);
+
+        void Turn(StickDirection positive, StickDirection negative, float amount)
+        {
+            _wheelNotch[(int)positive] = _wheelNotch[(int)negative] = false;
+            if (amount == 0) return;
+            var (way, other) = amount > 0 ? (positive, negative) : (negative, positive);
+            _wheelTurned[(int)other] = 0;
+            float turned = _wheelTurned[(int)way] + MathF.Abs(amount);
+            // A whole notch is 1; the small margin keeps ten tenths a notch.
+            if (turned >= 1 - 1e-4f)
+            {
+                _wheelNotch[(int)way] = true;
+                turned = Math.Max(0, turned - MathF.Floor(turned + 1e-4f));
+            }
+            _wheelTurned[(int)way] = turned;
+        }
+    }
+
     /// <summary>
     /// Chord precedence: a chord key that went down since the previous sample while a modifier of one of its chords is
     /// held becomes the chord's until it is released; a chord key that went down alone stays a plain key.
@@ -280,20 +486,23 @@ public sealed partial class InputMap : IStateHashed
             foreach (var k in _released) _chorded.Remove(k);
         }
         foreach (var b in _bindings.Values)
-            foreach (var chord in b.Chords)
+            foreach (var c in b.Controls)
             {
-                bool down = source.IsKeyDown(chord.Key);
-                if (down && !_chordKeysDown.Contains(chord.Key) && AnyDown(source, chord.Modifiers)) _chorded.Add(chord.Key);
+                if (c.Kind != InputControlKind.Chord) continue;
+                bool down = source.IsKeyDown(c.Key);
+                if (down && !_chordKeysDown.Contains(c.Key) && AnyDown(source, c.Chord!.Modifiers)) _chorded.Add(c.Key);
             }
         _chordKeysDown.Clear();
         foreach (var b in _bindings.Values)
-            foreach (var chord in b.Chords)
-                if (source.IsKeyDown(chord.Key)) _chordKeysDown.Add(chord.Key);
+            foreach (var c in b.Controls)
+                if (c.Kind == InputControlKind.Chord && source.IsKeyDown(c.Key)) _chordKeysDown.Add(c.Key);
     }
 
     private bool HasChords()
     {
-        foreach (var b in _bindings.Values) if (b.Chords.Count > 0) return true;
+        foreach (var b in _bindings.Values)
+            foreach (var c in b.Controls)
+                if (c.Kind == InputControlKind.Chord) return true;
         return false;
     }
 
@@ -331,6 +540,7 @@ public sealed partial class InputMap : IStateHashed
         // A tap latched this update counted as down: the next update reports its release.
         foreach (var a in _latched) _previous.Add(a);
         _latched.Clear();
+        _previousButtons = _pointer.Buttons;
         // A consumed action stays taken until it was let go and its release was hidden for one update.
         if (_consumed.Count > 0) _consumed.RemoveWhere(a => !_down.Contains(a) && !_previous.Contains(a));
     }
@@ -338,7 +548,8 @@ public sealed partial class InputMap : IStateHashed
     /// <summary>Whether the action is held in this update. Also true for a press that started and ended within the last frame, so a quick tap is never missed. Unknown actions are never down.</summary>
     public bool Down(string action) => (_down.Contains(action) || _latched.Contains(action)) && !_consumed.Contains(action);
     /// <summary>True during the first update after the action went down, even if it was released within the same frame.</summary>
-    public bool Pressed(string action) => (_latched.Contains(action) || (_down.Contains(action) && !_previous.Contains(action))) && !_consumed.Contains(action);
+    /// <remarks>A wheel notch is a press of its own: an action bound to the wheel is pressed again in every update a notch turns in, even two in a row.</remarks>
+    public bool Pressed(string action) => (_latched.Contains(action) || _impulses.Contains(action) || (_down.Contains(action) && !_previous.Contains(action))) && !_consumed.Contains(action);
     /// <summary>True during the first update after the action was let go. A tap that started and ended within one frame reports <see cref="Pressed"/> in its update and <see cref="Released"/> in the next one.</summary>
     public bool Released(string action) => !_down.Contains(action) && _previous.Contains(action) && !_consumed.Contains(action);
 
@@ -360,8 +571,10 @@ public sealed partial class InputMap : IStateHashed
     public bool IsConsumed(string action) => _consumed.Contains(action);
 
     /// <summary>
-    /// The action's strength in 0..1: 1 for a key or button, the deflection beyond the dead zone for a stick, trigger
+    /// The action's strength: 1 for a key or button, the deflection beyond the dead zone (0..1) for a stick, trigger
     /// or virtual joystick. A stick that is deflected but below <see cref="StickThreshold"/> has a value without being down.
+    /// The wheel and pointer motion are amounts, not positions, and may exceed 1: the notches turned in this update, the
+    /// pixels moved in it times <see cref="PointerSensitivity"/>.
     /// </summary>
     public float Value(string action)
     {
@@ -386,6 +599,13 @@ public sealed partial class InputMap : IStateHashed
         float length = v.Length();
         return length > 1 ? v / length : v;
     }
+
+    /// <summary>
+    /// A 2D amount from four actions, with no limit on its length: what pointer motion or the wheel moved in this
+    /// update (<c>camera.Yaw += Input.Motion("look-left", "look-right", "look-up", "look-down").X</c>). A stick bound
+    /// to the same actions adds its deflection, so one line reads the mouse and the gamepad.
+    /// </summary>
+    public Vector2 Motion(string left, string right, string up, string down) => new(AnalogAxis(left, right), AnalogAxis(up, down));
 
     /// <summary>
     /// Adds the sampled state to the per-step state hash: the actions down, down in the previous update, latched and
@@ -439,6 +659,18 @@ public sealed partial class InputMap : IStateHashed
             }
             Names(hash, _consumed);
         }
+        // The pointer's later state: only for a map that binds a mouse control, or while a side button is held, so
+        // every other game's hashes are what they were.
+        if (_usesPointer || _pointer.Back || _pointer.Forward)
+        {
+            hash.Add(_pointer.Back);
+            hash.Add(_pointer.Forward);
+            hash.Add(_pointer.Delta);
+            hash.Add((int)_pointer.Kind);
+            hash.Add((int)_previousButtons);
+            foreach (float turned in _wheelTurned) hash.Add(turned);
+            Names(hash, _impulses);
+        }
     }
 
     /// <summary>Clears every state, e.g. after a scene change, so held keys must be pressed again.</summary>
@@ -482,12 +714,16 @@ public sealed partial class InputMap : IStateHashed
         return result;
     }
 
-    private static float Component(Vector2 v, StickDirection d) => d switch
+    /// <summary>
+    /// How far <paramref name="v"/> goes towards <paramref name="d"/> (0 when it goes the other way). Up is negative Y
+    /// for sticks and the pointer (screen coordinates) and positive Y for the wheel (away from the player).
+    /// </summary>
+    private static float Component(Vector2 v, StickDirection d, bool wheel = false) => d switch
     {
         StickDirection.Left => Math.Max(0, -v.X),
         StickDirection.Right => Math.Max(0, v.X),
-        StickDirection.Up => Math.Max(0, -v.Y),
-        StickDirection.Down => Math.Max(0, v.Y),
+        StickDirection.Up => Math.Max(0, wheel ? v.Y : -v.Y),
+        StickDirection.Down => Math.Max(0, wheel ? -v.Y : v.Y),
         _ => 0,
     };
 
@@ -519,7 +755,7 @@ public sealed partial class InputMap : IStateHashed
     public InputMap BindFullscreenDefaults() => Bind(Names.Fullscreen, Key.F11).Bind(Names.Fullscreen, new KeyChord(Key.Enter, Key.LeftAlt, Key.RightAlt));
 
     /// <summary>
-    /// A new map with the same bindings, names and stick and axis settings, and no sampled state or action sources:
+    /// A new map with the same bindings, names and stick, axis and pointer settings, and no sampled state or action sources:
     /// the starting point of another player's map.
     /// </summary>
     public InputMap CopyBindings()
@@ -528,18 +764,15 @@ public sealed partial class InputMap : IStateHashed
         {
             Names = Names,
             StickDeadZone = StickDeadZone,
+            RightStickDeadZone = RightStickDeadZone,
+            PointerSensitivity = PointerSensitivity,
             StickThreshold = StickThreshold,
             StickMode = StickMode,
             AxisDeadZone = AxisDeadZone,
         };
         foreach (var (action, b) in _bindings)
         {
-            var c = copy.Get(action);
-            c.Keys.AddRange(b.Keys);
-            c.Buttons.AddRange(b.Buttons);
-            c.Stick = b.Stick;
-            c.Axes.AddRange(b.Axes);
-            c.Chords.AddRange(b.Chords);
+            copy.Get(action).Controls.AddRange(b.Controls);
         }
         return copy;
     }
