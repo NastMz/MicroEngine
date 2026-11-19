@@ -39,13 +39,11 @@ public sealed class InputDevices
     {
         public PointerKind Kind;
         public Vector2 Position;
+        public Vector2 Delta; // motion since the last sample
         public bool Present;
         public PointerButtons Held, Taps;
         public long Order;
     }
-
-    [Flags]
-    private enum PointerButtons { None = 0, Primary = 1, Secondary = 2, Middle = 4, Back = 8, Forward = 16 }
 
     private readonly Dictionary<DeviceId, Device> _devices = [];
     private readonly List<InputDeviceInfo> _connected = [];
@@ -156,25 +154,22 @@ public sealed class InputDevices
 
     private Pointer Touch(Device device, in InputEvent e)
     {
-        if (!device.Pointers.TryGetValue(e.Pointer, out var p)) device.Pointers[e.Pointer] = p = new Pointer { Kind = e.PointerKind };
-        p.Position = e.Position;
+        bool known = device.Pointers.TryGetValue(e.Pointer, out var p);
+        if (!known) device.Pointers[e.Pointer] = p = new Pointer { Kind = e.PointerKind };
+        // A backend that knows the motion says so (a locked cursor moves without changing place); otherwise it is the
+        // way from the previous position, and a pointer that appears or comes back has not moved yet.
+        if (e.Delta != Vector2.Zero) p!.Delta += e.Delta;
+        else if (known && p!.Present && e.Kind is not (InputEventKind.PointerLeave or InputEventKind.PointerCancel)) p.Delta += e.Position - p.Position;
+        p!.Position = e.Position;
         p.Order = device.Touched = ++_sequence;
         return p;
     }
 
-    private static PointerButtons Flag(PointerButton button) => button switch
-    {
-        PointerButton.Primary => PointerButtons.Primary,
-        PointerButton.Secondary => PointerButtons.Secondary,
-        PointerButton.Middle => PointerButtons.Middle,
-        PointerButton.Back => PointerButtons.Back,
-        PointerButton.Forward => PointerButtons.Forward,
-        _ => PointerButtons.None,
-    };
+    private static PointerButtons Flag(PointerButton button) => PointerState.Flag(button);
 
     /// <summary>
-    /// Ends a sample: presses that were already released stop reading as held, the wheel starts again from 0 and
-    /// lifted fingers go. Called once after every update has read the devices.
+    /// Ends a sample: presses that were already released stop reading as held, the wheel and the pointers' motion start
+    /// again from 0 and lifted fingers go. Called once after every update has read the devices.
     /// </summary>
     public void EndSample()
     {
@@ -187,6 +182,7 @@ public sealed class InputDevices
             foreach (var (id, p) in d.Pointers)
             {
                 p.Taps = PointerButtons.None;
+                p.Delta = Vector2.Zero;
                 if (!p.Present && p.Kind != PointerKind.Mouse) (gone ??= []).Add(id);
             }
             if (gone is not null) foreach (var id in gone) d.Pointers.Remove(id);
@@ -229,7 +225,11 @@ public sealed class InputDevices
             d.ButtonTaps.Clear();
             Array.Clear(d.Axes);
             d.Wheel = Vector2.Zero;
-            foreach (var p in d.Pointers.Values) p.Held = p.Taps = PointerButtons.None;
+            foreach (var p in d.Pointers.Values)
+            {
+                p.Held = p.Taps = PointerButtons.None;
+                p.Delta = Vector2.Zero;
+            }
             List<long>? gone = null;
             foreach (var (id, p) in d.Pointers) if (p.Kind != PointerKind.Mouse) (gone ??= []).Add(id);
             if (gone is not null) foreach (var id in gone) d.Pointers.Remove(id);
@@ -289,6 +289,20 @@ public sealed class InputDevices
             }
         }
 
+        public Vector2 RightStick
+        {
+            get
+            {
+                var best = Vector2.Zero;
+                foreach (var (id, d) in devices._devices)
+                {
+                    var v = new Vector2(d.Axes[(int)PadAxis.RightX], d.Axes[(int)PadAxis.RightY]);
+                    if (v.LengthSquared() > best.LengthSquared() && owns(id)) best = v;
+                }
+                return best;
+            }
+        }
+
         public bool PadConnected => FirstPad() is not null;
 
         public GamepadStyle PadStyle => FirstPad()?.Style ?? GamepadStyle.Xbox;
@@ -320,7 +334,14 @@ public sealed class InputDevices
                 // A finger that lifted within the frame is still there for the update that reads the tap.
                 bool present = last.Present || last.Taps != PointerButtons.None;
                 return new PointerState(present, last.Position, (held & PointerButtons.Primary) != 0,
-                    (held & PointerButtons.Secondary) != 0, (held & PointerButtons.Middle) != 0) { Wheel = wheel };
+                    (held & PointerButtons.Secondary) != 0, (held & PointerButtons.Middle) != 0)
+                {
+                    Wheel = wheel,
+                    Back = (held & PointerButtons.Back) != 0,
+                    Forward = (held & PointerButtons.Forward) != 0,
+                    Delta = last.Delta,
+                    Kind = last.Kind,
+                };
             }
         }
 

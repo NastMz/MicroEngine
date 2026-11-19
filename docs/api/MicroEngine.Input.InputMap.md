@@ -6,8 +6,9 @@ Namespace: [MicroEngine.Input](MicroEngine.Input.md)
 Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
-Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
-(touch controls, custom sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
+Named actions bound to controls ([InputControl](MicroEngine.Input.InputControl.md): keys, gamepad buttons, stick directions and analog
+axes, mouse buttons, the wheel and pointer motion), plus any number of action sources (touch controls, custom
+sources). Games query actions ("jump", "confirm"), never physical keys, so bindings and
 scripted input stay in one place. Every action is both digital ([Down](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Down_System_String_), [Pressed](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Pressed_System_String_),
 [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_)) and analog ([Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_), [Vector](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Vector_System_String_System_String_System_String_System_String_)): a key is 0 or 1, a stick or a
 virtual joystick gives the deflection beyond its dead zone.
@@ -88,7 +89,7 @@ public float AxisDeadZone { get; set; }
 
 ### <a id="MicroEngine_Input_InputMap_LastDevice"></a> LastDevice
 
-The device that most recently pressed an action. Touch controls use it to hide while a keyboard or gamepad plays.
+The device that most recently pressed an action. Touch controls use it to hide while a keyboard, mouse or gamepad plays.
 
 ```csharp
 public InputDevice LastDevice { get; }
@@ -139,7 +140,10 @@ public GamepadStyle PadStyle { get; }
 ### <a id="MicroEngine_Input_InputMap_Pointer"></a> Pointer
 
 The pointer at the last sample: the mouse over the virtual canvas, or a finger on the screen that no on-screen
-control took (whichever moved last), with the wheel's turn since the previous update.
+control took (whichever moved last), with every button's state and edges
+([Pressed](MicroEngine.Input.PointerState.md#MicroEngine_Input_PointerState_Pressed_MicroEngine_Input_PointerButton_), [Released](MicroEngine.Input.PointerState.md#MicroEngine_Input_PointerState_Released_MicroEngine_Input_PointerButton_)) and the wheel's turn and the pointer's
+motion since the previous update. Clicks and wheel turns an input layer took (a widget, an on-screen control) are
+not in it.
 
 ```csharp
 public PointerState Pointer { get; }
@@ -148,6 +152,19 @@ public PointerState Pointer { get; }
 #### Property Value
 
  [PointerState](MicroEngine.Input.PointerState.md)
+
+### <a id="MicroEngine_Input_InputMap_PointerSensitivity"></a> PointerSensitivity
+
+The [Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) one virtual canvas pixel of pointer motion gives an action bound to it (default 1):
+the game's mouse sensitivity.
+
+```csharp
+public float PointerSensitivity { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Input_InputMap_Pointers"></a> Pointers
 
@@ -161,6 +178,18 @@ public IReadOnlyList<PointerInfo> Pointers { get; }
 #### Property Value
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PointerInfo](MicroEngine.Input.PointerInfo.md)\>
+
+### <a id="MicroEngine_Input_InputMap_RightStickDeadZone"></a> RightStickDeadZone
+
+Radial dead zone of the right stick, for the directions bound with [BindStick](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindStick_System_String_MicroEngine_Input_PadStick_MicroEngine_Input_InputMap_StickDirection_) (default 0.2). An axis bound with [BindAxis](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindAxis_System_String_MicroEngine_Input_PadAxis_System_Boolean_) uses [AxisDeadZone](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AxisDeadZone).
+
+```csharp
+public float RightStickDeadZone { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Input_InputMap_Sources"></a> Sources
 
@@ -188,7 +217,7 @@ public float StickDeadZone { get; set; }
 
 ### <a id="MicroEngine_Input_InputMap_StickMode"></a> StickMode
 
-How the left stick presses direction actions: eight sectors (default) or four.
+How a stick presses direction actions: eight sectors (default) or four.
 
 ```csharp
 public StickDirections StickMode { get; set; }
@@ -211,6 +240,22 @@ public float StickThreshold { get; set; }
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ## Methods
+
+### <a id="MicroEngine_Input_InputMap_ActionsBoundTo_MicroEngine_Input_InputControl_"></a> ActionsBoundTo\(InputControl\)
+
+The actions <code class="paramref">control</code> is bound to, for a rebinding screen that must not give one control to two actions.
+
+```csharp
+public IEnumerable<string> ActionsBoundTo(InputControl control)
+```
+
+#### Parameters
+
+`control` [InputControl](MicroEngine.Input.InputControl.md)
+
+#### Returns
+
+ [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
 ### <a id="MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_"></a> AddSource\(IActionSource\)
 
@@ -374,6 +419,42 @@ public InputMap Bind(string action, params KeyChord[] chords)
 
 <code class="paramref">action</code> is empty.
 
+### <a id="MicroEngine_Input_InputMap_Bind_System_String_MicroEngine_Input_InputControl___"></a> Bind\(string, params InputControl\[\]\)
+
+Binds any controls to <code class="paramref">action</code>, adding to its existing bindings: keys, gamepad buttons and
+mouse buttons by themselves, the rest by name
+(<code>Bind("zoom-in", InputControl.WheelUp, Key.Equals)</code>, <code>Bind("order", PointerButton.Secondary)</code>).
+A control the action already has is not added again.
+
+```csharp
+public InputMap Bind(string action, params InputControl[] controls)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`controls` [InputControl](MicroEngine.Input.InputControl.md)\[\]
+
+#### Returns
+
+ [InputMap](MicroEngine.Input.InputMap.md)
+
+#### Remarks
+
+A mouse button presses the action like a key. The primary button is also a finger or pen on the screen. A wheel
+direction presses it for one update per notch, and the action's [Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the notches turned in
+that update. Pointer motion gives the action a [Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) (pixels moved in the update times
+[PointerSensitivity](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_PointerSensitivity)) and never presses it; read it with [AnalogAxis](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AnalogAxis_System_String_System_String_) or
+[Motion](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Motion_System_String_System_String_System_String_System_String_). Clicks and wheel turns an input layer took (a widget under the pointer, an on-screen
+control) press nothing.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">action</code> is empty.
+
 ### <a id="MicroEngine_Input_InputMap_BindAxis_System_String_MicroEngine_Input_PadAxis_System_Boolean_"></a> BindAxis\(string, PadAxis, bool\)
 
 Binds one side of an analog axis: <code>BindAxis("aim-right", PadAxis.RightX, positive: true)</code>, or a trigger
@@ -398,9 +479,11 @@ public InputMap BindAxis(string action, PadAxis axis, bool positive = true)
 
 ### <a id="MicroEngine_Input_InputMap_BindFrom_System_String_MicroEngine_Input_InputEvent__System_Boolean_"></a> BindFrom\(string, in InputEvent, bool\)
 
-Binds the key or gamepad button of <code class="paramref">press</code> (a key-down or button-down event, such as the one
-[ListenForPress](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__) hands over) to <code class="paramref">action</code>, adding to its bindings; with
-<code class="paramref">replace</code>, the action's keys (for a key) or buttons (for a button) are replaced.
+Binds the control of <code class="paramref">press</code> (a key-down, a gamepad button-down, a mouse button-down or a wheel
+turn, such as the one [ListenForPress](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__MicroEngine_Input_PressKinds_) hands over) to <code class="paramref">action</code>, adding
+to its bindings. With <code class="paramref">replace</code>, the new control takes the place of the action's controls of
+the same sort: its keys for a key, its gamepad buttons for a button, its mouse buttons and wheel directions for
+a mouse button or the wheel.
 
 ```csharp
 public bool BindFrom(string action, in InputEvent press, bool replace = false)
@@ -418,7 +501,7 @@ public bool BindFrom(string action, in InputEvent press, bool replace = false)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-False when the event is neither a key-down nor a button-down.
+False when the event is none of those presses ([FromPress](MicroEngine.Input.InputControl.md#MicroEngine_Input_InputControl_FromPress_MicroEngine_Input_InputEvent__)).
 
 ### <a id="MicroEngine_Input_InputMap_BindFullscreenDefaults"></a> BindFullscreenDefaults\(\)
 
@@ -433,6 +516,35 @@ public InputMap BindFullscreenDefaults()
 #### Returns
 
  [InputMap](MicroEngine.Input.InputMap.md)
+
+### <a id="MicroEngine_Input_InputMap_BindStick_System_String_MicroEngine_Input_PadStick_MicroEngine_Input_InputMap_StickDirection_"></a> BindStick\(string, PadStick, StickDirection\)
+
+Binds a direction of a stick: <code>BindStick("aim-up", PadStick.Right, StickDirection.Up)</code>. The stick is read
+as a whole, with its radial dead zone ([StickDeadZone](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickDeadZone), [RightStickDeadZone](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_RightStickDeadZone)): the
+action is down when it points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold) and its [Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the
+deflection along that direction, so four actions give [Vector](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Vector_System_String_System_String_System_String_System_String_) a round aim.
+
+```csharp
+public InputMap BindStick(string action, PadStick stick, InputMap.StickDirection direction)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`stick` [PadStick](MicroEngine.Input.PadStick.md)
+
+`direction` [InputMap](MicroEngine.Input.InputMap.md).[StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
+
+#### Returns
+
+ [InputMap](MicroEngine.Input.InputMap.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">action</code> is empty, or <code class="paramref">direction</code> is <code>None</code>.
 
 ### <a id="MicroEngine_Input_InputMap_Consume_System_String_"></a> Consume\(string\)
 
@@ -457,7 +569,7 @@ Whether the action was down and is now consumed.
 
 ### <a id="MicroEngine_Input_InputMap_CopyBindings"></a> CopyBindings\(\)
 
-A new map with the same bindings, names and stick and axis settings, and no sampled state or action sources:
+A new map with the same bindings, names and stick, axis and pointer settings, and no sampled state or action sources:
 the starting point of another player's map.
 
 ```csharp
@@ -576,7 +688,8 @@ public void HashState(StateHasher hash)
 
 Replaces the bindings of the actions this map has with those in <code class="paramref">set</code>. Actions the set does not
 mention keep theirs; actions the map does not have are ignored (a renamed or removed action does not come back),
-and so are names of keys, buttons or axes this version does not know.
+and so are controls this version does not know. A set of the first format (one list per kind of control) is read
+the same way.
 
 ```csharp
 public int ImportBindings(InputBindingSet set)
@@ -646,6 +759,30 @@ The storage failed.
 
 The storage refused access.
 
+### <a id="MicroEngine_Input_InputMap_Motion_System_String_System_String_System_String_System_String_"></a> Motion\(string, string, string, string\)
+
+A 2D amount from four actions, with no limit on its length: what pointer motion or the wheel moved in this
+update (<code>camera.Yaw += Input.Motion("look-left", "look-right", "look-up", "look-down").X</code>). A stick bound
+to the same actions adds its deflection, so one line reads the mouse and the gamepad.
+
+```csharp
+public Vector2 Motion(string left, string right, string up, string down)
+```
+
+#### Parameters
+
+`left` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`right` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`up` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`down` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ### <a id="MicroEngine_Input_InputMap_Pressed_System_String_"></a> Pressed\(string\)
 
 True during the first update after the action went down, even if it was released within the same frame.
@@ -661,6 +798,10 @@ public bool Pressed(string action)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Remarks
+
+A wheel notch is a press of its own: an action bound to the wheel is pressed again in every update a notch turns in, even two in a row.
 
 ### <a id="MicroEngine_Input_InputMap_Released_System_String_"></a> Released\(string\)
 
@@ -768,9 +909,9 @@ public void SetForced(string action, bool down)
 
 ### <a id="MicroEngine_Input_InputMap_Unbind_System_String_"></a> Unbind\(string\)
 
-Removes every key, chord, button, stick and axis bound to the action (the action stays, unbound), to rebind or
-turn it off. An action the map does not have yet becomes one with no binding, so the engine adds no default
-binding to it ([Fullscreen](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Fullscreen)).
+Removes every control bound to the action (the action stays, unbound), to rebind or turn it off. An action the
+map does not have yet becomes one with no binding, so the engine adds no default binding to it
+([Fullscreen](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Fullscreen)).
 
 ```csharp
 public InputMap Unbind(string action)
@@ -790,10 +931,30 @@ public InputMap Unbind(string action)
 
 <code class="paramref">action</code> is empty.
 
+### <a id="MicroEngine_Input_InputMap_Unbind_System_String_MicroEngine_Input_InputControl_"></a> Unbind\(string, InputControl\)
+
+Removes one control from the action's bindings; false when the action does not have it.
+
+```csharp
+public bool Unbind(string action, InputControl control)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`control` [InputControl](MicroEngine.Input.InputControl.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Input_InputMap_Value_System_String_"></a> Value\(string\)
 
-The action's strength in 0..1: 1 for a key or button, the deflection beyond the dead zone for a stick, trigger
+The action's strength: 1 for a key or button, the deflection beyond the dead zone (0..1) for a stick, trigger
 or virtual joystick. A stick that is deflected but below [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold) has a value without being down.
+The wheel and pointer motion are amounts, not positions, and may exceed 1: the notches turned in this update, the
+pixels moved in it times [PointerSensitivity](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_PointerSensitivity).
 
 ```csharp
 public float Value(string action)

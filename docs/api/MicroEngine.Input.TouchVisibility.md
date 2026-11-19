@@ -22,7 +22,7 @@ Drawn on every screen with touch, whatever device plays.
 
 `Auto = 0` 
 
-On touch-first screens, and elsewhere after the first touch; hidden while a keyboard or gamepad plays, back on the next touch.
+On touch-first screens, and elsewhere after the first touch; hidden while a keyboard, mouse or gamepad plays, back on the next touch.
 
 
 

@@ -39,7 +39,8 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | Limitation | More |
 | --- | --- |
 | One gamepad at a time (the first connected; the next takes over when it is unplugged); no rumble | [Input](../manual/input.md#limitations) |
-| The mouse can be read (`Input.Pointer`) but not bound to actions | [Input](../manual/input.md#limitations) |
+| No gesture recognition (tap, long press, swipe, pinch): the game reads the fingers | [Input](../manual/input.md#limitations) |
+| In a browser the cursor locks only after a click or a key press; phones have no cursor to control | [Input](../manual/input.md#the-cursor) |
 | No in-game rebinding screen or layout editor: bindings and touch layouts are code | [Input](../manual/input.md#limitations) |
 | No haptics on iOS | [Input](../manual/input.md#limitations) |
 | On screens near 16:9 the game frame shrinks while touch controls are shown, so none covers it | [Input](../manual/input.md#keeping-the-game-visible) |

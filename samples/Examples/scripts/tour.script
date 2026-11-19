@@ -197,4 +197,13 @@
 4090 press action
 4130 capture 34-state-machine.png
 4136 press pause
-4150 quit
+4150 press down
+4160 press confirm
+4200 wheel 1
+4210 mouse 200,100 down secondary
+4214 mouse 170,90
+4218 mouse 170,90 up secondary
+4240 click 270,140
+4270 capture 35-mouse.png
+4276 press pause
+4290 quit

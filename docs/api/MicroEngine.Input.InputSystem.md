@@ -223,19 +223,26 @@ public void HashState(StateHasher hash)
 
 `hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
-### <a id="MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__"></a> ListenForPress\(Action<InputEvent\>\)
+### <a id="MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__MicroEngine_Input_PressKinds_"></a> ListenForPress\(Action<InputEvent\>, PressKinds\)
 
-Takes the next key or gamepad-button press of any device away from everything else and hands it to
-<code class="paramref">pressed</code>, once: the "press a key for jump" step of a rebinding screen
-([BindFrom](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindFrom_System_String_MicroEngine_Input_InputEvent__System_Boolean_)). Dispose the result to stop listening before a press came.
+Takes the next press of any device away from everything else and hands it to <code class="paramref">pressed</code>, once:
+the "press a key for jump" step of a rebinding screen ([BindFrom](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindFrom_System_String_MicroEngine_Input_InputEvent__System_Boolean_),
+[FromPress](MicroEngine.Input.InputControl.md#MicroEngine_Input_InputControl_FromPress_MicroEngine_Input_InputEvent__)). Dispose the result to stop listening before a press came.
 
 ```csharp
-public IDisposable ListenForPress(Action<InputEvent> pressed)
+public IDisposable ListenForPress(Action<InputEvent> pressed, PressKinds kinds = PressKinds.Keys | PressKinds.PadButtons)
 ```
 
 #### Parameters
 
 `pressed` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[InputEvent](MicroEngine.Input.InputEvent.md)\>
+
+Receives the press: a key-down, a gamepad button-down, a mouse button-down or a wheel turn.
+
+`kinds` [PressKinds](MicroEngine.Input.PressKinds.md)
+
+Which presses count. Keys and gamepad buttons by default, so the mouse still works the screen's own buttons;
+[All](MicroEngine.Input.PressKinds.md) also takes the next mouse click and wheel turn, wherever the pointer is.
 
 #### Returns
 

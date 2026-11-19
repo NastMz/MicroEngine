@@ -97,22 +97,13 @@ public sealed class RebindExample(string? saveDirectory) : Scene
     /// </summary>
     public static void Assign(InputMap map, string action, in InputEvent press)
     {
-        bool key = press.Kind == InputEventKind.KeyDown;
-        string control = key ? press.Key.ToString() : press.Button.ToString();
-        var set = map.ExportBindings();                            // every action's bindings as editable data
-        List<string> Controls(ActionBindingData a) => key ? a.Keys : a.Buttons;
-        var given = Controls(set.Actions.Single(a => a.Action == action));
+        if (InputControl.FromPress(press) is not { } control) return;
+        // What the action gives up: its controls of the same kind (its keys for a key, its buttons for a button).
+        var given = map.GetBindings(action)!.Controls.Where(c => c.Kind == control.Kind).ToArray();
         if (given.Contains(control)) return;                       // already this action's control: nothing to do
 
-        var changed = new InputBindingSet();
-        foreach (var other in set.Actions.Where(a => a.Action != action && Rebindable.Contains(a.Action)))
-        {
-            var controls = Controls(other);
-            if (!controls.Remove(control)) continue;
-            controls.AddRange(given.Except(controls));             // the swap
-            changed.Actions.Add(other);
-        }
-        map.ImportBindings(changed);                               // only the actions that lost the control
+        foreach (var other in Rebindable.Where(a => a != action))
+            if (map.Unbind(other, control)) map.Bind(other, given); // the swap
         map.BindFrom(action, press, replace: true);
     }
     #endregion

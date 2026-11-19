@@ -24,6 +24,10 @@ public abstract class InputConformance
     protected virtual bool Mouse(IPlatform host, Vector2 at, bool? down) => false;
     /// <summary>Turns the wheel.</summary>
     protected virtual bool Wheel(IPlatform host, float notches) => false;
+    /// <summary>Presses or releases one of the mouse's buttons at a point in window coordinates.</summary>
+    protected virtual bool MouseButton(IPlatform host, Vector2 at, PointerButton button, bool down) => false;
+    /// <summary>Moves the mouse to a point in window coordinates, having moved by <paramref name="by"/> to get there.</summary>
+    protected virtual bool MouseMotion(IPlatform host, Vector2 at, Vector2 by) => false;
     /// <summary>Plugs a gamepad in; returns a handle the test passes back, or null when this host cannot be made to.</summary>
     protected virtual object? PlugPad(IPlatform host, string name) => null;
     /// <summary>Presses or releases the bottom face button of a pad plugged in by <see cref="PlugPad"/>.</summary>
@@ -260,6 +264,54 @@ public abstract class InputConformance
     }
 
     [TestMethod]
+    public void The_side_buttons_of_the_mouse_arrive_as_back_and_forward()
+    {
+        using var rig = new Rig(this);
+        rig.Frames(1);
+        var at = new Vector2(10, 10);
+        Skip(MouseButton(rig.Host, at, PointerButton.Back, true) && MouseButton(rig.Host, at, PointerButton.Back, false)
+            && MouseButton(rig.Host, at, PointerButton.Forward, true) && MouseButton(rig.Host, at, PointerButton.Forward, false)
+            && MouseButton(rig.Host, at, PointerButton.Middle, true) && MouseButton(rig.Host, at, PointerButton.Middle, false), "press the mouse's other buttons");
+        var kinds = rig.Frames(2).Where(e => e.Kind is InputEventKind.PointerDown or InputEventKind.PointerUp).Select(e => (e.Kind, e.PointerButton)).ToArray();
+        CollectionAssert.AreEqual(new[]
+        {
+            (InputEventKind.PointerDown, PointerButton.Back), (InputEventKind.PointerUp, PointerButton.Back),
+            (InputEventKind.PointerDown, PointerButton.Forward), (InputEventKind.PointerUp, PointerButton.Forward),
+            (InputEventKind.PointerDown, PointerButton.Middle), (InputEventKind.PointerUp, PointerButton.Middle),
+        }, kinds);
+    }
+
+    [TestMethod]
+    public void The_cursor_hides_and_locks_where_the_host_has_one_and_a_locked_mouse_reports_motion_from_where_it_stood()
+    {
+        using var rig = new Rig(this);
+        rig.Frames(1);
+        if (!rig.Host.TryGetCapability<ICursorControl>(out var cursor)) Assert.Inconclusive("this host has no cursor to control");
+        Assert.IsTrue(cursor.Visible && !cursor.Relative, "a window starts with the system's cursor, free");
+        cursor.Visible = false;
+        Assert.IsFalse(cursor.Visible);
+        cursor.Visible = true;
+        Assert.IsTrue(cursor.Visible);
+
+        bool moved = MouseMotion(rig.Host, new Vector2(20, 12), new Vector2(4, 2));
+        var free = rig.Frames(2).LastOrDefault(e => e.Kind == InputEventKind.PointerMove);
+        if (!cursor.SetRelative(true)) Assert.Inconclusive("this system refused to lock the cursor");
+        Assert.IsTrue(cursor.Relative);
+        Assert.IsTrue(cursor.SetRelative(true), "asking again changes nothing");
+        if (moved && MouseMotion(rig.Host, new Vector2(30, 20), new Vector2(6, -4)))
+        {
+            var locked = rig.Frames(2).Where(e => e.Kind == InputEventKind.PointerMove).ToList();
+            Assert.AreEqual(1, locked.Count, "one motion, one event");
+            Assert.AreNotEqual(Vector2.Zero, locked[0].Delta, "a locked mouse says how far it moved");
+            Assert.IsTrue(locked[0].Delta.X > 0 && locked[0].Delta.Y < 0, "in the direction it moved");
+            Assert.AreEqual(free.Delta.X / 4 * 6, locked[0].Delta.X, 1e-3f, "in canvas pixels, the scale of a free mouse's motion");
+        }
+        Assert.IsTrue(cursor.SetRelative(false));
+        Assert.IsFalse(cursor.Relative);
+        Assert.IsTrue(cursor.Visible, "freed, the cursor is as visible as it was");
+    }
+
+    [TestMethod]
     public void Every_pad_has_its_own_id_and_is_released_before_it_goes()
     {
         using var rig = new Rig(this);
@@ -305,6 +357,12 @@ public sealed class HeadlessInputConformance : InputConformance
     protected override bool Key(IPlatform host, Key key, bool down)
     {
         Devices(host).Send(down ? InputEvent.KeyDown(Keyboard, key) : InputEvent.KeyUp(Keyboard, key));
+        return true;
+    }
+
+    protected override bool MouseButton(IPlatform host, Vector2 at, PointerButton button, bool down)
+    {
+        Devices(host).Send(down ? InputEvent.PointerDown(MouseId, 0, PointerKind.Mouse, at, button) : InputEvent.PointerUp(MouseId, 0, PointerKind.Mouse, at, button));
         return true;
     }
 
@@ -417,6 +475,35 @@ public sealed unsafe class SdlInputConformance : InputConformance
             e.motion.x = at.X;
             e.motion.y = at.Y;
         }
+        return SDL_PushEvent(&e);
+    }
+
+    protected override bool MouseButton(IPlatform host, Vector2 at, PointerButton button, bool down)
+    {
+        var e = new SDL_Event();
+        e.button.type = down ? SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP;
+        e.button.timestamp = SDL_GetTicksNS();
+        e.button.windowID = SDL_GetWindowID(Window(host));
+        e.button.which = (SDL_MouseID)1;
+        // SDL's numbers: 1 left, 2 middle, 3 right, 4 and 5 the side buttons.
+        e.button.button = button switch { PointerButton.Primary => 1, PointerButton.Middle => 2, PointerButton.Secondary => 3, PointerButton.Back => 4, _ => 5 };
+        e.button.down = down;
+        e.button.x = at.X;
+        e.button.y = at.Y;
+        return SDL_PushEvent(&e);
+    }
+
+    protected override bool MouseMotion(IPlatform host, Vector2 at, Vector2 by)
+    {
+        var e = new SDL_Event();
+        e.motion.type = SDL_EventType.SDL_EVENT_MOUSE_MOTION;
+        e.motion.timestamp = SDL_GetTicksNS();
+        e.motion.windowID = SDL_GetWindowID(Window(host));
+        e.motion.which = (SDL_MouseID)1;
+        e.motion.x = at.X;
+        e.motion.y = at.Y;
+        e.motion.xrel = by.X;
+        e.motion.yrel = by.Y;
         return SDL_PushEvent(&e);
     }
 

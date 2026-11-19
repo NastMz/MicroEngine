@@ -88,7 +88,7 @@ public static class PromptText
         var textPos = new Vector2(MathF.Round(box.X + (w - font.MeasureWidth(prompt.Text)) / 2f), position.Y);
         switch (prompt.Kind)
         {
-            case PromptKind.Key:
+            case PromptKind.Key or PromptKind.Pointer:
                 r.FillRect(box, s.CapBorder);
                 r.FillRect(new RectF(box.X + 1, box.Y, w - 2, h - 1), s.Cap);
                 r.FillRect(new RectF(box.X + 1, box.Bottom - 2, w - 2, 1), Color.Lerp(s.Cap, s.CapBorder, 0.35f));

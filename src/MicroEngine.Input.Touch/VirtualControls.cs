@@ -10,7 +10,7 @@ public enum TouchAnchor { BottomLeft, BottomRight, TopLeft, TopRight, BottomCent
 /// <summary>When on-screen controls are drawn.</summary>
 public enum TouchVisibility
 {
-    /// <summary>On touch-first screens, and elsewhere after the first touch; hidden while a keyboard or gamepad plays, back on the next touch.</summary>
+    /// <summary>On touch-first screens, and elsewhere after the first touch; hidden while a keyboard, mouse or gamepad plays, back on the next touch.</summary>
     Auto,
     /// <summary>Drawn on every screen with touch, whatever device plays.</summary>
     Always,
@@ -486,7 +486,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     /// <summary>
     /// Called once per frame by the loop, before the steps: lays the controls out for the screen, applies its touch
     /// events and scripted touches, and advances visibility and press animations. <paramref name="otherDevice"/> is the
-    /// device that last pressed an action (a keyboard or gamepad hides <see cref="TouchVisibility.Auto"/> controls).
+    /// device that last pressed an action (a keyboard, mouse or gamepad hides <see cref="TouchVisibility.Auto"/> controls).
     /// Equivalent to <see cref="BeginFrame"/>, then every touch of the screen and every scripted touch through
     /// <see cref="HandleTouch"/>, then <see cref="EndFrame"/>; the engine's loop routes the touches through the input
     /// layers instead, so fingers no control takes reach gameplay.
@@ -590,7 +590,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
 
     /// <summary>
     /// Ends a frame's touches: works out the actions the controls press, whether they are shown and their press
-    /// animations. <paramref name="otherDevice"/> is the device that last pressed an action (a keyboard or gamepad hides
+    /// animations. <paramref name="otherDevice"/> is the device that last pressed an action (a keyboard, mouse or gamepad hides
     /// <see cref="TouchVisibility.Auto"/> controls).
     /// </summary>
     public void EndFrame(float dt, InputDevice otherDevice = InputDevice.None)
@@ -601,13 +601,13 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
             return;
         }
         RecomputeActions();
-        if (otherDevice is InputDevice.Keyboard or InputDevice.Gamepad && _fingers.Count == 0) _touchedSinceOtherDevice = false;
+        if (otherDevice is InputDevice.Keyboard or InputDevice.Gamepad or InputDevice.Mouse && _fingers.Count == 0) _touchedSinceOtherDevice = false;
         if (_began) _touchedSinceOtherDevice = true;
         Shown = _layout.Visibility switch
         {
             TouchVisibility.Always => true,
             TouchVisibility.Never => false,
-            _ => _touchedSinceOtherDevice || (_screen.TouchFirst && otherDevice is not (InputDevice.Keyboard or InputDevice.Gamepad)),
+            _ => _touchedSinceOtherDevice || (_screen.TouchFirst && otherDevice is not (InputDevice.Keyboard or InputDevice.Gamepad or InputDevice.Mouse)),
         };
         float fade = dt / 0.12f;
         foreach (var p in _controls) p.Glow = p.Pressed ? 1 : Math.Max(0, p.Glow - fade);

@@ -57,6 +57,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Nearby objects (spatial index)", g => new NearbyExample()),
         ("Day and night (a scene system)", g => new SystemsExample()),
         ("A guard (state machine)", g => new StateMachineExample()),
+        ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

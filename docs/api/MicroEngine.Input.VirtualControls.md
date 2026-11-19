@@ -247,7 +247,7 @@ public void Draw(IOverlayCanvas canvas)
 ### <a id="MicroEngine_Input_VirtualControls_EndFrame_System_Single_MicroEngine_Input_InputDevice_"></a> EndFrame\(float, InputDevice\)
 
 Ends a frame's touches: works out the actions the controls press, whether they are shown and their press
-animations. <code class="paramref">otherDevice</code> is the device that last pressed an action (a keyboard or gamepad hides
+animations. <code class="paramref">otherDevice</code> is the device that last pressed an action (a keyboard, mouse or gamepad hides
 [Auto](MicroEngine.Input.TouchVisibility.md) controls).
 
 ```csharp
@@ -495,7 +495,7 @@ public void TakeScripted(List<TouchEvent> events)
 
 Called once per frame by the loop, before the steps: lays the controls out for the screen, applies its touch
 events and scripted touches, and advances visibility and press animations. <code class="paramref">otherDevice</code> is the
-device that last pressed an action (a keyboard or gamepad hides [Auto](MicroEngine.Input.TouchVisibility.md) controls).
+device that last pressed an action (a keyboard, mouse or gamepad hides [Auto](MicroEngine.Input.TouchVisibility.md) controls).
 Equivalent to [BeginFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_), then every touch of the screen and every scripted touch through
 [HandleTouch](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_HandleTouch_MicroEngine_Input_TouchEvent_), then [EndFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_EndFrame_System_Single_MicroEngine_Input_InputDevice_); the engine's loop routes the touches through the input
 layers instead, so fingers no control takes reach gameplay.

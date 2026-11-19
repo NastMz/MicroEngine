@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Input](MicroEngine.Input.md)
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
 
-What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a gamepad control, an on-screen control, or a plain label.
+What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a mouse control, a gamepad control, an on-screen control, or a plain label.
 
 ```csharp
 public enum PromptKind
@@ -35,6 +35,12 @@ A direction of the left stick, a trigger or another gamepad axis.
 `PadButton = 1` 
 
 A gamepad button ([Button](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Button), named for [PadStyle](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_PadStyle)).
+
+
+
+`Pointer = 5` 
+
+A mouse button, the wheel turning one way or the pointer moving one way ([Pointer](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Pointer)), shown with the keyboard's prompts.
 
 
 
