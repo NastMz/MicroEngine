@@ -127,6 +127,16 @@ Device-owned, cached sampler object for one [SamplerDescription](MicroEngine.Gra
 
 A custom shader stage.
 
+ [TextureFile](MicroEngine.Graphics.Devices.TextureFile.md)
+
+A texture stored as the device takes it, in a KTX 2.0 file (the Khronos texture container, <code>.ktx2</code>): its size,
+its format and the bytes of each mip level, ready to upload, with nothing to decode. It is what
+<code>microengine textures</code> writes from image files, and what other tools that write KTX 2.0 produce; a game may
+ship it beside or instead of an image, and nothing requires it. [Create](MicroEngine.Graphics.Devices.TextureFile.md#MicroEngine_Graphics_Devices_TextureFile_Create_MicroEngine_Graphics_Devices_IGraphicsDevice_System_String_) makes the texture on a
+device; a device that does not sample the file's format (block-compressed formats are a capability, see
+[Supports](MicroEngine.Graphics.Devices.GraphicsCapabilities.md#MicroEngine_Graphics_Devices_GraphicsCapabilities_Supports_MicroEngine_Graphics_Devices_TextureFormat_MicroEngine_Graphics_Devices_TextureUsage_)) gets the typed [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md), as for any
+undeclared capability, so a game can keep its image file for those devices.
+
  [TextureFormats](MicroEngine.Graphics.Devices.TextureFormats.md)
 
 Byte-size rules of texture formats, shared by validation and backends.
