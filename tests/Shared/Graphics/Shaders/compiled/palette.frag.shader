@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "palette.frag.hlsl",
   "resources": {
@@ -8,6 +8,19 @@
     "uniformBuffers": 0,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [],
+    "textures": [
+      {
+        "name": "Indexed",
+        "slot": 0
+      },
+      {
+        "name": "Palette",
+        "slot": 1
+      }
+    ]
   },
   "code": {
     "dxil": {

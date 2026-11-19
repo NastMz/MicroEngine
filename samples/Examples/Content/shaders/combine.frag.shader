@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "combine.frag.hlsl",
   "resources": {
@@ -8,6 +8,47 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Look",
+        "slot": 0,
+        "size": 16,
+        "uniforms": [
+          {
+            "name": "GlowStrength",
+            "offset": 0,
+            "size": 4
+          },
+          {
+            "name": "Vignette",
+            "offset": 4,
+            "size": 4
+          },
+          {
+            "name": "Scanlines",
+            "offset": 8,
+            "size": 4
+          },
+          {
+            "name": "Lines",
+            "offset": 12,
+            "size": 4
+          }
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "Scene",
+        "slot": 0
+      },
+      {
+        "name": "Glow",
+        "slot": 1
+      }
+    ]
   },
   "code": {
     "dxil": {

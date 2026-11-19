@@ -72,6 +72,51 @@ public sealed class ShadersTests
 
     [TestMethod]
     [OSCondition(OperatingSystems.Windows)]
+    public void Compile_ReflectsTheNamesPlacesAndSizesOfEveryParameter()
+    {
+        var scratch = Directory.CreateTempSubdirectory("microengine-shaders-test-");
+        try
+        {
+            // A block whose HLSL packing differs from std140: Direction (a float3) follows Time in the same 16 bytes.
+            string file = Path.Combine(scratch.FullName, "named.frag.hlsl");
+            File.WriteAllText(file, """
+                Texture2D<float4> Scene : register(t0, space2);
+                SamplerState SceneSampler : register(s0, space2);
+                Texture2D<float4> Glow : register(t1, space2);
+                SamplerState GlowSampler : register(s1, space2);
+                cbuffer Look : register(b0, space3)
+                {
+                    float4 Tint;
+                    float Time;
+                    float3 Direction;
+                    float2 Step;
+                    float4x4 Colours;
+                };
+                struct Input { float2 TexCoord : TEXCOORD0; float4 Color : TEXCOORD1; };
+                float4 main(Input input) : SV_Target0
+                {
+                    float4 c = Scene.Sample(SceneSampler, input.TexCoord + Step * Time) + Glow.Sample(GlowSampler, input.TexCoord) * Direction.x;
+                    return mul(Colours, c) * Tint * input.Color;
+                }
+
+                """);
+            var reflection = Shaders.CompileFile(file).Reflection;
+            Assert.IsNotNull(reflection);
+            Assert.HasCount(1, reflection.Blocks);
+            var block = reflection.Blocks[0];
+            Assert.AreEqual(("Look", 0, 112), (block.Name, block.Slot, block.Size), "the block's size is a multiple of 16, as Direct3D lays it out");
+            CollectionAssert.AreEqual(new[]
+            {
+                new ShaderUniform("Tint", 0, 16), new ShaderUniform("Time", 16, 4), new ShaderUniform("Direction", 20, 12),
+                new ShaderUniform("Step", 32, 8), new ShaderUniform("Colours", 48, 64),
+            }, block.Uniforms.ToArray(), string.Join(", ", block.Uniforms));
+            CollectionAssert.AreEqual(new[] { new ShaderTextureSlot("Scene", 0), new ShaderTextureSlot("Glow", 1) }, reflection.Textures.ToArray());
+        }
+        finally { scratch.Delete(recursive: true); }
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
     public void Compile_AnHlslError_FailsNamingTheFileAndWritesNothing()
     {
         var scratch = Directory.CreateTempSubdirectory("microengine-shaders-test-");

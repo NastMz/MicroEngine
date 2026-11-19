@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "water.frag.hlsl",
   "resources": {
@@ -8,6 +8,58 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Water",
+        "slot": 0,
+        "size": 48,
+        "uniforms": [
+          {
+            "name": "Tint",
+            "offset": 0,
+            "size": 16
+          },
+          {
+            "name": "Time",
+            "offset": 16,
+            "size": 4
+          },
+          {
+            "name": "Amplitude",
+            "offset": 20,
+            "size": 4
+          },
+          {
+            "name": "Frequency",
+            "offset": 24,
+            "size": 4
+          },
+          {
+            "name": "Speed",
+            "offset": 28,
+            "size": 4
+          },
+          {
+            "name": "Surface",
+            "offset": 32,
+            "size": 4
+          },
+          {
+            "name": "Unused",
+            "offset": 36,
+            "size": 12
+          }
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "Scene",
+        "slot": 0
+      }
+    ]
   },
   "code": {
     "dxil": {

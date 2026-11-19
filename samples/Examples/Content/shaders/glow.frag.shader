@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "glow.frag.hlsl",
   "resources": {
@@ -8,6 +8,38 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Blur",
+        "slot": 0,
+        "size": 16,
+        "uniforms": [
+          {
+            "name": "Step",
+            "offset": 0,
+            "size": 8
+          },
+          {
+            "name": "Threshold",
+            "offset": 8,
+            "size": 4
+          },
+          {
+            "name": "Unused",
+            "offset": 12,
+            "size": 4
+          }
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "Source",
+        "slot": 0
+      }
+    ]
   },
   "code": {
     "dxil": {

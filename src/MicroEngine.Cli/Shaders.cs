@@ -9,7 +9,7 @@ namespace MicroEngine.Cli;
 /// `microengine shaders`: compiles HLSL ahead of time into the <see cref="CompiledShader"/> files games ship. One HLSL
 /// source per stage (<c>name.vert.hlsl</c>, <c>name.frag.hlsl</c>, entry point <c>main</c>, shader model 6.0, SDL_GPU's
 /// register spaces) becomes <c>name.vert.shader</c> with DXIL and SPIR-V from DXC and MSL from SPIRV-Cross, plus the
-/// resource counts SPIRV-Cross reflects. DXC comes from the Microsoft.Direct3D.DXC package, which carries Windows
+/// resource counts and the parameter names, places and sizes SPIRV-Cross reflects. DXC comes from the Microsoft.Direct3D.DXC package, which carries Windows
 /// binaries only, so compiling needs Windows; the files it writes load on every platform.
 /// </summary>
 public static class Shaders
@@ -63,16 +63,16 @@ public static class Shaders
             // The source is passed by its file name from its own folder, so no machine path ends up in the output.
             string directory = Path.GetDirectoryName(Path.GetFullPath(file))!, name = Path.GetFileName(file);
             Dxc($"-T {profile} -E main -Qstrip_debug -Fo \"{dxil}\" \"{name}\"", directory);
-            Dxc($"-T {profile} -E main -spirv -fspv-target-env=vulkan1.0 -Fo \"{spirv}\" \"{name}\"", directory);
+            Dxc($"-T {profile} -E main -spirv -fspv-target-env=vulkan1.0 -fvk-use-dx-layout -Fo \"{spirv}\" \"{name}\"", directory);
             var spirvBytes = File.ReadAllBytes(spirv);
-            var (msl, resources) = CrossCompile(spirvBytes);
+            var (msl, resources, reflection) = CrossCompile(spirvBytes);
             var code = new Dictionary<ShaderFormat, ShaderCode>
             {
                 [ShaderFormat.Dxil] = new(File.ReadAllBytes(dxil), "main"),
                 [ShaderFormat.SpirV] = new(spirvBytes, "main"),
                 [ShaderFormat.Msl] = new(Encoding.UTF8.GetBytes(msl), "main0"),
             };
-            return new CompiledShader(stage, resources, code, name);
+            return new CompiledShader(stage, resources, code, name, reflection);
         }
         finally { Directory.Delete(scratch, recursive: true); }
     }
@@ -154,7 +154,7 @@ public static class Shaders
         return stdout.Result + stderr;
     }
 
-    private static unsafe (string Msl, ShaderResources Resources) CrossCompile(byte[] spirv)
+    private static unsafe (string Msl, ShaderResources Resources, ShaderReflection Reflection) CrossCompile(byte[] spirv)
     {
         var api = Cross.GetApi();
         Context* context = null;
@@ -181,9 +181,51 @@ public static class Shaders
                 UniformBuffers: Count(api, context, resources, ResourceType.UniformBuffer),
                 StorageTextures: Count(api, context, resources, ResourceType.StorageImage),
                 StorageBuffers: Count(api, context, resources, ResourceType.StorageBuffer));
-            return (msl, counts);
+            return (msl, counts, Reflect(api, context, compiler, resources));
         }
         finally { api.ContextDestroy(context); }
+
+        // The names, places and sizes of the parameters. The SPIR-V was compiled with Direct3D's layout rules
+        // (-fvk-use-dx-layout), so the places found here are also the DXIL's and, through SPIRV-Cross, the MSL's.
+        static ShaderReflection Reflect(Cross api, Context* context, Compiler* compiler, Resources* resources)
+        {
+            var blocks = new List<ShaderUniformBlock>();
+            foreach (var resource in List(api, context, resources, ResourceType.UniformBuffer))
+            {
+                var type = api.CompilerGetTypeHandle(compiler, resource.BaseTypeId);
+                nuint size = 0;
+                Check(api, context, api.CompilerGetDeclaredStructSize(compiler, type, &size), "block size");
+                var uniforms = new List<ShaderUniform>();
+                uint members = api.TypeGetNumMemberTypes(type);
+                for (uint m = 0; m < members; m++)
+                {
+                    uint offset = 0;
+                    nuint memberSize = 0;
+                    Check(api, context, api.CompilerTypeStructMemberOffset(compiler, type, m, &offset), "member offset");
+                    Check(api, context, api.CompilerGetDeclaredStructMemberSize(compiler, type, m, &memberSize), "member size");
+                    uniforms.Add(new ShaderUniform(Utf8(api.CompilerGetMemberName(compiler, resource.BaseTypeId, m)), (int)offset, (int)memberSize));
+                }
+                string name = Utf8(api.CompilerGetName(compiler, resource.Id));
+                if (name.Length == 0) name = Utf8(resource.Name);
+                if (name.StartsWith("type.", StringComparison.Ordinal)) name = name[5..];
+                // Direct3D rounds a block up to whole 16-byte rows; the data a game sends has that size on every API.
+                blocks.Add(new ShaderUniformBlock(name, (int)api.CompilerGetDecoration(compiler, resource.Id, Silk.NET.SPIRV.Decoration.Binding), ((int)size + 15) / 16 * 16, uniforms));
+            }
+            var textures = new List<ShaderTextureSlot>();
+            foreach (var type in new[] { ResourceType.SeparateImage, ResourceType.SampledImage })
+                foreach (var resource in List(api, context, resources, type))
+                    textures.Add(new ShaderTextureSlot(Utf8(resource.Name), (int)api.CompilerGetDecoration(compiler, resource.Id, Silk.NET.SPIRV.Decoration.Binding)));
+            try { return new ShaderReflection(blocks, textures); }
+            catch (ArgumentException e) { throw new CliException($"the shader's parameters cannot be named: {e.Message}", 1); }
+        }
+
+        static ReflectedResource[] List(Cross api, Context* context, Resources* resources, ResourceType type)
+        {
+            ReflectedResource* list = null;
+            nuint count = 0;
+            Check(api, context, api.ResourcesGetResourceListForType(resources, type, &list, &count), type.ToString());
+            return new ReadOnlySpan<ReflectedResource>(list, (int)count).ToArray();
+        }
 
         static int Count(Cross api, Context* context, Resources* resources, ResourceType type)
         {
