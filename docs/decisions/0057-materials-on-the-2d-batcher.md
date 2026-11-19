@@ -9,6 +9,11 @@ Builds on [ADR 0028](0028-graphics-device-contract.md) (the device contract),
 [0041](0041-tier1-device-on-sdl-gpu.md), [0042](0042-offline-shader-toolchain.md) (shaders compiled ahead of time) and
 [0046](0046-tier1-device-selection.md) (`DeviceRenderer.Flush`/`Target`).
 
+Amended (2026-11-19) by [ADR 0064](0064-drawing-api-over-the-device-layer.md): "Tier 0 stays shader-free" still
+holds for shaders, but a material no longer refuses there, it draws with a declared fallback; a material needs only its
+fragment shader (the engine supplies the vertex stage); parameters are set by name, from reflection in the compiled
+file; and "a render target as a texture of the drawing API" is decided: it is one. The rest of this record stands.
+
 ## Context
 
 The device contract has render targets, blend states and, on tier 1, custom shaders with uniforms; a scene reaches the

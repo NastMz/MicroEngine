@@ -80,10 +80,16 @@ It changes nothing.
 devices that declare custom shaders (the programmable SDL_GPU device; see
 [the graphics device](../manual/rendering.md#the-graphics-device)). Each `name.vert.hlsl` or `name.frag.hlsl` in the
 game's `Shaders` folder (or `--source`) becomes `name.vert.shader` in `Content/shaders` (or `--out`), holding DXIL for
-Direct3D 12, SPIR-V for Vulkan, MSL for Metal and the resource counts the device needs. A game loads the file with
-`CompiledShader.Parse` and creates it with `CompiledShader.Create(device)`, which picks the format the device runs;
-nothing compiles while the game runs, and a device without custom shaders refuses with `GraphicsCapabilityException`.
+Direct3D 12, SPIR-V for Vulkan, MSL for Metal, the resource counts the device needs and the name, place and size of
+every parameter (each field of a `cbuffer`, each texture), so a game sets them by name. A game draws with a fragment
+shader as a material, `Assets.Material("shaders/name.frag.shader")`; nothing compiles while the game runs, and where
+the device runs no shaders the material draws with its fallback.
 [Render targets and shaders](render-targets-and-shaders.md) shows a game drawing its sprites through such shaders.
+
+A material needs only a `name.frag.hlsl`: the engine supplies the vertex stage, which passes on the texture coordinate
+in `TEXCOORD0` and the premultiplied colour in `TEXCOORD1`. Parameter names are unique across a shader's blocks and
+textures. Files compiled by an earlier SDK (format version 1) still load, without names: compile them again to set
+their parameters by name.
 
 Write one HLSL file per stage with the entry point `main` (shader model 6.0) and the SDL_GPU binding rules: vertex
 inputs use `TEXCOORD0`, `TEXCOORD1`... for their locations; vertex-stage uniforms are `register(b0, space1)`;

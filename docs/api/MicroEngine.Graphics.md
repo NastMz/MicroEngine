@@ -67,21 +67,25 @@ the canvas into the window as the presentation says, and captures read back from
 
  [DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)
 
-The textures of the drawing API ([IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)) made on a graphics device of the device contract: each
-texture is a device texture whose straight-alpha pixels are premultiplied when they are uploaded, and its
-[Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter) chooses the sampler it is drawn with. Backends built on a device use it as their
-[Graphics](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Graphics).
+The textures, render targets and materials of the drawing API ([IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)) made on a graphics
+device of the device contract: each texture is a device texture whose straight-alpha pixels are premultiplied when
+they are uploaded, and its [Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter) chooses the sampler it is drawn with. A device texture or
+render target the game made itself becomes a texture of the drawing API with [Wrap](MicroEngine.Graphics.DeviceGraphics.md#MicroEngine_Graphics_DeviceGraphics_Wrap_MicroEngine_Graphics_Devices_Texture_System_Nullable_MicroEngine_Graphics_TextureFilter__System_Boolean_).
+Backends built on a device use it as their [Graphics](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Graphics).
 
  [DeviceRenderer](MicroEngine.Graphics.DeviceRenderer.md)
 
 The drawing API ([IRenderer](MicroEngine.Graphics.IRenderer.md)) as a façade over the 2D batcher ([Renderer2D](MicroEngine.Graphics.Renderer2D.md)) on a graphics
 device: every call is recorded into the batcher, and the frame reaches the device in as few draw calls as the draws'
 textures and states allow. Straight-alpha colours are premultiplied on the way in, so the blend modes keep their
-written equations (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)).
+written equations (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)). States and materials ([PushState](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_PushState_MicroEngine_Graphics_DrawState__)) become
+the batcher's state, and a pushed render target ([PushTarget](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_)) becomes the batch's target, so a frame
+that uses them is still one batch in recording order.
 
  [DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
 
-A texture of the drawing API backed by a device texture ([DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)).
+A texture of the drawing API backed by a device texture ([DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)): an uploaded image, a render
+target's picture, or a device texture the game wrapped.
 
  [FontExtensions](MicroEngine.Graphics.FontExtensions.md)
 
@@ -104,12 +108,13 @@ With [Darkness](MicroEngine.Graphics.LightMap.md#MicroEngine_Graphics_LightMap_D
 
  [Material2D](MicroEngine.Graphics.Material2D.md)
 
-A pair of shaders of the game's own, with their parameters, that the 2D batcher draws with instead of the built-in
-pipeline: set it on [Material](MicroEngine.Graphics.RenderState.md#MicroEngine_Graphics_RenderState_Material) (or [Material](MicroEngine.Graphics.BatchSettings.md#MicroEngine_Graphics_BatchSettings_Material)) and every draw
-recorded while it is set (sprites, geometry, in any transform, with the state's blend, sampler and scissor) goes
-through its shaders. It needs a device with custom shaders ([Shaders](MicroEngine.Graphics.Devices.GraphicsFeatures.md)); the shaders
-are created from files compiled ahead of time ([CompiledShader](MicroEngine.Graphics.Devices.CompiledShader.md)), which refuse any other device with
-[GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md).
+A fragment shader of the game's own with its parameters, that draws go through instead of the built-in pipeline:
+push it with a state ([PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__), [Material](MicroEngine.Graphics.DrawState.md#MicroEngine_Graphics_DrawState_Material)) and every draw made until
+the pop (sprites, shapes, text, in any camera, with the state's blend and sampler) goes through the shader. A game
+gets one from its assets (<code>Assets.Material("shaders/water.frag.shader")</code>) or from its graphics device
+([CreateMaterial](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateMaterial_MicroEngine_Graphics_Devices_CompiledShader_MicroEngine_Graphics_MaterialFallback_)); the engine supplies the vertex stage
+([SpriteVertexShader](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_SpriteVertexShader)), so a material needs only the fragment shader, compiled ahead of time by
+<code>microengine shaders</code>.
 
  [ParallaxLayer](MicroEngine.Graphics.ParallaxLayer.md)
 
@@ -144,6 +149,15 @@ factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEng
 ([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)) and whether 2D cameras snap to whole pixels by default
 ([CameraPixelSnap](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CameraPixelSnap)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
 one and change any field with <code>with</code>.
+
+ [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md)
+
+A picture off screen that a renderer draws into ([PushTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_)) and that is then drawn like any
+texture: [Texture](MicroEngine.Graphics.RenderTarget2D.md#MicroEngine_Graphics_RenderTarget2D_Texture) is a texture of the drawing API, so it works with every <code>Draw</code> overload, as the
+source of a [Sprite](MicroEngine.Graphics.Sprite.md) and as a material's texture. Create one with
+[CreateRenderTarget](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateRenderTarget_System_Int32_System_Int32_MicroEngine_Graphics_TextureFilter_), or through a game's assets
+(<code>Assets.RenderTarget</code>), which release it with their scope. A target keeps its pixels between frames until it
+is drawn into again; they are premultiplied, like the canvas.
 
  [Renderer2D](MicroEngine.Graphics.Renderer2D.md)
 
@@ -190,7 +204,10 @@ A region of a texture with a pivot (origin) in source pixels.
 
  [Texture](MicroEngine.Graphics.Texture.md)
 
-A GPU (or headless) texture owned by the active graphics device.
+A texture of the drawing API, owned by the game's graphics device: a picture [IRenderer](MicroEngine.Graphics.IRenderer.md) draws, with the
+filter it is sampled with. On a platform with a graphics device it is a view of a device texture
+([Native](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Native)), whatever made it: an image, a font page, a render target or a texture the game created on the
+device itself. The headless platform keeps textures without a device.
 
 ### Structs
 
@@ -205,6 +222,19 @@ The settings of one batch, from [Begin](MicroEngine.Graphics.IRenderer2D.md#Micr
  [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
 
 Per-draw sprite options. Origin is in source pixels and is also the rotation pivot.
+
+ [DrawState](MicroEngine.Graphics.DrawState.md)
+
+What a renderer draws with between [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__) and [PopState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopState): a blend
+state, a sampler and a material. A part left null keeps what the renderer was drawing with, so a state names only
+what it changes.
+
+ [MaterialFallback](MicroEngine.Graphics.MaterialFallback.md)
+
+What a material's draws become on a graphics device that cannot run its shader (one without
+[Shaders](MicroEngine.Graphics.Devices.GraphicsFeatures.md): SDL's default device and its software renderer, raylib, browser builds and
+the headless platform). There, every draw made under the material is drawn the usual way, without the shader, with
+this fallback applied; the game's code is the same on every device.
 
  [NineSlice](MicroEngine.Graphics.NineSlice.md)
 

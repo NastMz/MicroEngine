@@ -29,7 +29,7 @@ uniform data persist for the rest of the list once set.
  [CompiledShader](MicroEngine.Graphics.Devices.CompiledShader.md)
 
 A shader compiled ahead of time from one HLSL source into every format a tier-1 device may accept (DXIL for
-Direct3D 12, SPIR-V for Vulkan, MSL for Metal), with the resource counts reflection found. It is what
+Direct3D 12, SPIR-V for Vulkan, MSL for Metal), with the resource counts and parameter names reflection found. It is what
 <code>microengine shaders</code> writes (one <code>.shader</code> file per HLSL file) and what a game ships: nothing compiles at
 run time. [DescriptionFor](MicroEngine.Graphics.Devices.CompiledShader.md#MicroEngine_Graphics_Devices_CompiledShader_DescriptionFor_MicroEngine_Graphics_Devices_GraphicsCapabilities_) picks the format a device should be given; a device without custom shaders
 gets the typed [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md), as for any undeclared capability.
@@ -122,6 +122,24 @@ surface target comes from [TryAcquireSurfaceTarget](MicroEngine.Graphics.Devices
  [Sampler](MicroEngine.Graphics.Devices.Sampler.md)
 
 Device-owned, cached sampler object for one [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md) (never disposed by callers).
+
+ [ShaderReflection](MicroEngine.Graphics.Devices.ShaderReflection.md)
+
+The names a compiled shader's source gives its parameters, as reflection found them when it was compiled: the
+uniform blocks with each value's place, and the textures. It lets a material's parameters be set by name and
+checked, the same for every format the shader was compiled to.
+
+ [ShaderTextureSlot](MicroEngine.Graphics.Devices.ShaderTextureSlot.md)
+
+A texture a shader samples: its name in the source and its slot.
+
+ [ShaderUniformBlock](MicroEngine.Graphics.Devices.ShaderUniformBlock.md)
+
+A uniform block of a shader (an HLSL <code>cbuffer</code>): its slot, its size and its named values.
+
+ [ShaderUniform](MicroEngine.Graphics.Devices.ShaderUniform.md)
+
+One named value of a uniform block (a field of an HLSL <code>cbuffer</code>).
 
  [Shader](MicroEngine.Graphics.Devices.Shader.md)
 

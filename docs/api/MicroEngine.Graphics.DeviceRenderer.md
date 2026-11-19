@@ -9,7 +9,9 @@ Guide: [Graphics](../manual/rendering.md)
 The drawing API ([IRenderer](MicroEngine.Graphics.IRenderer.md)) as a façade over the 2D batcher ([Renderer2D](MicroEngine.Graphics.Renderer2D.md)) on a graphics
 device: every call is recorded into the batcher, and the frame reaches the device in as few draw calls as the draws'
 textures and states allow. Straight-alpha colours are premultiplied on the way in, so the blend modes keep their
-written equations (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)).
+written equations (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)). States and materials ([PushState](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_PushState_MicroEngine_Graphics_DrawState__)) become
+the batcher's state, and a pushed render target ([PushTarget](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_)) becomes the batch's target, so a frame
+that uses them is still one batch in recording order.
 
 ```csharp
 public sealed class DeviceRenderer : IRenderer
@@ -95,10 +97,11 @@ public Renderer2DStatistics Statistics { get; }
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Target"></a> Target
 
-The render target this renderer draws into (the canvas, or the UI view's target). Valid only during the frame, between
-[Begin](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Begin) and [End](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_End): the canvas can be replaced between frames (an expanding presentation
-resizes it), so keep the renderer, not the target. Work submitted to the device into this target between two
-[Flush](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Flush) calls (a 3D pass) lands between the 2D drawn before and after it.
+The device render target this renderer is drawing into: the canvas (or the UI view's target), or the target
+pushed with [PushTarget](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_). Valid only during the frame, between [Begin](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Begin) and
+[End](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_End): the canvas can be replaced between frames (an expanding presentation resizes it), so keep the
+renderer, not the target. Work submitted to the device into this target between two [Flush](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Flush) calls
+(a 3D pass) lands between the 2D drawn before and after it.
 
 ```csharp
 public RenderTarget Target { get; }
@@ -124,7 +127,7 @@ public int Width { get; }
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Begin"></a> Begin\(\)
 
-Starts a frame: the canvas keeps its pixels, blending is [Alpha](MicroEngine.Graphics.BlendMode.md), no clip, no camera.
+Starts a frame: the canvas keeps its pixels, blending is [Alpha](MicroEngine.Graphics.BlendMode.md), no clip, no camera, no state.
 
 ```csharp
 public void Begin()
@@ -220,7 +223,7 @@ public void End()
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-A camera pushed this frame was not popped.
+A camera, a state or a target pushed this frame was not popped.
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_FillCircle_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> FillCircle\(Vector2, float, Color\)
 
@@ -276,7 +279,7 @@ Submits to the device everything this renderer recorded since the frame began or
 [Clear](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Clear_MicroEngine_Color_) included, so a clear always lands before the first flush's other work) and keeps the frame
 open: state, camera and clip stay as they are, and draws recorded after the flush are submitted after anything
 submitted to the device in between. Use it to put device work (a 3D pass into [Target](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Target)) between 2D
-draws. Outside a frame it does nothing.
+draws; materials and render targets of the drawing API need no flush. Outside a frame it does nothing.
 
 ```csharp
 public void Flush()
@@ -296,6 +299,34 @@ public void PopCamera()
 
 No camera was pushed.
 
+### <a id="MicroEngine_Graphics_DeviceRenderer_PopState"></a> PopState\(\)
+
+Returns to what was being drawn with before the last [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__).
+
+```csharp
+public void PopState()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No state was pushed (in this target).
+
+### <a id="MicroEngine_Graphics_DeviceRenderer_PopTarget"></a> PopTarget\(\)
+
+Returns to the canvas, or to the target that was being drawn into before the last [PushTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_).
+
+```csharp
+public void PopTarget()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No target was pushed, or a camera or a state pushed inside the target was not popped.
+
 ### <a id="MicroEngine_Graphics_DeviceRenderer_PushCamera_MicroEngine_Graphics_Camera2D_"></a> PushCamera\(Camera2D\)
 
 Draws in the world coordinates of <code class="paramref">camera</code> until [PopCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopCamera): its [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset)
@@ -308,6 +339,47 @@ public void PushCamera(Camera2D camera)
 #### Parameters
 
 `camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+
+### <a id="MicroEngine_Graphics_DeviceRenderer_PushState_MicroEngine_Graphics_DrawState__"></a> PushState\(in DrawState\)
+
+```csharp
+public void PushState(in DrawState state)
+```
+
+#### Parameters
+
+`state` [DrawState](MicroEngine.Graphics.DrawState.md)
+
+### <a id="MicroEngine_Graphics_DeviceRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_"></a> PushTarget\(RenderTarget2D\)
+
+Draws into <code class="paramref">target</code> instead of the canvas until [PopTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopTarget). A target starts like a
+frame: [Width](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Width) and [Height](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Height) are its size, there is no camera, no clip and no state, and
+blending is [Alpha](MicroEngine.Graphics.BlendMode.md); it keeps the pixels it had (call [Clear](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_) to start from a
+colour). The pop returns to the canvas (or the target under it: targets nest) with the camera, clip, blending and
+state it had. Draw the target's [Texture](MicroEngine.Graphics.RenderTarget2D.md#MicroEngine_Graphics_RenderTarget2D_Texture) afterwards like any texture; it cannot be
+drawn into itself.
+
+```csharp
+public void PushTarget(RenderTarget2D target)
+```
+
+#### Parameters
+
+`target` [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md)
+
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+<code class="paramref">target</code> was disposed.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created <code class="paramref">target</code>.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+<code class="paramref">target</code> is already being drawn into.
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 

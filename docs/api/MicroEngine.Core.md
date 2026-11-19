@@ -208,7 +208,8 @@ are independent: VSync waits for the display, the limit caps frames per second, 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
 A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
-creations, uploads and live textures are counted.
+creations, uploads and live textures are counted. Render targets are textures too; materials are created without a
+shader to run, so they draw with their fallback ([IsSupported](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_IsSupported) is false).
 
  [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
 
@@ -232,7 +233,8 @@ run or a game overrides. Nothing the platform does depends on the time mode.
 
 Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
 device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
-[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly. Render
+targets are rasterized the same way; a material draws with its fallback, since nothing here runs shaders.
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
@@ -387,6 +389,10 @@ Percentiles of one frame measurement, in milliseconds.
  [RecordingOverlayCanvas.Shape](MicroEngine.Core.RecordingOverlayCanvas.Shape.md)
 
 One recorded drawing call.
+
+ [RenderTargetSize](MicroEngine.Core.RenderTargetSize.md)
+
+The size of a render target of the assets (the options of a "render target" asset key).
 
  [SystemTiming](MicroEngine.Core.SystemTiming.md)
 

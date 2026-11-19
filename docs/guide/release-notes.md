@@ -68,14 +68,27 @@ optional, for agents that find their way through a level.
   pitch, pause, resume) take effect at the same instant, which moves the first of them slightly later than before
   ([migration notes](../migrations.md#several-changes-to-one-sound-in-the-same-update-apply-at-the-same-instant)). The Examples sample has a looping sound that follows a moving source.
   ([Presentation](../manual/rendering.md#presentation-one-choice-per-field)).
-- Materials on the 2D batcher: a `Material2D` is a vertex and a fragment shader of the game's own (compiled ahead of
-  time by `microengine shaders`) with their parameters (`SetUniforms`) and extra textures (`SetTexture`). Set on
-  `RenderState.Material` or `BatchSettings.Material`, it draws a batch's sprites and geometry through those shaders on
-  the `sdl-gpu` device, with the batch's blend state, sampler, scissor, transforms and view; each draw keeps the
-  parameters set when it was recorded. Without a material a batch is drawn as before. The new guide
-  [Render targets and shaders](render-targets-and-shaders.md) shows how a game builds its own light that stops at
-  walls, masks, a water shader and a post-processing chain, each an example of the Examples sample; the first two use
-  only render targets and the blend states every device has, so they run in browsers too.
+- Render targets, blend states and shaders of your own on the normal drawing calls
+  ([Render targets and shaders](render-targets-and-shaders.md)). `renderer.PushTarget(target)` draws into a
+  `RenderTarget2D`, whose `Texture` is then drawn like any texture and can be a sprite's source;
+  `renderer.PushState(state)` draws with a `DrawState`: a blend state (`DrawState.Opaque`, `Alpha`, `Additive`,
+  `Multiply`, or one of your own), a sampler and a material. A `Material2D` is a fragment shader compiled ahead of time
+  by `microengine shaders`; the engine supplies the vertex stage, parameters are set by the names they have in the
+  shader (`material.Set("Time", t)`, `material.SetTexture("Glow", texture)`) and checked, and each draw keeps the
+  parameters it was made with. Shaders run on the `sdl-gpu` device; on every other, browsers included, a material
+  draws with the fallback it declares (`MaterialFallback`: plain, tinted, another blend state, or hidden) and
+  `IsSupported` says which, so a game has one drawing path. The guide shows a light that stops at walls, masks, a
+  water shader and a post-processing chain, each an example of the Examples sample; the first two use only render
+  targets and blend states, so they show on every platform.
+- Materials, render targets and compiled shaders are assets: `Assets.Material(path, fallback?)`,
+  `Assets.RenderTarget(name, width, height, filter?)` and `Assets.Shader(path)` are shared and released with their
+  scope like textures ([Assets](../manual/assets.md#gameassets)). A loader that reads no file no longer needs a
+  content folder.
+- A texture of the drawing API shows the device texture behind it (`Texture.Native`), reports the memory of its
+  format and mip levels (`SizeInBytes`), and `DeviceGraphics.Wrap` makes a device texture or render target the game
+  created (a single channel, a compressed format the device declares) one that `IRenderer` draws.
+- `microengine shaders` records the name, place and size of every shader parameter in the `.shader` file (format
+  version 2; version 1 files still load, without names) ([the tool's page](cli.md#shaders)).
 - `SpatialIndex2D<T>` finds what is near a place ([Large worlds and nearby objects](large-worlds.md)). A game files
   its own items (entity ids, attachments, indices into its arrays) under a point or a rectangle and asks by rectangle
   (`Query`) or by circle (`QueryCircle`), without walking the world and without giving every item a physics body.

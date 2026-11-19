@@ -6,7 +6,10 @@ Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)
 Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-A GPU (or headless) texture owned by the active graphics device.
+A texture of the drawing API, owned by the game's graphics device: a picture [IRenderer](MicroEngine.Graphics.IRenderer.md) draws, with the
+filter it is sampled with. On a platform with a graphics device it is a view of a device texture
+([Native](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Native)), whatever made it: an image, a font page, a render target or a texture the game created on the
+device itself. The headless platform keeps textures without a device.
 
 ```csharp
 public abstract class Texture : IDisposable
@@ -127,12 +130,39 @@ public bool IsDisposed { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Graphics_Texture_SizeInBytes"></a> SizeInBytes
+### <a id="MicroEngine_Graphics_Texture_IsRenderTarget"></a> IsRenderTarget
 
-Memory the texture's pixels take on the device, in bytes (4 per pixel).
+Whether a renderer can draw into this texture: it is the picture of a [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md).
 
 ```csharp
-public long SizeInBytes { get; }
+public virtual bool IsRenderTarget { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Graphics_Texture_Native"></a> Native
+
+The device texture behind this texture, holding its premultiplied pixels, or null when the graphics device draws
+without one (the headless platform). It is what the 2D batcher ([Renderer2D](MicroEngine.Graphics.Renderer2D.md)) and a custom pass
+sample; the texture of the drawing API stays its owner.
+
+```csharp
+public virtual Texture? Native { get; }
+```
+
+#### Property Value
+
+ Texture?
+
+### <a id="MicroEngine_Graphics_Texture_SizeInBytes"></a> SizeInBytes
+
+Memory the texture's pixels take on the device, in bytes: what its format and its mip levels need (4 bytes per
+pixel for the 8-bit RGBA textures images become; less for a compressed format).
+
+```csharp
+public virtual long SizeInBytes { get; }
 ```
 
 #### Property Value
