@@ -55,6 +55,8 @@ const expected = {
   'MicroEngine.Physics.Box2D': { deps: ['MicroEngine'], files: ['lib/net10.0/MicroEngine.Physics.Box2D.dll', 'lib/net10.0/MicroEngine.Physics.Box2D.xml', 'buildTransitive/MicroEngine.Physics.Box2D.targets', 'LICENSE-box2d.txt', 'runtimes/win-x64/native/me_box2d.dll', 'runtimes/linux-x64/native/libme_box2d.so', 'runtimes/android-arm64/native/libme_box2d.so', 'runtimes/android-x64/native/libme_box2d.so', 'runtimes/browser-wasm/native/me_box2d.a', 'runtimes/browser-wasm/native/box2d.a'] },
   // Tiled maps: optional, the managed DotTiled parser its only dependency besides the engine.
   'MicroEngine.Tiled': { deps: ['MicroEngine', 'DotTiled'], files: ['lib/net10.0/MicroEngine.Tiled.dll', 'lib/net10.0/MicroEngine.Tiled.xml'] },
+  // Aseprite files: optional, the managed AsepriteDotNet reader its only dependency besides the engine.
+  'MicroEngine.Aseprite': { deps: ['MicroEngine', 'AsepriteDotNet'], files: ['lib/net10.0/MicroEngine.Aseprite.dll', 'lib/net10.0/MicroEngine.Aseprite.xml'] },
   // Navigation: optional, managed, the engine its only dependency.
   'MicroEngine.Navigation': { deps: ['MicroEngine'], files: ['lib/net10.0/MicroEngine.Navigation.dll', 'lib/net10.0/MicroEngine.Navigation.xml'] },
   // The Entity Component System: optional, the managed Arch library its only dependency besides the engine.
