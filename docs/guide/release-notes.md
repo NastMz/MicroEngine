@@ -31,6 +31,26 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `PackedAtlas.ToJson` writes the atlas in the JSON the engine reads; `AtlasData.ToSheet` cuts a tool's atlas back
   into frames; `AssetStore.Read` loads an asset without storing it.
 
+### Navigation: agents that walk, keep apart and arrive
+
+- **`NavAgents`** is what a game used to write after it had a path. Add it to a scene
+  (`Systems.Add(new NavAgents(grid))`), add agents (`agents.Add(position, new NavAgentSettings(radius, speed))`) and
+  order them: `agent.MoveTo(point)`. Each follows its route, cuts corners where the way is clear, slows down and
+  stops on the point (`ArrivalTolerance`, `SlowingDistance`), searches again when a change of the grid closes its
+  way, keeps apart from the others, turns aside from those it would run into, and never enters a wall. A group sent
+  to one point gathers around it. `agent.Status`, `agent.Path` and `agent.IsBlocked` tell how it is doing
+  ([Agents](navigation.md#agents)).
+- Searches are spread over steps (`NavAgents.SearchBudget`), so ordering many agents at once never stalls a step,
+  and a destination that cannot be reached costs no search of the whole map.
+- `agent.Follow(field)` makes an agent read a `DistanceField` instead of searching: many agents, one goal.
+- `agents.CanBlock(area)` tells whether a wall can be built without walling an agent in or onto one;
+  `agents.Query(center, radius, results)` and `agents.Occupied(area)` find the agents near a place.
+- An agent can be moved by the game (`NavAgentSettings.MovedByGame`): the system steers
+  (`agent.DesiredVelocity`) and a `TopDownController2D`, a physics body or anything else moves the body.
+- **`Steering`**: `Seek`, `Flee`, `Arrive`, `Separate`, `Avoid` and `Limit`, the rules the agents are made of,
+  for things a game moves its own way. `NavGrid.Slide(position, delta, radius)` moves a body along a grid's walls.
+- The system is part of the scene's state hash, and a run with the same orders repeats exactly.
+
 ### Navigation: agents with a size, and what can be reached
 
 - **Agents wider than a cell are led only where they fit.** The `radius` given to `NavGrid.FindPath` now takes part

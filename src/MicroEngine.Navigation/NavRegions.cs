@@ -213,6 +213,58 @@ public sealed class NavRegions
         return left == 0;
     }
 
+    // The regions as they would be with an area closed, for questions about many pairs of places (NavAgents.CanBlock):
+    // labelled once per token.
+    private int[]? _with;
+    private int _withToken = -1;
+    private CellArea _withClosed;
+
+    /// <summary>
+    /// Whether an agent at <paramref name="from"/> would still reach <paramref name="to"/> with <paramref name="area"/>
+    /// blocked. Every call with the same <paramref name="token"/> must give the same area: the grid is labelled once.
+    /// </summary>
+    internal bool ConnectedWith(RectF area, int token, int from, int to)
+    {
+        var grid = Grid;
+        if (token != _withToken)
+        {
+            _withToken = token;
+            _withClosed = CellsOf(area);
+            var labels = _with ??= new int[grid.NodeCount];
+            Array.Fill(labels, -1);
+            var shut = _withClosed.Grown(_rings);
+            int count = 0;
+            for (int first = 0; first < labels.Length; first++)
+            {
+                if (labels[first] >= 0 || !grid.Passable(first, _rings) || shut.Contains(first % grid.Width, first / grid.Width)) continue;
+                _queue.Clear();
+                _queue.Add(first);
+                labels[first] = count;
+                for (int head = 0; head < _queue.Count; head++)
+                {
+                    _edges.Clear();
+                    grid.GetEdges(_queue[head], _edges, _rings, _withClosed);
+                    foreach (var edge in _edges)
+                    {
+                        if (labels[edge.To] >= 0) continue;
+                        labels[edge.To] = count;
+                        _queue.Add(edge.To);
+                    }
+                }
+                count++;
+            }
+        }
+        int region = _with![from];
+        if (region < 0)
+        {
+            _edges.Clear();
+            grid.GetEdges(from, _edges, _rings, _withClosed);
+            if (_edges.Count == 0) return false;
+            region = _with[_edges[0].To];
+        }
+        return region >= 0 && _with[to] == region;
+    }
+
     // The cells a rectangle of the world overlaps, as NavGrid.SetBlocked takes them.
     private CellArea CellsOf(RectF area)
     {

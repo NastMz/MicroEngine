@@ -305,6 +305,68 @@ public sealed class NavGrid : INavGraph
     }
 
     /// <summary>
+    /// Moves a body whose square has the half-side <paramref name="radius"/> from <paramref name="position"/> by
+    /// <paramref name="delta"/> (world units) and returns where it ends: it stops at the face of a blocked cell or
+    /// of the grid's edge and slides along it, so it never enters a wall. For things that walk a grid without a
+    /// physics body; agents of <see cref="NavAgents"/> move this way. A body that is already in a wall (one was
+    /// built on it) can walk out.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or not finite.</exception>
+    public Vector2 Slide(Vector2 position, Vector2 delta, float radius = 0)
+    {
+        CheckRadius(radius);
+        float x = (position.X - Origin.X) / CellSize, y = (position.Y - Origin.Y) / CellSize, r = radius / CellSize;
+        if (!float.IsFinite(x + y + delta.X + delta.Y)) return position;
+        if (delta.X != 0) x = Sweep(x, y, delta.X / CellSize, r, Width, Height, rows: false);
+        if (delta.Y != 0) y = Sweep(y, x, delta.Y / CellSize, r, Height, Width, rows: true);
+        return new Vector2(Origin.X + x * CellSize, Origin.Y + y * CellSize);
+    }
+
+    // Moves the centre `at` along one axis by `by` cells and returns where it stops: at the first line of cells (a
+    // column, or a row when `rows`) its leading edge would enter where a cell the body spans across is blocked.
+    private float Sweep(float at, float across, float by, float r, int lines, int span, bool rows)
+    {
+        int low = Math.Max(0, (int)MathF.Floor(across - r + Skin));
+        int high = Math.Min(span - 1, Math.Max(low, (int)MathF.Ceiling(across + r - Skin) - 1));
+        if (by > 0)
+        {
+            float edge = at + r, end = edge + by;
+            for (int line = (int)MathF.Ceiling(edge - Skin), last = (int)MathF.Ceiling(end - Skin) - 1; line <= last; line++)
+                if (Shut(line, low, high, lines, rows)) return line - r;
+        }
+        else
+        {
+            float edge = at - r, end = edge + by;
+            for (int line = (int)MathF.Floor(edge + Skin) - 1, last = (int)MathF.Floor(end + Skin); line >= last; line--)
+                if (Shut(line, low, high, lines, rows)) return line + 1 + r;
+        }
+        return at + by;
+    }
+
+    // Whether a line of cells (column `line`, or row `line`) is outside the grid or blocked between `low` and `high`.
+    private bool Shut(int line, int low, int high, int lines, bool rows)
+    {
+        if ((uint)line >= (uint)lines) return true;
+        for (int i = low; i <= high; i++)
+            if (_blocked[rows ? line * Width + i : i * Width + line]) return true;
+        return false;
+    }
+
+    /// <summary>The route FindPath makes of a finished search: <paramref name="path"/> straightened from <paramref name="from"/>, ending at <paramref name="to"/> when <paramref name="exact"/>.</summary>
+    internal void Route(IReadOnlyList<int> path, Vector2 from, Vector2 to, bool exact, List<Vector2> waypoints, float radius)
+    {
+        waypoints.Clear();
+        if (path.Count > 0) Straighten(path, from, exact ? Settle(to, path[^1], radius) : null, waypoints, radius);
+    }
+
+    /// <summary>Whether the straight way between two points is clear for a body, crossing no ground costlier than where it starts and ends.</summary>
+    internal bool HasDirectWay(Vector2 from, Vector2 to, float radius)
+    {
+        int a = NodeAt(from), b = NodeAt(to);
+        return a >= 0 && b >= 0 && Clear(from, to, radius, Math.Max(_cost[a], _cost[b]));
+    }
+
+    /// <summary>
     /// Reads every cell again from a tile map: a cell is blocked when its tile has any of the
     /// <paramref name="blocking"/> flags. Call it after tiles change; for one cell, <see cref="SetWalkable"/> is
     /// cheaper. Returns whether anything changed.
@@ -500,7 +562,7 @@ public sealed class NavGrid : INavGraph
 
     // The point of `node`'s cell nearest `point` where the agent's square touches no wall: the point itself, else the
     // point moved to the cell's centre along one axis, else the centre.
-    private Vector2 Settle(Vector2 point, int node, float radius)
+    internal Vector2 Settle(Vector2 point, int node, float radius)
     {
         if (radius == 0 || Clear(point, point, radius, float.PositiveInfinity)) return point;
         var center = CenterOf(node);
