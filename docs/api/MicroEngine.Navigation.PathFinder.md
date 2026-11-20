@@ -54,6 +54,18 @@ public int Expanded { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Navigation_PathFinder_IsSearching"></a> IsSearching
+
+Whether a search begun with [Begin](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Begin_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_) has not ended yet.
+
+```csharp
+public bool IsSearching { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Navigation_PathFinder_MaxExpansions"></a> MaxExpansions
 
 The most nodes a search looks at before it gives up with [Incomplete](MicroEngine.Navigation.PathStatus.md); unlimited by
@@ -88,6 +100,65 @@ public IReadOnlyList<int> Path { get; }
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[int](https://learn.microsoft.com/dotnet/api/system.int32)\>
 
 ## Methods
+
+### <a id="MicroEngine_Navigation_PathFinder_Begin_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_"></a> Begin\(INavGraph, int, int\)
+
+Begins a search from <code class="paramref">start</code> to <code class="paramref">goal</code> that [Continue](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Continue_System_Int32_) advances
+a few nodes at a time, so a long search on a large map is spread over several steps of the game instead of
+stalling one. It replaces a search in progress. The graph must not change until the search ends: begin again
+when it does.
+
+```csharp
+public void Begin(INavGraph graph, int start, int goal)
+```
+
+#### Parameters
+
+`graph` [INavGraph](MicroEngine.Navigation.INavGraph.md)
+
+`start` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`goal` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">start</code> or <code class="paramref">goal</code> is not a node of the graph.
+
+### <a id="MicroEngine_Navigation_PathFinder_Continue_System_Int32_"></a> Continue\(int\)
+
+Advances the search begun with [Begin](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Begin_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_) by at most <code class="paramref">expansions</code> nodes. It returns
+[Searching](MicroEngine.Navigation.PathStatus.md) while the answer is not known ([Path](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Path) is empty until then),
+and otherwise how the search ended, with the path in [Path](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Path): the same path, cost and
+[Expanded](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Expanded) as [Find](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Find_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_) gives, however the work was divided. [MaxExpansions](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_MaxExpansions)
+bounds the whole search, not one call.
+
+```csharp
+public PathStatus Continue(int expansions)
+```
+
+#### Parameters
+
+`expansions` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [PathStatus](MicroEngine.Navigation.PathStatus.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No search is in progress.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">expansions</code> is not positive.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The graph gave a step with a negative cost or to a node it does not have.
 
 ### <a id="MicroEngine_Navigation_PathFinder_Find_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_"></a> Find\(INavGraph, int, int\)
 

@@ -26,6 +26,12 @@ The search stopped at [MaxExpansions](MicroEngine.Navigation.PathFinder.md#Micro
 
 
 
+`Searching = 3` 
+
+The search has not ended: [Continue](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Continue_System_Int32_) has more nodes to look at, or an agent's route is still being searched. There is no path yet.
+
+
+
 `Unreachable = 1` 
 
 No path reaches the goal. The path leads to the reachable node the estimate puts nearest to it.

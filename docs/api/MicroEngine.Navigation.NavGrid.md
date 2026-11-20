@@ -124,7 +124,7 @@ public Vector2 Origin { get; }
 ### <a id="MicroEngine_Navigation_NavGrid_Version"></a> Version
 
 A number that changes whenever a cell's walkability or cost, or [Diagonals](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_Diagonals), changes: an agent that
-remembers the version its path was found for knows when to check it ([IsOpen](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_IsOpen_System_Collections_Generic_IReadOnlyList_System_Int32__System_Int32_)) or search again.
+remembers the version its path was found for knows when to check it ([IsOpen](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_IsOpen_System_Collections_Generic_IReadOnlyList_System_Int32__System_Int32_System_Single_)) or search again.
 
 ```csharp
 public int Version { get; }
@@ -208,6 +208,26 @@ public Vector2 CenterOf(int node)
 
 <code class="paramref">node</code> is not a node of the grid.
 
+### <a id="MicroEngine_Navigation_NavGrid_ClearanceAt_System_Int32_System_Int32_"></a> ClearanceAt\(int, int\)
+
+How much free room surrounds cell (<code class="paramref">x</code>, <code class="paramref">y</code>): 0 for a blocked cell or one
+outside the grid, 1 for a walkable cell with a wall (or the grid's edge) beside it, corners included, 2 when
+the nearest wall is two cells away, and so on.
+
+```csharp
+public int ClearanceAt(int x, int y)
+```
+
+#### Parameters
+
+`x` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Navigation_NavGrid_CostAt_System_Int32_System_Int32_"></a> CostAt\(int, int\)
 
 What entering cell (<code class="paramref">x</code>, <code class="paramref">y</code>) costs, as a multiple of open ground (1).
@@ -282,7 +302,9 @@ Replaced by the route; the agent's own position is not in it.
 
 `radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-Half the side of the agent's square, in world units: straight legs keep that distance from walls.
+Half the side of the agent's square, in world units: straight legs keep that distance from walls, an agent
+wider than a cell is led only through passages it fits in ([ForAgent](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_ForAgent_System_Single_)), and the route ends at the
+point of the goal's cell nearest <code class="paramref">to</code> where the body touches no wall.
 
 #### Returns
 
@@ -293,6 +315,61 @@ Half the side of the agent's square, in world units: straight legs keep that dis
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 <code class="paramref">radius</code> is negative or not finite, or a point is not finite.
+
+### <a id="MicroEngine_Navigation_NavGrid_Fits_System_Int32_System_Int32_System_Single_"></a> Fits\(int, int, float\)
+
+Whether an agent whose square has the half-side <code class="paramref">radius</code> (world units) can stand centred in
+cell (<code class="paramref">x</code>, <code class="paramref">y</code>) without touching a blocked cell or leaving the grid. An
+agent no wider than a cell fits in every walkable cell.
+
+```csharp
+public bool Fits(int x, int y, float radius)
+```
+
+#### Parameters
+
+`x` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">radius</code> is negative or not finite.
+
+### <a id="MicroEngine_Navigation_NavGrid_ForAgent_System_Single_"></a> ForAgent\(float\)
+
+The grid as an agent whose square has the half-side <code class="paramref">radius</code> (world units) walks it: the
+same nodes, with steps only into cells where the whole body fits ([Fits](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_Fits_System_Int32_System_Int32_System_Single_)).
+Search it with [Find](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Find_MicroEngine_Navigation_INavGraph_System_Int32_System_Int32_) when the game moves cell by cell; [FindPath](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_FindPath_MicroEngine_Navigation_PathFinder_System_Numerics_Vector2_System_Numerics_Vector2_System_Collections_Generic_List_System_Numerics_Vector2__System_Single_) does it
+by itself. An agent no wider than a cell walks the grid itself, which is what this returns for it. A wider
+agent is given whole cells of room on every side: wider than one cell it needs a passage three cells wide,
+wider than three cells one of five. A wide agent never cuts a corner. The view follows the grid's changes.
+
+```csharp
+public INavGraph ForAgent(float radius)
+```
+
+#### Parameters
+
+`radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [INavGraph](MicroEngine.Navigation.INavGraph.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">radius</code> is negative or not finite.
 
 ### <a id="MicroEngine_Navigation_NavGrid_FromPhysics_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_RectF_System_Single_MicroEngine_Physics_QueryFilter__"></a> FromPhysics\(IPhysicsWorld2D, RectF, float, in QueryFilter\)
 
@@ -407,21 +484,29 @@ public bool InBounds(int x, int y)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Navigation_NavGrid_IsOpen_System_Collections_Generic_IReadOnlyList_System_Int32__System_Int32_"></a> IsOpen\(IReadOnlyList<int\>, int\)
+### <a id="MicroEngine_Navigation_NavGrid_IsOpen_System_Collections_Generic_IReadOnlyList_System_Int32__System_Int32_System_Single_"></a> IsOpen\(IReadOnlyList<int\>, int, float\)
 
 Whether <code class="paramref">path</code> (nodes, as [Path](MicroEngine.Navigation.PathFinder.md#MicroEngine_Navigation_PathFinder_Path) gives them) can still be walked from
 its index <code class="paramref">from</code> on: every cell is walkable and every step is still allowed. An agent checks
 the rest of its path when [Version](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_Version) changes and searches again only when this is false.
 
 ```csharp
-public bool IsOpen(IReadOnlyList<int> path, int from = 0)
+public bool IsOpen(IReadOnlyList<int> path, int from = 0, float radius = 0)
 ```
 
 #### Parameters
 
 `path` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[int](https://learn.microsoft.com/dotnet/api/system.int32)\>
 
+The nodes of the path.
+
 `from` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+The index of the path's cell the agent is in. The cells before it are not looked at, and the agent's own cell may be one its body does not fit in (it is pressed against a wall).
+
+`radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+Half the side of the agent's square, in world units: for an agent wider than a cell, every cell ahead must still have room for it ([Fits](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_Fits_System_Int32_System_Int32_System_Single_)).
 
 #### Returns
 
@@ -431,7 +516,7 @@ public bool IsOpen(IReadOnlyList<int> path, int from = 0)
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-<code class="paramref">from</code> is negative, or a node is not of this grid.
+<code class="paramref">from</code> is negative, <code class="paramref">radius</code> is negative or not finite, or a node is not of this grid.
 
 ### <a id="MicroEngine_Navigation_NavGrid_IsWalkable_System_Int32_System_Int32_"></a> IsWalkable\(int, int\)
 
@@ -591,6 +676,36 @@ public void SetWalkable(int x, int y, bool walkable)
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 The cell is outside the grid.
+
+### <a id="MicroEngine_Navigation_NavGrid_Slide_System_Numerics_Vector2_System_Numerics_Vector2_System_Single_"></a> Slide\(Vector2, Vector2, float\)
+
+Moves a body whose square has the half-side <code class="paramref">radius</code> from <code class="paramref">position</code> by
+<code class="paramref">delta</code> (world units) and returns where it ends: it stops at the face of a blocked cell or
+of the grid's edge and slides along it, so it never enters a wall. For things that walk a grid without a
+physics body; agents of [NavAgents](MicroEngine.Navigation.NavAgents.md) move this way. A body that is already in a wall (one was
+built on it) can walk out.
+
+```csharp
+public Vector2 Slide(Vector2 position, Vector2 delta, float radius = 0)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">radius</code> is negative or not finite.
 
 ### <a id="MicroEngine_Navigation_NavGrid_Smooth_System_Collections_Generic_IReadOnlyList_System_Int32__System_Collections_Generic_List_System_Numerics_Vector2__System_Single_"></a> Smooth\(IReadOnlyList<int\>, List<Vector2\>, float\)
 
