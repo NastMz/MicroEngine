@@ -47,6 +47,19 @@ A proportional pixel font. The built-in face ("Micro 5x7") is authored in code s
 has crisp, license-free text without loading files. Glyph widths are derived by trimming
 empty columns, so narrow letters like 'i' take less space.
 
+ [Bloom](MicroEngine.Graphics.Bloom.md)
+
+Bloom: the bright parts of the picture, blurred, added back over it, so light sources glow.
+[Full](MicroEngine.Graphics.PostEffectSupport.md) where shaders run (what is brighter than [Threshold](MicroEngine.Graphics.Bloom.md#MicroEngine_Graphics_Bloom_Threshold), with a
+Gaussian blur). Elsewhere ([Reduced](MicroEngine.Graphics.PostEffectSupport.md)) the bright parts are picked by multiplying the
+picture by itself, without an exact threshold, and blurred by halving: a softer, wider glow.
+
+ [Blur](MicroEngine.Graphics.Blur.md)
+
+Blurs the picture. [Full](MicroEngine.Graphics.PostEffectSupport.md) where shaders run: a Gaussian blur, across then down.
+Elsewhere ([Reduced](MicroEngine.Graphics.PostEffectSupport.md)) the picture is shrunk by halves with linear sampling and
+enlarged again, which blurs by about the same radius with a boxier look.
+
  [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
 A 2D camera whose [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position) is the world point at the top-left of the view.
@@ -59,6 +72,19 @@ Draws a game's canvas into the window as its [Presentation](MicroEngine.Graphics
 UI view over both. With a prescale the canvas is first enlarged by a whole factor with nearest sampling into a target
 this presenter owns, and that enlargement is what the presentation's upscale sampler samples. Platforms built on a
 graphics device present their frames with it.
+
+ [ColorGrade](MicroEngine.Graphics.ColorGrade.md)
+
+Colour grading: brightness, contrast around mid grey, saturation and a tint, applied in that order.
+[Full](MicroEngine.Graphics.PostEffectSupport.md) where shaders run. Elsewhere contrast and saturation are left out
+([Reduced](MicroEngine.Graphics.PostEffectSupport.md)): the tint and the brightness still apply, made with blending.
+
+ [Crt](MicroEngine.Graphics.Crt.md)
+
+The picture as a cathode-ray tube shows it: the glass bulges ([Curvature](MicroEngine.Graphics.Crt.md#MicroEngine_Graphics_Crt_Curvature)), the lines of the picture
+show ([Scanlines](MicroEngine.Graphics.Crt.md#MicroEngine_Graphics_Crt_Scanlines)) and so do the phosphor's coloured stripes ([Mask](MicroEngine.Graphics.Crt.md#MicroEngine_Graphics_Crt_Mask)).
+[Full](MicroEngine.Graphics.PostEffectSupport.md) where shaders run. Elsewhere only the lines are drawn
+([Reduced](MicroEngine.Graphics.PostEffectSupport.md)): the picture stays flat and has no stripes.
 
  [DeviceCanvas](MicroEngine.Graphics.DeviceCanvas.md)
 
@@ -147,6 +173,28 @@ A CPU-side RGBA image. Games author procedural art with it and hand it to
 
 Writes 8-bit RGBA PNG files (no filtering), for backends that read frames back as raw pixels.
 
+ [PostEffect](MicroEngine.Graphics.PostEffect.md)
+
+One full-screen effect of a [PostProcess](MicroEngine.Graphics.PostProcess.md) chain: it receives the picture so far and leaves a new one.
+The ready effects are [ColorGrade](MicroEngine.Graphics.ColorGrade.md), [Blur](MicroEngine.Graphics.Blur.md), [Bloom](MicroEngine.Graphics.Bloom.md), [Vignette](MicroEngine.Graphics.Vignette.md),
+[Scanlines](MicroEngine.Graphics.Scanlines.md), [Crt](MicroEngine.Graphics.Crt.md) and [ShaderEffect](MicroEngine.Graphics.ShaderEffect.md) (a material of the game's own); a game
+derives its own from this class. Pictures are premultiplied, like the canvas, and an effect keeps their alpha
+unless changing it is its purpose.
+
+ [PostPass](MicroEngine.Graphics.PostPass.md)
+
+What an effect works with while it runs ([Apply](MicroEngine.Graphics.PostEffect.md#MicroEngine_Graphics_PostEffect_Apply_MicroEngine_Graphics_PostPass_)): the picture so far, the renderer, and the
+chain's own targets and textures, which the chain keeps between frames and releases itself.
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)
+
+A chain of full-screen effects over a picture: what was drawn between [Begin](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Begin_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Color__) and [End](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_End_MicroEngine_Graphics_IRenderer_System_Boolean_)
+(or a picture given to [Apply](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Apply_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IGraphicsDevice_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Boolean_)) goes through every enabled effect in order, and the result is drawn
+where the picture would have been. The chain owns the render targets, textures and built-in materials its effects
+need, sized to the picture, and releases them with [Dispose](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Dispose). A scene has one for its own picture
+(<code>Scene.PostProcess</code>), and a game has one for the canvas and one for the window (<code>Game.PostProcess</code>,
+<code>Game.ScreenPostProcess</code>); the engine begins, ends and releases those.
+
  [Presentation](MicroEngine.Graphics.Presentation.md)
 
 How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
@@ -180,6 +228,18 @@ A TrueType or OpenType font (TTF, OTF with TrueType or CFF outlines) that draws 
 rasterized the first time they are drawn at a size and kept in shared glyph pages (textures), so later frames only
 draw quads; [Prepare](MicroEngine.Graphics.ScalableFont.md#MicroEngine_Graphics_ScalableFont_Prepare_System_String_System_Single___) rasterizes ahead, so the first frames of play do no font work.
 
+ [Scanlines](MicroEngine.Graphics.Scanlines.md)
+
+Darkens every other line of the picture, as a television's lines show. Made of a texture and the multiply blend
+state, so it is [Full](MicroEngine.Graphics.PostEffectSupport.md) and the same on every device, and it keeps the picture's transparency.
+
+ [ShaderEffect](MicroEngine.Graphics.ShaderEffect.md)
+
+A full-screen pass through a material of the game's own (a fragment shader compiled by <code>microengine shaders</code>,
+loaded with <code>Assets.Material</code>): the picture is the draw's texture, in slot 0, and the shader's output is the
+new picture. [Full](MicroEngine.Graphics.PostEffectSupport.md) where shaders run; [None](MicroEngine.Graphics.PostEffectSupport.md) elsewhere,
+where the picture passes through unchanged (the material's own fallback is not used). The game owns the material.
+
  [ShapedFontSize](MicroEngine.Graphics.ShapedFontSize.md)
 
 A [ShapedFont](MicroEngine.Graphics.ShapedFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
@@ -202,6 +262,14 @@ One frame of a sprite sheet as pixels, before it is packed into an atlas.
  [SizedFont](MicroEngine.Graphics.SizedFont.md)
 
 A [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
+
+ [SortedRenderer](MicroEngine.Graphics.SortedRenderer.md)
+
+Draws in an order that does not depend on the order of the calls: between [Begin](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_Begin_MicroEngine_Graphics_IRenderer_) and [End](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_End)
+every draw is kept with the [Layer](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_Layer) and [Depth](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_Depth) of that moment, and [End](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_End) sends
+them to the renderer by layer (lower first), then by depth (smaller first, so a larger depth covers), then in the
+order they were made. It is a renderer itself, so sprites, fonts, tiles and particles draw into it as into any other,
+on every platform. Objects standing on the ground cover each other correctly with their feet's Y as the depth.
 
  [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
 
@@ -230,6 +298,12 @@ A texture of the drawing API, owned by the game's graphics device: a picture [IR
 filter it is sampled with. On a platform with a graphics device it is a view of a device texture
 ([Native](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Native)), whatever made it: an image, a font page, a render target or a texture the game created on the
 device itself. The headless platform keeps textures without a device.
+
+ [Vignette](MicroEngine.Graphics.Vignette.md)
+
+Darkens the picture towards its corners (or multiplies it towards [Color](MicroEngine.Graphics.Vignette.md#MicroEngine_Graphics_Vignette_Color)). Made of a texture and the
+multiply blend state, so it is [Full](MicroEngine.Graphics.PostEffectSupport.md) and the same on every device, and it keeps the
+picture's transparency.
 
 ### Structs
 
@@ -326,6 +400,10 @@ What happens when the window's shape differs from the canvas's ([Aspect](MicroEn
 How drawn pixels combine with the canvas (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)): <code>Alpha</code> (normal
 transparency, the default), <code>Additive</code> (adds light: glows, sparks, fire) and <code>Multiply</code> (darkens: shadows, tints).
 
+ [PostEffectSupport](MicroEngine.Graphics.PostEffectSupport.md)
+
+What a post-processing effect does on a graphics device ([SupportOn](MicroEngine.Graphics.PostEffect.md#MicroEngine_Graphics_PostEffect_SupportOn_MicroEngine_Graphics_IGraphicsDevice_)).
+
  [ScaleRounding](MicroEngine.Graphics.ScaleRounding.md)
 
 How the canvas's scale to the window is rounded ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)).
@@ -340,7 +418,6 @@ Mirrors a sprite's texels within its quad ([Draw](MicroEngine.Graphics.IRenderer
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
-How a texture is sampled when it is drawn bigger or smaller than its pixels, or between them: <code>Nearest</code> keeps
-hard pixel edges (pixel art), <code>Linear</code> blends neighbouring pixels (smooth, high-resolution art and text).
+How a texture is sampled when it is drawn bigger or smaller than its pixels, or between them.
 
 </div>

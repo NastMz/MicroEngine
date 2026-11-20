@@ -31,11 +31,14 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`; visual checks are script
 
 | ID | Task | Specs | Route | Status |
 | --- | --- | --- | --- | --- |
-| T1 | Draw order: `SortedRenderer` (layer, depth, call order) over any renderer | S4 | inline | [ ] |
-| T2 | Post-processing chain and ready effects; `Scene.PostProcess`, `Game.PostProcess` | S1, S2, S4, S7 | inline | [ ] |
-| T3 | Window stage: `Game.ScreenPostProcess` at the window's resolution, over the UI | S1, S4 | inline | [ ] |
-| T4 | Mip levels: `TextureFilter.LinearMipmap`, device feature on `sdl-gpu` and raylib | S4, S7, S9 | inline | [ ] |
-| T5 | Evaluation, ADR 0071, ADR 0057 amended, manual, guide, release notes, limitations, API reference | S3, S5, S6 | inline | [ ] |
+| T1 | Draw order: `SortedRenderer` (layer, depth, call order) over any renderer | S4 | inline | [x] c03481bc; `SortedRendererTests` 5/5 (RED seen with the sort removed: 3 failed) |
+| T2 | Post-processing chain and ready effects; `Scene.PostProcess`, `Game.PostProcess` | S1, S2, S4, S7 | inline | [x] 6ac98318; `PostProcessTests` 27/27; three conformance rules on 10 renderers, 30/30 |
+| T3 | Window stage: `Game.ScreenPostProcess` at the window's resolution, over the UI | S1, S4 | inline | [x] 7791b7f6; `ScreenPostProcessTests` 6/6 |
+| T4 | Mip levels: `TextureFilter.LinearMipmap`, device feature on `sdl-gpu` and raylib | S4, S7, S9 | inline | [x] 7a070665; device conformance on 12 devices, renderer rule on 10, `MipLevelTests` 2/2 |
+| T5 | Evaluation, ADR 0071, ADR 0057 amended, manual, guide, release notes, limitations, API reference | S3, S5, S6 | inline | [x] the commit after T4 |
+
+Not done, each delimited in the evaluation: the shader tool on Linux and macOS (S6), compressed textures (S9),
+stencil, several colour targets and multisampling (S5: re-evaluated, kept out with reasons).
 
 ## Log
 
@@ -60,3 +63,26 @@ Test runner: `dotnet test MicroEngine.slnx -c Release`; visual checks are script
   CLI as an advanced path." **Acceptance**: "A game enables a full-screen effect in a few lines and it covers the UI
   when asked." "Behaviour on tier-0 devices and browsers is declared and tested." "Manual, guide, ADR 0057 amended."
   "Depends on RENDER-1."
+- L2 (2026-11-20) The audit's four claims checked against the code and found true (evaluation, section 0). Found
+  besides: the default desktop device and browser builds run no shaders, so every ready effect got a form made of
+  render targets and blend presets, or says it is left out (`PostEffect.SupportOn`).
+- L3 (2026-11-20) T2, found by looking at the conformance capture: a vignette and scanlines blended over a scene's
+  transparent picture darkened the scene under it. Both now use the multiply state, which keeps the picture's alpha;
+  the conformance rule draws a transparent band to pin it.
+- L4 (2026-11-20) T2, found by the reference-device tests: releasing a chain inside a frame fails on a batched
+  renderer (the batch still names its textures). It is the rule for any texture; the engine releases its chains at
+  scene exit and game shutdown, and the documentation says "between frames".
+- L5 (2026-11-20) T4: SDL's software renderer shrinks with an averaging scaler, so a one-level texture is already
+  smooth there; the device conformance suite names it (`MinificationAverages`) instead of loosening the rule.
+- L6 (2026-11-20) Looked at (scripted captures, Windows): draw order sorted against call order (`sdl-gpu`, SDL
+  default: identical files); the post-processing example off, on and with the game's own effect (`sdl-gpu`, SDL
+  default); the conformance captures of the effects on `sdl-gpu`, SDL default, raylib and headless; the window
+  stage on and off (`sdl-gpu`: curved tube over the heading; SDL default: flat, lined); mip levels (`sdl-gpu`,
+  raylib: smooth; SDL default: aliased and labelled); the post-processing and window-stage examples on raylib (the
+  post-processing captures are byte-identical to SDL default's). Not run: browsers, Linux, macOS, phones.
+- L7 (2026-11-20) Outside the writer's listed paths but inside their intent, changed: `src/MicroEngine.Sdl/SdlPlatform.cs`
+  and `src/MicroEngine.Raylib/RaylibPlatform.cs` (the window stage: about fifteen lines each),
+  `src/MicroEngine.Raylib/Graphics/RaylibDevice.cs` and `src/MicroEngine.Graphics.SdlGpu/SdlGpuDevice.cs` (mip
+  levels), `src/MicroEngine.Graphics2D/**` (where the drawing API lives), `src/MicroEngine/Core/GameViews.cs` and
+  `HeadlessPlatform.cs`, `tests/Shared/Graphics/DeviceConformance.cs`, `docs/guide/render-targets-and-shaders.md`,
+  `docs/manual/assets.md` (one limitation line). The four demo games were not touched.

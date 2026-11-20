@@ -100,4 +100,40 @@ The colour of the window around the frame.
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Graphics_CanvasPresenter_Present_MicroEngine_Graphics_Presentation_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_RectF_MicroEngine_Color_MicroEngine_Graphics_Devices_RenderTarget_"></a> Present\(Presentation, RenderTarget, RenderTarget?, RectF, Color, RenderTarget\)
+
+Draws the window's picture into <code class="paramref">destination</code> instead of the window: the same composition as
+[Present](MicroEngine.Graphics.CanvasPresenter.md#MicroEngine_Graphics_CanvasPresenter_Present_MicroEngine_Graphics_Presentation_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_RectF_MicroEngine_Color_), into a target of the window's
+size that something else then shows (a post-processing chain over the whole window).
+
+```csharp
+public void Present(Presentation presentation, RenderTarget canvas, RenderTarget? ui, RectF frame, Color letterbox, RenderTarget destination)
+```
+
+#### Parameters
+
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)
+
+The game's presentation: its upscale sampler and prescale.
+
+`canvas` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
+
+The canvas the game drew.
+
+`ui` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
+
+The UI view of the frame, in window pixels, or null when the frame drew none.
+
+`frame` [RectF](MicroEngine.RectF.md)
+
+Where the canvas lands, in the destination's pixels.
+
+`letterbox` [Color](MicroEngine.Color.md)
+
+The colour around the frame.
+
+`destination` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
+
+The target to draw into; it is cleared first.
+
 </div>

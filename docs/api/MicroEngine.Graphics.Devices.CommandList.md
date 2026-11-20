@@ -148,6 +148,27 @@ Ends the current pass.
 public void EndPass()
 ```
 
+### <a id="MicroEngine_Graphics_Devices_CommandList_GenerateMipmaps_MicroEngine_Graphics_Devices_Texture_"></a> GenerateMipmaps\(Texture\)
+
+Makes every mip level of <code class="paramref">texture</code> below level 0 from level 0, each a filtered half of the one
+before, outside passes. Call it after creating a texture with more than one level and after updating level 0;
+until then the smaller levels hold nothing defined. Only a device that declares
+[Mipmaps](MicroEngine.Graphics.Devices.GraphicsFeatures.md) can create such a texture.
+
+```csharp
+public void GenerateMipmaps(Texture texture)
+```
+
+#### Parameters
+
+`texture` [Texture](MicroEngine.Graphics.Devices.Texture.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The texture has one level, or is a render target's colour texture.
+
 ### <a id="MicroEngine_Graphics_Devices_CommandList_Payload_MicroEngine_Graphics_Devices_Command__"></a> Payload\(in Command\)
 
 The data of an update or uniform command (backend-facing), readable until [Submit](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_) returns.

@@ -14,6 +14,14 @@ holds for shaders, but a material no longer refuses there, it draws with a decla
 fragment shader (the engine supplies the vertex stage); parameters are set by name, from reflection in the compiled
 file; and "a render target as a texture of the drawing API" is decided: it is one. The rest of this record stands.
 
+Amended (2026-11-20) by [ADR 0071](0071-post-processing-window-stage-mip-levels-draw-order.md): "Effects are
+examples" no longer holds for post-processing: the engine ships a chain (`PostProcess`) and ready effects, with a
+stated form where no shader runs. "A pass at the window's resolution or on the composition of the canvas" is decided:
+`Game.ScreenPostProcess`. Mipmap generation is in the contract (`CommandList.GenerateMipmaps`). Light with occlusion,
+masks and water stay examples; stencil, several colour targets and multisampling stay outside the contract, for the
+reasons in [GRAPHICS-3](../evaluations/graphics-3.md), section 5, not because no scenario asked. Compiling shaders
+on Linux is still open.
+
 ## Context
 
 The device contract has render targets, blend states and, on tier 1, custom shaders with uniforms; a scene reaches the

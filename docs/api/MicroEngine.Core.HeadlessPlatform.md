@@ -14,7 +14,7 @@ Its run preset ([Preset](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_H
 run or a game overrides. Nothing the platform does depends on the time mode.
 
 ```csharp
-public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IScreenView, IViewCapture
+public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IScreenView, IViewCapture, IScreenEffects
 ```
 
 #### Inheritance
@@ -28,7 +28,8 @@ public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IS
 [IPlatformHost](MicroEngine.Platform.IPlatformHost.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
 [IScreenView](MicroEngine.Core.IScreenView.md), 
-[IViewCapture](MicroEngine.Core.IViewCapture.md)
+[IViewCapture](MicroEngine.Core.IViewCapture.md), 
+[IScreenEffects](MicroEngine.Core.IScreenEffects.md)
 
 ## Constructors
 
@@ -296,6 +297,20 @@ public HeadlessRenderer Renderer { get; }
 #### Property Value
 
  [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
+
+### <a id="MicroEngine_Core_HeadlessPlatform_ScreenEffects"></a> ScreenEffects
+
+The chain the window is captured through ([IScreenEffects](MicroEngine.Core.IScreenEffects.md)): there is no window to present, so it
+runs when a capture is taken ([CaptureScreen](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_CaptureScreen), [SaveScreenshot](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_SaveScreenshot_System_String_)), on the
+window composed from the two views. Captures need [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize).
+
+```csharp
+public PostProcess? ScreenEffects { get; set; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)?
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Screenshots"></a> Screenshots
 

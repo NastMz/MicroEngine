@@ -251,6 +251,28 @@ public ScenePhysics Physics { get; }
 
  [ScenePhysics](MicroEngine.Scenes.ScenePhysics.md)
 
+### <a id="MicroEngine_Scenes_Scene_PostProcess"></a> PostProcess
+
+The scene's post-processing chain ([PostProcess](MicroEngine.Graphics.PostProcess.md)), created the first time it is read: while
+it holds an enabled effect, what [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) draws goes into a picture of the canvas's size, through the
+effects, and the result is drawn over the scenes under this one. The scene's interface ([DrawUi](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_DrawUi_MicroEngine_Graphics_IRenderer_),
+[Widgets](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Widgets)) is not part of the picture. The engine releases the chain's targets when the scene leaves
+the stack; the effects stay, so a scene pushed again is processed again. A scene that never reads it pays nothing.
+
+```csharp
+public PostProcess PostProcess { get; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)
+
+#### Examples
+
+```csharp
+public override void Enter() => PostProcess.Add(new Bloom { Strength = 1.2f }).Add(new Vignette());
+```
+
 ### <a id="MicroEngine_Scenes_Scene_Systems"></a> Systems
 
 The scene's systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), created the first time it is read: parts of the scene that the

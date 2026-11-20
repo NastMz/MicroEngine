@@ -38,6 +38,12 @@ No fields.
 
 
 
+`GenerateMipmaps = 13` 
+
+[Resource](MicroEngine.Graphics.Devices.Command.md#MicroEngine_Graphics_Devices_Command_Resource) ([Texture](MicroEngine.Graphics.Devices.Texture.md)): every level below 0 is made from level 0.
+
+
+
 `SetIndices = 7` 
 
 [Resource](MicroEngine.Graphics.Devices.Command.md#MicroEngine_Graphics_Devices_Command_Resource) ([GpuBuffer](MicroEngine.Graphics.Devices.GpuBuffer.md)), [IndexSize](MicroEngine.Graphics.Devices.Command.md#MicroEngine_Graphics_Devices_Command_IndexSize).

@@ -13,7 +13,7 @@ capabilities ([TryGetCapability``1](MicroEngine.Raylib.RaylibPlatform.md#MicroEn
 [ITouchScreen](MicroEngine.Input.ITouchScreen.md) and [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
-public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
+public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture, IScreenEffects
 ```
 
 #### Inheritance
@@ -31,7 +31,8 @@ public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDis
 [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md), 
 [IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md), 
 [IScreenView](MicroEngine.Core.IScreenView.md), 
-[IViewCapture](MicroEngine.Core.IViewCapture.md)
+[IViewCapture](MicroEngine.Core.IViewCapture.md), 
+[IScreenEffects](MicroEngine.Core.IScreenEffects.md)
 
 ## Constructors
 
@@ -234,6 +235,19 @@ public static PlatformProfile Profile { get; }
 #### Property Value
 
  [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_ScreenEffects"></a> ScreenEffects
+
+The chain the next frames are presented through, or null to present them as they are. The platform runs it; the
+game that set it owns it. While it is set and active, captures show the window as it was presented.
+
+```csharp
+public PostProcess? ScreenEffects { get; set; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)?
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Suspended"></a> Suspended
 
