@@ -18,6 +18,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Desktop](MicroEngine.Desktop.md)
 
+ [MicroEngine.Ecs](MicroEngine.Ecs.md)
+
  [MicroEngine.Graphics](MicroEngine.Graphics.md)
 
  [MicroEngine.Hosting](MicroEngine.Hosting.md)

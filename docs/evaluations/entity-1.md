@@ -1,5 +1,9 @@
 # ENTITY-1: an optional first-party Entity Component System, evaluated
 
+> Continued in [ENTITY-1, reopened](entity-1b.md) (2026-11-19), which evaluates what this document says it did not
+> (modelling, composition, coordination and the ergonomics of the integration) and leads to
+> [ADR 0065](../decisions/0065-optional-ecs-package.md). The measurements here stand.
+
 Issue NastMz/MicroEngine#151. Record: [`odd/tasks/entity-1.md`](../../odd/tasks/entity-1.md). Decision:
 [ADR 0059](../decisions/0059-no-first-party-ecs.md). Date: 2026-11-18/19. Builds on [PERF-3](perf-3.md) (the stress
 harness, the limits of the engine's paths) and [WORLD-1](world-1.md) (the scene world at scale, `SpatialIndex2D`).

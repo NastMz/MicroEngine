@@ -15,7 +15,7 @@ public sealed class ArchitectureTests
     private const string Kernel = "MicroEngine.Kernel", Platform = "MicroEngine.Platform", Graphics = "MicroEngine.Graphics",
         Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input", InputTouch = "MicroEngine.Input.Touch",
         Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
-        TextShaping = "MicroEngine.Text.Shaping", Tiled = "MicroEngine.Tiled", Navigation = "MicroEngine.Navigation", UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
+        TextShaping = "MicroEngine.Text.Shaping", Tiled = "MicroEngine.Tiled", Navigation = "MicroEngine.Navigation", Ecs = "MicroEngine.Ecs", UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
         Testing = "MicroEngine.Testing",
         // The transitional entity adapter of the demo migrations, deleted: no project may reference it again.
         Migration = "MicroEngine.Migration.Entities",
@@ -51,6 +51,10 @@ public sealed class ArchitectureTests
         // Navigation (an optional package, ADR 0056): paths over grids read from the tile types or from a physics world;
         // like Tiled, its package depends on MicroEngine. It has no other reference.
         [Navigation] = [Kernel, Physics, PhysicsTiles, Core],
+        // The Entity Component System package (optional, ADR 0065): a scene system over the scene's world; like
+        // Tiled, its package depends on MicroEngine. The Arch library is its only other reference, and it is the only
+        // engine project with one (the checks below).
+        [Ecs] = [Kernel, Scene, Core],
         [UI] = [Graphics2D, Text, Input, Graphics, Content, Kernel, Platform],
         [Saves] = [Kernel, Platform],
         // Progress persists through the save store (ADR 0006).
@@ -127,13 +131,18 @@ public sealed class ArchitectureTests
     }
 
     /// <summary>
-    /// Entity Component System libraries (ADR 0059). A game may use one beside the scene's world; the engine, the
-    /// tools, the templates and the demo games never do, so no subsystem can come to depend on one.
+    /// Entity Component System libraries (ADR 0065). The scene's world is the SDK's default model; one optional
+    /// package, <c>MicroEngine.Ecs</c>, adopts one library. No other engine assembly, no tool, template or demo game
+    /// references a library or that package, so no subsystem can come to depend on either.
     /// </summary>
     private static readonly string[] EcsPackages =
         ["Arch", "Friflo.Engine.ECS", "DefaultEcs", "Flecs.NET", "fennecs", "TinyEcs", "Leopotam.Ecs", "Frent", "Svelto.ECS", "Scellecs.Morpeh", "MonoGame.Extended.Entities"];
-    /// <summary>The only projects that may reference one: the benchmark that compares them and the sample that shows the way.</summary>
-    private static readonly string[] EcsConsumers = ["benchmarks/EcsBench/EcsBench.csproj", "samples/EcsSwarm/EcsSwarm.csproj"];
+    /// <summary>The engine project that adopts a library, and the one library it adopts.</summary>
+    private const string EcsProject = "src/MicroEngine.Ecs/MicroEngine.Ecs.csproj", EcsLibrary = "Arch";
+    /// <summary>The other projects that reference a library directly: the benchmark that compares several and the modelling comparison.</summary>
+    private static readonly string[] EcsConsumers = ["benchmarks/EcsBench/EcsBench.csproj", "benchmarks/EcsModel/EcsModel.csproj"];
+    /// <summary>Where a project may use the optional package: samples, benchmarks and tests, never the engine, a tool, a template or a demo.</summary>
+    private static readonly string[] EcsPackageUsers = ["samples/", "benchmarks/", "tests/"];
 
     private static bool IsEcsPackage(string name) =>
         EcsPackages.Any(p => name.Equals(p, StringComparison.OrdinalIgnoreCase) || name.StartsWith(p + ".", StringComparison.OrdinalIgnoreCase));
@@ -145,32 +154,49 @@ public sealed class ArchitectureTests
             .Select(e => e.Attribute("Include")?.Value ?? e.Attribute("Update")?.Value ?? "")
             .Where(IsEcsPackage)];
 
+    /// <summary>Whether a project, props or targets file references the optional package, as a project or as a package.</summary>
+    private static bool UsesEcsPackage(string file) =>
+        XDocument.Load(file).Descendants().Any(e =>
+            (e.Name.LocalName == "ProjectReference" && (e.Attribute("Include")?.Value ?? "").Replace('\\', '/').EndsWith("/" + Ecs + ".csproj", StringComparison.OrdinalIgnoreCase))
+            || (e.Name.LocalName is "PackageReference" or "PackageVersion" && string.Equals(e.Attribute("Include")?.Value ?? e.Attribute("Update")?.Value, Ecs, StringComparison.OrdinalIgnoreCase)));
+
     private static bool IsSkipped(string relative) =>
         relative.Split('/').Any(part => part is "bin" or "obj" or "experiments" or "node_modules" || part.StartsWith('.'));
 
     [TestMethod]
-    public void No_engine_project_tool_template_or_demo_references_an_entity_component_system()
+    public void Only_the_optional_package_adopts_an_entity_component_system_and_nothing_of_the_engine_depends_on_it()
     {
         var root = Repository();
         var offenders = new List<string>();
         var consumers = new List<string>();
+        bool adopted = false;
         foreach (var project in Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(root, project).Replace('\\', '/');
             if (IsSkipped(relative)) continue;
-            // The engine, the tools, the templates and the demos do not reach one through a consumer either.
+            // The engine, the tools, the templates and the demos do not reach a library through a consumer either.
             if (relative.StartsWith("src/", StringComparison.Ordinal) || relative.StartsWith("games/", StringComparison.Ordinal) || relative.StartsWith("templates/", StringComparison.Ordinal))
                 foreach (var reference in XDocument.Load(project).Descendants().Where(e => e.Name.LocalName == "ProjectReference"))
                 {
                     string target = (reference.Attribute("Include")?.Value ?? "").Replace('\\', '/');
                     if (EcsConsumers.Any(c => target.EndsWith(Path.GetFileName(c), StringComparison.OrdinalIgnoreCase))) offenders.Add($"{relative} -> {target}");
                 }
+            // The optional package is used by samples, benchmarks and tests only.
+            if (relative != EcsProject && UsesEcsPackage(project) && !EcsPackageUsers.Any(p => relative.StartsWith(p, StringComparison.Ordinal)))
+                offenders.Add($"{relative} -> {Ecs}");
             var packages = EcsPackagesNamedIn(project);
             if (packages.Count == 0) continue;
-            if (EcsConsumers.Contains(relative)) consumers.Add(relative);
+            if (relative == EcsProject)
+            {
+                // The package adopts one library, and that one only.
+                if (packages is [EcsLibrary]) adopted = true;
+                else offenders.Add($"{relative} -> {string.Join(", ", packages)} (it adopts {EcsLibrary} alone)");
+            }
+            else if (EcsConsumers.Contains(relative)) consumers.Add(relative);
             else offenders.Add($"{relative} -> {string.Join(", ", packages)}");
         }
-        // A props or targets file would give the package to every project that imports it: none names one.
+        // A props or targets file would give a library, or the package, to every project that imports it: none names
+        // a library, and only the samples' files name the package (to build it from source inside the repository).
         foreach (string pattern in (string[])["*.props", "*.targets"])
             foreach (var shared in Directory.GetFiles(root, pattern, SearchOption.AllDirectories))
             {
@@ -178,9 +204,11 @@ public sealed class ArchitectureTests
                 if (IsSkipped(relative)) continue;
                 var packages = EcsPackagesNamedIn(shared);
                 if (packages.Count > 0) offenders.Add($"{relative} -> {string.Join(", ", packages)}");
+                if (UsesEcsPackage(shared) && !EcsPackageUsers.Any(p => relative.StartsWith(p, StringComparison.Ordinal))) offenders.Add($"{relative} -> {Ecs}");
             }
-        Assert.AreEqual(0, offenders.Count, "An Entity Component System is a game's choice (ADR 0059); these projects reference one: " + string.Join("; ", offenders));
-        CollectionAssert.AreEquivalent(EcsConsumers, consumers, "the benchmark and the sample are the consumers the check knows");
+        Assert.AreEqual(0, offenders.Count, "An Entity Component System is optional (ADR 0065); these projects reach one: " + string.Join("; ", offenders));
+        Assert.IsTrue(adopted, $"{EcsProject} references {EcsLibrary}");
+        CollectionAssert.AreEquivalent(EcsConsumers, consumers, "the two comparisons are the direct consumers the check knows");
     }
 
     [TestMethod]
@@ -198,7 +226,7 @@ public sealed class ArchitectureTests
             try { references = System.Reflection.Assembly.LoadFrom(file).GetReferencedAssemblies(); }
             catch (BadImageFormatException) { continue; }   // a native library named like the engine
             foreach (var reference in references)
-                if (IsEcsPackage(reference.Name!)) offenders.Add($"{Path.GetFileName(file)} -> {reference.Name}");
+                if (IsEcsPackage(reference.Name!) || reference.Name == Ecs) offenders.Add($"{Path.GetFileName(file)} -> {reference.Name}");
         }
         Assert.AreEqual(0, offenders.Count, string.Join("; ", offenders));
     }

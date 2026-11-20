@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ENTITY-1 reopened (docs/evaluations/entity-1b.md): one gameplay slice grown in three steps (enemies and
+       projectiles; status effects that come and go on live enemies; a second kind of object and a late question),
+       written twice at each step: on the engine's world with attachments of the game's classes (Simple/) and on a
+       third-party Entity Component System (Ecs/, on Arch). One script drives both, their observable state is compared
+       step by step (tests/Benchmarks.Tests/EcsModelTests.cs), and the program reports how many lines each step
+       changed in each model. It measures no time. A program of its own so no engine assembly, sample or game takes
+       the dependency through it. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>EcsModel</RootNamespace>
+    <Version>1.0.0</Version>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsPackable>false</IsPackable>
+    <Description>One gameplay slice on the scene world and on an Entity Component System, step by step.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Scene/MicroEngine.Scene.csproj" />
+  </ItemGroup>
+  <!-- Pinned, so the evaluation's observations stay those of this version. Arch: Apache-2.0. -->
+  <ItemGroup>
+    <PackageReference Include="Arch" Version="[2.1.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Benchmarks.Tests" />
+  </ItemGroup>
+</Project>

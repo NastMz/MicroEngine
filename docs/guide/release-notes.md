@@ -7,7 +7,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 ## Next release
 
 A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
-optional, for agents that find their way through a level.
+optional, for agents that find their way through a level. An eleventh: `MicroEngine.Ecs`, optional, for games
+modelled as components and systems.
 
 **Added**
 
@@ -116,12 +117,18 @@ optional, for agents that find their way through a level.
   every step fits in a 60 Hz frame on a desktop, where a walk over all of them for each one stops under 2,000, and a
   query with `Camera2D.VisibleBounds` gives what a world much larger than the view should update and draw. The
   "Nearby objects" example of the Examples sample moves, of 3,000 fireflies, the ones near the view.
-- A guide for games with very many alike objects ([Many alike objects and Entity Component Systems](entity-component-systems.md)):
-  how far a scene's world goes (100,000 entities walked and moved in about half a millisecond on a desktop), when a
-  component store pays for itself, and how a game runs the Entity Component System it chooses beside the scene's
-  world: the scene owns the store, steps it in `Update`, draws it with `Objects.Blend`, adds it to the state hash,
-  and links a row to an entity when it needs a child or a physics body. The SDK itself has no ECS and no package
-  depends on one. The `EcsSwarm` sample keeps a swarm of 20,000 in Arch beside a scene's entities.
+- `MicroEngine.Ecs`, an Entity Component System that lives in a scene ([Entity Component Systems](entity-component-systems.md)).
+  `scene.AddEcs(components)` gives a scene a component store (the Arch library's world, used directly) that is
+  created and destroyed with it; `Scenes.AddEcs` gives every scene one. `EcsComponents` declares the game's
+  component types and which are simulation state. `Systems` and `LateSystems` run `EcsSystem` classes or functions
+  in the order they were added, before and after the scene's `Update`, each with an `Enabled` switch; `Commands`
+  defers changes asked during a walk to the end of the system. `Link` joins a row to an entity of the scene's world:
+  each is found from the other, destroying either destroys both, and `SyncTransform` keeps the entity where the row
+  is. `Interpolated<T>()` reads a component between two steps for drawing. The store's rows, links and systems are
+  in the state hash, and a row with a component that was not declared stops the game with a message that names it.
+  The scene's world stays the default model; the guide says which fits what. The `EcsEffects` sample models status
+  effects as components that come and go, and `EcsSwarm` keeps a swarm of 20,000 in a store beside a scene's
+  entities.
 
 **Changed**
 

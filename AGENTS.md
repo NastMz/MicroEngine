@@ -33,9 +33,10 @@ sufficient without previous chats or agent memory.
   baseline to compare later runs against),
   [`odd/tasks/world-1.md`](odd/tasks/world-1.md) (large worlds and nearby objects: `SpatialIndex2D`, the tile broad
   phase on it, a world whose release and step copy follow the work, ADR 0058) and
-  [`odd/tasks/entity-1.md`](odd/tasks/entity-1.md) (Entity Component Systems: no first-party module; a game runs a
-  third-party one beside the scene's world, the `EcsSwarm` sample, the comparison `benchmarks/EcsBench`, ADR 0059, provisional until a game with complex mechanics
-  tests the modelling side).
+  [`odd/tasks/entity-1.md`](odd/tasks/entity-1.md) (Entity Component Systems: the scene world is the default
+  model, and the optional `MicroEngine.Ecs` package keeps a component store of the Arch library in a scene as a scene
+  system, with the `EcsEffects` and `EcsSwarm` samples and the comparisons `benchmarks/EcsModel` and
+  `benchmarks/EcsBench`, ADR 0065).
 - An architectural consolidation is in progress: [`odd/tasks/consolidation-1.md`](odd/tasks/consolidation-1.md) (issue
   #183) holds its initiatives, their order and their state, and
   [`docs/evaluations/consolidation-1.md`](docs/evaluations/consolidation-1.md) the audit behind them. It reopens earlier

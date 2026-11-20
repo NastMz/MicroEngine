@@ -57,6 +57,8 @@ const expected = {
   'MicroEngine.Tiled': { deps: ['MicroEngine', 'DotTiled'], files: ['lib/net10.0/MicroEngine.Tiled.dll', 'lib/net10.0/MicroEngine.Tiled.xml'] },
   // Navigation: optional, managed, the engine its only dependency.
   'MicroEngine.Navigation': { deps: ['MicroEngine'], files: ['lib/net10.0/MicroEngine.Navigation.dll', 'lib/net10.0/MicroEngine.Navigation.xml'] },
+  // The Entity Component System: optional, the managed Arch library its only dependency besides the engine.
+  'MicroEngine.Ecs': { deps: ['MicroEngine', 'Arch'], files: ['lib/net10.0/MicroEngine.Ecs.dll', 'lib/net10.0/MicroEngine.Ecs.xml'] },
   'MicroEngine.Cli': { deps: [], files: ['tools/net10.0/any/MicroEngine.Cli.dll', 'tools/net10.0/any/Hosts/android/Host.csproj', 'tools/net10.0/any/Hosts/ios/Host.csproj', 'tools/net10.0/any/Hosts/web/Host.csproj', 'tools/net10.0/any/Notices/THIRD-PARTY-NOTICES.txt', 'tools/net10.0/any/Notices/microengine-LICENSE.txt', 'tools/net10.0/any/Notices/HarfBuzz-LICENSE.txt', 'tools/net10.0/any/Notices/raylib-LICENSE.txt', 'tools/net10.0/any/Notices/SDL-LICENSE.txt'] },
   'MicroEngine.Templates': { deps: [], files: ['content/MicroEngineGame/.template.config/template.json', 'content/MicroEngineGame/MyGame.csproj', 'content/MicroEngineGame/Content/hero.png'] },
 };

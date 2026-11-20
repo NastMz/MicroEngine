@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- An Entity Component System beside the scene's world: twenty thousand alike objects live in a component store of
-       a third-party library (Arch, Apache-2.0), the few objects that need a transform hierarchy stay entities
-       of the scene's world, and the scene joins the two. The engine knows nothing of the library: the scene owns the
-       store, steps it in Update, draws it in Draw and adds it to the state hash. It references the packages a game
-       outside this repository references; inside the repository the engine's projects replace MicroEngine's
-       (samples/Directory.Build.targets). -->
+  <!-- An Entity Component System beside the scene's world: twenty thousand alike objects live in a component store
+       (the optional MicroEngine.Ecs package, over the Arch library), the few objects that need a transform hierarchy
+       stay entities of the scene's world, and a carrier is both, linked. The store is a scene system: the scene adds
+       it and lists its systems, and the engine steps it, hashes it and ends it with the scene. It references the
+       packages a game outside this repository references; inside the repository the engine's projects replace them
+       (samples/Directory.Build.targets, and Directory.Build.targets here for the optional package). -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -14,11 +14,11 @@
     <ApplicationTitle>ECS Swarm</ApplicationTitle>
     <ApplicationId>com.example.ecsswarm</ApplicationId>
     <Version>1.0.0</Version>
-    <Description>A swarm in a third-party Entity Component System, beside the objects of a MicroEngine scene.</Description>
+    <Description>A swarm in a component store, beside the objects of a MicroEngine scene.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
-    <!-- The component store. Any Entity Component System fits the same five places of SwarmScene. -->
-    <PackageReference Include="Arch" Version="2.1.0" />
+    <!-- The component store: optional, and it brings the Arch library with it. -->
+    <PackageReference Include="MicroEngine.Ecs" Version="0.6.0-alpha.1" />
   </ItemGroup>
 </Project>

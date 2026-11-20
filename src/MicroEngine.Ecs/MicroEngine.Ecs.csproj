@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Entity Component System: a component store of the Arch library that lives in a scene as a scene system, with
+       what joins it to the engine: its lifetime, ordered systems around the scene's update, deferred changes, links
+       between rows and entities of the scene's world, interpolation for drawing, the state hash and transforms. An
+       optional package of the SDK (ADR 0065): games that model with the scene's world do not carry the library. Arch's
+       types are public here on purpose: the package adopts the library, it does not hide it. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Ecs</RootNamespace>
+    <Description>MicroEngine Entity Component System: a component store (the Arch library) that lives in a scene, with ordered systems around the scene's update, deferred changes, links between rows and scene entities, interpolated drawing, the state hash and transform sync. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);ecs;entity-component-system;arch</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+  <!-- Arch (Apache-2.0); THIRD-PARTY-NOTICES.md. Pinned: its types are part of this package's API, so a new version
+       is a deliberate change (ADR 0065). -->
+  <ItemGroup>
+    <PackageReference Include="Arch" Version="[2.1.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Ecs.Tests" />
+  </ItemGroup>
+</Project>
