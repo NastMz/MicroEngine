@@ -518,6 +518,11 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
   coordinated.
 - A build of the game released before it used a schema knows nothing of versions: it reads a versioned save as it
   reads any save, and saves over it. Only builds with the schema refuse a newer save.
+- `"@version"` is the store's own name at the root of every save, with or without a schema: a saved class or
+  dictionary that has a property or key with that name at its root loses it on load. Name it something else.
+- A type whose own converter writes something other than a JSON object cannot be told apart when its schema is
+  declared: saving it through a schema throws, and loading an existing slot through that schema reports `Corrupt` and
+  sets the slot aside. Save such a type without a schema, or wrap it in a class.
 - A JSON object that names the same property twice at its root is `Corrupt` to a versioned load; a load without a
   schema keeps the last one.
 - The loads without a schema catch what the serializer reports (`JsonException`) and set the slot aside; an exception
