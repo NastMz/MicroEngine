@@ -94,4 +94,22 @@ public sealed class MixExampleTests
         SettingsExampleTests.Press(game, platform, "pause");
         Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current);
     }
+
+    [TestMethod]
+    public void TheExtensionExamplesEffectWobblesItsBusAtItsRate()
+    {
+        using var capture = new CaptureAudioDevice(60);
+        var audio = new AudioMixer(capture) { Deterministic = true };
+        audio.AddSound("steady", new AudioClip([.. Enumerable.Repeat(0.5f, capture.SampleRate * 2)], capture.SampleRate));
+        var tremolo = new Tremolo { Rate = 4, Depth = 1 };
+        audio.Bus("sfx").Add(tremolo);
+        audio.PlayVoice("steady", new PlayParameters());
+        for (int i = 0; i < 60; i++) audio.Update(1f / 60);
+        var heard = capture.Output.Samples;
+        int period = capture.SampleRate / 4;
+        Assert.AreEqual(0.5f, heard[0], 1e-4f, "full volume at the start of a wobble");
+        Assert.AreEqual(0f, heard[period / 2 * 2], 1e-3f, "silence half way through it, at full depth");
+        Assert.AreEqual(0.5f, heard[period * 2], 1e-3f, "and back after one period: four times a second");
+        Assert.IsFalse(tremolo.Faulted);
+    }
 }

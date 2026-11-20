@@ -40,6 +40,19 @@ public string Bus { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Audio_PlayParameters_FadeIn"></a> FadeIn
+
+Seconds the sound takes to rise from silence to [Volume](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_Volume), frame by frame (0, the default: it starts
+at its volume). A value that is not a number counts as 0.
+
+```csharp
+public float FadeIn { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_PlayParameters_Loop"></a> Loop
 
 Whether the sound restarts when it reaches its end.

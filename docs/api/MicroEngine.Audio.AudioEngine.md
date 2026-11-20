@@ -172,6 +172,18 @@ public int DroppedCommands { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Audio_AudioEngine_FaultedEffects"></a> FaultedEffects
+
+Effects that threw while rendering and were taken out of the mix ([Faulted](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Faulted)).
+
+```csharp
+public int FaultedEffects { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Audio_AudioEngine_Format"></a> Format
 
 The sink's format, which the mixer renders.
@@ -183,6 +195,20 @@ public AudioFormat Format { get; }
 #### Property Value
 
  [AudioFormat](MicroEngine.Platform.AudioFormat.md)
+
+### <a id="MicroEngine_Audio_AudioEngine_Limiter"></a> Limiter
+
+The limiter after "master": it keeps the mix within full scale instead of letting the device clip it, and leaves
+every sample as it is while the mix stays within its threshold. [Limiter](MicroEngine.Audio.AudioEngineSettings.md#MicroEngine_Audio_AudioEngineSettings_Limiter) says
+whether it starts on (a game's device has it on); [Bypass](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Bypass) switches it.
+
+```csharp
+public Limiter Limiter { get; }
+```
+
+#### Property Value
+
+ [Limiter](MicroEngine.Audio.Effects.Limiter.md)
 
 ### <a id="MicroEngine_Audio_AudioEngine_MaxVoices"></a> MaxVoices
 
@@ -453,13 +479,14 @@ public void Render(Span<float> buffer)
 
 `buffer` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
 
-### <a id="MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__"></a> Set\(VoiceHandle, float?, float?\)
+### <a id="MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Double_"></a> Set\(VoiceHandle, float?, float?, double\)
 
 Changes the volume (0..1) and pan (0..1) of <code class="paramref">voice</code> from the current step's frame; null, or a
-value that is not a number, keeps a value.
+value that is not a number, keeps a value. With <code class="paramref">seconds</code>, the values move there over that
+time, frame by frame, instead of at once (a ramp stands still while the sound is paused).
 
 ```csharp
-public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
+public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, double seconds = 0)
 ```
 
 #### Parameters
@@ -470,21 +497,24 @@ public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
 
 `pan` [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 Whether it was playing.
 
-### <a id="MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_"></a> SetPitch\(VoiceHandle, float\)
+### <a id="MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_System_Double_"></a> SetPitch\(VoiceHandle, float, double\)
 
 Changes the pitch of <code class="paramref">voice</code> from the current step's frame: the playback speed factor, 1 for the
 clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
 mixer's timeline moves its end accordingly. Streams play at their own pitch. A pitch that is not a number
-changes nothing.
+changes nothing. With <code class="paramref">seconds</code>, the speed moves there over that time, frame by frame (a
+glide), instead of at once.
 
 ```csharp
-public bool SetPitch(VoiceHandle voice, float pitch)
+public bool SetPitch(VoiceHandle voice, float pitch, double seconds = 0)
 ```
 
 #### Parameters
@@ -492,6 +522,8 @@ public bool SetPitch(VoiceHandle voice, float pitch)
 `voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
 
 `pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 #### Returns
 

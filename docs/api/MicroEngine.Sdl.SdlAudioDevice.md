@@ -37,6 +37,7 @@ public sealed class SdlAudioDevice : MixerAudioDevice, IAudioDevice, IDisposable
 [MixerAudioDevice.PlayVoice\(SoundHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayVoice_MicroEngine_Audio_SoundHandle_MicroEngine_Audio_PlayParameters__), 
 [MixerAudioDevice.PlayMusicVoice\(MusicHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayMusicVoice_MicroEngine_Audio_MusicHandle_MicroEngine_Audio_PlayParameters__), 
 [MixerAudioDevice.PlayMusic\(MusicHandle, float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_), 
+[MixerAudioDevice.CrossfadeMusic\(MusicHandle, float, float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_CrossfadeMusic_MicroEngine_Audio_MusicHandle_System_Single_System_Single_), 
 [MixerAudioDevice.StopMusic\(\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_StopMusic), 
 [MixerAudioDevice.SetMusicVolume\(float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_SetMusicVolume_System_Single_), 
 [MixerAudioDevice.PauseMusic\(bool\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PauseMusic_System_Boolean_), 

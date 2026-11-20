@@ -8,6 +8,9 @@ ARCH-1 §3 (D8 three mixers, S12 audio API), §6.4 (`IAudioSink` v1), §6.5 (aud
 the P5 verdict), the P5 report ([`experiments/arch-1/p5-audio-sinks`](../../experiments/arch-1/p5-audio-sinks/README.md))
 and the browser determinism report ([`experiments/arch-1/browser-determinism`](../../experiments/arch-1/browser-determinism/README.md), R2).
 
+Amended by [ADR 0067](0067-mix-graph-and-effects.md) (2026-11-19): a bus is no longer only a volume; it carries a
+chain of effects and is mixed in its own buffer while it needs one. The mixer, the queue and the sink contract stand.
+
 ## Context
 
 Each backend mixed for itself: SDL bound sixteen round-robin audio streams, raylib kept four aliases per sound, and the
