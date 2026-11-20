@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Pathfinding (optional package): the cheapest path over a grid of cells or a graph of waypoints, grids built from a tile map or a physics world, obstacles that change while the game runs, routes straightened for agents with a size, and distance fields for many agents with one goal.
+Navigation (optional package): the cheapest path over a grid of cells or a graph of waypoints, grids built from a tile map or a physics world, obstacles that change while the game runs, routes for agents with a size, what can be reached without a search, distance fields for many agents with one goal, and agents that follow their routes, keep apart and arrive.
 
 Guide: [Navigation](../guide/navigation.md)  
 
