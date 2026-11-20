@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The physics playground: dynamic bodies and joints (a chain, a rope, a cart on sprung, motor-driven wheels) on a
+       scene's physics world, with Box2D named once in PlaygroundGame. Everything is drawn by code. It references the
+       packages a game outside this repository references: MicroEngine.Desktop and the optional
+       MicroEngine.Physics.Box2D, which carries Box2D's native library for each runtime it supports. Inside the
+       repository the projects replace the packages (samples/Directory.Build.targets), and the native library must be
+       built for this machine (src/MicroEngine.Physics.Box2D/native/build.sh). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PhysicsPlayground</RootNamespace>
+    <ApplicationTitle>Physics playground</ApplicationTitle>
+    <ApplicationId>com.example.physics_playground</ApplicationId>
+    <Version>1.0.0</Version>
+    <Description>A chain, a rope and a cart on wheel joints, on the Box2D physics backend.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Physics.Box2D" Version="0.6.0-alpha.1" />
+  </ItemGroup>
+</Project>
