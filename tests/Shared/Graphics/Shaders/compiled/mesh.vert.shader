@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "vertex",
   "source": "mesh.vert.hlsl",
   "resources": {
@@ -8,6 +8,23 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Transform",
+        "slot": 0,
+        "size": 64,
+        "uniforms": [
+          {
+            "name": "WorldViewProjection",
+            "offset": 0,
+            "size": 64
+          }
+        ]
+      }
+    ],
+    "textures": []
   },
   "code": {
     "dxil": {

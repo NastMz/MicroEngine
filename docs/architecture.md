@@ -118,7 +118,11 @@ at their interpolated transforms ([The 3D path](manual/rendering.md#the-3d-path)
 The 2D layer is `MicroEngine.Graphics2D`, also carried by the `MicroEngine` package, which references the graphics
 contract only: the batcher (`Renderer2D`) and `Camera2D`, and the 2D drawing model games use (`IRenderer`, textures,
 `PixelImage`, sprites and atlases, animation, particles, light, parallax), moved out of `MicroEngine.dll` with its
-namespace unchanged (`MicroEngine.dll` forwards each type). The SDL and raylib platforms draw every frame into a canvas
+namespace unchanged (`MicroEngine.dll` forwards each type). The drawing model is a view of the device layer, not a
+second family beside it: a `Texture` exposes the device texture behind it, a `RenderTarget2D` is a device render target
+whose picture is a `Texture`, and `IRenderer`'s states and targets are the batcher's state and target, so materials
+(`Material2D`), blend states and render targets are drawn through `IRenderer` and owned by asset scopes like textures.
+The SDL and raylib platforms draw every frame into a canvas
 render target through it, with `IRenderer` as its façade, and compose the canvas into the window as the game's
 `Presentation` says ([The 2D batcher and the camera](manual/rendering.md#the-2d-batcher-and-the-camera)).
 

@@ -34,7 +34,7 @@ Assets loaded and not released.
 
 `TextureBytes` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-Device memory of their textures (images, atlases, font pages).
+Device memory of their textures (images, atlases, font pages, render targets).
 
 `LoadMilliseconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
@@ -96,7 +96,7 @@ public int LoadsDuringPlay { get; init; }
 
 ### <a id="MicroEngine_Core_AssetStatistics_TextureBytes"></a> TextureBytes
 
-Device memory of their textures (images, atlases, font pages).
+Device memory of their textures (images, atlases, font pages, render targets).
 
 ```csharp
 public long TextureBytes { get; init; }

@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "grayscale.frag.hlsl",
   "resources": {
@@ -8,6 +8,33 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Effect",
+        "slot": 0,
+        "size": 16,
+        "uniforms": [
+          {
+            "name": "Amount",
+            "offset": 0,
+            "size": 4
+          },
+          {
+            "name": "Padding",
+            "offset": 4,
+            "size": 12
+          }
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "Scene",
+        "slot": 0
+      }
+    ]
   },
   "code": {
     "dxil": {

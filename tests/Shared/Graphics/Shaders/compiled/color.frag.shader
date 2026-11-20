@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "color.frag.hlsl",
   "resources": {
@@ -8,6 +8,10 @@
     "uniformBuffers": 0,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [],
+    "textures": []
   },
   "code": {
     "dxil": {

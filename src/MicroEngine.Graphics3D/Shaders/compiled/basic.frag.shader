@@ -1,6 +1,6 @@
 {
   "format": "microengine-shader",
-  "version": 1,
+  "version": 2,
   "stage": "fragment",
   "source": "basic.frag.hlsl",
   "resources": {
@@ -8,6 +8,38 @@
     "uniformBuffers": 1,
     "storageTextures": 0,
     "storageBuffers": 0
+  },
+  "reflection": {
+    "blocks": [
+      {
+        "name": "Material",
+        "slot": 0,
+        "size": 32,
+        "uniforms": [
+          {
+            "name": "BaseColor",
+            "offset": 0,
+            "size": 16
+          },
+          {
+            "name": "LightDirection",
+            "offset": 16,
+            "size": 12
+          },
+          {
+            "name": "Ambient",
+            "offset": 28,
+            "size": 4
+          }
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "BaseColorTexture",
+        "slot": 0
+      }
+    ]
   },
   "code": {
     "dxil": {

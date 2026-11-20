@@ -177,8 +177,11 @@ started SDL renderer direct3d11 (with sound)
 
 - **Hosts for phones and browsers** are built by `microengine package`; a game does not provide its own Android
   activity, iOS app or web page.
-- **Rendering features beyond `IRenderer`** (shaders, render targets) cannot be added from a game: the renderer contract
-  has no hook for them.
+- **A renderer of your own.** A game adds rendering techniques with what `IRenderer` draws with (render targets,
+  blend states, materials from its own fragment shaders: [Render targets and shaders](../guide/render-targets-and-shaders.md))
+  or, below it, by recording passes on the [graphics device](rendering.md#the-graphics-device). It does not replace the
+  renderer or add a graphics device: those come with the platform. Stencil, multisampling and vertex shaders of a
+  material are not offered at either level.
 - **The game loop** (fixed step, order of a frame) is the engine's; a host that drives frames itself uses
   `GameSession` ([Game lifecycle and time](lifecycle.md#loop-runner-and-session)). Within it, a game adds its own systems
   to the frame's phases, replaces built-in services and edits the time policy from `Game.Configure`

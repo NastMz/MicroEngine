@@ -56,7 +56,9 @@ public sealed class AssetLoader<T>(string kind, Func<AssetLoadContext, T> load, 
 /// <summary>What a loader is asked to load, and the content it reads it from.</summary>
 public sealed class AssetLoadContext
 {
-    internal AssetLoadContext(AssetKey key, IContentSource source) => (Key, Source) = (key, source);
+    private readonly AssetStore _store;
+
+    internal AssetLoadContext(AssetKey key, AssetStore store) => (Key, _store) = (key, store);
 
     /// <summary>The asset asked for (kind, normalized path, options, variant).</summary>
     public AssetKey Key { get; }
@@ -64,8 +66,8 @@ public sealed class AssetLoadContext
     public string Path => Key.Path;
     /// <summary>The load settings, or null for the loader's defaults.</summary>
     public object? Options => Key.Options;
-    /// <summary>Where the files are.</summary>
-    public IContentSource Source { get; }
+    /// <summary>Where the files are. It is opened on first use, so a loader that reads no file (a resource created from its options) needs no content.</summary>
+    public IContentSource Source => _store.Source;
 
     /// <summary>The whole file at <paramref name="path"/> (the asset's own path when null).</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or outside the source; the message names this asset.</exception>

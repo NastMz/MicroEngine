@@ -144,14 +144,28 @@ public interface IRenderer
     void SetBlendMode(BlendMode mode);
     /// <summary>Restricts drawing to a screen-space rectangle; pass null to remove.</summary>
     void SetClip(RectF? screenRect);
+    /// <summary>Draws with a blend state, a sampler and a material until PopState.</summary>
+    void PushState(in DrawState state);
+    void PopState();
+    /// <summary>Draws into a render target instead of the canvas until PopTarget.</summary>
+    void PushTarget(RenderTarget2D target);
+    void PopTarget();
 }
 ```
 
-Source: [`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Legacy/IGraphics.cs)
+Source: [`src/MicroEngine.Graphics2D/Drawing/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Drawing/IGraphics.cs)
 
 - `DrawOptions` carries `FlipX`, `FlipY`, `Rotation` (radians), `Origin` (pivot in source pixels) and `Scale`.
 - `BlendMode` is `Alpha`, `Additive` or `Multiply`.
-- `PushCamera`/`PopCamera` must balance within a frame; both backends throw otherwise.
+- `PushCamera`/`PopCamera` must balance within a frame; both backends throw otherwise. So must `PushState`/`PopState`
+  and `PushTarget`/`PopTarget`.
+- `DrawState` is a blend state, a sampler and a material (`Material2D`, a fragment shader of the game's own); a part
+  left out keeps what the renderer was drawing with. `DrawState.Opaque`, `Alpha`, `Additive` and `Multiply` are the four
+  blend states every device has.
+- `RenderTarget2D` is a picture to draw into, whose `Texture` is then drawn like any texture. Inside a target the
+  renderer starts like a frame (the target's size, no camera, no clip, no state); the pop restores the canvas as it was.
+- [Render targets and shaders](../guide/render-targets-and-shaders.md) shows both at work, with what a material draws
+  on a device that runs no shaders.
 
 Every backend draws by the same rules.
 
@@ -167,11 +181,14 @@ Every backend draws by the same rules.
   `Multiply` with a translucent colour darkens in proportion to its opacity, a translucent `Clear` stores its colour
   times its alpha (what the window shows), and linear sampling of transparent edges does not darken them.
 - Drawing a disposed texture throws `ObjectDisposedException`, and a texture created by another graphics device
-  throws `ArgumentException`, on every backend; nothing is drawn.
+  throws `ArgumentException`, on every backend; nothing is drawn. A render target drawn into itself throws
+  `InvalidOperationException`.
+- A material draws through its shader on a device that runs shaders (`sdl-gpu`) and with its declared fallback on
+  every other, the headless platform included; its parameters are checked by name the same way on all of them.
 - Captures are opaque (alpha 255) on every backend.
 - Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
 
-Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Legacy/RendererExtensions.cs) add
+Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Drawing/RendererExtensions.cs) add
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient`, `DrawNineSlice` (an image stretched to any
 size with its corners kept, from a `NineSlice`) and `Panel` (a bordered UI box from a `PanelStyle`, or its `Image`).
@@ -233,7 +250,7 @@ called while drawing. Duplicate names and unknown names throw.
 `AnimationClip(frames, framesPerSecond, loop = true)` is an immutable frame sequence; `FrameAt(time)` picks a
 frame. `Animator` plays named clips: `Add(name, clip)`, `Play(name, restart = false)` (playing the current clip
 again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-looping clips). Source:
-[`src/MicroEngine.Graphics2D/Legacy/Animation.cs`](../../src/MicroEngine.Graphics2D/Legacy/Animation.cs). Games may equally pick
+[`src/MicroEngine.Graphics2D/Drawing/Animation.cs`](../../src/MicroEngine.Graphics2D/Drawing/Animation.cs). Games may equally pick
 frames themselves from `atlas.Frames(...)` and a timer. Values that move through several keys, and moments the game
 reacts to during a clip (a footstep, the frame a swing lands), are tracks and timelines: [Animation](../guide/animation.md).
 
@@ -283,7 +300,7 @@ parallax drawn by `DrawBackdrop` reads `cam.DrawnPosition`.
 `ParallaxLayer(texture)` is drawn in screen space (no camera pushed) with `Draw(r, cameraPosition, time)`.
 Init properties: `Factor` (0 fixed, 1 moves with the world; default 0.5), `VerticalFactor`, `Y`, `Drift`
 (pixels per second), `RepeatX` (default true), `Tint`. Source:
-[`src/MicroEngine.Graphics2D/Legacy/Parallax.cs`](../../src/MicroEngine.Graphics2D/Legacy/Parallax.cs).
+[`src/MicroEngine.Graphics2D/Drawing/Parallax.cs`](../../src/MicroEngine.Graphics2D/Drawing/Parallax.cs).
 
 ## Particles
 
@@ -409,9 +426,15 @@ draws reach the GPU as one indexed draw per run of consecutive draws with the sa
 drawing from one atlas costs one draw call. `SdlPlatform.Canvas.Renderer.Statistics` and
 `RaylibPlatform.Canvas.Renderer.Statistics` count the last frame's sprites, draw calls and flushes exactly.
 
+A state pushed on `IRenderer` is the batcher's state, and a pushed render target is the batch's target: a frame that
+uses them is still one batch, in the order its draws were made, and a frame that uses neither batches exactly as
+before.
+
 Code that needs more than `IRenderer` can use `Renderer2D` directly: a `Matrix3x2` transform per draw and a transform
-stack, a state stack (blend state, sampler, scissor), sort modes (`Deferred`, `Texture`, `BackToFront`,
-`FrontToBack`), any render target, premultiplied colours and premultiplied blending by default.
+stack, a state stack (blend state, sampler, scissor, material), sort modes (`Deferred`, `Texture`, `BackToFront`,
+`FrontToBack`), a depth per draw, any render target, premultiplied colours and premultiplied blending by default.
+Textures cross between the two levels both ways: `texture.Native` is the device texture behind a texture of the
+drawing API, and `DeviceGraphics.Wrap` makes a device texture or render target one the drawing API draws.
 
 `Camera2D` has `Zoom` (around the view's centre) and `Rotation` (radians, clockwise on screen); `WorldToView` is its
 whole transform and `VisibleBounds` the world area it shows. `PixelSnap` rounds its translation to whole canvas
@@ -424,7 +447,8 @@ pixels; its default comes from the presentation (`Presentation.CameraPixelSnap`:
 
 Under the 2D drawing API sits one graphics device contract that
 every backend implements, in the `MicroEngine.Graphics.Devices` namespace (`MicroEngine.Graphics.dll`, carried by the
-`MicroEngine` package). Games do not need it to draw sprites; it is for engine modules, tools and backend authors.
+`MicroEngine` package). Games do not need it to draw sprites, to draw into render targets or to draw through shaders
+of their own; it is for engine modules, tools, backend authors and games that record their own passes.
 
 ```csharp
 public interface IGraphicsDevice : IDisposable
@@ -475,11 +499,12 @@ public interface IGraphicsDevice : IDisposable
   `CreatePerspectiveFieldOfView`, uploaded as they are, `mul(M, v)` in HLSL), front faces are counter-clockwise and
   depth runs from 0 (near) to 1 (far).
 - **Shaders compiled ahead of time.** Custom shaders are HLSL
-  compiled by [`microengine shaders`](../guide/cli.md#shaders) into `.shader` files with code for every API.
-  `CompiledShader.Parse(bytes)` reads one and `compiled.Create(device)` creates it in the format the device runs (DXIL on
-  Direct3D 12, SPIR-V on Vulkan, MSL on Metal); on a device without custom shaders it throws
-  `GraphicsCapabilityException`, so a game can keep a tier-0 path (a palette swap drawn from pre-recoloured art, a
-  post effect left out) instead of failing later.
+  compiled by [`microengine shaders`](../guide/cli.md#shaders) into `.shader` files with code for every API and the
+  names, places and sizes of their parameters. A game draws with one as a material (`Assets.Material(path)`), which
+  falls back by declaration where shaders cannot run. At the device level, `Assets.Shader(path)` (or
+  `CompiledShader.Parse(bytes)`) reads one and `compiled.Create(device)` creates it in the format the device runs (DXIL
+  on Direct3D 12, SPIR-V on Vulkan, MSL on Metal); on a device without custom shaders that call throws
+  `GraphicsCapabilityException`.
 
 A backend derives from `GraphicsDeviceBase`, which validates every call before the backend sees it, so errors and the
 moment they are raised are identical on every device; the backend implements only the members whose names end in
@@ -518,8 +543,10 @@ a 3D renderer:
 
 ## Limitations
 
-- No shaders, render targets or post-processing are exposed through `IRenderer`.
-- No mipmaps or compressed GPU texture formats; textures are 32-bit RGBA.
+- Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback. A material is a fragment
+  shader; there is no stencil buffer, no multisampling, and no pass over the finished frame or the window's composition.
+- Images load as 32-bit RGBA textures without mipmaps. A device texture in another format (a single channel, a
+  compressed format the device declares) can be created on the device and drawn through `DeviceGraphics.Wrap`.
 - No sprite batching control beyond packing art into atlases; draw order is call order.
 - Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.
 - On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in

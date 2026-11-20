@@ -8,7 +8,12 @@ namespace MicroEngine.Graphics;
 /// </summary>
 public enum TextureFilter { Nearest, Linear }
 
-/// <summary>A GPU (or headless) texture owned by the active graphics device.</summary>
+/// <summary>
+/// A texture of the drawing API, owned by the game's graphics device: a picture <see cref="IRenderer"/> draws, with the
+/// filter it is sampled with. On a platform with a graphics device it is a view of a device texture
+/// (<see cref="Native"/>), whatever made it: an image, a font page, a render target or a texture the game created on the
+/// device itself. The headless platform keeps textures without a device.
+/// </summary>
 public abstract class Texture : IDisposable
 {
     private TextureFilter _filter;
@@ -59,8 +64,19 @@ public abstract class Texture : IDisposable
     }
     /// <summary>The whole texture as a source rectangle: (0, 0, <see cref="Width"/>, <see cref="Height"/>).</summary>
     public RectF Bounds => new(0, 0, Width, Height);
-    /// <summary>Memory the texture's pixels take on the device, in bytes (4 per pixel).</summary>
-    public long SizeInBytes => (long)Width * Height * 4;
+    /// <summary>
+    /// Memory the texture's pixels take on the device, in bytes: what its format and its mip levels need (4 bytes per
+    /// pixel for the 8-bit RGBA textures images become; less for a compressed format).
+    /// </summary>
+    public virtual long SizeInBytes => (long)Width * Height * 4;
+    /// <summary>
+    /// The device texture behind this texture, holding its premultiplied pixels, or null when the graphics device draws
+    /// without one (the headless platform). It is what the 2D batcher (<see cref="Renderer2D"/>) and a custom pass
+    /// sample; the texture of the drawing API stays its owner.
+    /// </summary>
+    public virtual Devices.Texture? Native => null;
+    /// <summary>Whether a renderer can draw into this texture: it is the picture of a <see cref="RenderTarget2D"/>.</summary>
+    public virtual bool IsRenderTarget => false;
 
     /// <summary>How the texture is sampled; it can change at any time and applies to the next draws.</summary>
     public TextureFilter Filter
@@ -204,6 +220,40 @@ public interface IRenderer
     /// Height are truncated to whole pixels. <see cref="Clear"/> ignores the clip.
     /// </summary>
     void SetClip(RectF? screenRect);
+    /// <summary>
+    /// Draws with <paramref name="state"/> until <see cref="PopState"/>: its blend state, its sampler and its material,
+    /// each replacing the current one when it is not null. Every draw is affected, shapes and text included. States nest;
+    /// every push needs a pop in the same frame, inside the target it was pushed in. <see cref="SetBlendMode"/> still
+    /// works inside a state and is undone by the pop.
+    /// </summary>
+    /// <remarks>
+    /// A material whose shader the device cannot run (<see cref="Material2D.IsSupported"/> false) draws with its
+    /// <see cref="Material2D.Fallback"/> instead. A material whose shader samples a texture that was never given is
+    /// refused at the draw (<see cref="InvalidOperationException"/> naming the texture), on every device. The default
+    /// implementation is for renderers that draw nothing with a state (a test double that only records calls): it refuses.
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">The state's material was disposed.</exception>
+    /// <exception cref="ArgumentException">The state's material belongs to another graphics device.</exception>
+    /// <exception cref="Devices.GraphicsCapabilityException">A blend state that is not one of the four presets, on a device without custom blending.</exception>
+    void PushState(in DrawState state) => throw new NotSupportedException($"{GetType().Name} does not draw with states.");
+    /// <summary>Returns to what was being drawn with before the last <see cref="PushState"/>.</summary>
+    /// <exception cref="InvalidOperationException">No state was pushed (in this target).</exception>
+    void PopState() => throw new NotSupportedException($"{GetType().Name} does not draw with states.");
+    /// <summary>
+    /// Draws into <paramref name="target"/> instead of the canvas until <see cref="PopTarget"/>. A target starts like a
+    /// frame: <see cref="Width"/> and <see cref="Height"/> are its size, there is no camera, no clip and no state, and
+    /// blending is <see cref="BlendMode.Alpha"/>; it keeps the pixels it had (call <see cref="Clear"/> to start from a
+    /// colour). The pop returns to the canvas (or the target under it: targets nest) with the camera, clip, blending and
+    /// state it had. Draw the target's <see cref="RenderTarget2D.Texture"/> afterwards like any texture; it cannot be
+    /// drawn into itself.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException"><paramref name="target"/> was disposed.</exception>
+    /// <exception cref="ArgumentException">Another graphics device created <paramref name="target"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="target"/> is already being drawn into.</exception>
+    void PushTarget(RenderTarget2D target) => throw new NotSupportedException($"{GetType().Name} does not draw into render targets.");
+    /// <summary>Returns to the canvas, or to the target that was being drawn into before the last <see cref="PushTarget"/>.</summary>
+    /// <exception cref="InvalidOperationException">No target was pushed, or a camera or a state pushed inside the target was not popped.</exception>
+    void PopTarget() => throw new NotSupportedException($"{GetType().Name} does not draw into render targets.");
 }
 
 /// <summary>Creates device resources. Separated so headless tests can provide fakes.</summary>
@@ -219,4 +269,22 @@ public interface IGraphicsDevice
     Texture CreateTexture(PixelImage image, TextureFilter filter);
     /// <summary>Uploads <paramref name="image"/> as a texture sampled with <see cref="DefaultFilter"/>. The caller owns the texture and disposes it.</summary>
     Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
+    /// <summary>
+    /// Creates a picture off screen of <paramref name="width"/> x <paramref name="height"/> pixels that a renderer draws
+    /// into (<see cref="IRenderer.PushTarget"/>) and whose texture is sampled with <paramref name="filter"/>. It starts
+    /// transparent. The caller owns it and disposes it; <c>Assets.RenderTarget</c> gives one a scope owns.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A size that is not positive.</exception>
+    RenderTarget2D CreateRenderTarget(int width, int height, TextureFilter filter);
+    /// <summary>Creates a render target whose texture is sampled with <see cref="DefaultFilter"/>.</summary>
+    RenderTarget2D CreateRenderTarget(int width, int height) => CreateRenderTarget(width, height, DefaultFilter);
+    /// <summary>
+    /// Creates a material from a fragment shader compiled ahead of time (a <c>.shader</c> file of
+    /// <c>microengine shaders</c>); the engine supplies the vertex stage. Where the device cannot run shaders the
+    /// material is still created, checks its parameters the same way, and draws with <paramref name="fallback"/>
+    /// (<see cref="Material2D.IsSupported"/> says which). The caller owns it and disposes it; <c>Assets.Material</c>
+    /// gives one a scope owns.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="fragment"/> is not a fragment shader.</exception>
+    Material2D CreateMaterial(Devices.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(null, fragment, fallback);
 }

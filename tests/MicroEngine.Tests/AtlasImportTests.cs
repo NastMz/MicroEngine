@@ -131,6 +131,7 @@ public sealed class AtlasImportTests
         public PixelImage? Last;
         public TextureFilter DefaultFilter { get; set; }
         public Texture CreateTexture(PixelImage image, TextureFilter filter) { Last = image; return _inner.CreateTexture(image, filter); }
+        public RenderTarget2D CreateRenderTarget(int width, int height, TextureFilter filter) => _inner.CreateRenderTarget(width, height, filter);
     }
 
     [TestMethod]

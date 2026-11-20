@@ -244,4 +244,27 @@ public void PushTransform(in Matrix3x2 transform)
 
 `transform` [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)
 
+### <a id="MicroEngine_Graphics_Renderer2D_SetTarget_MicroEngine_Graphics_Devices_RenderTarget_System_Nullable_MicroEngine_Graphics_Devices_RectI__"></a> SetTarget\(RenderTarget, RectI?\)
+
+Directs the rest of the batch at another target: submits what was recorded for the current one (a pending clear
+included), then records into <code class="paramref">target</code> with <code class="paramref">viewport</code> (null: the whole
+target). The state, the transforms and the view stay, and [Statistics](MicroEngine.Graphics.Renderer2D.md#MicroEngine_Graphics_Renderer2D_Statistics) keeps counting, so a frame
+that draws into several targets is still one batch.
+
+```csharp
+public void SetTarget(RenderTarget target, RectI? viewport = null)
+```
+
+#### Parameters
+
+`target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
+
+`viewport` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No batch is open.
+
 </div>

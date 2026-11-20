@@ -13,7 +13,6 @@ cbuffer Water : register(b0, space3)
     float Frequency;  // waves per unit of v
     float Speed;      // radians per second
     float Surface;    // v of the water line
-    float3 Unused;
 };
 
 struct Input

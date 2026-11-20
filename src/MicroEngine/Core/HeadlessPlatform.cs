@@ -3,6 +3,7 @@ using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Platform;
+using Dev = MicroEngine.Graphics.Devices;
 
 namespace MicroEngine.Core;
 
@@ -504,7 +505,8 @@ public sealed class RecordingOverlayCanvas : IOverlayCanvas
 
 /// <summary>
 /// A graphics device for tests: textures keep their size and filter but hold no pixels (unless <see cref="KeepsPixels"/>);
-/// creations, uploads and live textures are counted.
+/// creations, uploads and live textures are counted. Render targets are textures too; materials are created without a
+/// shader to run, so they draw with their fallback (<see cref="Material2D.IsSupported"/> is false).
 /// </summary>
 public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 {
@@ -513,9 +515,9 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
     /// <see cref="HeadlessRenderer"/> needs to draw them. False by default.
     /// </summary>
     public bool KeepsPixels { get; init; }
-    /// <summary>Number of textures created so far.</summary>
+    /// <summary>Number of textures created so far, render targets included.</summary>
     public int TexturesCreated { get; private set; }
-    /// <summary>Number of textures created and not disposed yet.</summary>
+    /// <summary>Number of textures created and not disposed yet, render targets included.</summary>
     public int LiveTextures { get; private set; }
     /// <summary>Number of region updates (<see cref="Texture.Update(int, int, int, int, ReadOnlySpan{Color})"/>) so far.</summary>
     public int Updates { get; private set; }
@@ -535,15 +537,44 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
         return new HeadlessTexture(this, TexturesCreated, image.Width, image.Height, filter) { Pixels = KeepsPixels ? image.Clone() : null };
     }
 
+    /// <inheritdoc/>
+    public Material2D CreateMaterial(Dev.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(null, fragment, fallback);
+
+    /// <inheritdoc/>
+    public RenderTarget2D CreateRenderTarget(int width, int height) => CreateRenderTarget(width, height, DefaultFilter);
+
+    /// <inheritdoc/>
+    public RenderTarget2D CreateRenderTarget(int width, int height, TextureFilter filter)
+    {
+        if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width), "A render target needs a positive size.");
+        TexturesCreated++;
+        LiveTextures++;
+        // The target's picture is the canvas of a rasterizer of its own: what is drawn into it is what is sampled from it.
+        var raster = KeepsPixels ? new ReferenceRasterizer(width, height) : null;
+        return new RenderTarget2D(new HeadlessTexture(this, TexturesCreated, width, height, filter)
+        {
+            Target = true,
+            Raster = raster,
+            Pixels = raster is null ? null : new PixelImage(width, height, raster.Canvas),
+        });
+    }
+
     internal sealed class HeadlessTexture(HeadlessGraphicsDevice device, int id, int width, int height, TextureFilter filter) : Texture(device, width, height, filter)
     {
         /// <summary>The creation number on its device, used to name the texture in recorded commands.</summary>
         public int Id { get; } = id;
-        /// <summary>A copy of the pixels when the device keeps them.</summary>
+        /// <summary>A copy of the pixels when the device keeps them: straight alpha for an image, premultiplied for a render target.</summary>
         public PixelImage? Pixels { get; init; }
+        /// <summary>Whether the texture is a render target's picture.</summary>
+        public bool Target { get; init; }
+        /// <summary>The rasterizer that draws into a render target, when the device keeps pixels.</summary>
+        public ReferenceRasterizer? Raster { get; init; }
+
+        public override bool IsRenderTarget => Target;
 
         protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
         {
+            if (Target) throw new InvalidOperationException("A render target's pixels are drawn (IRenderer.PushTarget), not updated.");
             device.Updates++;
             device.PixelsUploaded += pixels.Length;
             if (Pixels is null) return;
@@ -558,19 +589,39 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 /// <summary>
 /// Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
 /// device, it also rasterizes: it records each draw as a line of text (<see cref="Commands"/>) and draws it on
-/// <see cref="Frame"/> with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
+/// <see cref="Frame"/> with the CPU reference rasterizer, which follows the engine's rendering rules exactly. Render
+/// targets are rasterized the same way; a material draws with its fallback, since nothing here runs shaders.
 /// </summary>
 public sealed class HeadlessRenderer : IRenderer
 {
     private readonly HeadlessGraphicsDevice? _device;
     private readonly ReferenceRasterizer? _raster;
+    private readonly int _width, _height;
     private readonly List<string> _commands = [];
     private readonly Stack<Vector2> _offsets = new();
+    private readonly Stack<Drawing> _states = new();
+    private readonly Stack<Saved> _targets = new();
     private Vector2 _offset;
     private int _cameraDepth;
+    private Texture? _target;
+    private ReferenceRasterizer? _current;
+    private RectF? _clip;
+    private Drawing _drawing = Drawing.Default;
+    private bool _hidden;
+    private Color? _tint;
+    private Material2D? _material;
+
+    /// <summary>What draws are made with: the blend state, the sampler that replaces each texture's own, and the material.</summary>
+    private readonly record struct Drawing(Dev.BlendState Blend, Dev.SamplerDescription? Sampler, Material2D? Material)
+    {
+        public static Drawing Default => new(Dev.BlendState.AlphaPremultiplied, null, null);
+    }
+
+    /// <summary>What a pushed target replaced, restored when it is popped.</summary>
+    private readonly record struct Saved(Texture? Target, ReferenceRasterizer? Raster, Vector2 Offset, RectF? Clip, Drawing Drawing, int Cameras, int States);
 
     /// <summary>A counting renderer: nothing is drawn, every texture of any headless device is accepted.</summary>
-    public HeadlessRenderer(int width, int height) => (Width, Height) = (width, height);
+    public HeadlessRenderer(int width, int height) => (_width, _height) = (width, height);
 
     /// <summary>
     /// A rasterizing renderer for <paramref name="device"/>: it draws only that device's textures, which must keep
@@ -582,26 +633,31 @@ public sealed class HeadlessRenderer : IRenderer
         ArgumentNullException.ThrowIfNull(device);
         if (!device.KeepsPixels) throw new ArgumentException("A rasterizing renderer needs a device that keeps pixels (KeepsPixels = true).", nameof(device));
         _device = device;
-        _raster = new ReferenceRasterizer(width, height);
+        _raster = _current = new ReferenceRasterizer(width, height);
     }
 
     /// <inheritdoc/>
-    public int Width { get; }
+    public int Width => _target?.Width ?? _width;
     /// <inheritdoc/>
-    public int Height { get; }
+    public int Height => _target?.Height ?? _height;
     /// <summary>Draw calls since the frame began (cleared by <see cref="Reset"/>).</summary>
     public int DrawCalls { get; private set; }
     /// <summary>Cameras pushed and not yet popped.</summary>
     public int CameraDepth => _cameraDepth;
+    /// <summary>Render targets pushed and not yet popped.</summary>
+    public int TargetDepth => _targets.Count;
+    /// <summary>States pushed and not yet popped.</summary>
+    public int StateDepth => _states.Count;
     /// <summary>Whether this renderer rasterizes (it was created with a graphics device).</summary>
     public bool Rasterizes => _raster is not null;
-    /// <summary>The rasterizer this renderer draws on, or null when it only counts.</summary>
+    /// <summary>The rasterizer of this renderer's canvas, or null when it only counts.</summary>
     internal ReferenceRasterizer? Raster => _raster;
 
     /// <summary>
     /// This frame's draws as text, one line per call, in screen pixels after the camera offset (a backend-neutral form
     /// tests can compare exactly): <c>clear</c>, <c>rect</c>, <c>sprite</c>, <c>circle</c>, <c>triangle</c>,
-    /// <c>line</c>, <c>blend</c>, <c>clip</c>, <c>camera</c>. Empty when the renderer does not rasterize.
+    /// <c>line</c>, <c>blend</c>, <c>clip</c>, <c>camera</c>, <c>state</c>, <c>target</c>. Empty when the renderer does
+    /// not rasterize.
     /// </summary>
     public IReadOnlyList<string> Commands => _commands;
 
@@ -611,18 +667,27 @@ public sealed class HeadlessRenderer : IRenderer
     /// </summary>
     public PixelImage? Frame => _raster?.Capture();
 
-    /// <summary>Starts a new frame: clears <see cref="DrawCalls"/> and <see cref="Commands"/>, blending returns to <see cref="BlendMode.Alpha"/> and the clip is removed.</summary>
-    /// <exception cref="InvalidOperationException">The previous frame pushed a camera it did not pop.</exception>
+    /// <summary>
+    /// Starts a new frame: clears <see cref="DrawCalls"/> and <see cref="Commands"/>, blending returns to
+    /// <see cref="BlendMode.Alpha"/>, the clip and any state are removed and drawing returns to the canvas.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The previous frame pushed a camera, a state or a target it did not pop.</exception>
     public void Reset()
     {
-        if (_cameraDepth != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in the previous frame.");
+        bool cameras = _cameraDepth != 0, states = _states.Count != 0, targets = _targets.Count != 0;
         DrawCalls = 0;
         _commands.Clear();
         _offsets.Clear();
+        _states.Clear();
+        _targets.Clear();
+        _cameraDepth = 0;
         _offset = Vector2.Zero;
-        if (_raster is null) return;
-        _raster.Blend = BlendMode.Alpha;
-        _raster.SetClip(null);
+        (_target, _current, _clip, _drawing) = (null, _raster, null, Drawing.Default);
+        Apply();
+        _raster?.SetClip(null);
+        if (targets) throw new InvalidOperationException("Unbalanced PushTarget/PopTarget in the previous frame.");
+        if (states) throw new InvalidOperationException("Unbalanced PushState/PopState in the previous frame.");
+        if (cameras) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in the previous frame.");
     }
 
     private static string N(float v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
@@ -639,8 +704,21 @@ public sealed class HeadlessRenderer : IRenderer
     /// <summary>Counts a draw and returns true when this renderer only counts, so no command text is formatted.</summary>
     private bool Counted()
     {
-        if (_raster is not null) return false;
+        if (_current is not null) return false;
         DrawCalls++;
+        return true;
+    }
+
+    /// <summary>
+    /// Applies the fallback of the current material to a draw's colour, after checking the material as a device that
+    /// runs its shader would. Returns whether the draw is made at all.
+    /// </summary>
+    private bool Shown(ref Color color)
+    {
+        if (_material is null) return true;
+        _material.Validate();
+        if (_hidden) return false;
+        if (_tint is { } t) color = new Color((byte)((color.R * t.R + 127) / 255), (byte)((color.G * t.G + 127) / 255), (byte)((color.B * t.B + 127) / 255), (byte)((color.A * t.A + 127) / 255));
         return true;
     }
 
@@ -649,76 +727,80 @@ public sealed class HeadlessRenderer : IRenderer
     {
         if (Counted()) return;
         Record($"clear {C(color)}");
-        _raster!.Clear(color);
+        _current!.Clear(color);
     }
 
     /// <summary>Counts the call (and rasterizes it); throws <see cref="ObjectDisposedException"/> for a disposed texture and, when rasterizing, <see cref="ArgumentException"/> for another device's texture.</summary>
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
         var own = Check(texture);
+        if (!Shown(ref tint)) return;
         var scale = options.Scale ?? Vector2.One;
         var p = position + _offset;
         if (own is null) { DrawCalls++; return; }
         string extra = (options.FlipX ? " flipx" : "") + (options.FlipY ? " flipy" : "")
             + (options.Rotation != 0 ? $" rotate {N(options.Rotation)} origin {P(options.Origin)}" : "");
         Record($"sprite #{own.Id} {own.Width}x{own.Height} {own.Filter.ToString().ToLowerInvariant()} src {R(source)} dst {R(new RectF(p.X, p.Y, source.Width * scale.X, source.Height * scale.Y))} tint {C(tint)}{extra}");
-        _raster!.DrawSprite(own.Pixels!, own.Filter, source, p, scale, options.Rotation, options.Origin, options.FlipX, options.FlipY, tint);
+        _current!.DrawSprite(own.Pixels!, own.Target, Sampler(own), source, p, scale, options.Rotation, options.Origin, options.FlipX, options.FlipY, tint);
     }
 
     /// <summary>Counts the call (and rasterizes it), with the checks of <see cref="Draw"/>.</summary>
     public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
     {
         var own = Check(texture);
+        if (!Shown(ref tint)) return;
         if (own is null) { DrawCalls++; return; }
         var dst = new RectF(destination.X + _offset.X, destination.Y + _offset.Y, destination.Width, destination.Height);
         Record($"sprite #{own.Id} {own.Width}x{own.Height} {own.Filter.ToString().ToLowerInvariant()} src {R(source)} dst {R(dst)} tint {C(tint)}");
         if (source.Width == 0 || source.Height == 0) return;
-        _raster!.DrawSprite(own.Pixels!, own.Filter, source, dst.Position, new Vector2(dst.Width / source.Width, dst.Height / source.Height), 0, Vector2.Zero, false, false, tint);
+        _current!.DrawSprite(own.Pixels!, own.Target, Sampler(own), source, dst.Position, new Vector2(dst.Width / source.Width, dst.Height / source.Height), 0, Vector2.Zero, false, false, tint);
     }
+
+    private Dev.SamplerDescription Sampler(Texture texture) =>
+        _drawing.Sampler ?? (texture.Filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp);
 
     /// <summary>The texture as this device's own when rasterizing (null when only counting), after the checks every renderer makes.</summary>
     private HeadlessGraphicsDevice.HeadlessTexture? Check(Texture texture)
     {
-        if (_device is null)
-        {
-            ArgumentNullException.ThrowIfNull(texture);
-            ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(texture);
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        if (ReferenceEquals(texture, _target))
+            throw new InvalidOperationException("A render target cannot be drawn into itself. Pop it first, or draw it into another target.");
+        if (_device is null) return null;
         return Texture.CheckDrawable<HeadlessGraphicsDevice.HeadlessTexture>(texture, _device);
     }
 
     /// <inheritdoc/>
     public void FillRect(RectF rect, Color color)
     {
-        if (Counted()) return;
+        if (!Shown(ref color) || Counted()) return;
         var r = new RectF(rect.X + _offset.X, rect.Y + _offset.Y, rect.Width, rect.Height);
         Record($"rect {R(r)} {C(color)}");
-        _raster!.FillRect(r, color);
+        _current!.FillRect(r, color);
     }
 
     /// <inheritdoc/>
     public void FillCircle(Vector2 center, float radius, Color color)
     {
-        if (Counted()) return;
+        if (!Shown(ref color) || Counted()) return;
         Record($"circle {P(center + _offset)} r {N(radius)} {C(color)}");
-        _raster!.FillCircle(center + _offset, radius, color);
+        _current!.FillCircle(center + _offset, radius, color);
     }
 
     /// <inheritdoc/>
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
-        if (Counted()) return;
+        if (!Shown(ref color) || Counted()) return;
         Record($"triangle {P(a + _offset)} {P(b + _offset)} {P(c + _offset)} {C(color)}");
-        _raster!.FillTriangle(a + _offset, b + _offset, c + _offset, color);
+        _current!.FillTriangle(a + _offset, b + _offset, c + _offset, color);
     }
 
     /// <inheritdoc/>
     public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
     {
-        if (Counted()) return;
+        if (!Shown(ref color) || Counted()) return;
         Record($"line {P(from + _offset)} {P(to + _offset)} w {N(thickness)} {C(color)}");
-        _raster!.DrawLine(from + _offset, to + _offset, thickness, color);
+        _current!.DrawLine(from + _offset, to + _offset, thickness, color);
     }
 
     /// <inheritdoc/>
@@ -733,7 +815,7 @@ public sealed class HeadlessRenderer : IRenderer
     /// <inheritdoc/>
     public void PopCamera()
     {
-        if (_cameraDepth == 0) throw new InvalidOperationException("PopCamera without PushCamera.");
+        if (_cameraDepth <= (_targets.Count > 0 ? _targets.Peek().Cameras : 0)) throw new InvalidOperationException("PopCamera without PushCamera.");
         _cameraDepth--;
         _offset = _offsets.Pop();
         if (_raster is not null) _commands.Add($"camera {P(_offset)}");
@@ -742,16 +824,101 @@ public sealed class HeadlessRenderer : IRenderer
     /// <inheritdoc/>
     public void SetBlendMode(BlendMode mode)
     {
-        if (_raster is null) return;
-        _raster.Blend = mode;
-        _commands.Add($"blend {mode.ToString().ToLowerInvariant()}");
+        _drawing = _drawing with
+        {
+            Blend = mode switch
+            {
+                BlendMode.Additive => Dev.BlendState.Additive,
+                BlendMode.Multiply => Dev.BlendState.Multiply,
+                _ => Dev.BlendState.AlphaPremultiplied,
+            },
+        };
+        Apply();
+        if (_raster is not null) _commands.Add($"blend {mode.ToString().ToLowerInvariant()}");
     }
 
     /// <inheritdoc/>
     public void SetClip(RectF? screenRect)
     {
+        _clip = screenRect;
         if (_raster is null) return;
-        _raster.SetClip(screenRect);
+        _current!.SetClip(screenRect);
         _commands.Add(screenRect is { } r ? $"clip {R(r)}" : "clip none");
+    }
+
+    /// <inheritdoc/>
+    public void PushState(in DrawState state)
+    {
+        if (state.Material is { } material)
+        {
+            ObjectDisposedException.ThrowIf(material.IsDisposed, material);
+            if (material.IsSupported) throw new ArgumentException("The material was created by another graphics device; create it with the game's Graphics or Assets.", nameof(state));
+        }
+        _states.Push(_drawing);
+        _drawing = new Drawing(state.Blend ?? _drawing.Blend, state.Sampler ?? _drawing.Sampler, state.Material ?? _drawing.Material);
+        Apply();
+        if (_raster is not null) _commands.Add($"state {Describe(_drawing)}");
+    }
+
+    /// <inheritdoc/>
+    public void PopState()
+    {
+        if (_states.Count <= (_targets.Count > 0 ? _targets.Peek().States : 0)) throw new InvalidOperationException("PopState without PushState.");
+        _drawing = _states.Pop();
+        Apply();
+        if (_raster is not null) _commands.Add($"state {Describe(_drawing)}");
+    }
+
+    /// <inheritdoc/>
+    public void PushTarget(RenderTarget2D target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        var texture = target.Texture;
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        var own = _device is null ? texture as HeadlessGraphicsDevice.HeadlessTexture : Texture.CheckDrawable<HeadlessGraphicsDevice.HeadlessTexture>(texture, _device);
+        if (own is null) throw new ArgumentException("The render target was created by another graphics device.", nameof(target));
+        if (ReferenceEquals(texture, _target) || _targets.Any(saved => ReferenceEquals(saved.Target, texture)))
+            throw new InvalidOperationException("The render target is already being drawn into; pop it before pushing it again.");
+        _targets.Push(new Saved(_target, _current, _offset, _clip, _drawing, _cameraDepth, _states.Count));
+        (_target, _current, _offset, _clip, _drawing) = (texture, _raster is null ? null : own.Raster, Vector2.Zero, null, Drawing.Default);
+        _current?.SetClip(null);
+        Apply();
+        if (_raster is not null) _commands.Add($"target #{own.Id} {own.Width}x{own.Height}");
+    }
+
+    /// <inheritdoc/>
+    public void PopTarget()
+    {
+        if (_targets.Count == 0) throw new InvalidOperationException("PopTarget without PushTarget.");
+        var saved = _targets.Peek();
+        if (_states.Count != saved.States) throw new InvalidOperationException("A state pushed inside the render target was not popped before PopTarget.");
+        if (_cameraDepth != saved.Cameras) throw new InvalidOperationException("A camera pushed inside the render target was not popped before PopTarget.");
+        _targets.Pop();
+        (_target, _current, _offset, _clip, _drawing) = (saved.Target, saved.Raster, saved.Offset, saved.Clip, saved.Drawing);
+        Apply();
+        if (_raster is not null)
+            _commands.Add(_target is HeadlessGraphicsDevice.HeadlessTexture t ? $"target #{t.Id} {t.Width}x{t.Height}" : "target canvas");
+    }
+
+    /// <summary>Makes the rasterizer being drawn on blend as the current state says, with the current material's fallback.</summary>
+    private void Apply()
+    {
+        var blend = _drawing.Blend;
+        (_material, _hidden, _tint) = (_drawing.Material, false, null);
+        if (_material is not null)
+        {
+            var fallback = _material.Fallback;
+            (_hidden, _tint) = (fallback.Hidden, fallback.Tint);
+            blend = fallback.Blend ?? blend;
+        }
+        _current?.SetBlend(blend);
+    }
+
+    private static string Describe(Drawing drawing)
+    {
+        string blend = drawing.Blend == Dev.BlendState.AlphaPremultiplied ? "alpha" : drawing.Blend == Dev.BlendState.Additive ? "additive"
+            : drawing.Blend == Dev.BlendState.Multiply ? "multiply" : drawing.Blend == Dev.BlendState.Opaque ? "opaque" : "custom";
+        string sampler = drawing.Sampler is not { } s ? "texture" : s == Dev.SamplerDescription.PointClamp ? "nearest" : s == Dev.SamplerDescription.LinearClamp ? "linear" : "custom";
+        return $"blend {blend} sampler {sampler} material {(drawing.Material is null ? "none" : "fallback")}";
     }
 }

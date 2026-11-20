@@ -8,7 +8,8 @@ Guide: [Game lifecycle and time](../manual/lifecycle.md)
 
 Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
 device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
-[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly. Render
+targets are rasterized the same way; a material draws with its fallback, since nothing here runs shaders.
 
 ```csharp
 public sealed class HeadlessRenderer : IRenderer
@@ -80,7 +81,8 @@ public int CameraDepth { get; }
 
 This frame's draws as text, one line per call, in screen pixels after the camera offset (a backend-neutral form
 tests can compare exactly): <code>clear</code>, <code>rect</code>, <code>sprite</code>, <code>circle</code>, <code>triangle</code>,
-<code>line</code>, <code>blend</code>, <code>clip</code>, <code>camera</code>. Empty when the renderer does not rasterize.
+<code>line</code>, <code>blend</code>, <code>clip</code>, <code>camera</code>, <code>state</code>, <code>target</code>. Empty when the renderer does
+not rasterize.
 
 ```csharp
 public IReadOnlyList<string> Commands { get; }
@@ -138,6 +140,30 @@ public bool Rasterizes { get; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_HeadlessRenderer_StateDepth"></a> StateDepth
+
+States pushed and not yet popped.
+
+```csharp
+public int StateDepth { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_HeadlessRenderer_TargetDepth"></a> TargetDepth
+
+Render targets pushed and not yet popped.
+
+```csharp
+public int TargetDepth { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Width"></a> Width
 
@@ -285,6 +311,34 @@ public void PopCamera()
 
 No camera was pushed.
 
+### <a id="MicroEngine_Core_HeadlessRenderer_PopState"></a> PopState\(\)
+
+Returns to what was being drawn with before the last [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__).
+
+```csharp
+public void PopState()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No state was pushed (in this target).
+
+### <a id="MicroEngine_Core_HeadlessRenderer_PopTarget"></a> PopTarget\(\)
+
+Returns to the canvas, or to the target that was being drawn into before the last [PushTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_).
+
+```csharp
+public void PopTarget()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No target was pushed, or a camera or a state pushed inside the target was not popped.
+
 ### <a id="MicroEngine_Core_HeadlessRenderer_PushCamera_MicroEngine_Graphics_Camera2D_"></a> PushCamera\(Camera2D\)
 
 Draws in the world coordinates of <code class="paramref">camera</code> until [PopCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopCamera): its [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset)
@@ -298,9 +352,51 @@ public void PushCamera(Camera2D camera)
 
 `camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
+### <a id="MicroEngine_Core_HeadlessRenderer_PushState_MicroEngine_Graphics_DrawState__"></a> PushState\(in DrawState\)
+
+```csharp
+public void PushState(in DrawState state)
+```
+
+#### Parameters
+
+`state` [DrawState](MicroEngine.Graphics.DrawState.md)
+
+### <a id="MicroEngine_Core_HeadlessRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_"></a> PushTarget\(RenderTarget2D\)
+
+Draws into <code class="paramref">target</code> instead of the canvas until [PopTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopTarget). A target starts like a
+frame: [Width](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Width) and [Height](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Height) are its size, there is no camera, no clip and no state, and
+blending is [Alpha](MicroEngine.Graphics.BlendMode.md); it keeps the pixels it had (call [Clear](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_) to start from a
+colour). The pop returns to the canvas (or the target under it: targets nest) with the camera, clip, blending and
+state it had. Draw the target's [Texture](MicroEngine.Graphics.RenderTarget2D.md#MicroEngine_Graphics_RenderTarget2D_Texture) afterwards like any texture; it cannot be
+drawn into itself.
+
+```csharp
+public void PushTarget(RenderTarget2D target)
+```
+
+#### Parameters
+
+`target` [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md)
+
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+<code class="paramref">target</code> was disposed.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created <code class="paramref">target</code>.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+<code class="paramref">target</code> is already being drawn into.
+
 ### <a id="MicroEngine_Core_HeadlessRenderer_Reset"></a> Reset\(\)
 
-Starts a new frame: clears [DrawCalls](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_DrawCalls) and [Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands), blending returns to [Alpha](MicroEngine.Graphics.BlendMode.md) and the clip is removed.
+Starts a new frame: clears [DrawCalls](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_DrawCalls) and [Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands), blending returns to
+[Alpha](MicroEngine.Graphics.BlendMode.md), the clip and any state are removed and drawing returns to the canvas.
 
 ```csharp
 public void Reset()
@@ -310,7 +406,7 @@ public void Reset()
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-The previous frame pushed a camera it did not pop.
+The previous frame pushed a camera, a state or a target it did not pop.
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 

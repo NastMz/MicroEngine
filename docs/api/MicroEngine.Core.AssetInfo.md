@@ -34,7 +34,7 @@ Its content path.
 
 `Kind` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-"texture", "atlas", "font", "folder atlas", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
+"texture", "atlas", "font", "folder atlas", "shader", "material", "render target", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
 
 `Bytes` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
@@ -76,7 +76,7 @@ public bool DuringPlay { get; init; }
 
 ### <a id="MicroEngine_Core_AssetInfo_Kind"></a> Kind
 
-"texture", "atlas", "font", "folder atlas", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
+"texture", "atlas", "font", "folder atlas", "shader", "material", "render target", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
 
 ```csharp
 public string Kind { get; init; }

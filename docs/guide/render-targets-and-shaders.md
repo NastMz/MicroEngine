@@ -1,71 +1,82 @@
 # Render targets and shaders
 
-The drawing calls of a scene (`IRenderer`) cover sprites, shapes, text and three blend modes. Under them sits the
-[graphics device](../manual/rendering.md#the-graphics-device), and a game can use it directly for techniques of its
-own: drawing into pictures off screen, combining them with blend states, and drawing through shaders it wrote. The
-engine ships none of these effects; this page shows how four are built, each as an example in `samples/Examples`.
+The drawing calls of a scene (`IRenderer`) cover sprites, shapes and text. The same renderer also draws into pictures
+off screen, with any blend state, and through shaders the game wrote: three additions to the calls you already use,
+with no second renderer to keep. The engine ships none of the effects themselves; this page shows how four are built,
+each as an example in `samples/Examples`.
 
-| Technique | Built from | Runs on |
+| Technique | Built from | Shows on |
 | --- | --- | --- |
-| [Light that stops at walls](#light-that-stops-at-walls) | render targets, the built-in blend states | every graphics device: SDL (both devices, the software renderer and browsers included) and raylib |
-| [Masks](#masks) | render targets, the built-in blend states | every graphics device |
-| [Water with a shader of your own](#a-shader-of-your-own-water) | a material: shaders compiled ahead of time, with parameters | the `sdl-gpu` device |
-| [Post-processing in several passes](#several-passes-post-processing) | materials and render targets | the `sdl-gpu` device |
+| [Light that stops at walls](#light-that-stops-at-walls) | render targets, the built-in blend states | every platform |
+| [Masks](#masks) | render targets, the built-in blend states | every platform |
+| [Water with a shader of your own](#a-shader-of-your-own-water) | a material: a fragment shader compiled ahead of time, with named parameters | the `sdl-gpu` device; elsewhere the material's fallback |
+| [Post-processing in several passes](#several-passes-post-processing) | materials and render targets | the `sdl-gpu` device; elsewhere the materials' fallback |
 
-Shaders need the programmable device, which a game asks for with `Graphics = new GraphicsSettings { Device = "sdl-gpu" }`
-in its settings, or a player with `--graphics sdl-gpu` ([Backends](../manual/backends.md)). A game that wants to run
-everywhere keeps a plain path for the other devices, as the examples do; the checks are one line each.
+Shaders run on the programmable device, which a game asks for with `Graphics = new GraphicsSettings { Device = "sdl-gpu" }`
+in its settings, or a player with `--graphics sdl-gpu` ([Backends](../manual/backends.md)). The game's code does not
+change with the device: a material [declares what it draws where shaders cannot run](#where-shaders-cannot-run).
 
-## Reaching the device from a scene
+## The three calls
 
-Three objects are enough:
+| Call | What it does |
+| --- | --- |
+| `renderer.PushTarget(target)` … `PopTarget()` | Draws into a render target instead of the canvas |
+| `renderer.PushState(state)` … `PopState()` | Draws with a blend state, a sampler and a material |
+| `Assets.RenderTarget(name, width, height)`, `Assets.Material(path)` | Create a target and a material that an asset scope owns |
 
-- `Game.Graphics` is a `DeviceGraphics` on the SDL and raylib platforms; its `Device` is the graphics device the game's
-  textures live on, and `Device.Capabilities` says what it can do (`Has(GraphicsFeatures.Shaders)`, for example).
-- The renderer a scene's `Draw` receives is a `DeviceRenderer` there. `Flush()` sends to the device what the frame drew
-  so far, so what you draw next lands after it, and `Target` is the canvas as a render target.
-- A `Renderer2D` of your own (`new Renderer2D(device)`) is the 2D batcher: it draws textures and triangles into any
-  render target, with any blend state, sampler, transform and, on a device with shaders, material.
+A `DrawState` names only what it changes; what it leaves out stays as it was:
 
-The headless platform draws without a graphics device, so `Game.Graphics` is not a `DeviceGraphics` there: check, as
-the examples do, and tests of these techniques run in a window (`--hidden` keeps it off the screen).
+```csharp
+renderer.PushState(DrawState.Additive);                           // a blend state
+renderer.PushState(DrawState.Opaque with { Material = water });   // a blend state and a material
+renderer.PushState(new DrawState(Material: outline).Filtered(TextureFilter.Linear));
+```
+
+`DrawState.Opaque`, `Alpha`, `Additive` and `Multiply` are the four blend states every device has. States nest, like
+cameras, and every push needs its pop in the same frame. `SetBlendMode` keeps working, inside a state too.
 
 ## Render targets
 
-A render target is a picture on the device that can be drawn into and then drawn like a texture
-(`device.CreateRenderTarget(new RenderTargetDescription(width, height))`; its `Color` is the texture). Three rules:
+A render target is a picture that is drawn into and then drawn like a texture: `target.Texture` works with every
+`Draw` call, as the source of a `Sprite` and as a material's texture.
 
-- Everything in a target is premultiplied, like the canvas: a batch's `Clear` and tints are `ColorF` values already
-  multiplied by their alpha.
-- A pass cannot read the target it draws into. To change the canvas with itself (a distortion, a blur), copy it into
-  a target first and draw from the copy.
-- The canvas can be replaced between frames (an expanding presentation resizes it): keep the renderer, and read its
-  `Target` each frame.
+```csharp
+_minimap = Assets.RenderTarget("hud/minimap", 64, 64);    // once, in Enter or Load
 
-A batch into a target is `Begin(new BatchSettings(target, ...))`, draws, `End()`. `BatchSettings` carries the blend
-state, the sampler, a view matrix (a camera's `WorldToView`), a clear colour, a scissor and a viewport. The drawing
-calls you already know work on a target too: `new DeviceRenderer(batcher, graphics, target)` is an `IRenderer` that
-draws into it between its `Begin()` and `End()`, so sprites, shapes and fonts can go off screen.
+renderer.PushTarget(_minimap);          // in Draw
+renderer.Clear(Color.Black);
+DrawWorldSmall(renderer);               // any drawing call
+renderer.PopTarget();
+renderer.Draw(_minimap.Texture, _minimap.Bounds, new Vector2(250, 6), Color.White);
+```
+
+- A target starts like a frame: the renderer's `Width` and `Height` are the target's, there is no camera, no clip and
+  no state, and blending is `Alpha`. `PopTarget` returns to the canvas with the camera, clip, blending and state it
+  had. Targets nest.
+- A target keeps its pixels between frames until it is drawn into again; `Clear` starts it from a colour. Its pixels
+  are premultiplied, like the canvas, so drawing it with `DrawState.Opaque` copies it exactly.
+- A target cannot be drawn into itself. To change a picture with itself (a distortion, a blur), draw it into another
+  target.
+- `Assets.RenderTarget` gives a target its scope owns: the same name and size return the same target, and it is
+  released with the scope. `Game.Graphics.CreateRenderTarget(width, height)` gives one you dispose yourself.
 
 ## Light that stops at walls
 
 Each light is drawn into a target of its own: its glow, added, then the shadow of every wall, in black, over it. The
 lights are added into a light map that starts at the ambient colour, and the light map multiplies the finished picture.
-It uses only the four blend states every device has (`Opaque`, `AlphaPremultiplied`, `Additive`, `Multiply`).
 
 <!-- code: samples/Examples/Examples/OccludedLightExample.cs#lightmap -->
 ```csharp
-canvas.Flush();   // the room is in the canvas now; what follows lands after it
-
-_batcher.Begin(new BatchSettings(_lights!, Clear: Ambient));
-_batcher.End();
-AddLight(_torch, 110, new ColorF(1.0f, 0.85f, 0.6f, 1));
-AddLight(new Vector2(280, 150), 80, new ColorF(0.45f, 0.8f, 1.0f, 1));
+r.PushTarget(_lights!);
+r.Clear(Ambient);
+r.PopTarget();
+AddLight(r, _torch, 110, new Color(255, 217, 153));
+AddLight(r, new Vector2(280, 150), 80, new Color(115, 204, 255));
 
 // The light map multiplies the picture: full light keeps a pixel, the ambient colour darkens it.
-_batcher.Begin(new BatchSettings(canvas.Target, Blend: Dev.BlendState.Multiply));
-_batcher.Draw(_lights!.Color!, Whole, Matrix3x2.Identity, ColorF.White);
-_batcher.End();
+r.PushState(DrawState.Multiply);
+r.Draw(_lights!.Texture, Whole, Vector2.Zero, Color.White);
+r.PopState();
 ```
 
 A shadow is a quad from a wall's edge to far beyond the screen, straight away from the light; only the edges that face
@@ -74,46 +85,47 @@ away from the light cast one, so a wall keeps its own light:
 <!-- code: samples/Examples/Examples/OccludedLightExample.cs#light -->
 ```csharp
 /// <summary>One light: its glow, then the shadow of every wall in black over it, added to the light map.</summary>
-private void AddLight(Vector2 at, float radius, ColorF color)
+private void AddLight(IRenderer r, Vector2 at, float radius, Color color)
 {
-    var glow = ((DeviceTexture)_glow!).Native;
-    _batcher!.Begin(new BatchSettings(_one!, Blend: Dev.BlendState.Additive, Sampler: Dev.SamplerDescription.LinearClamp, Clear: ColorF.Black));
-    _batcher.Draw(glow, new RectF(0, 0, 64, 64), Matrix3x2.CreateScale(radius / 32) * Matrix3x2.CreateTranslation(at - new Vector2(radius)), color);
-    _batcher.State = _batcher.State with { Blend = Dev.BlendState.Opaque };
+    r.PushTarget(_one!);
+    r.Clear(Color.Black);
+    r.PushState(DrawState.Additive);
+    r.Draw(_glow!, _glow!.Bounds, at - new Vector2(radius), color, new DrawOptions(Scale: new Vector2(radius / 32)));
+    r.PopState();
     foreach (var wall in Walls)
     {
         Vector2 a = new(wall.X, wall.Y), b = new(wall.X + wall.Width, wall.Y), c = new(wall.X + wall.Width, wall.Y + wall.Height), d = new(wall.X, wall.Y + wall.Height);
-        Shadow(at, a, b, new Vector2(0, -1));
-        Shadow(at, b, c, new Vector2(1, 0));
-        Shadow(at, c, d, new Vector2(0, 1));
-        Shadow(at, d, a, new Vector2(-1, 0));
+        Shadow(r, at, a, b, new Vector2(0, -1));
+        Shadow(r, at, b, c, new Vector2(1, 0));
+        Shadow(r, at, c, d, new Vector2(0, 1));
+        Shadow(r, at, d, a, new Vector2(-1, 0));
     }
-    _batcher.End();
+    r.PopTarget();
 
-    _batcher.Begin(new BatchSettings(_lights!, Blend: Dev.BlendState.Additive));
-    _batcher.Draw(_one!.Color!, Whole, Matrix3x2.Identity, ColorF.White);
-    _batcher.End();
+    r.PushTarget(_lights!);
+    r.PushState(DrawState.Additive);
+    r.Draw(_one!.Texture, Whole, Vector2.Zero, Color.White);
+    r.PopState();
+    r.PopTarget();
 }
 
 /// <summary>
 /// The shadow an edge casts: only edges that face away from the light cast one (so a wall keeps its own light), as
 /// a quad from the edge to far beyond the screen, straight away from the light.
 /// </summary>
-private void Shadow(Vector2 light, Vector2 from, Vector2 to, Vector2 outward)
+private static void Shadow(IRenderer r, Vector2 light, Vector2 from, Vector2 to, Vector2 outward)
 {
     if (Vector2.Dot(outward, from - light) <= 0) return;
     const float Far = 1000;
     Vector2 farFrom = from + Vector2.Normalize(from - light) * Far, farTo = to + Vector2.Normalize(to - light) * Far;
-    _batcher!.DrawGeometry(null,
-        [new(from, default, ColorF.Black), new(to, default, ColorF.Black), new(farTo, default, ColorF.Black), new(farFrom, default, ColorF.Black)],
-        [0, 1, 2, 0, 2, 3]);
+    r.FillTriangle(from, to, farTo, Color.Black);
+    r.FillTriangle(from, farTo, farFrom, Color.Black);
 }
 ```
 
-`((DeviceTexture)texture).Native` is the device texture behind a texture of the drawing API. The walls here are
-rectangles; any shape made of edges works the same way, a tile map's solid cells included. The cost is one small target
-and two batches per light. In a world with a camera, give each batch the camera's transform
-(`View: camera.WorldToView`) and keep the targets the size of the canvas.
+The walls here are rectangles; any shape made of edges works the same way, a tile map's solid cells included. The cost
+is one small target and a handful of draws per light. In a world with a camera, push the camera inside each target and
+keep the targets the size of the canvas.
 
 ## Masks
 
@@ -123,96 +135,58 @@ the opposite; add the two. Grey values in the mask give soft edges.
 
 <!-- code: samples/Examples/Examples/MaskExample.cs#mask -->
 ```csharp
-canvas.Flush();   // the scene is in the canvas now
-
 // The picture: anything the drawing API draws. Here, moving stripes.
-_pictureRenderer!.Begin();
-_pictureRenderer.Clear(Color.Hex("ef7d57"));
+r.PushTarget(_picture!);
+r.Clear(Color.Hex("ef7d57"));
 for (int i = -2; i < 12; i++)
-    _pictureRenderer.FillRect(new RectF(i * 32 + _time * 24 % 32, 0, 16, 180), Color.Hex(i % 2 == 0 ? "ffcd75" : "a7f070"));
-_pictureRenderer.End();
+    r.FillRect(new RectF(i * 32 + _time * 24 % 32, 0, 16, 180), Color.Hex(i % 2 == 0 ? "ffcd75" : "a7f070"));
+r.PopTarget();
 
 // The mask is white where the picture shows and black elsewhere; the cover is its opposite.
-Shapes(_maskRenderer!, Color.Black, Color.White);
-Shapes(_coverRenderer!, Color.White, Color.Black);
+Shapes(r, _mask!, Color.Black, Color.White);
+Shapes(r, _cover!, Color.White, Color.Black);
 
 // Picture × mask: the picture where the mask is white, black elsewhere.
-Over(_picture!, _mask!, Dev.BlendState.Multiply);
+r.PushTarget(_picture!);
+Over(r, _mask!, DrawState.Multiply);
+r.PopTarget();
 // Scene × cover: a black hole in the scene where the picture goes. Then the picture is added into the hole.
-Over(canvas.Target, _cover!, Dev.BlendState.Multiply);
-Over(canvas.Target, _picture!, Dev.BlendState.Additive);
+Over(r, _cover!, DrawState.Multiply);
+Over(r, _picture!, DrawState.Additive);
 ```
 
 <!-- code: samples/Examples/Examples/MaskExample.cs#helpers -->
 ```csharp
-/// <summary>The mask's shapes, text and a circle, drawn like anything else.</summary>
-private void Shapes(DeviceRenderer renderer, Color background, Color shape)
+/// <summary>The mask's shapes, text and a circle, drawn into a target like anything else.</summary>
+private void Shapes(IRenderer r, RenderTarget2D target, Color background, Color shape)
 {
-    renderer.Begin();
-    renderer.Clear(background);
-    Font.DrawCentered(renderer, "MASK", new Vector2(160, 70), shape, scale: 9);
-    renderer.FillCircle(_spot, 26, shape);
-    renderer.End();
+    r.PushTarget(target);
+    r.Clear(background);
+    Font.DrawCentered(r, "MASK", new Vector2(160, 70), shape, scale: 9);
+    r.FillCircle(_spot, 26, shape);
+    r.PopTarget();
 }
 
-/// <summary>Draws the whole of a target's picture over another target with a blend state.</summary>
-private void Over(Dev.RenderTarget target, Dev.RenderTarget source, Dev.BlendState blend)
+/// <summary>Draws the whole of a target's picture over what is being drawn into, with a blend state.</summary>
+private static void Over(IRenderer r, RenderTarget2D source, DrawState blend)
 {
-    _batcher!.Begin(new BatchSettings(target, Blend: blend));
-    _batcher.Draw(source.Color!, Whole, Matrix3x2.Identity, ColorF.White);
-    _batcher.End();
+    r.PushState(blend);
+    r.Draw(source.Texture, Whole, Vector2.Zero, Color.White);
+    r.PopState();
 }
 ```
 
-Where the device declares `GraphicsFeatures.CustomBlend` (`sdl-gpu` always does; SDL's software renderer does not),
-one blend state does the same in a single step:
-`new BlendState(BlendFactor.Zero, BlendFactor.SrcAlpha, BlendOp.Add, BlendFactor.Zero, BlendFactor.SrcAlpha, BlendOp.Add)`
-keeps of a target only what the mask drawn over it covers. A blend state the device does not have is refused with
-`GraphicsCapabilityException` when the batch reaches the device (its `End`), so ask `Capabilities.Has` first. There is
-no stencil buffer.
+A blend state of your own does the same in one step where the device has custom blending (`sdl-gpu` always does; SDL's
+software renderer does not): with `using Dev = MicroEngine.Graphics.Devices;`,
+`new DrawState(new Dev.BlendState(Dev.BlendFactor.Zero, Dev.BlendFactor.SrcAlpha, Dev.BlendOp.Add, Dev.BlendFactor.Zero, Dev.BlendFactor.SrcAlpha, Dev.BlendOp.Add))`
+keeps of a target only what the mask drawn over it covers. A blend state the device does not have is refused when it
+is pushed, with `GraphicsCapabilityException`. There is no stencil buffer.
 
 ## A shader of your own: water
 
-A shader is two HLSL files, one per stage, compiled ahead of time by [`microengine shaders`](cli.md#shaders) from the
-game's `Shaders` folder into `Content/shaders`. The vertex stage of a 2D shader is always the same, so a game has one
-and shares it:
-
-<!-- code: samples/Examples/Shaders/sprite.vert.hlsl -->
-```hlsl
-// The vertex stage every 2D shader of the examples shares: the batcher's vertices (position in target pixels, texture
-// coordinate, premultiplied colour) and one matrix that takes pixels to clip space.
-// SDL_GPU binding rules (vertex stage): uniform buffers in space1; inputs use TEXCOORD<location>.
-cbuffer Projection : register(b0, space1)
-{
-    float4x4 PixelsToClip;
-};
-
-struct Input
-{
-    float2 Position : TEXCOORD0;
-    float2 TexCoord : TEXCOORD1;
-    float4 Color : TEXCOORD2;
-};
-
-struct Output
-{
-    float2 TexCoord : TEXCOORD0;
-    float4 Color : TEXCOORD1;
-    float4 Position : SV_Position;
-};
-
-Output main(Input input)
-{
-    Output output;
-    output.TexCoord = input.TexCoord;
-    output.Color = input.Color;
-    output.Position = mul(PixelsToClip, float4(input.Position, 0.0, 1.0));
-    return output;
-}
-```
-
-The fragment stage is the technique. This one mirrors the picture above a water line and pushes it sideways with a
-wave that travels with time:
+A material is one HLSL file, the fragment stage, compiled ahead of time by [`microengine shaders`](cli.md#shaders)
+from the game's `Shaders` folder into `Content/shaders`. The engine supplies the vertex stage. This one mirrors the
+picture above a water line and pushes it sideways with a wave that travels with time:
 
 <!-- code: samples/Examples/Shaders/water.frag.hlsl -->
 ```hlsl
@@ -231,7 +205,6 @@ cbuffer Water : register(b0, space3)
     float Frequency;  // waves per unit of v
     float Speed;      // radians per second
     float Surface;    // v of the water line
-    float3 Unused;
 };
 
 struct Input
@@ -249,165 +222,166 @@ float4 main(Input input) : SV_Target0
 }
 ```
 
-In the game, the two compiled files become shaders on the device, and the pair becomes a `Material2D`:
+In the game, the compiled file is a material, and the picture it reads is a render target. Both belong to an asset
+scope, which releases them:
 
 <!-- code: samples/Examples/Examples/WaterExample.cs#setup -->
 ```csharp
 public override void Enter()
 {
-    // Shaders are an optional feature of a graphics device: ask, and keep a plain path for devices without them.
-    if (Game.Graphics is not DeviceGraphics graphics || !graphics.Device.Capabilities.Has(Dev.GraphicsFeatures.Shaders)) return;
-    var device = graphics.Device;
-    _batcher = new Renderer2D(device);
-    // Compiled ahead of time by `microengine shaders` from Shaders/*.hlsl into Content/shaders.
-    _vertex = Dev.CompiledShader.Parse(Assets.Bytes("shaders/sprite.vert.shader")).Create(device);
-    _fragment = Dev.CompiledShader.Parse(Assets.Bytes("shaders/water.frag.shader")).Create(device);
-    _water = new Material2D(_vertex, _fragment);
-    _above = device.CreateRenderTarget(new Dev.RenderTargetDescription(320, 180));
+    _assets = Assets.CreateScope("water");
+    // Compiled ahead of time by `microengine shaders` from Shaders/water.frag.hlsl into Content/shaders.
+    _water = _assets.Material("shaders/water.frag.shader");
+    _above = _assets.RenderTarget("water/above", 320, 180, TextureFilter.Nearest);
 }
 
-public override void Exit()
-{
-    _above?.Dispose();
-    _water?.Dispose();
-    _fragment?.Dispose();
-    _vertex?.Dispose();
-    _batcher?.Dispose();
-}
+public override void Exit() => _assets?.Dispose();   // the material and the target go with their scope
 ```
 
-The shader's parameters are a struct with the layout of its `cbuffer`: the same fields in the same order, with the
-block's padding (a `float3` or `float4` never straddles a 16-byte boundary in HLSL, so pad to keep fields aligned).
-
-<!-- code: samples/Examples/Examples/WaterExample.cs#parameters -->
-```csharp
-/// <summary>The shader's parameters, laid out as its <c>cbuffer Water</c>.</summary>
-[StructLayout(LayoutKind.Sequential)]
-private struct WaterParameters
-{
-    public ColorF Tint;
-    public float Time, Amplitude, Frequency, Speed;
-    public float Surface;
-    public Vector3 Unused;
-}
-```
-
-A batch with the material draws everything through the shaders: sprites and geometry, in any transform, with the
-batch's blend state, sampler and scissor.
+The scene draws its world into the target, draws the target, then draws the water's part of it again through the
+material. The shader's parameters are set by the names they have in the HLSL:
 
 <!-- code: samples/Examples/Examples/WaterExample.cs#draw -->
 ```csharp
-canvas.Flush();   // what was drawn so far is in the canvas
-// A pass cannot read the target it draws into: copy the picture, then draw the water from the copy.
-_batcher!.Begin(new BatchSettings(_above!, Blend: Dev.BlendState.Opaque));
-_batcher.Draw(canvas.Target.Color!, Whole, Matrix3x2.Identity, ColorF.White);
-_batcher.End();
+// The world is drawn into a target, so the shader can read it: sky, a sun, hills, a few posts and flat water.
+r.PushTarget(_above!);
+r.FillGradient(new RectF(0, 0, 320, Surface), Color.Hex("29366f"), Color.Hex("ef7d57"));
+r.FillCircle(new Vector2(236, 64), 22, Color.Hex("ffcd75"));
+r.FillEllipse(new Vector2(70, Surface + 6), 90, 46, Color.Hex("257179"));
+r.FillEllipse(new Vector2(250, Surface + 10), 110, 36, Color.Hex("38b764"));
+for (int i = 0; i < 5; i++) r.FillRect(new RectF(120 + i * 22, Surface - 26 - i % 2 * 8, 5, 30 + i % 2 * 8), Color.Hex("1a1c2c"));
+r.FillRect(Water, Color.Hex("3b5dc9"));
+r.PopTarget();
+r.Draw(_above!.Texture, Whole, Vector2.Zero, Color.White);
 
-_water.SetUniforms(new WaterParameters
-{
-    Tint = new ColorF(0.16f, 0.30f, 0.62f, 0.45f),
-    Time = _time, Amplitude = _amplitude, Frequency = 9, Speed = 3,
-    Surface = Surface / 180,
-});
-// The water's part of the copy, drawn in its own place through the material.
-_batcher.Begin(new BatchSettings(canvas.Target, Blend: Dev.BlendState.Opaque) { Material = _water });
-_batcher.Draw(_above!.Color!, Water, Matrix3x2.CreateTranslation(0, Surface), ColorF.White);
-_batcher.End();
+// The shader's parameters, by the names they have in water.frag.hlsl.
+_water!.Set("Tint", new ColorF(0.16f, 0.30f, 0.62f, 0.45f));
+_water.Set("Time", _time);
+_water.Set("Amplitude", _amplitude);
+_water.Set("Frequency", 9f);
+_water.Set("Speed", 3f);
+_water.Set("Surface", Surface / 180);
+// The water's part of the picture, drawn in its own place through the material.
+r.PushState(DrawState.Opaque with { Material = _water });
+r.Draw(_above.Texture, Water, new Vector2(0, Surface), Color.White);
+r.PopState();
 ```
 
-### What a material's shaders receive
+### Parameters
+
+| Call | Sets |
+| --- | --- |
+| `material.Set("Time", 1.5f)` | A value of a `cbuffer`: a `float`, `Vector2`, `Vector3`, `Vector4`, `ColorF`, `Matrix4x4`, or any value of the size the shader declares |
+| `material.SetTexture("Glow", texture)` | A texture the shader samples, with the texture's own filter or a sampler you give; a render target's texture works |
+
+- The names are checked. A name the shader does not have, or a value of another size than the shader declares, throws
+  `ArgumentException` with the shader's parameters listed: `The shader 'water.frag.hlsl' has no parameter named 'Tme'.
+  Its parameters: Tint, Time, Amplitude, Frequency, Speed, Surface, Scene.`
+- Values never set are zero. A texture the shader samples and that was never given is refused at the draw, by name.
+- The first texture a shader declares is the texture of each draw (`Scene` above); it is not set on the material.
+- A draw keeps the parameters the material had when the draw was made: set them, draw, set them again, draw, and each
+  draw has its own. Draws with the same texture, state and parameters share one draw call.
+- A material's draws mix with ordinary draws in a frame and land in the order they were made.
+
+### What a fragment shader receives
 
 | Input | What it is |
 | --- | --- |
-| Vertices | `Vertex2D`: position in target pixels relative to the viewport (`TEXCOORD0`), texture coordinate (`TEXCOORD1`), premultiplied colour (`TEXCOORD2`) |
-| Vertex uniform slot 0 | The matrix that takes those pixels to clip space, when the vertex shader declares a uniform block |
-| Fragment texture slot 0 | The texture of each draw, with the state's sampler |
-| Fragment texture slots 1 and up | The textures given to `material.SetTexture(slot, texture, sampler)` |
-| Fragment uniform slots | The data given to `material.SetUniforms(data, slot)` |
+| `TEXCOORD0` | The texture coordinate of the draw |
+| `TEXCOORD1` | The draw's colour, premultiplied (a sprite's tint, a shape's colour) |
+| Texture and sampler 0 (`register(t0, space2)`, `register(s0, space2)`) | The texture of each draw, with the state's sampler; shapes draw a white texture |
+| Textures from 1 on | The textures given to `SetTexture` |
+| `cbuffer` blocks (`register(b0, space3)`) | The values given to `Set` |
 
-- A material is part of the batcher's state: `BatchSettings.Material` for a whole batch, or
-  `batcher.PushState(batcher.State with { Material = material })` and `PopState()` around some draws. Draws with and
-  without a material mix in one batch and land in the order they were recorded.
-- A draw keeps the parameters the material had when the draw was recorded: set them, draw, set them again, draw, and
-  each draw has its own. Draws with the same texture, state and parameters share one draw call.
-- A draw with a material whose shader declares a uniform block or a texture that was never set is refused at the draw
-  (`InvalidOperationException` naming the slot); a slot the shader does not declare is refused when it is set.
-- The material creates what the device needs for each blend state and target format it is drawn with, and releases it
-  when disposed. It does not own the shaders: dispose them yourself, after the material.
-- The drawing calls can go through a material too. `IRenderer` over a batcher of your own keeps the batcher's
-  material, so sprites, atlases and fonts are drawn by your shader:
+Return a premultiplied colour, and multiply it by the draw's colour so tints and fades keep working.
+
+### Where shaders cannot run
+
+The default SDL device, its software renderer, raylib, browser builds and the headless platform run no shaders. A
+material is still created there, checks its parameters the same way, and its draws are made without the shader, with
+the material's fallback. `material.IsSupported` says which.
+
+| Fallback | What the material's draws become |
+| --- | --- |
+| `MaterialFallback.Plain` (the default) | The draws as they are |
+| `new MaterialFallback(Tint: colour)` | The draws multiplied by a colour |
+| `new MaterialFallback(Blend: state)` | The draws with another blend state |
+| `MaterialFallback.Hide` | Nothing: for an effect that means nothing without its shader |
 
 ```csharp
-var effects = new DeviceRenderer(batcher, graphics, canvas.Target);   // once
-canvas.Flush();
-effects.Begin();
-batcher.State = batcher.State with { Material = material };
-effects.Draw(sprite, position);          // any IRenderer call
-effects.End();
+_heat = Assets.Material("shaders/heat.frag.shader", MaterialFallback.Hide);
+_night = Assets.Material("shaders/night.frag.shader", new MaterialFallback(Tint: Color.Hex("5a6ab4")));
 ```
+
+The water example draws flat water there, and says so with one check:
+`if (!_water.IsSupported) Font.DrawCentered(...)`.
 
 ## Several passes: post-processing
 
 A pass is one draw of a whole picture into another target through a material. A chain is passes one after another,
-each reading the target the one before wrote. The example blurs the bright parts of the finished picture at half size
-and adds them back, with darker corners and scanlines:
+each reading the target the one before wrote. The example draws its picture into a target, blurs its bright parts at
+half size and adds them back, with darker corners and scanlines:
 
 <!-- code: samples/Examples/Examples/PostProcessExample.cs#chain -->
 ```csharp
-canvas.Flush();
-// 1. The finished picture, copied where the passes can read it.
-Pass(canvas.Target.Color!, _scene!, null);
-// 2. Its bright parts blurred across, at half size. 3. That, blurred down.
-_blur.SetUniforms(new BlurParameters { Step = new Vector2(1f / 160, 0), Threshold = 0.55f });
-Pass(_scene!.Color!, _across!, _blur);
-_blur.SetUniforms(new BlurParameters { Step = new Vector2(0, 1f / 90) });
-Pass(_across!.Color!, _glow!, _blur);
-// 4. The picture and the glow together, back into the canvas.
-_look!.SetUniforms(new LookParameters { GlowStrength = 1.4f, Vignette = 0.9f, Scanlines = 0.18f, Lines = 180 });
-_look.SetTexture(1, _glow!.Color!, Dev.SamplerDescription.LinearClamp);
-Pass(_scene.Color!, canvas.Target, _look);
+// 1. The picture's bright parts blurred across, at half size. 2. That, blurred down.
+_blur!.Set("Step", new Vector2(1f / 160, 0));
+_blur.Set("Threshold", 0.55f);
+Pass(r, _scene!, _across, _blur);
+_blur.Set("Step", new Vector2(0, 1f / 90));
+_blur.Set("Threshold", 0f);
+Pass(r, _across!, _glow, _blur);
+// 3. The picture and the glow together, into the canvas.
+_look!.Set("GlowStrength", 1.4f);
+_look.Set("Vignette", 0.9f);
+_look.Set("Scanlines", 0.18f);
+_look.Set("Lines", 180f);
+_look.SetTexture("Glow", _glow!.Texture);
+Pass(r, _scene!, null, _look);
 ```
 
 <!-- code: samples/Examples/Examples/PostProcessExample.cs#pass -->
 ```csharp
-/// <summary>One pass: the whole of <paramref name="source"/> drawn over the whole of <paramref name="target"/>, through a material or as it is.</summary>
-private void Pass(Dev.Texture source, Dev.RenderTarget target, Material2D? material)
+/// <summary>
+/// One pass: the whole of <paramref name="source"/> drawn over the whole of <paramref name="target"/> (the canvas
+/// when null), through a material or as it is.
+/// </summary>
+private static void Pass(IRenderer r, RenderTarget2D source, RenderTarget2D? target, Material2D? material)
 {
-    _batcher!.Begin(new BatchSettings(target, Blend: Dev.BlendState.Opaque, Sampler: Dev.SamplerDescription.LinearClamp) { Material = material });
-    _batcher.Draw(source, new RectF(0, 0, source.Width, source.Height),
-        Matrix3x2.CreateScale(target.Width / (float)source.Width, target.Height / (float)source.Height), ColorF.White);
-    _batcher.End();
+    if (target is not null) r.PushTarget(target);
+    r.PushState(DrawState.Opaque.Filtered(TextureFilter.Linear) with { Material = material });
+    r.DrawStretched(source.Texture, source.Bounds, new RectF(0, 0, r.Width, r.Height), Color.White);
+    r.PopState();
+    if (target is not null) r.PopTarget();
 }
 ```
 
-The last pass reads two textures: the picture, which is the draw's texture, and the glow, which the material holds in
-slot 1.
+The last pass reads two textures: the picture, which is the draw's texture, and the glow, which the material holds
+under the name the shader gives it.
 
-A scene's passes cover what that scene drew. For passes over the whole frame, every scene and the transition between
-them, override `Game.DrawAboveScenes`: it runs once the scenes are drawn, with the same renderer.
+Create a material in `Load`, or behind a loading screen, when it is used during play: reading a shader and creating
+it on the device takes longer than a frame, and the engine reports a load that takes that long. A scene that asks for
+the same material later gets the one already loaded.
 
-```csharp
-protected override void DrawAboveScenes(IRenderer renderer)
-{
-    if (renderer is not DeviceRenderer canvas || _look is null) return;
-    canvas.Flush();
-    // ... the same passes, from canvas.Target and back into it
-}
-```
+The passes draw into the canvas, so captures (`--captures`) show them, and the interface a scene draws in `DrawUi`
+stays sharp over them at the window's resolution.
 
-The passes change the canvas, so captures (`--captures`) show them, and the interface a scene draws in `DrawUi` stays
-sharp over them at the window's resolution.
+## The device under the drawing API
+
+`Game.Graphics` and the renderer are views of a graphics device on the SDL and raylib platforms, and a game that needs
+more than this page can use the device directly ([the graphics device](../manual/rendering.md#the-graphics-device)):
+`texture.Native` is the device texture behind any texture, `DeviceGraphics.Wrap` turns a device texture or render
+target the game created into one the drawing API draws, and `Material2D.SpriteVertexShader` is the vertex stage for a
+material built from shaders created on the device. None of it is needed for the techniques above.
 
 ## Limits
 
 - Shaders run on the `sdl-gpu` device: Direct3D 12 or Vulkan on Windows, Vulkan on Linux (the Metal shaders are
-  generated but have not been run on a Mac). The default SDL device, the software renderer, raylib and browser builds
-  have none; there, `CompiledShader.Create` throws `GraphicsCapabilityException`, and a game checks
-  `Capabilities.Has(GraphicsFeatures.Shaders)` to keep a plain path. Render targets and the four blend states work on
-  all of them, browsers included.
+  generated but have not been run on a Mac). Everywhere else a material draws with its fallback. Render targets and
+  the four blend states work everywhere, browsers included.
 - Compiling shaders needs Windows ([the tool's page](cli.md#shaders) says why); the compiled files load everywhere.
-- A parameter block is matched to its shader by layout, not by name: a struct that does not follow the `cbuffer`
-  gives wrong values, not an error.
+- A material is a fragment shader; the vertex stage is the engine's.
+- A scene's passes cover what that scene drew into its targets. The drawing API has no pass over the finished frame of
+  every scene (the canvas is not a texture a draw can read), and none over the window's own composition (the canvas
+  scaled into the window).
 - A pass has one colour target; there is no stencil buffer, no multisampling and no mipmap generation.
-- The passes run at the canvas's resolution. The window's own composition (the canvas scaled into the window) has no
-  shader stage.

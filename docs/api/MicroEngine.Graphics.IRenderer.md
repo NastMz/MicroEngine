@@ -225,6 +225,34 @@ void PopCamera()
 
 No camera was pushed.
 
+### <a id="MicroEngine_Graphics_IRenderer_PopState"></a> PopState\(\)
+
+Returns to what was being drawn with before the last [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__).
+
+```csharp
+void PopState()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No state was pushed (in this target).
+
+### <a id="MicroEngine_Graphics_IRenderer_PopTarget"></a> PopTarget\(\)
+
+Returns to the canvas, or to the target that was being drawn into before the last [PushTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_).
+
+```csharp
+void PopTarget()
+```
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No target was pushed, or a camera or a state pushed inside the target was not popped.
+
 ### <a id="MicroEngine_Graphics_IRenderer_PushCamera_MicroEngine_Graphics_Camera2D_"></a> PushCamera\(Camera2D\)
 
 Draws in the world coordinates of <code class="paramref">camera</code> until [PopCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopCamera): its [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset)
@@ -237,6 +265,73 @@ void PushCamera(Camera2D camera)
 #### Parameters
 
 `camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+
+### <a id="MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__"></a> PushState\(in DrawState\)
+
+Draws with <code class="paramref">state</code> until [PopState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopState): its blend state, its sampler and its material,
+each replacing the current one when it is not null. Every draw is affected, shapes and text included. States nest;
+every push needs a pop in the same frame, inside the target it was pushed in. [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_) still
+works inside a state and is undone by the pop.
+
+```csharp
+void PushState(in DrawState state)
+```
+
+#### Parameters
+
+`state` [DrawState](MicroEngine.Graphics.DrawState.md)
+
+#### Remarks
+
+A material whose shader the device cannot run ([IsSupported](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_IsSupported) false) draws with its
+[Fallback](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_Fallback) instead. A material whose shader samples a texture that was never given is
+refused at the draw (`InvalidOperationException` naming the texture), on every device. The default
+implementation is for renderers that draw nothing with a state (a test double that only records calls): it refuses.
+
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+The state's material was disposed.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The state's material belongs to another graphics device.
+
+ [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md)
+
+A blend state that is not one of the four presets, on a device without custom blending.
+
+### <a id="MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_"></a> PushTarget\(RenderTarget2D\)
+
+Draws into <code class="paramref">target</code> instead of the canvas until [PopTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopTarget). A target starts like a
+frame: [Width](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Width) and [Height](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Height) are its size, there is no camera, no clip and no state, and
+blending is [Alpha](MicroEngine.Graphics.BlendMode.md); it keeps the pixels it had (call [Clear](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_) to start from a
+colour). The pop returns to the canvas (or the target under it: targets nest) with the camera, clip, blending and
+state it had. Draw the target's [Texture](MicroEngine.Graphics.RenderTarget2D.md#MicroEngine_Graphics_RenderTarget2D_Texture) afterwards like any texture; it cannot be
+drawn into itself.
+
+```csharp
+void PushTarget(RenderTarget2D target)
+```
+
+#### Parameters
+
+`target` [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md)
+
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+<code class="paramref">target</code> was disposed.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created <code class="paramref">target</code>.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+<code class="paramref">target</code> is already being drawn into.
 
 ### <a id="MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 

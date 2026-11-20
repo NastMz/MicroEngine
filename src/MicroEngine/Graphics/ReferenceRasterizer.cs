@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dev = MicroEngine.Graphics.Devices;
 
 namespace MicroEngine.Graphics;
 
@@ -32,6 +33,25 @@ internal sealed class ReferenceRasterizer
     public int Width { get; }
     public int Height { get; }
     public BlendMode Blend { get; set; }
+
+    /// <summary>The canvas's premultiplied pixels, row-major: what a render target's texture samples.</summary>
+    public Color[] Canvas => _canvas;
+
+    // A blend state that is none of the three modes: the general equation is used.
+    private Dev.BlendState? _custom;
+
+    /// <summary>
+    /// Blends as <paramref name="state"/> says. The three states behind <see cref="BlendMode"/> keep its written
+    /// equations; any other state is computed from its factors and operations.
+    /// </summary>
+    public void SetBlend(Dev.BlendState state)
+    {
+        _custom = null;
+        if (state == Dev.BlendState.AlphaPremultiplied) Blend = BlendMode.Alpha;
+        else if (state == Dev.BlendState.Additive) Blend = BlendMode.Additive;
+        else if (state == Dev.BlendState.Multiply) Blend = BlendMode.Multiply;
+        else _custom = state;
+    }
 
     /// <summary>The canvas as stored (alpha included); captures make it opaque.</summary>
     public Color this[int x, int y] => _canvas[y * Width + x];
@@ -96,7 +116,19 @@ internal sealed class ReferenceRasterizer
     /// </summary>
     public void DrawSprite(PixelImage texture, TextureFilter filter, RectF source, Vector2 position, Vector2 scale, float rotation, Vector2 origin,
         bool flipX, bool flipY, Color tint)
+        => DrawSprite(texture, false, filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp,
+            source, position, scale, rotation, origin, flipX, flipY, tint);
+
+    /// <summary>
+    /// Draws a sprite sampled as <paramref name="sampler"/> says (magnified draws use its magnification filter, reduced
+    /// ones its minification filter; its address modes apply outside the texture). <paramref name="premultiplied"/>
+    /// says the texture's pixels are stored premultiplied (a render target's picture) instead of straight (an image).
+    /// </summary>
+    public void DrawSprite(PixelImage texture, bool premultiplied, Dev.SamplerDescription sampler, RectF source, Vector2 position, Vector2 scale, float rotation, Vector2 origin,
+        bool flipX, bool flipY, Color tint)
     {
+        bool linear = (MathF.Abs(scale.X * scale.Y) >= 1 ? sampler.Mag : sampler.Min) == Dev.Filter.Linear;
+        bool clamped = sampler.U == Dev.AddressMode.Clamp && sampler.V == Dev.AddressMode.Clamp;
         float w = source.Width * scale.X, h = source.Height * scale.Y;
         if (w <= 0 || h <= 0 || tint.A == 0) return;
         var pivot = position + origin * scale;
@@ -126,36 +158,49 @@ internal sealed class ReferenceRasterizer
                 if (lx < 0 || lx >= w || ly < 0 || ly >= h) continue;
                 float u = flipX ? (w - lx) / w : lx / w, v = flipY ? (h - ly) / h : ly / h;
                 float s = source.X + u * source.Width, t = source.Y + v * source.Height;
-                var texel = filter == TextureFilter.Linear ? Linear(texture, s, t) : Nearest(texture, source, s, t);
+                var texel = linear ? Linear(texture, premultiplied, sampler, s, t) : Nearest(texture, premultiplied, sampler, clamped, source, s, t);
                 Put(x, y, texel * tintF);
             }
     }
 
-    /// <summary>The texel under (s, t), kept inside the source rectangle and the texture.</summary>
-    private static Vector4 Nearest(PixelImage texture, RectF source, float s, float t)
+    private static Vector4 Nearest(PixelImage texture, bool premultiplied, Dev.SamplerDescription sampler, bool clamped, RectF source, float s, float t)
     {
-        int x = Math.Clamp((int)MathF.Floor(s), (int)MathF.Floor(source.X), (int)MathF.Ceiling(source.Right) - 1);
-        int y = Math.Clamp((int)MathF.Floor(t), (int)MathF.Floor(source.Y), (int)MathF.Ceiling(source.Bottom) - 1);
-        return Texel(texture, x, y);
+        int x = (int)MathF.Floor(s), y = (int)MathF.Floor(t);
+        if (clamped)
+        {
+            // Within the source rectangle, so a sprite of an atlas never shows its neighbour.
+            x = Math.Clamp(x, (int)MathF.Floor(source.X), (int)MathF.Ceiling(source.Right) - 1);
+            y = Math.Clamp(y, (int)MathF.Floor(source.Y), (int)MathF.Ceiling(source.Bottom) - 1);
+        }
+        return Texel(texture, premultiplied, sampler, x, y);
     }
 
-    /// <summary>Bilinear mix of the four texels around (s, t) (texel centres at +0.5), the texture's edges clamped; premultiplied.</summary>
-    private static Vector4 Linear(PixelImage texture, float s, float t)
+    private static Vector4 Linear(PixelImage texture, bool premultiplied, Dev.SamplerDescription sampler, float s, float t)
     {
         float fs = s - 0.5f, ft = t - 0.5f;
         int x = (int)MathF.Floor(fs), y = (int)MathF.Floor(ft);
         float ax = fs - x, ay = ft - y;
-        var top = Vector4.Lerp(Texel(texture, x, y), Texel(texture, x + 1, y), ax);
-        var bottom = Vector4.Lerp(Texel(texture, x, y + 1), Texel(texture, x + 1, y + 1), ax);
+        var top = Vector4.Lerp(Texel(texture, premultiplied, sampler, x, y), Texel(texture, premultiplied, sampler, x + 1, y), ax);
+        var bottom = Vector4.Lerp(Texel(texture, premultiplied, sampler, x, y + 1), Texel(texture, premultiplied, sampler, x + 1, y + 1), ax);
         return Vector4.Lerp(top, bottom, ay);
     }
 
-    private static Vector4 Texel(PixelImage texture, int x, int y)
+    private static Vector4 Texel(PixelImage texture, bool premultiplied, Dev.SamplerDescription sampler, int x, int y)
     {
-        var c = texture[Math.Clamp(x, 0, texture.Width - 1), Math.Clamp(y, 0, texture.Height - 1)];
+        var c = texture[Address(x, texture.Width, sampler.U), Address(y, texture.Height, sampler.V)];
+        if (premultiplied) return new Vector4(c.R, c.G, c.B, c.A) / 255f;
         // Premultiplied and rounded to 8 bits, as uploading the texture stores it.
         static float P(byte channel, byte alpha) => (channel * alpha + 127) / 255 / 255f;
         return new Vector4(P(c.R, c.A), P(c.G, c.A), P(c.B, c.A), c.A / 255f);
+    }
+
+    /// <summary>The texel a coordinate outside the texture reads: the edge's (clamp), the texture repeated, or mirrored.</summary>
+    private static int Address(int i, int size, Dev.AddressMode mode)
+    {
+        if (mode == Dev.AddressMode.Clamp || size <= 0) return Math.Clamp(i, 0, size - 1);
+        if (mode == Dev.AddressMode.Repeat) return ((i % size) + size) % size;
+        int period = size * 2, m = ((i % period) + period) % period;
+        return m < size ? m : period - 1 - m;
     }
 
     /// <summary>Covers the centres strictly inside the disc.</summary>
@@ -224,6 +269,13 @@ internal sealed class ReferenceRasterizer
         ref var pixel = ref _canvas[y * Width + x];
         var d = Vector4.Create(pixel.R, pixel.G, pixel.B, pixel.A) / 255f;
         float a = s.W;
+        if (_custom is { } custom)
+        {
+            var colour = Combine(custom.ColorOp, s * Factor(custom.SrcColor, s, d), d * Factor(custom.DstColor, s, d), s, d);
+            var alpha = Combine(custom.AlphaOp, s * Factor(custom.SrcAlpha, s, d), d * Factor(custom.DstAlpha, s, d), s, d);
+            pixel = new Color(Q(colour.X), Q(colour.Y), Q(colour.Z), Q(alpha.W));
+            return;
+        }
         Vector4 o = Blend switch
         {
             BlendMode.Additive => new Vector4(s.X + d.X, s.Y + d.Y, s.Z + d.Z, d.W),
@@ -232,6 +284,31 @@ internal sealed class ReferenceRasterizer
         };
         pixel = new Color(Q(o.X), Q(o.Y), Q(o.Z), Q(o.W));
     }
+
+    /// <summary>A blend factor per channel: the colour channels' in X, Y, Z and the alpha channel's in W.</summary>
+    private static Vector4 Factor(Dev.BlendFactor factor, Vector4 s, Vector4 d) => factor switch
+    {
+        Dev.BlendFactor.Zero => Vector4.Zero,
+        Dev.BlendFactor.One => Vector4.One,
+        Dev.BlendFactor.SrcColor => s,
+        Dev.BlendFactor.InvSrcColor => Vector4.One - s,
+        Dev.BlendFactor.SrcAlpha => new Vector4(s.W),
+        Dev.BlendFactor.InvSrcAlpha => new Vector4(1 - s.W),
+        Dev.BlendFactor.DstColor => d,
+        Dev.BlendFactor.InvDstColor => Vector4.One - d,
+        Dev.BlendFactor.DstAlpha => new Vector4(d.W),
+        _ => new Vector4(1 - d.W),
+    };
+
+    /// <summary>A blend operation on the weighted source and destination (minimum and maximum take them unweighted).</summary>
+    private static Vector4 Combine(Dev.BlendOp op, Vector4 source, Vector4 destination, Vector4 s, Vector4 d) => op switch
+    {
+        Dev.BlendOp.Subtract => source - destination,
+        Dev.BlendOp.ReverseSubtract => destination - source,
+        Dev.BlendOp.Min => Vector4.Min(s, d),
+        Dev.BlendOp.Max => Vector4.Max(s, d),
+        _ => source + destination,
+    };
 
     private static byte Q(float v) => (byte)MathF.Round(Math.Clamp(v, 0f, 1f) * 255f, MidpointRounding.AwayFromZero);
 }

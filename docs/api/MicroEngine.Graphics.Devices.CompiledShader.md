@@ -7,7 +7,7 @@ Assembly: MicroEngine.Graphics.dll
 Guide: [The graphics device](../manual/rendering.md#the-graphics-device)  
 
 A shader compiled ahead of time from one HLSL source into every format a tier-1 device may accept (DXIL for
-Direct3D 12, SPIR-V for Vulkan, MSL for Metal), with the resource counts reflection found. It is what
+Direct3D 12, SPIR-V for Vulkan, MSL for Metal), with the resource counts and parameter names reflection found. It is what
 <code>microengine shaders</code> writes (one <code>.shader</code> file per HLSL file) and what a game ships: nothing compiles at
 run time. [DescriptionFor](MicroEngine.Graphics.Devices.CompiledShader.md#MicroEngine_Graphics_Devices_CompiledShader_DescriptionFor_MicroEngine_Graphics_Devices_GraphicsCapabilities_) picks the format a device should be given; a device without custom shaders
 gets the typed [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md), as for any undeclared capability.
@@ -23,18 +23,20 @@ public sealed class CompiledShader
 
 ## Remarks
 
-The file is UTF-8 JSON: <code>{"format":"microengine-shader","version":1,"stage":"vertex"|"fragment","source":...,
-"resources":{"samplers":n,"uniformBuffers":n},"code":{"dxil"|"spirv"|"msl":{"entry":...,"base64":...}}}</code>.
-Binding rules are SDL_GPU's (see [ShaderResources](MicroEngine.Graphics.Devices.ShaderResources.md)).
+The file is UTF-8 JSON: <code>{"format":"microengine-shader","version":2,"stage":"vertex"|"fragment","source":...,
+"resources":{"samplers":n,"uniformBuffers":n},"reflection":{"blocks":[{"name":...,"slot":n,"size":n,"uniforms":[{"name":...,
+"offset":n,"size":n}]}],"textures":[{"name":...,"slot":n}]},"code":{"dxil"|"spirv"|"msl":{"entry":...,"base64":...}}}</code>.
+A version 1 file has no <code>reflection</code> and is still read: its shader works, with [Reflection](MicroEngine.Graphics.Devices.CompiledShader.md#MicroEngine_Graphics_Devices_CompiledShader_Reflection) null,
+so its parameters can only be set by slot. Binding rules are SDL_GPU's (see [ShaderResources](MicroEngine.Graphics.Devices.ShaderResources.md)).
 
 ## Constructors
 
-### <a id="MicroEngine_Graphics_Devices_CompiledShader__ctor_MicroEngine_Graphics_Devices_ShaderStage_MicroEngine_Graphics_Devices_ShaderResources_System_Collections_Generic_IReadOnlyDictionary_MicroEngine_Graphics_Devices_ShaderFormat_MicroEngine_Graphics_Devices_ShaderCode__System_String_"></a> CompiledShader\(ShaderStage, ShaderResources, IReadOnlyDictionary<ShaderFormat, ShaderCode\>, string?\)
+### <a id="MicroEngine_Graphics_Devices_CompiledShader__ctor_MicroEngine_Graphics_Devices_ShaderStage_MicroEngine_Graphics_Devices_ShaderResources_System_Collections_Generic_IReadOnlyDictionary_MicroEngine_Graphics_Devices_ShaderFormat_MicroEngine_Graphics_Devices_ShaderCode__System_String_MicroEngine_Graphics_Devices_ShaderReflection_"></a> CompiledShader\(ShaderStage, ShaderResources, IReadOnlyDictionary<ShaderFormat, ShaderCode\>, string?, ShaderReflection?\)
 
 Creates a compiled shader from its code in one or more formats.
 
 ```csharp
-public CompiledShader(ShaderStage stage, ShaderResources resources, IReadOnlyDictionary<ShaderFormat, ShaderCode> code, string? source = null)
+public CompiledShader(ShaderStage stage, ShaderResources resources, IReadOnlyDictionary<ShaderFormat, ShaderCode> code, string? source = null, ShaderReflection? reflection = null)
 ```
 
 #### Parameters
@@ -55,11 +57,15 @@ Code by format; each key is exactly one format.
 
 The source file it was compiled from, for diagnostics.
 
+`reflection` [ShaderReflection](MicroEngine.Graphics.Devices.ShaderReflection.md)?
+
+The names of its parameters, or null when they are not known (a version 1 file).
+
 #### Exceptions
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
-No code, a key that is not exactly one format, or an empty entry point or code.
+No code, a key that is not exactly one format, an empty entry point or code, or names for a slot the resource counts do not have.
 
 ## Fields
 
@@ -77,10 +83,10 @@ public const string FileExtension = ".shader"
 
 ### <a id="MicroEngine_Graphics_Devices_CompiledShader_FormatVersion"></a> FormatVersion
 
-The file format version this assembly reads and writes.
+The file format version this assembly writes; it reads this one and every earlier one.
 
 ```csharp
-public const int FormatVersion = 1
+public const int FormatVersion = 2
 ```
 
 #### Field Value
@@ -100,6 +106,18 @@ public ShaderFormat Formats { get; }
 #### Property Value
 
  [ShaderFormat](MicroEngine.Graphics.Devices.ShaderFormat.md)
+
+### <a id="MicroEngine_Graphics_Devices_CompiledShader_Reflection"></a> Reflection
+
+The names of the shader's parameters, or null when the file does not carry them (version 1).
+
+```csharp
+public ShaderReflection? Reflection { get; }
+```
+
+#### Property Value
+
+ [ShaderReflection](MicroEngine.Graphics.Devices.ShaderReflection.md)?
 
 ### <a id="MicroEngine_Graphics_Devices_CompiledShader_Resources"></a> Resources
 

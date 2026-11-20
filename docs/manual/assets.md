@@ -69,6 +69,9 @@ protected override void Load()
 | `Atlas(path, options?, filter?)` | a `SpriteAtlas` from a packing tool's file and the image it names |
 | `AtlasFromFolder(folder, pivot?, filter?)` | every image of a folder packed into one atlas, named by file name |
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
+| `Material(path, fallback?)` | a `Material2D` from a compiled fragment shader (`.frag.shader`), to draw through with `renderer.PushState` ([Render targets and shaders](../guide/render-targets-and-shaders.md)); cached per path and fallback |
+| `RenderTarget(name, width, height, filter?)` | a `RenderTarget2D` to draw into and then draw like a texture. No file describes it: it is known by the name the game gives it, and cached per name, size and filter |
+| `Shader(path)` | a compiled shader file (`.shader`) as a `CompiledShader`, for games that create shaders on the graphics device themselves; a material needs only `Material` |
 | `Sound(path)`, `Music(path)` | a PCM WAV decoded into an `AudioClip`; a music file (OGG, WAV, MP3 on raylib) as `EncodedAudio`, decoded while it plays. Play them with `Audio.AddSound(name, clip)` and `Audio.AddMusic(name, music)` |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
@@ -228,8 +231,9 @@ Audio.AddSound("jump", Assets.Store.Get(jump));
 ```
 
 **Loaders.** Each kind of asset has one loader in `Assets.Loaders`: `texture`, `atlas`, `folder atlas`, `font`,
-`sound` (a PCM WAV decoded into an `AudioClip`) and `music` (a music file's bytes as `EncodedAudio`, decoded while it
-plays). A game adds a kind of its own, or replaces one, by registering an `IAssetLoader<T>` (or an
+`shader`, `material`, `render target` (created from its options, a `RenderTargetSize`, and its name: a loader need not
+read a file, and the content folder is opened only when one does), `sound` (a PCM WAV decoded into an `AudioClip`) and
+`music` (a music file's bytes as `EncodedAudio`, decoded while it plays). A game adds a kind of its own, or replaces one, by registering an `IAssetLoader<T>` (or an
 `AssetLoader<T>` built from a function) before the first load of that kind:
 
 ```csharp

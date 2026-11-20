@@ -57,7 +57,7 @@ public string Path { get; }
 
 ### <a id="MicroEngine_Content_AssetLoadContext_Source"></a> Source
 
-Where the files are.
+Where the files are. It is opened on first use, so a loader that reads no file (a resource created from its options) needs no content.
 
 ```csharp
 public IContentSource Source { get; }

@@ -6,6 +6,34 @@ it. Newest first.
 
 ## Next release
 
+### A graphics device of the drawing API creates render targets
+
+`MicroEngine.Graphics.IGraphicsDevice` (what `Game.Graphics` is) has a new member without a default,
+`CreateRenderTarget(int width, int height, TextureFilter filter)`. Games are unaffected. A class that implements the
+interface (a test double that wraps another device, a backend that is not built on the device contract) must add it;
+a wrapper forwards it:
+
+```csharp
+public RenderTarget2D CreateRenderTarget(int width, int height, TextureFilter filter) => _inner.CreateRenderTarget(width, height, filter);
+```
+
+`IRenderer` has four new members with defaults, `PushState`, `PopState`, `PushTarget` and `PopTarget`. A renderer that
+does not implement them (a test double that records calls) still compiles and throws `NotSupportedException` when a
+game under test pushes a state or a target; add the four members to it then.
+
+### Compiled shader files are format version 2
+
+`microengine shaders` writes `.shader` files of format version 2, which add the names, places and sizes of each
+shader's parameters. Files of version 1 still load. Two things change for them:
+
+- A material made from a version 1 file cannot set parameters by name (`Set`, `SetTexture(name, ...)` throw
+  `InvalidOperationException` saying so); `SetUniforms` by slot still works. Run `microengine shaders` again to get
+  names. The compiled code is the same.
+- `microengine shaders --check` reports version 1 files as out of date.
+
+`Material2D.SetUniforms` now refuses data whose size is not the size of the shader's block when the file carries it
+(`ArgumentOutOfRangeException`); before, a struct of the wrong size gave wrong values. `Material2D.Vertex`,
+`Fragment` and `Device` are null on a material created where shaders cannot run (`IsSupported` is false).
 ### Bindings as data are one list of controls
 
 `InputMap.ExportBindings` returns each action's controls in `ActionBindingData.Controls`, as text (`"Key:Space"`,

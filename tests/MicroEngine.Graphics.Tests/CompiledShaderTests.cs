@@ -84,8 +84,52 @@ public sealed class CompiledShaderTests
     {
         Assert.ThrowsExactly<InvalidDataException>(() => CompiledShader.Parse("{}"u8));
         Assert.ThrowsExactly<InvalidDataException>(() => CompiledShader.Parse("not json"u8));
-        var future = System.Text.Encoding.UTF8.GetString(AllFormats().ToBytes()).Replace("\"version\": 1", "\"version\": 2");
+        var future = System.Text.Encoding.UTF8.GetString(AllFormats().ToBytes()).Replace("\"version\": 2", "\"version\": 3");
         var e = Assert.ThrowsExactly<InvalidDataException>(() => CompiledShader.Parse(System.Text.Encoding.UTF8.GetBytes(future)));
-        Assert.Contains("version 2", e.Message);
+        Assert.Contains("version 3", e.Message);
+    }
+
+    private static ShaderReflection Named() => new(
+        [new ShaderUniformBlock("Water", 0, 32, [new ShaderUniform("Tint", 0, 16), new ShaderUniform("Time", 16, 4), new ShaderUniform("Step", 20, 8)])],
+        [new ShaderTextureSlot("Scene", 0)]);
+
+    [TestMethod]
+    public void File_RoundTripsTheParameterNamesReflectionFound()
+    {
+        Assert.IsTrue(AllFormats().TryGetCode(ShaderFormat.SpirV, out var code));
+        var shader = new CompiledShader(ShaderStage.Fragment, new ShaderResources(Samplers: 1, UniformBuffers: 1),
+            new Dictionary<ShaderFormat, ShaderCode> { [ShaderFormat.SpirV] = code }, "water.frag.hlsl", Named());
+        var bytes = shader.ToBytes();
+        var read = CompiledShader.Parse(bytes).Reflection;
+        Assert.IsNotNull(read);
+        Assert.HasCount(1, read.Blocks);
+        Assert.AreEqual(("Water", 0, 32), (read.Blocks[0].Name, read.Blocks[0].Slot, read.Blocks[0].Size));
+        CollectionAssert.AreEqual(new[] { new ShaderUniform("Tint", 0, 16), new ShaderUniform("Time", 16, 4), new ShaderUniform("Step", 20, 8) }, read.Blocks[0].Uniforms.ToArray());
+        CollectionAssert.AreEqual(new[] { new ShaderTextureSlot("Scene", 0) }, read.Textures.ToArray());
+        Assert.IsTrue(read.TryGetUniform("Time", out var block, out var uniform));
+        Assert.AreEqual((0, 16, 4), (block.Slot, uniform.Offset, uniform.Size));
+        Assert.IsFalse(read.TryGetUniform("Speed", out _, out _));
+        CollectionAssert.AreEqual(bytes, CompiledShader.Parse(bytes).ToBytes(), "the same shader always gives the same file");
+    }
+
+    [TestMethod]
+    public void Parse_StillReadsAVersion1File_WhichCarriesNoParameterNames()
+    {
+        var old = System.Text.Encoding.UTF8.GetString(AllFormats().ToBytes()).Replace("\"version\": 2", "\"version\": 1");
+        var read = CompiledShader.Parse(System.Text.Encoding.UTF8.GetBytes(old));
+        Assert.IsNull(read.Reflection);
+        Assert.AreEqual(new ShaderResources(Samplers: 1, UniformBuffers: 1), read.Resources);
+        Assert.AreEqual(ShaderFormat.SpirV | ShaderFormat.Dxil | ShaderFormat.Msl, read.Formats);
+    }
+
+    [TestMethod]
+    public void Reflection_RefusesWhatCannotBeAddressedByName()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => new ShaderUniformBlock("B", 0, 16, [new ShaderUniform("Late", 12, 8)]), "a value that leaves its block");
+        Assert.ThrowsExactly<ArgumentException>(() => new ShaderReflection(
+            [new ShaderUniformBlock("A", 0, 16, [new ShaderUniform("Time", 0, 4)]), new ShaderUniformBlock("B", 1, 16, [new ShaderUniform("Time", 0, 4)])], []), "one name twice");
+        Assert.IsTrue(AllFormats().TryGetCode(ShaderFormat.SpirV, out var code));
+        Assert.ThrowsExactly<ArgumentException>(() => new CompiledShader(ShaderStage.Fragment, default,
+            new Dictionary<ShaderFormat, ShaderCode> { [ShaderFormat.SpirV] = code }, null, Named()), "names for slots the shader does not have");
     }
 }

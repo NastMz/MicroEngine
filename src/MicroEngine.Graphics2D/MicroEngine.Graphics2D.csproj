@@ -19,6 +19,12 @@
   <ItemGroup>
     <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
   </ItemGroup>
+  <!-- The vertex stage every 2D material shares (Material2D.SpriteVertexShader): the tier-1 device's own sprite vertex
+       shader, compiled offline (src/MicroEngine.Graphics.SdlGpu/Shaders), embedded here so a game ships only its
+       fragment shaders. One file serves both. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../MicroEngine.Graphics.SdlGpu/Shaders/compiled/sprite.vert.shader" LogicalName="builtin/sprite.vert.shader" Link="Shaders/sprite.vert.shader" />
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine" />
     <InternalsVisibleTo Include="MicroEngine.Tests" />

@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-A texture of the drawing API backed by a device texture ([DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)).
+A texture of the drawing API backed by a device texture ([DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)): an uploaded image, a render
+target's picture, or a device texture the game wrapped.
 
 ```csharp
 public sealed class DeviceTexture : Texture, IDisposable
@@ -34,6 +35,8 @@ public sealed class DeviceTexture : Texture, IDisposable
 [Texture.Device](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Device), 
 [Texture.Bounds](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Bounds), 
 [Texture.SizeInBytes](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_SizeInBytes), 
+[Texture.Native](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Native), 
+[Texture.IsRenderTarget](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_IsRenderTarget), 
 [Texture.Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
@@ -44,12 +47,24 @@ public sealed class DeviceTexture : Texture, IDisposable
 
 ## Properties
 
+### <a id="MicroEngine_Graphics_DeviceTexture_IsRenderTarget"></a> IsRenderTarget
+
+Whether a renderer can draw into this texture: it is the picture of a [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md).
+
+```csharp
+public override bool IsRenderTarget { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Graphics_DeviceTexture_Native"></a> Native
 
 The device texture holding the premultiplied pixels.
 
 ```csharp
-public Texture Native { get; }
+public override Texture Native { get; }
 ```
 
 #### Property Value
@@ -67,6 +82,30 @@ public SamplerDescription Sampler { get; }
 #### Property Value
 
  [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
+
+### <a id="MicroEngine_Graphics_DeviceTexture_SizeInBytes"></a> SizeInBytes
+
+The memory of every mip level in the device texture's format.
+
+```csharp
+public override long SizeInBytes { get; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+### <a id="MicroEngine_Graphics_DeviceTexture_Target"></a> Target
+
+The device render target this texture is the picture of, or null for an ordinary texture.
+
+```csharp
+public RenderTarget? Target { get; }
+```
+
+#### Property Value
+
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
 
 ## Methods
 

@@ -156,7 +156,7 @@ public IReadOnlyList<AssetInfo> Loaded { get; }
 
 ### <a id="MicroEngine_Core_AssetCache_Loaders"></a> Loaders
 
-The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "sound", "music" and any a game registers.
+The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "shader", "material", "render target", "sound", "music" and any a game registers.
 
 ```csharp
 public AssetLoaderRegistry Loaders { get; }
@@ -438,6 +438,37 @@ public bool IsLoaded(string path)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_AssetCache_Material_System_String_MicroEngine_Graphics_MaterialFallback_"></a> Material\(string, MaterialFallback\)
+
+A material from the compiled fragment shader at <code class="paramref">path</code> ([Material2D](MicroEngine.Graphics.Material2D.md)): draw with it
+through [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__). It is shared like any asset (the same path and fallback give the same
+material, whose parameters each draw takes as they are when it is made) and released with its scope. Where the
+graphics device cannot run shaders it draws with <code class="paramref">fallback</code>.
+
+```csharp
+public Material2D Material(string path, MaterialFallback fallback = default)
+```
+
+#### Parameters
+
+`path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+A <code>.frag.shader</code> file of the content.
+
+`fallback` [MaterialFallback](MicroEngine.Graphics.MaterialFallback.md)
+
+What the material's draws become where shaders cannot run; plain draws by default.
+
+#### Returns
+
+ [Material2D](MicroEngine.Graphics.Material2D.md)
+
+#### Exceptions
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+The file is missing, wrongly cased, not a compiled shader, or not a fragment shader.
+
 ### <a id="MicroEngine_Core_AssetCache_Music_System_String_"></a> Music\(string\)
 
 The music file at <code class="paramref">path</code> (OGG, WAV; MP3 on raylib), read whole and decoded while it plays; play
@@ -481,6 +512,69 @@ public AssetBatch Preload(params string[] paths)
  [AssetBatch](MicroEngine.Core.AssetBatch.md)
 
 The batch, to show progress on a loading screen or wait for.
+
+### <a id="MicroEngine_Core_AssetCache_RenderTarget_System_String_System_Int32_System_Int32_System_Nullable_MicroEngine_Graphics_TextureFilter__"></a> RenderTarget\(string, int, int, TextureFilter?\)
+
+A render target of <code class="paramref">width</code> x <code class="paramref">height</code> pixels that this scope owns: a picture to
+draw into ([PushTarget](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushTarget_MicroEngine_Graphics_RenderTarget2D_)) and then draw like a texture. No file describes it, so it is known
+by <code class="paramref">name</code>: the same name, size and filter give the same target, and it is released with the
+scope like any asset.
+
+```csharp
+public RenderTarget2D RenderTarget(string name, int width, int height, TextureFilter? filter = null)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+A name of the game's choosing ("water/reflection"); it is what diagnostics list.
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Width in pixels.
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Height in pixels.
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+
+How its texture is sampled; null for the game's default.
+
+#### Returns
+
+ [RenderTarget2D](MicroEngine.Graphics.RenderTarget2D.md)
+
+#### Exceptions
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+A size that is not positive.
+
+### <a id="MicroEngine_Core_AssetCache_Shader_System_String_"></a> Shader\(string\)
+
+The compiled shader file at <code class="paramref">path</code> (written by <code>microengine shaders</code>), parsed once and
+shared. A material needs only [Material](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Material_System_String_MicroEngine_Graphics_MaterialFallback_); this is the file itself, for a game that creates shaders
+on the graphics device.
+
+```csharp
+public CompiledShader Shader(string path)
+```
+
+#### Parameters
+
+`path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [CompiledShader](MicroEngine.Graphics.Devices.CompiledShader.md)
+
+#### Exceptions
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+The file is missing, wrongly cased or not a compiled shader this engine reads.
 
 ### <a id="MicroEngine_Core_AssetCache_Sound_System_String_"></a> Sound\(string\)
 
