@@ -37,6 +37,46 @@ public sealed class TileGeometryBackendConformance : TileGeometryConformance
     protected override ShapeId AddTiles(IPhysicsWorld2D world, BodyId body, ICollisionGrid grid) => ((TilePhysicsWorld2D)world).AddTiles(body, grid);
 }
 
+/// <summary>The character controllers run on the tile backend.</summary>
+[TestClass]
+public sealed class TileCharacterControllerConformance : CharacterControllerConformance
+{
+    protected override IPhysicsWorld2D CreateWorld() => new TilePhysicsWorld2D();
+}
+
+/// <summary>The character controller with what only the tile backend has: solids that carry their riders.</summary>
+[TestClass]
+public sealed class TileCharacterTests
+{
+    [TestMethod]
+    public void A_pushing_platform_carries_the_character_once()
+    {
+        var world = new TilePhysicsWorld2D();
+        var floor = world.CreateBody(default, BodyDescription.Static(new Vector2(0, 108)));
+        world.AddShape(floor, ShapeDescription.Box(new Vector2(600, 16)));
+        var platform = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(0, 62)) with { PushesBodies = true });
+        world.AddShape(platform, ShapeDescription.Box(new Vector2(40, 4)));
+        var hero = CharacterController2D.Create(world, default, new Vector2(0, 50), new Vector2(12, 14));
+        for (int i = 0; i < 30; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.AreEqual(53, hero.Position.Y, 1e-3f, "standing on the platform");
+        for (int i = 0; i < 60; i++)
+        {
+            world.Move(platform, new Vector2(1, 0));
+            hero.Step(1 / 60f, default);
+            Assert.IsTrue(hero.IsGrounded, $"step {i}");
+        }
+        Assert.AreEqual(60, hero.Position.X, 1e-3f, "the solid carried it; the controller added nothing");
+        for (int i = 0; i < 20; i++)
+        {
+            world.Move(platform, new Vector2(0, -1));
+            hero.Step(1 / 60f, default);
+            Assert.IsTrue(hero.IsGrounded, $"rising, step {i}");
+        }
+        Assert.AreEqual(33, hero.Position.Y, 1e-3f, "lifted with the platform");
+    }
+}
+
 /// <summary>What the tile backend promises beyond the common suite: exact resting, its declared capabilities, the fixed mover (D6), state hashing.</summary>
 [TestClass]
 public sealed class TilePhysicsWorldTests

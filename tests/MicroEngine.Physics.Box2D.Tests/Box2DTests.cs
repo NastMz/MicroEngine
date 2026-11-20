@@ -76,6 +76,9 @@ public sealed class Box2DPixelConformance : PhysicsConformance
 [TestClass] public sealed class Box2DFrictionRestitutionConformance : FrictionRestitutionConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DMassPropertiesConformance : MassPropertiesConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 
+[TestClass] public sealed class Box2DCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+
 // ------------------------------------------------------------------ what this backend promises beyond the suites
 
 /// <summary>The Box2D backend's own rules: what it declares, its units, its limits, its native library.</summary>
@@ -306,5 +309,76 @@ public sealed class Box2DPhysicsWorldTests
         {
             Native.me_world_destroy(w);
         }
+    }
+}
+
+/// <summary>The character controller with what only this backend has: slopes under a capsule.</summary>
+[TestClass]
+public sealed class Box2DCharacterSlopeTests
+{
+    [TestInitialize]
+    public void Natives() => Box2DTesting.RequireNatives();
+
+    /// <summary>A floor (top at y 0), a ramp rising 32 pixels over x 100..164 and a plateau beyond it, with a capsule character at x 60.</summary>
+    private static CharacterController2D Scene(Box2DPhysicsWorld2D world, float groundSnap)
+    {
+        var level = world.CreateBody(default, BodyDescription.Static());
+        world.AddShape(level, ShapeDescription.Box(new Vector2(800, 16), new Vector2(0, 8)));
+        world.AddShape(level, ShapeDescription.Polygon(new[] { new Vector2(100, 0), new Vector2(164, 0), new Vector2(164, -32) }));
+        world.AddShape(level, ShapeDescription.Box(new Vector2(200, 32), new Vector2(264, -16)));
+        var body = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(60, -9)));
+        world.AddShape(body, ShapeDescription.Capsule(6, 14));
+        var hero = new CharacterController2D(world, body, new CharacterMotion { GroundSnap = groundSnap });
+        for (int i = 0; i < 30; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded, $"standing on the floor at {hero.Position}");
+        return hero;
+    }
+
+    private static int Walk(CharacterController2D hero, float move, int steps)
+    {
+        int left = 0;
+        for (int i = 0; i < steps; i++)
+        {
+            hero.Step(1 / 60f, new CharacterInput(move));
+            if ((hero.Events & CharacterEvents.LeftGround) != 0) left++;
+        }
+        return left;
+    }
+
+    [TestMethod]
+    public void A_capsule_walks_up_a_slope_and_stands_on_it_without_creeping()
+    {
+        using var world = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hero = Scene(world, groundSnap: 4);
+        Walk(hero, 1, 50);
+        Assert.IsTrue(hero.Position.X is > 110 and < 160, $"on the ramp: {hero.Position}");
+        Assert.IsTrue(hero.Position.Y < -12, $"it climbed: {hero.Position}");
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.IsTrue(Vector2.Dot(hero.LastMove.GroundNormal, world.Up) is > 0.8f and < 0.95f, $"the ground is the slope: {hero.LastMove.GroundNormal}");
+        hero.Step(1 / 60f, default);
+        var at = hero.Position;
+        for (int i = 0; i < 120; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.IsTrue(Vector2.Distance(at, hero.Position) < 0.01f, $"standing still on the slope: {at} -> {hero.Position}");
+        Walk(hero, 1, 100);
+        Assert.IsTrue(hero.IsGrounded && hero.Position.X > 200, $"on the plateau: {hero.Position}");
+        Assert.AreEqual(-32 - 7, hero.Position.Y, world.Skin + 0.01f, "standing on the plateau");
+    }
+
+    [TestMethod]
+    public void Ground_snap_keeps_a_character_on_a_slope_it_walks_down()
+    {
+        using var world = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hero = Scene(world, groundSnap: 4);
+        Walk(hero, 1, 150);
+        Assert.IsTrue(hero.Position.X > 200, "on the plateau");
+        Assert.AreEqual(0, Walk(hero, -1, 150), "it never leaves the ground on the way down");
+        Assert.IsTrue(hero.IsGrounded && hero.Position.X < 90, $"back on the floor: {hero.Position}");
+        Assert.AreEqual(-7, hero.Position.Y, world.Skin + 0.01f);
+
+        using var plain = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hopping = Scene(plain, groundSnap: 0);
+        Walk(hopping, 1, 150);
+        Assert.IsTrue(Walk(hopping, -1, 150) > 0, "without ground snap it leaves the slope as it walks down");
     }
 }
