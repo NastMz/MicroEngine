@@ -438,12 +438,16 @@ public sealed class AudioMixer
     /// <param name="volume">Volume, 0..1.</param>
     /// <param name="pan">Stereo position, 0 (left) to 1 (right).</param>
     /// <param name="pitch">Playback speed factor, 1 for the original pitch (0.01..100); ignored by streamed music.</param>
+    /// <param name="seconds">
+    /// The time the values take to get there, frame by frame: a fade, a sweep across the screen, a glide. 0 (the
+    /// default) changes them at once, which is what a value set again every update needs.
+    /// </param>
     /// <returns>Whether it was playing.</returns>
-    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, float? pitch = null)
+    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, float? pitch = null, float seconds = 0)
     {
         if (Engine is not { } engine || !engine.IsPlaying(voice)) return false;
-        if (volume is not null || pan is not null) engine.Set(voice, volume, pan);
-        if (pitch is { } p) engine.SetPitch(voice, p);
+        if (volume is not null || pan is not null) engine.Set(voice, volume, pan, seconds);
+        if (pitch is { } p) engine.SetPitch(voice, p, seconds);
         return true;
     }
 
@@ -536,14 +540,25 @@ public sealed class AudioMixer
         else bus.Volume = volume;
     }
 
-    /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
+    /// <summary>
+    /// Switches music. With a fade, the current track fades out before the new one starts; with
+    /// <paramref name="crossfade"/>, the new track starts now and rises while the current one falls, both over that
+    /// many seconds.
+    /// </summary>
+    /// <param name="name">The music, as registered.</param>
+    /// <param name="fadeSeconds">Seconds the current track takes to fade out before the new one starts (0.4 by default; 0 or less switches at once). Not used with a crossfade.</param>
+    /// <param name="crossfade">
+    /// Seconds over which the two tracks overlap, the new one rising in a straight line as the old one falls (0, the
+    /// default: no overlap). On a device without voices (<see cref="SupportsVoices"/>), and for a song that is still
+    /// being rendered, the music switches as without it.
+    /// </param>
     /// <remarks>With a fade, music starting from silence rises over about a quarter of a second; with <paramref name="fadeSeconds"/> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing; asking for it while it fades out (towards another track or silence) cancels the fade and brings it back, without restarting it.</remarks>
     /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>.</exception>
     /// <exception cref="InvalidOperationException">A song registered with <see cref="AddMusic(string, Song, bool)"/>
     /// failed while rendering (its content is checked when registered, so only the machine can fail it, for example out
     /// of memory); its name is then unregistered. With a fade, this surfaces from <see cref="Update"/> when the song is
     /// due to start.</exception>
-    public void PlayMusic(string name, float fadeSeconds = 0.4f)
+    public void PlayMusic(string name, float fadeSeconds = 0.4f, float crossfade = 0f)
     {
         if (!HasMusic(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
         if (_waiting?.Name == name) return;
@@ -554,6 +569,15 @@ public sealed class AudioMixer
             _pendingMusic = null;
             _fadeSpeed = fadeSeconds > 0 ? 1f / fadeSeconds : 0;
             if (fadeSeconds <= 0) { _fade = 1; Apply(); }
+            return;
+        }
+        if (crossfade > 0 && _device is MixerAudioDevice mixer && !_sliced.Exists(s => s.Name == name))
+        {
+            // Both tracks at once: the device fades the one playing out and this one in, frame by frame.
+            _pendingMusic = null;
+            _waiting = null;
+            (_fade, _fadeSpeed) = (1, 0);
+            mixer.CrossfadeMusic(Music(name), _musicVolume, crossfade);
             return;
         }
         if (fadeSeconds <= 0) { StartMusic(name, fadeIn: false); return; }

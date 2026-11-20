@@ -44,6 +44,11 @@ public readonly record struct PlayParameters
     public int Priority { get; init; }
     /// <summary>The bus the sound plays through ("sfx" by default; the engine also has "music" and "master").</summary>
     public string Bus { get; init; } = AudioEngine.SfxBus;
+    /// <summary>
+    /// Seconds the sound takes to rise from silence to <see cref="Volume"/>, frame by frame (0, the default: it starts
+    /// at its volume). A value that is not a number counts as 0.
+    /// </summary>
+    public float FadeIn { get; init; }
 }
 
 /// <summary>Settings of an <see cref="AudioEngine"/>.</summary>
@@ -689,6 +694,7 @@ public sealed class AudioEngine : IDisposable
         l.Frames = clip is null ? 0 : clip.Samples.Length / clip.Channels;
         l.Rate = clip is null ? 1 : (double)clip.SampleRate / _rate;
         l.Step = step;
+        l.StepRamp = 0;
         l.Position = 0;
         l.PositionFrame = at;
         l.Limit = long.MaxValue;
@@ -697,7 +703,7 @@ public sealed class AudioEngine : IDisposable
         TryPost(new Command
         {
             Op = Op.Start, Slot = slot, Frame = at, Clip = clip, Feed = feed, Step = step, Loop = p.Loop, Bus = bus.Index,
-            Volume = l.Volume, Left = l.Left, Right = l.Right,
+            Volume = l.Volume, Left = l.Left, Right = l.Right, Fade = Frames(p.FadeIn),
         });
         return new VoiceHandle(slot, l.Generation);
     }
@@ -714,6 +720,49 @@ public sealed class AudioEngine : IDisposable
                 victim = i;
         }
         return _logical[victim].Priority <= priority ? victim : -1;
+    }
+
+    /// <summary>The frames of a time in seconds, at least one for any time above zero; 0 for none, or for a value that is not a number.</summary>
+    private long Frames(double seconds) => seconds > 0 ? Math.Max(1, (long)Math.Round(seconds * _rate)) : 0;
+
+    /// <summary>
+    /// Brings the timeline's view of a sound (where it is in its clip, and its speed) to frame <paramref name="now"/>:
+    /// it advanced at its speed since the last change, through what is left of a pitch ramp, unless paused.
+    /// </summary>
+    private static void Settle(ref Logical l, long now)
+    {
+        long frames = Math.Max(0, now - l.PositionFrame);
+        if (!l.Paused && frames > 0)
+        {
+            long ramp = Math.Min(frames, l.StepRamp);
+            if (ramp > 0)
+            {
+                // Each frame of a ramp plays one step faster than the one before: the sum of those speeds.
+                double delta = (l.StepTarget - l.Step) / l.StepRamp;
+                l.Position += ramp * l.Step + delta * ramp * (ramp + 1) / 2;
+                l.StepRamp -= ramp;
+                l.Step = l.StepRamp == 0 ? l.StepTarget : l.Step + delta * ramp;
+            }
+            l.Position += (frames - ramp) * l.Step;
+        }
+        l.PositionFrame = Math.Max(now, l.PositionFrame);
+    }
+
+    /// <summary>Frames a clip that does not loop still has to play, from where <see cref="Settle"/> left it.</summary>
+    private static long FramesLeft(in Logical l)
+    {
+        double remaining = l.Frames - l.Position;
+        if (l.StepRamp > 0)
+        {
+            long ramp = l.StepRamp;
+            double delta = (l.StepTarget - l.Step) / ramp, covered = ramp * l.Step + delta * ramp * (ramp + 1) / 2;
+            if (covered < remaining) return ramp + Math.Max(0, (long)Math.Ceiling((remaining - covered) / l.StepTarget));
+            // It ends inside the ramp: the frame where the sum of the speeds reaches what is left.
+            double a = delta / 2, b = l.Step + delta / 2;
+            double frames = Math.Abs(a) < 1e-18 ? remaining / b : (-b + Math.Sqrt(Math.Max(0, b * b + 4 * a * remaining))) / (2 * a);
+            return Math.Max(0, (long)Math.Ceiling(frames));
+        }
+        return Math.Max(0, (long)Math.Ceiling(remaining / l.Step));
     }
 
     /// <summary>The speed factor of a pitch: clamped, and 1 for a value that is not a number (which no clamp catches).</summary>
@@ -750,10 +799,11 @@ public sealed class AudioEngine : IDisposable
 
     /// <summary>
     /// Changes the volume (0..1) and pan (0..1) of <paramref name="voice"/> from the current step's frame; null, or a
-    /// value that is not a number, keeps a value.
+    /// value that is not a number, keeps a value. With <paramref name="seconds"/>, the values move there over that
+    /// time, frame by frame, instead of at once (a ramp stands still while the sound is paused).
     /// </summary>
     /// <returns>Whether it was playing.</returns>
-    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
+    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, double seconds = 0)
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
@@ -763,7 +813,7 @@ public sealed class AudioEngine : IDisposable
         ref var l = ref _logical[voice.Index];
         if (gain >= 0) l.Volume = gain;
         if (left >= 0) (l.Left, l.Right) = (left, right);
-        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right }, Unsent.Values);
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right, Fade = Frames(seconds) }, Unsent.Values);
         return true;
     }
 
@@ -771,10 +821,11 @@ public sealed class AudioEngine : IDisposable
     /// Changes the pitch of <paramref name="voice"/> from the current step's frame: the playback speed factor, 1 for the
     /// clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
     /// mixer's timeline moves its end accordingly. Streams play at their own pitch. A pitch that is not a number
-    /// changes nothing.
+    /// changes nothing. With <paramref name="seconds"/>, the speed moves there over that time, frame by frame (a
+    /// glide), instead of at once.
     /// </summary>
     /// <returns>Whether it was playing and is a clip; false for a stale handle or a stream.</returns>
-    public bool SetPitch(VoiceHandle voice, float pitch)
+    public bool SetPitch(VoiceHandle voice, float pitch, double seconds = 0)
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
@@ -783,16 +834,18 @@ public sealed class AudioEngine : IDisposable
         if (float.IsNaN(pitch)) return true;
         long now = Now;
         // Where the sound is on the timeline: it advanced at the old speed since the last change, unless paused.
-        if (!l.Paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
-        l.PositionFrame = Math.Max(now, l.PositionFrame);
-        l.Step = l.Rate * Speed(pitch);
+        Settle(ref l, now);
+        double speed = l.Rate * Speed(pitch);
+        long ramp = Frames(seconds);
+        if (ramp > 0) (l.StepTarget, l.StepRamp) = (speed, ramp);
+        else (l.Step, l.StepRamp) = (speed, 0);
         if (!l.Loop && l.Frames > 0)
         {
-            long left = Math.Max(0, (long)Math.Ceiling((l.Frames - l.Position) / l.Step));
+            long left = FramesLeft(l);
             if (l.Paused) l.Remaining = left;
             else l.End = Math.Min(now + left, l.Limit);
         }
-        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = l.Step }, Unsent.Values);
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = speed, Fade = ramp }, Unsent.Values);
         return true;
     }
 
@@ -806,8 +859,7 @@ public sealed class AudioEngine : IDisposable
         if (l.Paused == paused) return true;
         long now = Now;
         // A sound paused before its start frame (the timeline went back to a sink that had stopped) has played nothing.
-        if (paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
-        l.PositionFrame = Math.Max(now, l.PositionFrame);
+        Settle(ref l, now);
         if (paused)
         {
             l.Remaining = l.End == long.MaxValue ? long.MaxValue : l.End - Math.Max(now, l.Start);
@@ -968,7 +1020,7 @@ public sealed class AudioEngine : IDisposable
             // The values of a sound that ended or was stopped at once are of no use; its voice is taken again only after
             // what is left here is sent.
             if ((l.Unsent & Unsent.Values) != 0 && l.Active
-                && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is null ? l.Step : 0 })) return false;
+                && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is not null ? 0 : l.StepRamp > 0 ? l.StepTarget : l.Step })) return false;
             l.Unsent &= ~Unsent.Values;
             // A resume is sent even when the sound has since ended on the timeline: the render function still holds it
             // paused, and plays what is left as it would have had the resume been queued.
@@ -1117,14 +1169,16 @@ public sealed class AudioEngine : IDisposable
         if (_busFadeLeft[bus] > 0)
         {
             // The segment ends with the fade at the latest, so every frame here takes one step of it.
-            float volume = _busVolume[bus], step = _busFadeStep[bus];
+            // Each frame's volume is counted from the end of the fade backwards: no error builds up over a long fade.
+            float volume = _busVolume[bus], target = _busFadeTarget[bus], step = _busFadeStep[bus];
+            long left = _busFadeLeft[bus];
             for (int i = 0; i < mix.Length; i += _channels)
             {
-                volume += step;
+                volume = target - step * --left;
                 for (int c = 0; c < _channels; c++) mix[i + c] *= volume;
             }
-            _busFadeLeft[bus] -= mix.Length / _channels;
-            _busVolume[bus] = _busFadeLeft[bus] == 0 ? _busFadeTarget[bus] : volume;
+            _busFadeLeft[bus] = left;
+            _busVolume[bus] = volume;
         }
         else if (_busVolume[bus] != 1)
         {
@@ -1247,6 +1301,8 @@ public sealed class AudioEngine : IDisposable
             while (voice.Active && pos < to)
             {
                 while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
+                // A ramp that was running in frames nobody heard is over.
+                if (voice.Ramping) FinishRamps(ref voice);
                 long end = voice.StopAt == long.MaxValue ? long.MaxValue : voice.StopAt + voice.Fade;
                 if (pos >= end) { Silence(ref voice); break; }
                 long next = Math.Min(to, end);
@@ -1294,6 +1350,7 @@ public sealed class AudioEngine : IDisposable
             while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
             if (pos >= voice.StopAt + voice.Fade) { Silence(ref voice); continue; }
             if (voice.Paused) continue;
+            if (voice.Ramping) Ramp(ref voice);
             float gain = voice.Volume * busGain;
             if (pos >= voice.StopAt) gain *= 1f - (float)(pos - voice.StopAt) / voice.Fade;
             float l, r;
@@ -1348,12 +1405,62 @@ public sealed class AudioEngine : IDisposable
     private static void ApplyPending(ref Voice voice)
     {
         ref var change = ref voice.Pending[0];
-        if (change.Volume >= 0) voice.Volume = change.Volume;
-        if (change.Left >= 0) (voice.Left, voice.Right) = (change.Left, change.Right);
+        if (change.Volume >= 0)
+        {
+            voice.VolumeLeft = change.VolumeRamp;
+            if (change.VolumeRamp > 0) (voice.VolumeTarget, voice.VolumeStep) = (change.Volume, (change.Volume - voice.Volume) / change.VolumeRamp);
+            else voice.Volume = change.Volume;
+        }
+        if (change.Left >= 0)
+        {
+            voice.PanLeft = change.PanRamp;
+            if (change.PanRamp > 0)
+            {
+                (voice.LeftTarget, voice.RightTarget) = (change.Left, change.Right);
+                (voice.LeftStep, voice.RightStep) = ((change.Left - voice.Left) / change.PanRamp, (change.Right - voice.Right) / change.PanRamp);
+            }
+            else (voice.Left, voice.Right) = (change.Left, change.Right);
+        }
         if (change.Pause != 0) voice.Paused = change.Pause > 0;
-        if (change.Step > 0) voice.Step = change.Step;
+        if (change.Step > 0)
+        {
+            voice.StepLeft = change.StepRamp;
+            if (change.StepRamp > 0) (voice.StepTarget, voice.StepDelta) = (change.Step, (change.Step - voice.Step) / change.StepRamp);
+            else voice.Step = change.Step;
+        }
+        voice.Ramping = voice.VolumeLeft > 0 || voice.PanLeft > 0 || voice.StepLeft > 0;
         voice.Changes--;
         for (int i = 0; i < voice.Changes; i++) voice.Pending[i] = voice.Pending[i + 1];
+    }
+
+    /// <summary>One frame of the ramps of <paramref name="voice"/>: each value takes one step, and its target exactly at the last one.</summary>
+    private static void Ramp(ref Voice voice)
+    {
+        if (voice.VolumeLeft > 0)
+        {
+            // From the end backwards, not step upon step: no error builds up over a long ramp.
+            voice.Volume = voice.VolumeTarget - voice.VolumeStep * --voice.VolumeLeft;
+        }
+        if (voice.PanLeft > 0)
+        {
+            voice.PanLeft--;
+            voice.Left = voice.LeftTarget - voice.LeftStep * voice.PanLeft;
+            voice.Right = voice.RightTarget - voice.RightStep * voice.PanLeft;
+        }
+        if (voice.StepLeft > 0)
+        {
+            voice.Step = voice.StepTarget - voice.StepDelta * --voice.StepLeft;
+        }
+        voice.Ramping = voice.VolumeLeft > 0 || voice.PanLeft > 0 || voice.StepLeft > 0;
+    }
+
+    private static void FinishRamps(ref Voice voice)
+    {
+        if (voice.VolumeLeft > 0) voice.Volume = voice.VolumeTarget;
+        if (voice.PanLeft > 0) (voice.Left, voice.Right) = (voice.LeftTarget, voice.RightTarget);
+        if (voice.StepLeft > 0) voice.Step = voice.StepTarget;
+        voice.VolumeLeft = voice.PanLeft = voice.StepLeft = 0;
+        voice.Ramping = false;
     }
 
     /// <summary>
@@ -1382,10 +1489,10 @@ public sealed class AudioEngine : IDisposable
                 }
                 ref var from = ref pending[join];
                 ref var into = ref pending[join + 1];
-                if (into.Volume < 0) into.Volume = from.Volume;
-                if (into.Left < 0) (into.Left, into.Right) = (from.Left, from.Right);
+                if (into.Volume < 0) (into.Volume, into.VolumeRamp) = (from.Volume, from.VolumeRamp);
+                if (into.Left < 0) (into.Left, into.Right, into.PanRamp) = (from.Left, from.Right, from.PanRamp);
                 if (into.Pause == 0) into.Pause = from.Pause;
-                if (into.Step <= 0) into.Step = from.Step;
+                if (into.Step <= 0) (into.Step, into.StepRamp) = (from.Step, from.StepRamp);
                 voice.Changes--;
                 for (int k = join; k < voice.Changes; k++) pending[k] = pending[k + 1];
             }
@@ -1430,6 +1537,12 @@ public sealed class AudioEngine : IDisposable
                         Active = true, Clip = c.Clip, Feed = c.Feed, Step = c.Step, Loop = c.Loop, Bus = c.Bus, Volume = c.Volume,
                         Left = c.Left, Right = c.Right, Start = at, StopAt = long.MaxValue,
                     };
+                    if (c.Fade > 0)
+                    {
+                        // A fade-in: from silence to its volume, one step per frame.
+                        (started.Volume, started.VolumeTarget, started.VolumeStep) = (0, c.Volume, c.Volume / c.Fade);
+                        (started.VolumeLeft, started.Ramping) = ((int)Math.Min(c.Fade, int.MaxValue), true);
+                    }
                     if (_voices[c.Slot].Active && at > blockStart)
                     {
                         _incoming[c.Slot] = started;
@@ -1454,9 +1567,10 @@ public sealed class AudioEngine : IDisposable
                     ref var change = ref Waiting(ref Target(c.Slot), at);
                     if (c.Op == Op.Set)
                     {
-                        if (c.Volume >= 0) change.Volume = c.Volume;
-                        if (c.Left >= 0) (change.Left, change.Right) = (c.Left, c.Right);
-                        if (c.Step > 0) change.Step = c.Step;
+                        int ramp = (int)Math.Min(c.Fade, int.MaxValue);
+                        if (c.Volume >= 0) (change.Volume, change.VolumeRamp) = (c.Volume, ramp);
+                        if (c.Left >= 0) (change.Left, change.Right, change.PanRamp) = (c.Left, c.Right, ramp);
+                        if (c.Step > 0) (change.Step, change.StepRamp) = (c.Step, ramp);
                     }
                     else change.Pause = c.Paused ? 1 : -1;
                     break;
@@ -1567,6 +1681,11 @@ public sealed class AudioEngine : IDisposable
         public float Volume, Left, Right;
         public int Bus;
         public long Start, StopAt, Fade;
+        // Ramps: what each value still has to move per frame, where it ends, and the frames left.
+        public bool Ramping;
+        public float VolumeStep, VolumeTarget, LeftStep, RightStep, LeftTarget, RightTarget;
+        public double StepDelta, StepTarget;
+        public int VolumeLeft, PanLeft, StepLeft;
         // The changes waiting for their frames, oldest first.
         public int Changes;
         public WaitingList Pending;
@@ -1579,6 +1698,8 @@ public sealed class AudioEngine : IDisposable
         public float Volume, Left, Right;
         public int Pause;
         public double Step;
+        // Frames each value takes to get there; 0: at once.
+        public int VolumeRamp, PanRamp, StepRamp;
     }
 
     /// <summary>The waiting changes of a voice, inside it: nothing is allocated for them while rendering.</summary>
@@ -1599,6 +1720,9 @@ public sealed class AudioEngine : IDisposable
         // Live pitch: the clip's frames, its rate over the output's, its speed now, and its position at PositionFrame.
         public long Frames, PositionFrame, Limit;
         public double Rate, Step, Position;
+        // A pitch ramp: the speed it ends at and the frames it still takes from PositionFrame (0: none).
+        public double StepTarget;
+        public long StepRamp;
         // What the render function was last asked for, to send again if the queue had no room for it.
         public float Volume, Left, Right;
         public long StopFrame, StopFade;
