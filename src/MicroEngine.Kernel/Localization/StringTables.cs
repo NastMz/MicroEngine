@@ -28,6 +28,12 @@ public static class StringTables
     /// <summary>The ending of a CSV table's file name.</summary>
     public const string CsvExtension = ".strings.csv";
 
+    /// <summary>
+    /// The start of the keys that translate the engine's names of keys and controls in action prompts:
+    /// <c>prompt.Space</c>, <c>prompt.Enter</c>, <c>prompt.D-pad</c>. A language gives only those it has another word for.
+    /// </summary>
+    public const string PromptPrefix = "prompt.";
+
     /// <summary>Whether a file name is a string table's.</summary>
     public static bool IsTable(string path)
     {

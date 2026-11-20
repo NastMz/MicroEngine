@@ -50,7 +50,8 @@ public static class StringTableChecks
         foreach (var (code, entries) in languages)
             foreach (var key in keys)
             {
-                if (Has(code, key)) continue;
+                // The name of a key or control ("prompt.Space") is translated only where a language has its own word.
+                if (key.StartsWith(StringTables.PromptPrefix, StringComparison.Ordinal) || Has(code, key)) continue;
                 var others = languages.Where(l => l.Entries.ContainsKey(key)).Select(l => l.Code).ToList();
                 issues.Add(new LocalizationIssue(true, code, key,
                     $"no text in '{code}', though {string.Join(", ", others.Select(o => $"'{o}'"))} {(others.Count == 1 ? "has" : "have")} it: the player sees another language's text. Add it to the table of '{code}'."));

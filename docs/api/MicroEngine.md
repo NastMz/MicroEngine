@@ -30,6 +30,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Kernel](MicroEngine.Kernel.md)
 
+ [MicroEngine.Localization](MicroEngine.Localization.md)
+
  [MicroEngine.Navigation](MicroEngine.Navigation.md)
 
  [MicroEngine.Physics](MicroEngine.Physics.md)

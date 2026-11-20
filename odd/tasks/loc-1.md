@@ -35,11 +35,11 @@ Route: inline, in this worktree. Status: `[ ]` pending, `[x]` done with its evid
 | --- | --- | --- | --- |
 | T1 | Messages, plural rules, tables and the localizer in the kernel | S1, S2, S3 | [x] `MessageTests`, `PluralRulesTests`, `LocalizerTests` |
 | T2 | `Game.Localization`: tables from content, system language, asset variants, log, state hash; widgets and prompts follow the language | S3, S4, S6 | [x] `GameLocalizationTests` |
-| T3 | `microengine content check` reads string tables | S7 | see Log |
-| T4 | Fonts per language: what a table names, the characters a language shows, coverage | S5 | see Log |
-| T5 | Example in the tour, its test and its capture | S8 | see Log |
-| T6 | Manual page, limitations, release notes, API reference, ADR, evaluation | S10 | see Log |
-| T7 | Trimmed, NativeAOT and browser behaviour | S9 | see Log |
+| T3 | `microengine content check` reads string tables | S7 | [x] `StringTableCheckTests`, `ContentTests` |
+| T4 | Fonts per language: what a table names, the characters a language shows, coverage | S5 | [x] `StringTableCheckTests.AFontSaysWhichCharactersItHas`; the game builds the font (L7) |
+| T5 | Example in the tour, its test and its capture | S8 | [x] without a CJK language (L6); `LocalizationExampleTests` |
+| T6 | Manual page, limitations, release notes, API reference, ADR, evaluation | S10 | [x] |
+| T7 | Trimmed, NativeAOT and browser behaviour | S9 | trimmed [x] (L8); NativeAOT and browser not verified |
 
 ## Log
 
@@ -64,3 +64,28 @@ Route: inline, in this worktree. Status: `[ ]` pending, `[x]` done with its evid
   `{count, plural, one {# gem} other {# gems}}` as "1 gems"; a call allocates 1,323 bytes; a placeholder without a
   value (`{attack}`) throws `VariableNotFoundException`. Decided: own formatter with the same syntax, rules keyed by
   the language tag (evaluation, section C).
+- L4 (2026-11-20) T1 and T2 done: `MessageTests`, `PluralRulesTests`, `LocalizerTests`, `GameLocalizationTests`
+  (commit `197a214a`). The table format is JSON per language and CSV per table, named `*.strings.json` and
+  `*.strings.csv` so the loader and the content check recognise a table without opening every JSON file.
+- L5 (2026-11-20) T3 and T4 done: `StringTableChecks` (kernel), `FontCoverage` (a character-map reader, formats 4 and
+  12), and the tables read by `microengine content check` (commit `4ba0c4bc`). `prompt.` keys are optional per
+  language: a first version reported them as missing in English.
+- L6 (2026-11-20) T5: the example shows English, Spanish, Russian and Arabic. Russian replaces the CJK language the
+  issue asks for: the repository has no CJK font, none with an open licence is on this machine, and adding one is a
+  download and a third-party file the owner approves. Japanese is covered by tests of the texts (plural rule,
+  `Characters`, the coverage warning), not on screen. The localized image is an arrow with a variant for Arabic.
+  Captures looked at (English, Spanish, Russian, Arabic): shaped Arabic from the right, "Z / Espacio / Intro / J",
+  "2 самоцвета", "جوهرتان", the mirrored arrow. In the full tour the hint reads "CONFIRM" and "ACTION": the touch
+  example earlier in the tour leaves touch as the prompts' device, as for every other example's prompts.
+- L7 (2026-11-20) Not done, outside this change's surface: an `ISystemLanguages` implementation in the SDL platform
+  (`SDL_GetPreferredLocales`) and in the browser host (`navigator.languages`); `PromptText` with any `IFont`; a
+  `ShapedFont` asset kind; `docs/reference/components.md` and `AGENTS.md` naming this record; `sdk/tests/trimmed.mjs`
+  learning a localized game.
+- L8 (2026-11-20) T7: a scratch console program over this branch's `MicroEngine` project, published trimmed
+  (`TrimMode=full`, warnings as errors, `InvariantGlobalization`) and run from its executable: no trim warning,
+  "culture data: False", and 15 of 15 checks pass (tables from a folder and a CSV, English, Russian and Arabic
+  plurals, fallback, variants, the check). The NativeAOT publish stopped at "Platform linker not found" on this
+  machine: not verified. No browser or phone build was made.
+- L9 (2026-11-20) `dotnet build MicroEngine.slnx -c Release`: 0 warnings, 0 errors. `dotnet test MicroEngine.slnx -c
+  Release`: every project passes except `AssetGalleryTests.TheScriptedTourReportsNoHitch`, which passes when run
+  alone (the timing-sensitive test the brief names).

@@ -1,0 +1,17 @@
+{
+  "@name": "العربية",
+  // Latin letters and digits from Inter; the Arabic letters it lacks from Noto Sans Arabic.
+  "@fonts": ["fonts/Inter-Regular.ttf", "fonts/NotoSansArabic-Regular.ttf"],
+
+  "loc": {
+    "title": "التعريب",
+    "language": "اللغة: {name}",
+    // Arabic counts with six forms.
+    "gems": "{count, plural, zero {لا توجد جواهر بعد} one {جوهرة واحدة} two {جوهرتان} few {# جواهر} many {# جوهرة} other {# جوهرة}}",
+    "hint": "اضغط {keys} لتغيير اللغة و {action} لإضافة جوهرة",
+    "next": "اللغة التالية"
+  },
+
+  "prompt.Space": "مسافة",
+  "prompt.Enter": "إدخال"
+}

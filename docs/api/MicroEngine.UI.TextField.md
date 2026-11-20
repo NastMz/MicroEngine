@@ -124,6 +124,18 @@ public bool HasSelection { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_TextField_LocalizedPlaceholder"></a> LocalizedPlaceholder
+
+A key of the game's string tables for the placeholder: shown in the language in use, changing with it. Null (the default) is plain [Placeholder](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_Placeholder).
+
+```csharp
+public LocalizedText? LocalizedPlaceholder { get; set; }
+```
+
+#### Property Value
+
+ [LocalizedText](MicroEngine.Localization.LocalizedText.md)?
+
 ### <a id="MicroEngine_UI_TextField_MaxLength"></a> MaxLength
 
 The most characters (UTF-16 code units) the text may have (64 by default).

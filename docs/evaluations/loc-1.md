@@ -158,7 +158,9 @@ The syntax is the standard one, so a game can still move its tables to a platfor
 
 - `MessageTests`, `PluralRulesTests`, `LocalizerTests`, `GameLocalizationTests`, `StringTableCheckTests`,
   `FontCoverageTests` (kernel and engine), `ContentTests` (the tool), `LocalizationExampleTests` (the tour).
-- The example's capture in English, Spanish and Arabic, looked at.
-- Not verified here: a browser, phone or NativeAOT build of a game using it (the kernel assembly is marked
-  AOT-compatible and built with its analyzers; the code uses no reflection); a CJK language on screen, for lack of a
-  CJK font in the repository.
+- The example captured in English, Spanish, Russian and Arabic, and looked at.
+- A console program over the engine published trimmed with `InvariantGlobalization`, warnings as errors, and run:
+  no culture data, 15 of 15 checks (tables, plurals in three languages, fallback, variants, the check).
+- Not verified here: a browser or phone build; a NativeAOT build (this machine has no native linker; the kernel
+  assembly is marked AOT-compatible and builds clean with its analyzers); a CJK language on screen, for lack of a
+  CJK font in the repository, so the example shows Russian in its place.

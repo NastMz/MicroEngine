@@ -449,7 +449,7 @@ public abstract class Game : IEngineModule, IStateHashed
             // The game's texts: prompts name keys and controls from its tables ("prompt.Space") and follow its language.
             var localization = new GameLocalization(game);
             var prompts = services.Get<ActionPrompts>();
-            prompts.Names = name => localization.HasTables ? localization.TextOrNull("prompt." + name) : null;
+            prompts.Names = name => localization.HasTables ? localization.TextOrNull(StringTables.PromptPrefix + name) : null;
             localization.Changed += prompts.Invalidate;
             services.Add(localization);
             services.Add(new AudioMixer(platform.Audio));

@@ -75,6 +75,21 @@ public IKeyLabels? KeyLabels { get; set; }
 
  [IKeyLabels](MicroEngine.Input.IKeyLabels.md)?
 
+### <a id="MicroEngine_Input_ActionPrompts_Names"></a> Names
+
+Translates the names the engine gives keys and controls ("Space", "Enter", "Shift", "D-pad", "Stick", "LMB",
+"Wheel", "Start"): it receives the English name and returns the name to show, or null to keep it. The game's
+localization sets it, so a string table translates a name with the key <code>prompt.</code> followed by the English
+name (<code>"prompt.Space": "Espacio"</code>). Call [Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate) when what it returns changes.
+
+```csharp
+public Func<string, string?>? Names { get; set; }
+```
+
+#### Property Value
+
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), [string](https://learn.microsoft.com/dotnet/api/system.string)?\>?
+
 ### <a id="MicroEngine_Input_ActionPrompts_Override"></a> Override
 
 Forces prompts for one device (a "show keyboard controls" option, tests); null follows the player.
@@ -234,6 +249,14 @@ public ActionPrompt Get(string action, InputDevice? device = null)
 
  [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
+### <a id="MicroEngine_Input_ActionPrompts_Invalidate"></a> Invalidate\(\)
+
+Says that the text of prompts may have changed for a reason of the game's own (another language, labels of its own): moves [Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version).
+
+```csharp
+public void Invalidate()
+```
+
 ### <a id="MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_"></a> KeyName\(Key\)
 
 The name a key has on a US keyboard: "Z", "Space", "Esc", "←" (prompts prefer the layout's label, [KeyText](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyText_MicroEngine_Input_Key_)).
@@ -252,7 +275,8 @@ public static string KeyName(Key key)
 
 ### <a id="MicroEngine_Input_ActionPrompts_KeyText_MicroEngine_Input_Key_"></a> KeyText\(Key\)
 
-What a key cap shows on the player's keyboard: the layout's label ([KeyLabels](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyLabels)), else [KeyName](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_).
+What a key cap shows on the player's keyboard: the layout's label ([KeyLabels](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyLabels)), else
+[KeyName](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_) in the player's language ([Name](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Name_System_String_)).
 
 ```csharp
 public string KeyText(Key key)
@@ -281,6 +305,23 @@ public bool Knows(string name)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Input_ActionPrompts_Name_System_String_"></a> Name\(string\)
+
+The name of a key or control in the player's language: what [Names](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Names) gives for
+<code class="paramref">english</code>, else for each of its words ("Num Enter", "Mouse 4", "Wheel ↑"), else the English name.
+
+```csharp
+public string Name(string english)
+```
+
+#### Parameters
+
+`english` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ### <a id="MicroEngine_Input_ActionPrompts_SetLabel_System_String_System_Nullable_MicroEngine_Input_InputDevice__System_String_"></a> SetLabel\(string, InputDevice?, string?\)
 

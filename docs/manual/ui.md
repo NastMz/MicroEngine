@@ -44,6 +44,14 @@ blue, Y yellow), the shape on PlayStation pads, a ring with the button's label o
 (`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); text that
 keeps words goes through `ActionPrompts.Format`. See [Showing controls to the player](input.md#showing-controls-to-the-player).
 
+## Text in several languages
+
+A `Label`, a `Button` and a `TextField`'s placeholder take a `LocalizedText`, a key of the game's string tables with
+its values, in place of a string: `new Button(new LocalizedText("menu.play"), Play)`,
+`label.Localized = new("hud.gems", ("count", 3))`. They show the text in the language in use and lay themselves out
+again when it changes; in a right-to-left language a label's lines start from its right edge
+([Localization](localization.md#widgets)).
+
 ## Widgets in the UI view
 
 A scene's `Widgets` is a widget tree the engine lays out, draws,

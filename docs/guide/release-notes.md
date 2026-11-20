@@ -6,6 +6,32 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Localization
+
+- **String tables as content.** A game's texts live in `Content/` as one JSON file per language
+  (`en.strings.json`) or one CSV file with a column per language. `Localization.Load("text")` loads them;
+  `Localization["menu.play"]` and `Localization.Format("hud.gems", ("count", 3))` give the text in the language in
+  use ([Localization](../manual/localization.md)).
+- **Messages with values, plurals and selections** in the ICU MessageFormat syntax
+  (`{count, plural, one {# gem} other {# gems}}`). Plural forms come from rules built into the engine for about 65
+  languages, with no culture data from the runtime: the same in trimmed, NativeAOT, phone and browser builds.
+  `PluralRules.Register` adds a language.
+- **The language changes while the game runs.** `Localization.Language`, a fallback language, the system's language
+  as the default, `TrySetLanguage` for a saved choice, and `Languages` with each language's own name for a menu.
+- **Widgets follow the language.** `Label`, `Button` and `TextField` take a `LocalizedText`
+  (`new Button(new LocalizedText("menu.play"), Play)`); labels start from the right in right-to-left languages
+  ([Text in several languages](../manual/ui.md#text-in-several-languages)).
+- **Prompts in the language.** A table translates the engine's names of keys and controls with `prompt.` keys
+  (`"prompt.Space": "Espacio"`); `ActionPrompts.Names` is the hook, and `Prompts.Version` moves with the language.
+- **Files per language.** `Localization.Path("ui/title.png")` returns `ui/title.es.png` when the content has it;
+  `Variants` lists them to preload.
+- **Fonts per language.** A table names its language's fonts (`@fonts`); `Localization.Characters()` lists the
+  characters a language shows, for `Prepare`, and `FontCoverage` says which characters a font file lacks.
+- **`microengine content check` reads string tables**: keys a language lacks, messages that cannot be read, values
+  and plural forms that disagree, fonts that are missing or lack characters, variants the game would not find.
+  `StringTableChecks.Check` does the comparison in a game's own tests.
+- The per-step state hash has a section `engine.localization` (the language) once a game loads a string table.
+
 ### Content: sheets, animations, names, validation and packing
 
 - A **sheet description** (a `.sheet` file next to its images) says how images are cut: cell size, margin, spacing,

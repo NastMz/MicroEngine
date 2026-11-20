@@ -1,0 +1,13 @@
+{
+  // What the table says about its language: its own name for the language menu, and its fonts.
+  "@name": "English",
+  "@fonts": ["fonts/Inter-Regular.ttf"],
+
+  "loc": {
+    "title": "Localization",
+    "language": "Language: {name}",
+    "gems": "{count, plural, =0 {No gems yet} one {# gem} other {# gems}}",
+    "hint": "Press {keys} for the next language and {action} to add a gem",
+    "next": "Next language"
+  }
+}

@@ -17,7 +17,8 @@ public sealed class StringTableCheckTests
     {
         var issues = Check(
             Table("en", ("play", "Play"), ("gems", "{n, plural, one {# gem} other {# gems}}"), ("hint", "Press {jump}")),
-            Table("es", ("play", "Jugar"), ("gems", "{n, plural, one {# gema} other {# gemas}}"), ("hint", "Pulsa {jump}")),
+            // The name of a key is translated where a language has another word for it: no language must.
+            Table("es", ("play", "Jugar"), ("gems", "{n, plural, one {# gema} other {# gemas}}"), ("hint", "Pulsa {jump}"), ("prompt.Space", "Espacio")),
             Table("es-MX", ("play", "Jugar ya")),
             Table("ja", ("play", "プレイ"), ("gems", "{n, plural, other {宝石 # 個}}"), ("hint", "{jump} を押す")));
         Assert.AreEqual(0, issues.Count, string.Join("\n", issues));

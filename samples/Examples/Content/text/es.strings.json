@@ -1,0 +1,16 @@
+{
+  "@name": "Español",
+  "@fonts": ["fonts/Inter-Regular.ttf"],
+
+  "loc": {
+    "title": "Localización",
+    "language": "Idioma: {name}",
+    "gems": "{count, plural, =0 {Aún no hay gemas} one {# gema} other {# gemas}}",
+    "hint": "Pulsa {keys} para cambiar de idioma y {action} para sumar una gema",
+    "next": "Siguiente idioma"
+  },
+
+  // The engine's names of keys and controls, in this language.
+  "prompt.Space": "Espacio",
+  "prompt.Enter": "Intro"
+}

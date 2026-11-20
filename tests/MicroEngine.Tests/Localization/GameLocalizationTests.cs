@@ -132,6 +132,36 @@ public sealed class GameLocalizationTests
         Assert.IsTrue(chosen.Localization.RightToLeft);
     }
 
+    private sealed class RealTimeGame(string root) : Game
+    {
+        public override GameSettings Settings { get; } = new("text", 320, 180, 1);
+        protected override string? ContentRoot => root;
+        public override void Configure(EngineBuilder builder) => builder.Configure<TimeSettings>(time => time with { Mode = TimeMode.RealTime });
+        protected override void Load() => Localization.Load("text");
+    }
+
+    [TestMethod]
+    public void AGameOnTheWallClockStartsInTheRuntimesLanguageWhereThePlatformDoesNotSay()
+    {
+        var before = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = new System.Globalization.CultureInfo("es-MX");
+            var game = new RealTimeGame(Content());
+            game.InitializeForTest(HeadlessPlatform.For(game.Settings, rasterize: false));
+            CollectionAssert.AreEqual(new[] { "es-MX" }, game.Localization.SystemLanguages.ToArray());
+            Assert.AreEqual("es", game.Localization.Language);
+
+            // A build without culture data (browsers, phones, packaged games) has the invariant culture: nothing to follow.
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
+            var invariant = new RealTimeGame(Content());
+            invariant.InitializeForTest(HeadlessPlatform.For(invariant.Settings, rasterize: false));
+            Assert.AreEqual(0, invariant.Localization.SystemLanguages.Count);
+            Assert.AreEqual("en", invariant.Localization.Language);
+        }
+        finally { System.Globalization.CultureInfo.CurrentUICulture = before; }
+    }
+
     [TestMethod]
     public void OneFileOrACsvLoadsToo()
     {

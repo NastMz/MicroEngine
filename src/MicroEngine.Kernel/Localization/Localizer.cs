@@ -320,8 +320,8 @@ public class Localizer
     /// <summary>
     /// Every character the texts of <paramref name="language"/> (the language in use when null) can show, each once,
     /// in code order: what to hand to a font's <c>Prepare</c> so no glyph is rasterized during play, and what its font
-    /// must cover. Includes the texts of its parents and of the fallback language, which fill in missing keys, and
-    /// the printable ASCII characters (numbers and names put into messages) unless <paramref name="includeAscii"/> is false.
+    /// must cover. Includes the language's own name, the texts of its parents and of the fallback language, which fill in
+    /// missing keys, and the printable ASCII characters (numbers and names put into messages) unless <paramref name="includeAscii"/> is false.
     /// </summary>
     public string Characters(string? language = null, bool includeAscii = true)
     {
@@ -337,9 +337,6 @@ public class Localizer
             if (table.Name is not null) AddRunes(seen, table.Name, includeAscii);
             foreach (var entry in table.Entries.Values) AddRunes(seen, entry.Pattern, includeAscii);
         }
-        // The names of every language, as a language menu shows them whatever the language in use.
-        foreach (var table in _tables)
-            if (table.Name is not null) AddRunes(seen, table.Name, includeAscii);
         var text = new StringBuilder(seen.Count);
         foreach (int rune in seen) text.Append(char.ConvertFromUtf32(rune));
         return text.ToString();
