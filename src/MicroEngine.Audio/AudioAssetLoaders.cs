@@ -40,8 +40,9 @@ public static class AudioAssetLoaders
     /// <summary>Registers both loaders in <paramref name="loaders"/> (<c>Game.Assets</c> has them already).</summary>
     public static void Register(AssetLoaderRegistry loaders)
     {
-        loaders.Add(new AssetLoader<AudioClip>(Sound, c => AudioClip.FromWav(c.ReadBytes()), [".wav"], clip => clip.Samples.LongLength * sizeof(float)));
-        loaders.Add(new AssetLoader<EncodedAudio>(Music, c => new EncodedAudio(c.ReadBytes(), Path.GetExtension(c.Path) is { Length: > 1 } e ? e : "wav"),
+        // Both touch only the content, so a preload decodes them on a worker thread.
+        loaders.Add(AssetLoader.Background<AudioClip>(Sound, c => AudioClip.FromWav(c.ReadBytes()), [".wav"], clip => clip.Samples.LongLength * sizeof(float)));
+        loaders.Add(AssetLoader.Background<EncodedAudio>(Music, c => new EncodedAudio(c.ReadBytes(), Path.GetExtension(c.Path) is { Length: > 1 } e ? e : "wav"),
             [".ogg", ".mp3"], music => music.Data.LongLength));
     }
 }

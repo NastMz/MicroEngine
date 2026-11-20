@@ -50,7 +50,7 @@ public readonly record struct AssetStatistics(int Count, long TextureBytes, doub
 /// it too; disposing a scope or calling <see cref="Unload"/> releases its hold, and an asset is disposed when no scope
 /// holds it any more. Loading belongs in <c>Load</c>, a scene's
 /// <c>Enter</c> or a loading screen; a load during play is reported, because decoding a large image takes longer than a
-/// frame. <see cref="Preload"/> decodes on worker threads where the platform has them and uploads within a time budget
+/// frame. <see cref="Preload(string[])"/> decodes on worker threads where the platform has them and uploads within a time budget
 /// per frame, for loading screens.
 /// </para>
 /// <para>
@@ -176,7 +176,7 @@ public sealed class AssetCache : IDisposable
     }
 
     /// <summary>
-    /// Whether <see cref="Preload"/> decodes on worker threads (true by default, except in browsers, where .NET runs on
+    /// Whether <see cref="Preload(string[])"/> decodes on worker threads (true by default, except in browsers, where .NET runs on
     /// one thread and decoding happens within <see cref="FrameBudgetMilliseconds"/> instead).
     /// </summary>
     public bool BackgroundDecoding { get; set; } = !OperatingSystem.IsBrowser();
@@ -189,7 +189,7 @@ public sealed class AssetCache : IDisposable
     /// <summary>The image at <paramref name="path"/> as a texture, sampled with <paramref name="filter"/> (the game's default when null).</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not an image the engine reads.</exception>
     public Texture Texture(string path, TextureFilter? filter = null) =>
-        _scope.Acquire<Texture>(new AssetKey(GraphicsAssetLoaders.Texture, AssetPath.Normalize(path), null, (long)(filter ?? _device.DefaultFilter)));
+        _scope.Acquire<Texture>(TextureKey(path, filter));
 
     /// <summary>
     /// The image at <paramref name="path"/> decoded into a new <see cref="PixelImage"/> each call (not cached: the game may
@@ -208,7 +208,7 @@ public sealed class AssetCache : IDisposable
     /// <param name="filter">The texture's filter; null for the game's default.</param>
     /// <exception cref="AssetLoadException">The file or its image is missing or invalid.</exception>
     public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null) =>
-        _scope.Acquire<SpriteAtlas>(new AssetKey(GraphicsAssetLoaders.Atlas, AssetPath.Normalize(path), options ?? AtlasOptions.Default, (long)(filter ?? _device.DefaultFilter)));
+        _scope.Acquire<SpriteAtlas>(AtlasKey(path, options, filter));
 
     /// <summary>
     /// The frames and clips of the sheet at <paramref name="path"/> as pixels, new each call (not cached: the game may
@@ -236,17 +236,17 @@ public sealed class AssetCache : IDisposable
     /// <param name="filter">The texture's filter; null for the game's default.</param>
     /// <exception cref="AssetLoadException">The folder is missing or holds no image, or an image cannot be read.</exception>
     public SpriteAtlas AtlasFromFolder(string folder, Vector2 pivot = default, TextureFilter? filter = null) =>
-        _scope.Acquire<SpriteAtlas>(new AssetKey(GraphicsAssetLoaders.FolderAtlas, AssetPath.Normalize(folder), pivot, (long)(filter ?? _device.DefaultFilter)));
+        _scope.Acquire<SpriteAtlas>(FolderAtlasKey(folder, pivot, filter));
 
     /// <summary>The TTF or OTF font at <paramref name="path"/>, drawn at any size (<see cref="ScalableFont"/>).</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not a font the engine reads.</exception>
     public ScalableFont Font(string path, FontOptions? options = null) =>
-        _scope.Acquire<ScalableFont>(new AssetKey(GraphicsAssetLoaders.Font, AssetPath.Normalize(path), options ?? FontOptions.Default));
+        _scope.Acquire<ScalableFont>(FontKey(path, options));
 
     /// <summary>The PCM WAV file at <paramref name="path"/> decoded into a clip, shared and released like any asset; play it with <c>Audio.AddSound(name, clip)</c>.</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not an 8, 16 or 24-bit PCM WAV.</exception>
     public Audio.AudioClip Sound(string path) =>
-        _scope.Acquire<Audio.AudioClip>(new AssetKey(Audio.AudioAssetLoaders.Sound, AssetPath.Normalize(path)));
+        _scope.Acquire<Audio.AudioClip>(PlainKey(Audio.AudioAssetLoaders.Sound, path));
 
     /// <summary>
     /// The music file at <paramref name="path"/> (OGG, WAV; MP3 on raylib), read whole and decoded while it plays; play
@@ -254,7 +254,7 @@ public sealed class AssetCache : IDisposable
     /// </summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>
     public Audio.EncodedAudio Music(string path) =>
-        _scope.Acquire<Audio.EncodedAudio>(new AssetKey(Audio.AudioAssetLoaders.Music, AssetPath.Normalize(path)));
+        _scope.Acquire<Audio.EncodedAudio>(PlainKey(Audio.AudioAssetLoaders.Music, path));
 
     /// <summary>
     /// The compiled shader file at <paramref name="path"/> (written by <c>microengine shaders</c>), parsed once and
@@ -263,7 +263,7 @@ public sealed class AssetCache : IDisposable
     /// </summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not a compiled shader this engine reads.</exception>
     public Graphics.Devices.CompiledShader Shader(string path) =>
-        _scope.Acquire<Graphics.Devices.CompiledShader>(new AssetKey(GraphicsAssetLoaders.Shader, AssetPath.Normalize(path)));
+        _scope.Acquire<Graphics.Devices.CompiledShader>(PlainKey(GraphicsAssetLoaders.Shader, path));
 
     /// <summary>
     /// A material from the compiled fragment shader at <paramref name="path"/> (<see cref="Material2D"/>): draw with it
@@ -275,7 +275,7 @@ public sealed class AssetCache : IDisposable
     /// <param name="fallback">What the material's draws become where shaders cannot run; plain draws by default.</param>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased, not a compiled shader, or not a fragment shader.</exception>
     public Material2D Material(string path, MaterialFallback fallback = default) =>
-        _scope.Acquire<Material2D>(new AssetKey(GraphicsAssetLoaders.Material, AssetPath.Normalize(path), fallback));
+        _scope.Acquire<Material2D>(MaterialKey(path, fallback));
 
     /// <summary>
     /// A render target of <paramref name="width"/> x <paramref name="height"/> pixels that this scope owns: a picture to
@@ -289,7 +289,38 @@ public sealed class AssetCache : IDisposable
     /// <param name="filter">How its texture is sampled; null for the game's default.</param>
     /// <exception cref="AssetLoadException">A size that is not positive.</exception>
     public RenderTarget2D RenderTarget(string name, int width, int height, TextureFilter? filter = null) =>
-        _scope.Acquire<RenderTarget2D>(new AssetKey(GraphicsAssetLoaders.RenderTarget, AssetPath.Normalize(name), new RenderTargetSize(width, height), (long)(filter ?? _device.DefaultFilter)));
+        _scope.Acquire<RenderTarget2D>(RenderTargetKey(name, width, height, filter));
+
+    // The key of each kind, for the calls above and for preloads: the same request is the same key.
+    internal AssetKey TextureKey(string path, TextureFilter? filter) => new(GraphicsAssetLoaders.Texture, AssetPath.Normalize(path), null, (long)(filter ?? _device.DefaultFilter));
+    internal AssetKey AtlasKey(string path, AtlasOptions? options, TextureFilter? filter) => new(GraphicsAssetLoaders.Atlas, AssetPath.Normalize(path), options ?? AtlasOptions.Default, (long)(filter ?? _device.DefaultFilter));
+    internal AssetKey FolderAtlasKey(string folder, Vector2 pivot, TextureFilter? filter) => new(GraphicsAssetLoaders.FolderAtlas, AssetPath.Normalize(folder), pivot, (long)(filter ?? _device.DefaultFilter));
+    internal static AssetKey FontKey(string path, FontOptions? options) => new(GraphicsAssetLoaders.Font, AssetPath.Normalize(path), options ?? FontOptions.Default);
+    internal static AssetKey MaterialKey(string path, MaterialFallback fallback) => new(GraphicsAssetLoaders.Material, AssetPath.Normalize(path), fallback);
+    internal AssetKey RenderTargetKey(string name, int width, int height, TextureFilter? filter) => new(GraphicsAssetLoaders.RenderTarget, AssetPath.Normalize(name), new RenderTargetSize(width, height), (long)(filter ?? _device.DefaultFilter));
+    internal static AssetKey PlainKey(string kind, string path) => new(kind, AssetPath.Normalize(path));
+
+    /// <summary>
+    /// The key a file is loaded under when only its path is given: the kind of the loader its extension chooses, with
+    /// that kind's default options. A file a loader reads as a sprite sheet is the atlas it makes; a compiled fragment
+    /// shader is the material it makes.
+    /// </summary>
+    /// <exception cref="ArgumentException">No loader reads files with that extension.</exception>
+    internal AssetKey KeyOf(string path)
+    {
+        string normalized = AssetPath.Normalize(path);
+        if (normalized.EndsWith(".frag" + Graphics.Devices.CompiledShader.FileExtension, StringComparison.OrdinalIgnoreCase)) return MaterialKey(normalized, default);
+        string? kind = Loaders.KindOf(normalized);
+        if (kind is not null && typeof(SpriteSheet).IsAssignableFrom(Loaders.Get(kind).AssetType)) kind = GraphicsAssetLoaders.Atlas;
+        return kind switch
+        {
+            GraphicsAssetLoaders.Texture => TextureKey(normalized, null),
+            GraphicsAssetLoaders.Atlas => AtlasKey(normalized, null, null),
+            GraphicsAssetLoaders.Font => FontKey(normalized, null),
+            null => throw new ArgumentException($"'{path}' cannot be preloaded: no loader reads '{System.IO.Path.GetExtension(normalized)}' files (loaders read {string.Join(", ", Loaders.Kinds)}). Register a loader for it in Assets.Loaders, or name its kind with Preload(load => load.Asset(kind, path)).", nameof(path)),
+            _ => PlainKey(kind, normalized),
+        };
+    }
 
     /// <summary>The bytes of any content file (not cached).</summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>
@@ -368,27 +399,75 @@ public sealed class AssetCache : IDisposable
     // ---- Preloading
 
     /// <summary>
-    /// Starts loading <paramref name="paths"/> without blocking: images become textures, ".json" and ".xml" files atlases,
-    /// ".ttf" and ".otf" files fonts. Files are read and decoded on worker threads (see <see cref="BackgroundDecoding"/>);
-    /// the engine uploads finished ones each frame within <see cref="FrameBudgetMilliseconds"/>. Afterwards the usual
-    /// calls (<see cref="Texture"/>, <see cref="Atlas"/>, <see cref="Font"/>) return them at once.
+    /// Starts loading <paramref name="paths"/> without blocking, each as the kind its extension chooses: images become
+    /// textures, atlas and sheet files atlases, fonts fonts, ".wav" files sounds, ".ogg" and ".mp3" files music, compiled
+    /// fragment shaders materials, and files of a loader the game registered that loader's kind, all with default options
+    /// (<see cref="Preload(Action{AssetPreloadList})"/> takes options). Files are read and decoded on worker threads (see
+    /// <see cref="BackgroundDecoding"/>); the engine finishes them each frame within <see cref="FrameBudgetMilliseconds"/>.
+    /// Afterwards the usual calls (<see cref="Texture"/>, <see cref="Atlas"/>, <see cref="Sound"/>...) return them at once.
     /// </summary>
     /// <returns>The batch, to show progress on a loading screen or wait for.</returns>
+    /// <exception cref="ArgumentException">No loader reads a file's extension; the message names the file.</exception>
     public AssetBatch Preload(params string[] paths)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(paths);
-        var batch = new AssetBatch(this, paths.Length);
-        // Opened here, on the game's thread, so a missing folder fails now and workers share one source.
-        var source = Source;
-        foreach (var path in paths)
+        var keys = new AssetKey[paths.Length];
+        for (int i = 0; i < paths.Length; i++) keys[i] = KeyOf(paths[i]);
+        return Preload(keys, anyOptions: true);
+    }
+
+    /// <summary>
+    /// Starts loading what <paramref name="list"/> names, without blocking: the same calls as on this cache
+    /// (<c>load.Atlas(path, options)</c>, <c>load.Sound(path)</c>, <c>load.Asset(kind, path)</c>...) with the same
+    /// options, so the later direct call with those options finds the asset loaded.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// _batch = Assets.Preload(load =>
+    /// {
+    ///     load.Atlas("characters/hero.sheet", new AtlasOptions(Pivot: new Vector2(0.5f, 1)));
+    ///     load.Files("backgrounds/castle.png", "sfx/door.wav", "music/boss.ogg");
+    ///     load.Asset("level", "levels/castle.lvl");
+    /// });
+    /// </code>
+    /// </example>
+    /// <returns>The batch, to show progress on a loading screen or wait for.</returns>
+    public AssetBatch Preload(Action<AssetPreloadList> list)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+        var requests = new AssetPreloadList(this);
+        list(requests);
+        return Preload(requests.Keys, anyOptions: false);
+    }
+
+    /// <summary>Starts loading the assets of <paramref name="keys"/> without blocking (see <see cref="Preload(string[])"/>).</summary>
+    /// <returns>The batch, to show progress on a loading screen or wait for.</returns>
+    public AssetBatch Preload(IEnumerable<AssetKey> keys)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        return Preload([.. keys], anyOptions: false);
+    }
+
+    private AssetBatch Preload(IReadOnlyList<AssetKey> keys, bool anyOptions)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var batch = new AssetBatch(this, keys.Count);
+        // Opened here, on the game's thread, so a missing folder fails now and workers share one source. A batch of
+        // assets no file describes (render targets) needs none.
+        bool opened = false;
+        foreach (var key in keys)
         {
-            string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
-            var kind = ImageDecoder.Extensions.Contains(ext) ? GraphicsAssetLoaders.Texture : ext is ".json" or ".xml" ? GraphicsAssetLoaders.Atlas : ext is ".ttf" or ".otf" ? GraphicsAssetLoaders.Font
-                : throw new ArgumentException($"'{path}' is not an image, atlas or font file.", nameof(paths));
-            var pending = new Pending(batch, AssetPath.Normalize(path), kind);
-            if (_scope.HoldLoaded(kind, pending.Path)) { batch.Complete(null); continue; }
-            if (BackgroundDecoding) pending.Decoding = Task.Run(() => pending.Decode(source));
+            var loader = Loaders.Get(key.Kind);
+            var pending = new Pending(batch, key, loader);
+            batch.Track(pending.Key.Path);
+            // A file given by its path alone is done if it is loaded in any form of its kind; one asked for with options, only as asked.
+            if (anyOptions ? _scope.HoldLoaded(key.Kind, key.Path) : _scope.TryAcquire<object>(key, out _)) { batch.Complete(pending.Key.Path, null); continue; }
+            if (BackgroundDecoding && loader is IStagedAssetLoader staged)
+            {
+                if (!opened) { _ = Source; opened = true; }
+                var context = Store.CreateContext(key);
+                pending.Preparing = Task.Run(() => pending.Prepare(staged, context));
+            }
             _uploads.Enqueue(pending);
         }
         return batch;
@@ -407,7 +486,7 @@ public sealed class AssetCache : IDisposable
         {
             if (!first && Stopwatch.GetElapsedTime(start).TotalMilliseconds >= FrameBudgetMilliseconds) break;
             // A worker still decoding: try again next frame rather than wait.
-            if (pending.Decoding is { IsCompleted: false }) break;
+            if (pending.Preparing is { IsCompleted: false }) break;
             _uploads.Dequeue();
             Finish(pending);
             first = false;
@@ -451,74 +530,115 @@ public sealed class AssetCache : IDisposable
         long finishing = Stopwatch.GetTimestamp();
         try
         {
-            if (pending.Decoding is { } task) task.Wait();
-            else pending.Decode(Source);
-            if (pending.Error is { } error) throw error;
-            // The keys the direct calls use with default options, so Texture(path) finds a preloaded texture.
-            var filter = (long)_device.DefaultFilter;
-            var key = pending.Kind switch
+            if (!_scope.TryAcquire<object>(pending.Key, out _))
             {
-                GraphicsAssetLoaders.Texture => new AssetKey(pending.Kind, pending.Path, null, filter),
-                GraphicsAssetLoaders.Atlas => new AssetKey(pending.Kind, pending.Path, AtlasOptions.Default, filter),
-                _ => new AssetKey(pending.Kind, pending.Path, FontOptions.Default),
-            };
-            if (!_scope.HoldLoaded(pending.Kind, pending.Path))
-            {
-                IDisposable value = pending.Kind switch
+                var context = Store.CreateContext(pending.Key);
+                object value;
+                if (pending.Loader is IStagedAssetLoader staged)
                 {
-                    GraphicsAssetLoaders.Texture => _device.CreateTexture(pending.Image!, _device.DefaultFilter),
-                    GraphicsAssetLoaders.Atlas => GraphicsAssetLoaders.BuildAtlas(_device, pending.Path, pending.Atlas!, pending.Image!, _device.DefaultFilter),
-                    _ => GraphicsAssetLoaders.OpenFont(_device, pending.Path, pending.Bytes!, FontOptions.Default),
-                };
-                // The load time counts the worker's decoding; a hitch is only what this thread spent (all of it without workers).
+                    if (pending.Preparing is { } task) task.Wait();
+                    else pending.Prepare(staged, context);
+                    if (pending.Error is { } error) throw error;
+                    value = staged.Complete(context, pending.Prepared!);
+                }
+                // A loader without stages may use the device anywhere: it runs whole here, on the game's thread.
+                else value = ((IAssetLoader<object>)pending.Loader).Load(context);
+                // The load time counts the worker's part; a hitch is only what this thread spent (all of it without workers).
                 double blocking = Stopwatch.GetElapsedTime(finishing).TotalMilliseconds;
-                _scope.Add(key, value, (pending.Decoding is null ? 0 : pending.DecodeMilliseconds) + blocking, blocking);
+                _scope.Add(pending.Key, value, (pending.Preparing is null ? 0 : pending.PrepareMilliseconds) + blocking, blocking);
             }
-            pending.Batch.Complete(null);
+            pending.Batch.Complete(pending.Key.Path, null);
         }
-        catch (Exception e) when (e is AssetLoadException or AggregateException)
+        catch (Exception e) when (e is AssetLoadException or AggregateException or IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            var error = e as AssetLoadException ?? (e.InnerException as AssetLoadException) ?? new AssetLoadException(pending.Path, pending.Kind, e.Message, e);
-            pending.Batch.Complete(error);
+            var error = e as AssetLoadException ?? (e.InnerException as AssetLoadException) ?? new AssetLoadException(pending.Key.Path, pending.Key.Kind, (e.InnerException ?? e).Message, e);
+            pending.Batch.Complete(pending.Key.Path, error);
         }
     }
 
-    private sealed class Pending(AssetBatch batch, string path, string kind)
+    private sealed class Pending(AssetBatch batch, AssetKey key, IAssetLoader loader)
     {
         public readonly AssetBatch Batch = batch;
-        public readonly string Path = path, Kind = kind;
-        public Task? Decoding;
-        public PixelImage? Image;
-        public AtlasData? Atlas;
-        public byte[]? Bytes;
-        public double DecodeMilliseconds;
+        public readonly AssetKey Key = key with { Path = AssetPath.Normalize(key.Path) };
+        public readonly IAssetLoader Loader = loader;
+        public Task? Preparing;
+        public object? Prepared;
+        public double PrepareMilliseconds;
         public AssetLoadException? Error;
 
-        /// <summary>Reads and decodes on whichever thread runs it; touches no device.</summary>
-        public void Decode(IContentSource source)
+        /// <summary>The loader's first stage, on whichever thread runs it; touches no device.</summary>
+        public void Prepare(IStagedAssetLoader staged, AssetLoadContext context)
         {
             long started = Stopwatch.GetTimestamp();
-            try
-            {
-                switch (Kind)
-                {
-                    case GraphicsAssetLoaders.Texture: Image = GraphicsAssetLoaders.DecodeImage(source, Path, Kind); break;
-                    case GraphicsAssetLoaders.Atlas: (Atlas, Image) = GraphicsAssetLoaders.DecodeAtlas(source, Path, AtlasOptions.Default); break;
-                    default: Bytes = GraphicsAssetLoaders.Read(source, Path, Kind); break;
-                }
-            }
+            try { Prepared = staged.Prepare(context); }
             catch (AssetLoadException e) { Error = e; }
-            catch (Exception e) when (e is not OutOfMemoryException) { Error = new AssetLoadException(Path, Kind, e.Message, e); }
-            DecodeMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+            catch (Exception e) when (e is not OutOfMemoryException) { Error = new AssetLoadException(Key.Path, Key.Kind, e.Message, e); }
+            PrepareMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
         }
     }
 }
 
-/// <summary>Assets started by <see cref="AssetCache.Preload"/>: progress for a loading screen, errors, and a way to wait.</summary>
+/// <summary>
+/// What a preload is asked to load (<see cref="AssetCache.Preload(Action{AssetPreloadList})"/>): the loading calls of
+/// <see cref="AssetCache"/> with the same parameters, recorded instead of run.
+/// </summary>
+public sealed class AssetPreloadList
+{
+    private readonly AssetCache _assets;
+    private readonly List<AssetKey> _keys = [];
+
+    internal AssetPreloadList(AssetCache assets) => _assets = assets;
+
+    internal IReadOnlyList<AssetKey> Keys => _keys;
+
+    private AssetPreloadList Add(AssetKey key)
+    {
+        _keys.Add(key);
+        return this;
+    }
+
+    /// <summary>Files by path alone, each as the kind its extension chooses, with default options (see <see cref="AssetCache.Preload(string[])"/>).</summary>
+    /// <exception cref="ArgumentException">No loader reads a file's extension.</exception>
+    public AssetPreloadList Files(params string[] paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        foreach (var path in paths) Add(_assets.KeyOf(path));
+        return this;
+    }
+
+    /// <summary>An image as a texture (<see cref="AssetCache.Texture"/>).</summary>
+    public AssetPreloadList Texture(string path, TextureFilter? filter = null) => Add(_assets.TextureKey(path, filter));
+    /// <summary>An atlas or sheet file (<see cref="AssetCache.Atlas"/>).</summary>
+    public AssetPreloadList Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null) => Add(_assets.AtlasKey(path, options, filter));
+    /// <summary>A folder of images packed into one atlas (<see cref="AssetCache.AtlasFromFolder"/>).</summary>
+    public AssetPreloadList AtlasFromFolder(string folder, Vector2 pivot = default, TextureFilter? filter = null) => Add(_assets.FolderAtlasKey(folder, pivot, filter));
+    /// <summary>A TTF or OTF font (<see cref="AssetCache.Font"/>).</summary>
+    public AssetPreloadList Font(string path, FontOptions? options = null) => Add(AssetCache.FontKey(path, options));
+    /// <summary>A PCM WAV file as a sound (<see cref="AssetCache.Sound"/>).</summary>
+    public AssetPreloadList Sound(string path) => Add(AssetCache.PlainKey(Audio.AudioAssetLoaders.Sound, path));
+    /// <summary>A music file (<see cref="AssetCache.Music"/>).</summary>
+    public AssetPreloadList Music(string path) => Add(AssetCache.PlainKey(Audio.AudioAssetLoaders.Music, path));
+    /// <summary>A compiled shader file (<see cref="AssetCache.Shader"/>).</summary>
+    public AssetPreloadList Shader(string path) => Add(AssetCache.PlainKey(GraphicsAssetLoaders.Shader, path));
+    /// <summary>A material from a compiled fragment shader (<see cref="AssetCache.Material"/>).</summary>
+    public AssetPreloadList Material(string path, MaterialFallback fallback = default) => Add(AssetCache.MaterialKey(path, fallback));
+    /// <summary>A render target (<see cref="AssetCache.RenderTarget"/>).</summary>
+    public AssetPreloadList RenderTarget(string name, int width, int height, TextureFilter? filter = null) => Add(_assets.RenderTargetKey(name, width, height, filter));
+    /// <summary>An asset of any kind by its loader's kind, as <c>Assets.Scope.Load(kind, path, options, variant)</c> asks for it: the kinds a game or a package registers.</summary>
+    public AssetPreloadList Asset(string kind, string path, object? options = null, long variant = 0)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        return Add(new AssetKey(kind, AssetPath.Normalize(path), options, variant));
+    }
+}
+
+/// <summary>Assets started by <see cref="AssetCache.Preload(string[])"/>: progress for a loading screen, errors, and a way to wait.</summary>
 public sealed class AssetBatch
 {
     private readonly AssetCache _owner;
     private readonly List<AssetLoadException> _errors = [];
+    // The paths not finished yet, in the order they were asked for.
+    private readonly List<string> _waiting = [];
 
     internal AssetBatch(AssetCache owner, int count) => (_owner, Count) = (owner, count);
 
@@ -533,10 +653,15 @@ public sealed class AssetBatch
     public bool IsDone => Completed >= Count;
     /// <summary>The assets that could not be loaded.</summary>
     public IReadOnlyList<AssetLoadException> Errors => _errors;
+    /// <summary>The path of the first asset still loading, for a loading screen to name; null when the batch is done.</summary>
+    public string? Current => _waiting.Count > 0 ? _waiting[0] : null;
 
-    internal void Complete(AssetLoadException? error)
+    internal void Track(string path) => _waiting.Add(path);
+
+    internal void Complete(string path, AssetLoadException? error)
     {
         Completed++;
+        _waiting.Remove(path);
         if (error is not null) _errors.Add(error);
     }
 

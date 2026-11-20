@@ -27,20 +27,25 @@ internal static class GraphicsAssetLoaders
 
     public static void Register(AssetLoaderRegistry loaders, IGraphicsDevice device)
     {
-        loaders.Add(new AssetLoader<Texture>(Texture,
-            c => device.CreateTexture(DecodeImage(c.Source, c.Path, c.Key.Kind), (TextureFilter)c.Key.Variant),
+        // Every loader that reads a file is staged: the first stage reads and decodes (any thread), the second creates
+        // the device resource (the game's thread), so a preload keeps decoding off the frame.
+        loaders.Add(new StagedAssetLoader<PixelImage, Texture>(Texture,
+            c => DecodeImage(c.Source, c.Path, c.Key.Kind),
+            (c, image) => device.CreateTexture(image, (TextureFilter)c.Key.Variant),
             [.. ImageDecoder.Extensions.Order(StringComparer.Ordinal)], t => t.IsDisposed ? 0 : t.SizeInBytes));
-        loaders.Add(new AssetLoader<SpriteSheet>(Sheet, ReadSheet, [".sheet"]));
-        loaders.Add(new AssetLoader<SpriteAtlas>(Atlas, c =>
+        loaders.Add(AssetLoader.Background<SpriteSheet>(Sheet, ReadSheet, [".sheet"]));
+        loaders.Add(new StagedAssetLoader<AtlasSource, SpriteAtlas>(Atlas, c =>
         {
             // A file some loader reads as a sprite sheet (a .sheet description, an artist's file a package reads) is packed here.
-            if (SheetLoader(loaders, c.Path) is { } sheets) return PackSheet(device, sheets.Load(c), (TextureFilter)c.Key.Variant);
+            if (SheetLoader(loaders, c.Path) is { } sheets) return new AtlasSource(sheets.Load(c), null, null);
             if (Path.GetExtension(c.Path).ToLowerInvariant() is ".aseprite" or ".ase")
                 throw new AssetLoadException(c.Path, c.Key.Kind, "Aseprite files are read by the optional MicroEngine.Aseprite package: reference it and load the file with Assets.Aseprite(path), or register it once with Assets.Loaders.AddAseprite().");
             var (data, image) = DecodeAtlas(c.Source, c.Path, (AtlasOptions?)c.Options ?? AtlasOptions.Default);
-            return BuildAtlas(device, c.Path, data, image, (TextureFilter)c.Key.Variant);
-        }, [".json", ".xml"], AtlasBytes));
-        loaders.Add(new AssetLoader<SpriteAtlas>(FolderAtlas, c =>
+            // Frames a tool stored rotated are turned upright and packed again: the renderers draw upright rectangles only.
+            return data.HasRotatedFrames ? new AtlasSource(data.ToSheet(image), null, null) : new AtlasSource(null, data, image);
+        }, (c, source) => source.Sheet is { } sheet ? PackSheet(device, sheet, (TextureFilter)c.Key.Variant)
+            : BuildAtlas(device, c.Path, source.Data!, source.Image!, (TextureFilter)c.Key.Variant), [".json", ".xml"], AtlasBytes));
+        loaders.Add(new StagedAssetLoader<SpriteAtlasBuilder, SpriteAtlas>(FolderAtlas, c =>
         {
             var pivot = c.Options is Vector2 p ? p : default;
             var files = c.Files().Where(f => ImageDecoder.Extensions.Contains(Path.GetExtension(f))).ToList();
@@ -51,18 +56,21 @@ internal static class GraphicsAssetLoaders
                 var image = DecodeImage(c.Source, file, c.Key.Kind);
                 builder.Add(Path.GetFileNameWithoutExtension(file), image, pivot * new Vector2(image.Width, image.Height));
             }
-            return builder.Build(device, (TextureFilter)c.Key.Variant);
-        }, size: AtlasBytes));
-        // Scalable fonts are text's: its loader registers itself under the same kind.
+            return builder;
+        }, (c, builder) => builder.Build(device, (TextureFilter)c.Key.Variant), size: AtlasBytes));
+        // Scalable fonts are text's: its loader registers itself under the same kind; here it gains its stages.
         FontLoader.Register(loaders, device);
-        loaders.Add(new AssetLoader<Graphics.Devices.CompiledShader>(Shader, c => ParseShader(c.Source, c.Path, c.Key.Kind), [Graphics.Devices.CompiledShader.FileExtension]));
-        loaders.Add(new AssetLoader<Material2D>(Material, c =>
+        var fonts = loaders.Get(Font);
+        loaders.Add(new StagedAssetLoader<byte[], ScalableFont>(Font, c => Read(c.Source, c.Path, c.Key.Kind),
+            (c, bytes) => FontLoader.Open(device, c.Path, bytes, (FontOptions?)c.Options ?? FontOptions.Default), fonts.Extensions, fonts.SizeInBytes));
+        loaders.Add(AssetLoader.Background<Graphics.Devices.CompiledShader>(Shader, c => ParseShader(c.Source, c.Path, c.Key.Kind), [Graphics.Devices.CompiledShader.FileExtension]));
+        loaders.Add(new StagedAssetLoader<Graphics.Devices.CompiledShader, Material2D>(Material, c =>
         {
             var shader = ParseShader(c.Source, c.Path, c.Key.Kind);
             if (shader.Stage != Graphics.Devices.ShaderStage.Fragment)
                 throw new AssetLoadException(c.Path, c.Key.Kind, "a material is made from a fragment shader (a .frag.shader file); the engine supplies the vertex stage.");
-            return device.CreateMaterial(shader, c.Options is MaterialFallback fallback ? fallback : default);
-        }));
+            return shader;
+        }, (c, shader) => device.CreateMaterial(shader, c.Options is MaterialFallback fallback ? fallback : default)));
         loaders.Add(new AssetLoader<RenderTarget2D>(RenderTarget, c =>
         {
             if (c.Options is not RenderTargetSize size)
@@ -78,6 +86,9 @@ internal static class GraphicsAssetLoaders
         try { return Graphics.Devices.CompiledShader.Parse(bytes); }
         catch (InvalidDataException e) { throw new AssetLoadException(path, kind, e.Message, e); }
     }
+
+    /// <summary>What the first stage of the atlas loader read: a sprite sheet to pack, or a tool's description and its image.</summary>
+    private sealed record AtlasSource(SpriteSheet? Sheet, AtlasData? Data, PixelImage? Image);
 
     private static long AtlasBytes(SpriteAtlas a) => a.Texture.IsDisposed ? 0 : a.Texture.SizeInBytes;
 
@@ -127,12 +138,6 @@ internal static class GraphicsAssetLoaders
 
     public static SpriteAtlas BuildAtlas(IGraphicsDevice device, string path, AtlasData data, PixelImage image, TextureFilter filter)
     {
-        // Frames a tool stored rotated are turned upright and packed again: the renderers draw upright rectangles only.
-        if (data.HasRotatedFrames)
-        {
-            try { return PackSheet(device, data.ToSheet(image), filter); }
-            catch (InvalidDataException e) { throw new AssetLoadException(path, Atlas, e.Message, e); }
-        }
         var texture = device.CreateTexture(image, filter);
         try { return SpriteAtlas.Create(texture, data); }
         catch (InvalidDataException e)

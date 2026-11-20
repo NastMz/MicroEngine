@@ -32,7 +32,7 @@ public static class AsepriteAssets
     public const string Kind = "aseprite";
 
     /// <summary>The loader of the <c>aseprite</c> kind (extensions <c>.aseprite</c> and <c>.ase</c>).</summary>
-    public static IAssetLoader<SpriteSheet> Loader { get; } = new AssetLoader<SpriteSheet>(Kind,
+    public static IAssetLoader<SpriteSheet> Loader { get; } = AssetLoader.Background<SpriteSheet>(Kind,
         c => Read(Path.GetFileNameWithoutExtension(c.Path), c.ReadBytes(), c.Options as AtlasOptions), [".aseprite", ".ase"]);
 
     /// <summary>Registers the <c>aseprite</c> kind on <paramref name="loaders"/>, so <c>Assets.Atlas</c> and <c>Assets.Sheet</c> read Aseprite files.</summary>

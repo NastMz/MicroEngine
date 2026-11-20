@@ -289,7 +289,7 @@ public sealed class AssetCacheTests
         var bad = assets.Preload("items/missing.png");
         var error = Assert.ThrowsExactly<AggregateException>(bad.Wait);
         Assert.IsInstanceOfType<AssetLoadException>(error.InnerExceptions[0]);
-        Assert.ThrowsExactly<ArgumentException>(() => assets.Preload("music/theme.ogg"));
+        Assert.ThrowsExactly<ArgumentException>(() => assets.Preload("items/thing.xyz"));
     }
 
     private sealed class GalleryGame : Game

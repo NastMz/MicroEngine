@@ -16,7 +16,7 @@ public static class TiledAssets
     public const string Kind = "tiled map";
 
     /// <summary>The loader of the <c>tiled map</c> kind (extensions <c>.tmx</c> and <c>.tmj</c>).</summary>
-    public static IAssetLoader<TiledMap> Loader { get; } = new AssetLoader<TiledMap>(Kind, Load, [".tmx", ".tmj"]);
+    public static IAssetLoader<TiledMap> Loader { get; } = AssetLoader.Background<TiledMap>(Kind, Load, [".tmx", ".tmj"]);
 
     /// <summary>Registers the <c>tiled map</c> kind on <paramref name="loaders"/>.</summary>
     /// <returns><paramref name="loaders"/>, for chaining.</returns>

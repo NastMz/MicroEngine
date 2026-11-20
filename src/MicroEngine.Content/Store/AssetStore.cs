@@ -113,6 +113,16 @@ public sealed class AssetStore : IAssetStore, IDisposable
         }
     }
 
+    /// <summary>
+    /// What a loader is given to load <paramref name="key"/> from this store, for code that runs a loader's stages
+    /// itself (<see cref="IStagedAssetLoader"/>) and then stores the result with <see cref="AssetScope.Add{T}"/>.
+    /// </summary>
+    public AssetLoadContext CreateContext(in AssetKey key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key.Kind);
+        return new AssetLoadContext(key with { Path = AssetPath.Normalize(key.Path) }, this);
+    }
+
     /// <summary>The asset of <paramref name="asset"/>, if it is still loaded and of type <typeparamref name="T"/>.</summary>
     public bool TryGet<T>(Asset<T> asset, [NotNullWhen(true)] out T? value) where T : class
     {
