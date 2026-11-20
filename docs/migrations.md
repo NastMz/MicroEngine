@@ -6,6 +6,18 @@ it. Newest first.
 
 ## Next release
 
+### Navigation: the radius of a route takes part in the search
+
+`NavGrid.FindPath(finder, from, to, waypoints, radius)` used to search as if the agent were one cell wide and use
+`radius` only to straighten the route. For an agent wider than a cell (`radius` above half a cell) the search now
+avoids passages the body does not fit through, so a route that squeezed through a one-cell gap goes around or ends at
+the nearest place the body reaches (`PathStatus.Unreachable`). For every radius above zero, a route to a point so
+close to a wall that the body would touch it now ends beside that point, where the body is clear. Routes of agents
+no wider than a cell through open ground are unchanged.
+
+`NavGrid.IsOpen(path, from)` gained the optional parameter `radius`, and `DistanceField`'s constructor the optional
+parameter `radius`: source compiles unchanged; code compiled against the earlier package must be rebuilt.
+
 ### An atlas clip repeats as its data says
 
 `SpriteAtlas.Clip(string name, bool loop = true)` is now `Clip(string name, bool? loop = null)`: without the argument

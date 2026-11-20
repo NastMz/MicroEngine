@@ -34,6 +34,10 @@ public sealed class NavGrid : INavGraph
     private readonly bool[] _blocked;
     private readonly float[] _cost;
     private DiagonalMovement _diagonals = DiagonalMovement.NoCornerCutting;
+    // The free cells around each cell (ClearanceAt), measured again when a sized question follows a change of walls.
+    private ushort[]? _clearance;
+    private bool _clearanceStale = true;
+    private readonly List<SizedGrid> _sized = [];
 
     /// <summary>A grid of walkable cells that cost 1.</summary>
     /// <param name="width">Columns; positive.</param>
@@ -97,7 +101,7 @@ public sealed class NavGrid : INavGraph
         int node = NodeOf(x, y);
         if (_blocked[node] == !walkable) return;
         _blocked[node] = !walkable;
-        Version++;
+        Walls();
     }
 
     /// <summary>What entering cell (<paramref name="x"/>, <paramref name="y"/>) costs, as a multiple of open ground (1).</summary>
@@ -136,7 +140,7 @@ public sealed class NavGrid : INavGraph
                 changed |= cell != blocked;
                 cell = blocked;
             }
-        if (changed) Version++;
+        if (changed) Walls();
     }
 
     /// <summary>The node of cell (<paramref name="x"/>, <paramref name="y"/>): <c>y * Width + x</c>.</summary>
@@ -208,24 +212,33 @@ public sealed class NavGrid : INavGraph
     /// its index <paramref name="from"/> on: every cell is walkable and every step is still allowed. An agent checks
     /// the rest of its path when <see cref="Version"/> changes and searches again only when this is false.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="from"/> is negative, or a node is not of this grid.</exception>
-    public bool IsOpen(IReadOnlyList<int> path, int from = 0)
+    /// <param name="path">The nodes of the path.</param>
+    /// <param name="from">The index of the path's cell the agent is in. The cells before it are not looked at, and the agent's own cell may be one its body does not fit in (it is pressed against a wall).</param>
+    /// <param name="radius">Half the side of the agent's square, in world units: for an agent wider than a cell, every cell ahead must still have room for it (<see cref="Fits(int, int, float)"/>).</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="from"/> is negative, <paramref name="radius"/> is negative or not finite, or a node is not of this grid.</exception>
+    public bool IsOpen(IReadOnlyList<int> path, int from = 0, float radius = 0)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentOutOfRangeException.ThrowIfNegative(from);
+        CheckRadius(radius);
+        int rings = Rings(radius);
+        bool corners = _diagonals == DiagonalMovement.Always && rings == 0;
         for (int i = from; i < path.Count; i++)
         {
             var cell = CellOf(path[i]);
             if (_blocked[path[i]]) return false;
             if (i == from) continue;
+            if (!Passable(path[i], rings)) return false;
             var previous = CellOf(path[i - 1]);
             int dx = cell.X - previous.X, dy = cell.Y - previous.Y;
             if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != 1) return false;
-            if (dx == 0 || dy == 0 || _diagonals == DiagonalMovement.Always) continue;
-            if (_diagonals == DiagonalMovement.Never || !IsWalkable(previous.X + dx, previous.Y) || !IsWalkable(previous.X, previous.Y + dy)) return false;
+            if (dx == 0 || dy == 0 || corners) continue;
+            if (_diagonals == DiagonalMovement.Never || !Room(previous.X + dx, previous.Y, rings) || !Room(previous.X, previous.Y + dy, rings)) return false;
         }
         return true;
     }
+
+    private bool Room(int x, int y, int rings) => InBounds(x, y) && Passable(y * Width + x, rings);
 
     /// <summary>
     /// Whether an agent can go straight from <paramref name="from"/> to <paramref name="to"/> (world points): no
@@ -267,7 +280,11 @@ public sealed class NavGrid : INavGraph
     /// <param name="from">Where the agent is.</param>
     /// <param name="to">Where it wants to be.</param>
     /// <param name="waypoints">Replaced by the route; the agent's own position is not in it.</param>
-    /// <param name="radius">Half the side of the agent's square, in world units: straight legs keep that distance from walls.</param>
+    /// <param name="radius">
+    /// Half the side of the agent's square, in world units: straight legs keep that distance from walls, an agent
+    /// wider than a cell is led only through passages it fits in (<see cref="ForAgent"/>), and the route ends at the
+    /// point of the goal's cell nearest <paramref name="to"/> where the body touches no wall.
+    /// </param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or not finite, or a point is not finite.</exception>
     public PathStatus FindPath(PathFinder finder, Vector2 from, Vector2 to, List<Vector2> waypoints, float radius = 0)
     {
@@ -282,8 +299,8 @@ public sealed class NavGrid : INavGraph
         var cell = CellAt(to);
         bool inside = InBounds(cell.X, cell.Y);
         int goal = Math.Clamp(cell.Y, 0, Height - 1) * Width + Math.Clamp(cell.X, 0, Width - 1);
-        var status = finder.Find(this, start, goal);
-        Straighten(finder.Path, from, status == PathStatus.Found && inside ? to : null, waypoints, radius);
+        var status = finder.Find(ForAgent(radius), start, goal);
+        Straighten(finder.Path, from, status == PathStatus.Found && inside ? Settle(to, goal, radius) : null, waypoints, radius);
         return status == PathStatus.Found && !inside ? PathStatus.Unreachable : status;
     }
 
@@ -304,7 +321,7 @@ public sealed class NavGrid : INavGraph
                 changed |= cell != blocked;
                 cell = blocked;
             }
-        if (changed) Version++;
+        if (changed) Walls();
         return changed;
     }
 
@@ -342,7 +359,7 @@ public sealed class NavGrid : INavGraph
                 changed |= cell != blocked;
                 cell = blocked;
             }
-        if (changed) Version++;
+        if (changed) Walls();
         return changed;
     }
 
@@ -361,6 +378,136 @@ public sealed class NavGrid : INavGraph
         grid.ReadPhysics(world, filter);
         grid.Version = 0;
         return grid;
+    }
+
+    /// <summary>
+    /// How much free room surrounds cell (<paramref name="x"/>, <paramref name="y"/>): 0 for a blocked cell or one
+    /// outside the grid, 1 for a walkable cell with a wall (or the grid's edge) beside it, corners included, 2 when
+    /// the nearest wall is two cells away, and so on.
+    /// </summary>
+    public int ClearanceAt(int x, int y) => InBounds(x, y) ? Clearance()[y * Width + x] : 0;
+
+    /// <summary>
+    /// Whether an agent whose square has the half-side <paramref name="radius"/> (world units) can stand centred in
+    /// cell (<paramref name="x"/>, <paramref name="y"/>) without touching a blocked cell or leaving the grid. An
+    /// agent no wider than a cell fits in every walkable cell.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or not finite.</exception>
+    public bool Fits(int x, int y, float radius)
+    {
+        CheckRadius(radius);
+        return Room(x, y, Rings(radius));
+    }
+
+    /// <summary>
+    /// The grid as an agent whose square has the half-side <paramref name="radius"/> (world units) walks it: the
+    /// same nodes, with steps only into cells where the whole body fits (<see cref="Fits(int, int, float)"/>).
+    /// Search it with <see cref="PathFinder.Find"/> when the game moves cell by cell; <see cref="FindPath"/> does it
+    /// by itself. An agent no wider than a cell walks the grid itself, which is what this returns for it. A wider
+    /// agent is given whole cells of room on every side: wider than one cell it needs a passage three cells wide,
+    /// wider than three cells one of five. A wide agent never cuts a corner. The view follows the grid's changes.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or not finite.</exception>
+    public INavGraph ForAgent(float radius)
+    {
+        CheckRadius(radius);
+        int rings = Rings(radius);
+        if (rings == 0) return this;
+        foreach (var view in _sized)
+            if (view.Rings == rings) return view;
+        var made = new SizedGrid(this, rings);
+        _sized.Add(made);
+        return made;
+    }
+
+    /// <summary>How many cells of room beyond its own an agent of half-side <paramref name="radius"/> needs on every side.</summary>
+    internal int Rings(float radius) => Math.Max(0, (int)MathF.Ceiling(radius / CellSize - 0.5f - 1e-4f));
+
+    /// <summary>Whether an agent that needs <paramref name="rings"/> cells of room can stand in <paramref name="node"/>.</summary>
+    internal bool Passable(int node, int rings) => rings == 0 ? !_blocked[node] : Clearance()[node] > rings;
+
+    /// <summary>
+    /// The steps out of <paramref name="node"/> for an agent that needs <paramref name="rings"/> cells of room, in
+    /// the order of <see cref="GetEdges(int, List{NavEdge})"/>, as if the cells of <paramref name="closed"/> were
+    /// blocked too. A wide agent never cuts a corner, except to leave a cell it does not fit in.
+    /// </summary>
+    internal void GetEdges(int node, List<NavEdge> edges, int rings, in CellArea closed = default)
+    {
+        if (rings == 0 && closed.IsEmpty)
+        {
+            GetEdges(node, edges);
+            return;
+        }
+        var clearance = rings == 0 ? null : Clearance();
+        var shut = closed.Grown(rings);
+        int x = node % Width, y = node / Width;
+        bool up = Open(x, y - 1), right = Open(x + 1, y), down = Open(x, y + 1), left = Open(x - 1, y);
+        if (up) edges.Add(new NavEdge(node - Width, _cost[node - Width]));
+        if (right) edges.Add(new NavEdge(node + 1, _cost[node + 1]));
+        if (down) edges.Add(new NavEdge(node + Width, _cost[node + Width]));
+        if (left) edges.Add(new NavEdge(node - 1, _cost[node - 1]));
+        if (_diagonals == DiagonalMovement.Never) return;
+        // A body pressed into a tight cell (beside a wall, in a corner) leaves it any way it can.
+        bool any = (_diagonals == DiagonalMovement.Always && rings == 0) || (rings > 0 && !Open(x, y));
+        if ((any || (up && right)) && Open(x + 1, y - 1)) edges.Add(new NavEdge(node - Width + 1, Diagonal * _cost[node - Width + 1]));
+        if ((any || (down && right)) && Open(x + 1, y + 1)) edges.Add(new NavEdge(node + Width + 1, Diagonal * _cost[node + Width + 1]));
+        if ((any || (down && left)) && Open(x - 1, y + 1)) edges.Add(new NavEdge(node + Width - 1, Diagonal * _cost[node + Width - 1]));
+        if ((any || (up && left)) && Open(x - 1, y - 1)) edges.Add(new NavEdge(node - Width - 1, Diagonal * _cost[node - Width - 1]));
+
+        bool Open(int cx, int cy)
+        {
+            if (!InBounds(cx, cy) || shut.Contains(cx, cy)) return false;
+            int at = cy * Width + cx;
+            return clearance is null ? !_blocked[at] : clearance[at] > rings;
+        }
+    }
+
+    // A wall appeared or went: the grid's version changes, and the room around every cell is measured again when asked.
+    private void Walls()
+    {
+        Version++;
+        _clearanceStale = true;
+    }
+
+    // The distance from every cell to the nearest blocked cell or the outside, a diagonal step counting as one: two
+    // passes, each cell taking the least of the neighbours already visited plus one.
+    private ushort[] Clearance()
+    {
+        var clearance = _clearance ??= new ushort[_blocked.Length];
+        if (!_clearanceStale) return clearance;
+        _clearanceStale = false;
+        int w = Width, h = Height;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                int node = y * w + x;
+                if (_blocked[node]) { clearance[node] = 0; continue; }
+                int least = x == 0 || y == 0 || x == w - 1 ? 0
+                    : Math.Min(Math.Min(clearance[node - 1], clearance[node - w]), Math.Min(clearance[node - w - 1], clearance[node - w + 1]));
+                clearance[node] = (ushort)Math.Min(least + 1, ushort.MaxValue);
+            }
+        for (int y = h - 1; y >= 0; y--)
+            for (int x = w - 1; x >= 0; x--)
+            {
+                int node = y * w + x;
+                if (_blocked[node]) continue;
+                int least = x == w - 1 || y == h - 1 || x == 0 ? 0
+                    : Math.Min(Math.Min(clearance[node + 1], clearance[node + w]), Math.Min(clearance[node + w + 1], clearance[node + w - 1]));
+                if (least + 1 < clearance[node]) clearance[node] = (ushort)(least + 1);
+            }
+        return clearance;
+    }
+
+    // The point of `node`'s cell nearest `point` where the agent's square touches no wall: the point itself, else the
+    // point moved to the cell's centre along one axis, else the centre.
+    private Vector2 Settle(Vector2 point, int node, float radius)
+    {
+        if (radius == 0 || Clear(point, point, radius, float.PositiveInfinity)) return point;
+        var center = CenterOf(node);
+        var along = new Vector2(point.X, center.Y);
+        if (Clear(along, along, radius, float.PositiveInfinity)) return along;
+        along = new Vector2(center.X, point.Y);
+        return Clear(along, along, radius, float.PositiveInfinity) ? along : center;
     }
 
     /// <summary>What entering <paramref name="node"/> costs.</summary>
@@ -440,4 +587,33 @@ public sealed class NavGrid : INavGraph
         }
         return true;
     }
+}
+
+/// <summary>A rectangle of cells, both corners included; <c>default</c> holds no cell.</summary>
+internal readonly struct CellArea
+{
+    private readonly bool _any;
+    public readonly int X0, Y0, X1, Y1;
+
+    public CellArea(int x0, int y0, int x1, int y1)
+    {
+        X0 = x0;
+        Y0 = y0;
+        X1 = x1;
+        Y1 = y1;
+        _any = x1 >= x0 && y1 >= y0;
+    }
+
+    public bool IsEmpty => !_any;
+    public bool Contains(int x, int y) => _any && x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+    public CellArea Grown(int by) => _any ? new CellArea(X0 - by, Y0 - by, X1 + by, Y1 + by) : default;
+}
+
+/// <summary>A grid as an agent wider than a cell walks it (<see cref="NavGrid.ForAgent"/>).</summary>
+internal sealed class SizedGrid(NavGrid grid, int rings) : INavGraph
+{
+    public int Rings => rings;
+    public int NodeCount => grid.NodeCount;
+    public void GetEdges(int node, List<NavEdge> edges) => grid.GetEdges(node, edges, rings);
+    public float Estimate(int from, int to) => grid.Estimate(from, to);
 }

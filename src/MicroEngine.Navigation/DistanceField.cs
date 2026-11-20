@@ -13,16 +13,31 @@ public sealed class DistanceField
     private readonly NodeHeap _queue = new();
     private readonly List<NavEdge> _edges = new(8);
 
+    private readonly int _rings;
+
     /// <summary>A field over <paramref name="grid"/>; nothing is known until <see cref="Compute(int, float)"/>.</summary>
-    public DistanceField(NavGrid grid)
+    /// <param name="grid">The grid the field measures.</param>
+    /// <param name="radius">
+    /// Half the side of the square of the agents that read the field, in world units: for agents wider than a cell
+    /// the field leads only through cells they fit in (<see cref="NavGrid.ForAgent"/>). Agents of different widths
+    /// read different fields.
+    /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or not finite.</exception>
+    public DistanceField(NavGrid grid, float radius = 0)
     {
         Grid = grid ?? throw new ArgumentNullException(nameof(grid));
+        if (!(radius >= 0) || !float.IsFinite(radius)) throw new ArgumentOutOfRangeException(nameof(radius), radius, "The radius is zero or more.");
+        Radius = radius;
+        _rings = grid.Rings(radius);
         _distance = new float[grid.NodeCount];
         Array.Fill(_distance, float.PositiveInfinity);
     }
 
     /// <summary>The grid the field measures.</summary>
     public NavGrid Grid { get; }
+
+    /// <summary>Half the side of the square of the agents the field is for, in world units.</summary>
+    public float Radius { get; }
 
     /// <summary>
     /// The grid's <see cref="NavGrid.Version"/> when the field was last computed (-1 before the first time): when it
@@ -56,10 +71,10 @@ public sealed class DistanceField
         while (_queue.Count > 0)
         {
             int node = _queue.Pop();
-            if (Grid.IsBlocked(node)) continue;
+            if (!Grid.Passable(node, _rings)) continue;
             float here = _distance[node], enter = Grid.CostOf(node);
             _edges.Clear();
-            Grid.GetEdges(node, _edges);
+            Grid.GetEdges(node, _edges, _rings);
             for (int i = 0; i < _edges.Count; i++)
             {
                 int neighbour = _edges[i].To;
@@ -84,16 +99,18 @@ public sealed class DistanceField
 
     /// <summary>
     /// The neighbouring node an agent at <paramref name="node"/> steps to on its cheapest route: the node itself at a
-    /// goal, -1 where no route exists. Walk towards its centre (<see cref="NavGrid.CenterOf"/>).
+    /// goal, -1 where no route exists. Walk towards its centre (<see cref="NavGrid.CenterOf"/>). An agent wider than
+    /// a cell whose centre is in a cell too tight for it (it is pressed against a wall) is led to the best cell
+    /// beside it that it fits in.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="node"/> is not a node of the grid.</exception>
     public int Next(int node)
     {
         float here = DistanceAt(node);
-        if (float.IsPositiveInfinity(here)) return -1;
+        if (float.IsPositiveInfinity(here) && (_rings == 0 || Grid.IsBlocked(node))) return -1;
         if (here == 0) return node;
         _edges.Clear();
-        Grid.GetEdges(node, _edges);
+        Grid.GetEdges(node, _edges, _rings);
         int next = -1;
         float best = float.PositiveInfinity;
         for (int i = 0; i < _edges.Count; i++)

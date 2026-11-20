@@ -31,6 +31,15 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `PackedAtlas.ToJson` writes the atlas in the JSON the engine reads; `AtlasData.ToSheet` cuts a tool's atlas back
   into frames; `AssetStore.Read` loads an asset without storing it.
 
+### Navigation: agents with a size
+
+- **Agents wider than a cell are led only where they fit.** The `radius` given to `NavGrid.FindPath` now takes part
+  in the search itself: a body wider than a cell is not sent through a gap it cannot pass, and the route ends at the
+  point of the goal's cell nearest the one asked for where the body touches no wall. `grid.ForAgent(radius)` is the
+  grid as that agent walks it, for `PathFinder.Find`; `grid.IsOpen(path, from, radius)` and
+  `new DistanceField(grid, radius)` take the size too; `grid.ClearanceAt(x, y)` and `grid.Fits(x, y, radius)` tell
+  how much room a cell has ([Agents with a size](navigation.md#agents-with-a-size)).
+
 A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
 optional, for agents that find their way through a level. An eleventh: `MicroEngine.Ecs`, optional, for games
 modelled as components and systems.

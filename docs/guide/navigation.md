@@ -202,6 +202,23 @@ Follow(Patrol, dt);
 Moving agents are not obstacles in the grid: block cells for things that stay (doors, crates, buildings), and keep
 agents apart with your own rules.
 
+## Agents with a size
+
+The `radius` you give `FindPath` is half the side of the agent's square. It is used twice: the search leads the agent
+only through cells where its whole body fits, and the straightened legs keep that distance from walls. A unit three
+cells across is not sent through a door one cell wide: it goes around, or, when no way is wide enough, to the nearest
+place it reaches (`PathStatus.Unreachable`). The route ends at the point asked for, or beside it when the body would
+touch a wall there.
+
+Agents of different sizes share one grid. For games that move cell by cell, `grid.ForAgent(radius)` is the grid as
+that agent walks it: search it with `finder.Find(grid.ForAgent(radius), start, goal)`. `grid.IsOpen(cells, from,
+radius)` tells whether a path still has room for the agent, and `new DistanceField(grid, radius)` is a field for
+agents of that size.
+
+`grid.ClearanceAt(x, y)` is the room around a cell: 0 for a wall, 1 for a cell with a wall beside it, 2 when the
+nearest wall is two cells away. `grid.Fits(x, y, radius)` tells whether an agent can stand centred in a cell: use it
+to choose where a large unit may be placed or spawned.
+
 ## Many agents, one goal
 
 When many agents want the same place, one `DistanceField` replaces all their searches. `field.Compute(goal)` gives
@@ -350,8 +367,9 @@ public sealed class HexBoard(int width, int height) : INavGraph
   (the route then leads to the nearest cell found), and give fields a distance limit.
 - A finder keeps 24 bytes per cell of the largest map it searched, a grid 5 and a field 8.
 - One finder or field serves one search at a time: use one per thread.
-- During the search an agent is at most one cell wide; `radius` then keeps the straightened route clear of walls.
-  For agents wider than a cell, search a second grid where the cells next to walls are blocked too.
+- An agent wider than a cell is given whole cells of room on every side: wider than one cell it needs a passage
+  three cells wide, wider than three cells one of five. Use smaller cells when a large unit must pass a gap of
+  exactly its width.
 - There are no navigation meshes, no steering or crowd avoidance and no automatic links between platforms.
 
 ## Related
