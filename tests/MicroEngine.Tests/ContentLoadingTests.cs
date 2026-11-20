@@ -253,4 +253,16 @@ public sealed class ContentLoadingTests
         Assert.AreEqual(image[2, 1], big[8, 5]);
         Assert.AreEqual(image[1, 0], big[3, 2]);
     }
+
+    [TestMethod]
+    public void AColorIsFourBytesInRedGreenBlueAlphaOrder()
+    {
+        // PixelImage.ToRgba copies its pixels as they lie in memory: this layout is what makes that copy RGBA.
+        Color[] pixels = [new Color(1, 2, 3, 4), new Color(250, 251, 252, 253)];
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4, 250, 251, 252, 253 }, System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan()).ToArray());
+        var image = new PixelImage(2, 1);
+        image[0, 0] = pixels[0];
+        image[1, 0] = pixels[1];
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4, 250, 251, 252, 253 }, image.ToRgba());
+    }
 }

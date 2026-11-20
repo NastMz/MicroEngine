@@ -33,8 +33,8 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The eleven SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
-export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Physics.Box2D', 'MicroEngine.Tiled', 'MicroEngine.Navigation', 'MicroEngine.Ecs', 'MicroEngine.Cli', 'MicroEngine.Templates'];
+/** The twelve SDK packages, engine first: the tool and the template must never point at a version nuget.org lacks. */
+export const packageIds = ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Text.Shaping', 'MicroEngine.Physics.Box2D', 'MicroEngine.Tiled', 'MicroEngine.Aseprite', 'MicroEngine.Navigation', 'MicroEngine.Ecs', 'MicroEngine.Cli', 'MicroEngine.Templates'];
 /** Published SDK versions that shipped without a package (it was added later): never required of those versions. */
 const shippedWithout = {
   'MicroEngine.Text.Shaping': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1'],
@@ -42,6 +42,7 @@ const shippedWithout = {
   'MicroEngine.Tiled': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
   'MicroEngine.Navigation': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
   'MicroEngine.Ecs': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
+  'MicroEngine.Aseprite': ['0.4.0-alpha.1', '0.4.0-alpha.2', '0.5.0-alpha.1', '0.5.0-alpha.2', '0.6.0-alpha.1'],
 };
 /** The packages SDK `version` is made of, in push order. */
 export const packagesAt = version => packageIds.filter(id => !shippedWithout[id]?.includes(version.toLowerCase()));

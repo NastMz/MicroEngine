@@ -6,6 +6,31 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Content: sheets, animations, names, validation and packing
+
+- A **sheet description** (a `.sheet` file next to its images) says how images are cut: cell size, margin, spacing,
+  named strips, single sprites, pivots, and clips with a rate or a duration per frame. `Assets.Atlas("art/enemies.sheet")`
+  loads it into an ordinary atlas; `Assets.Sheet(path)` gives the frames to pack with others
+  (`SpriteAtlasBuilder.AddSheet`) ([Sheets and animations](../manual/assets.md#sheets-and-animations)).
+- **Clips come from the data.** `atlas.Clip(name)` plays a clip with the timing, direction and repeat its file gives,
+  and `atlas.CreateAnimator()` returns an `Animator` holding every clip of the atlas
+  ([Animation](animation.md#sprite-animations-from-data)).
+- A new optional package, **`MicroEngine.Aseprite`**, loads `.aseprite` and `.ase` files as the artist saved them:
+  `Assets.Aseprite("hero.aseprite")`. Layers are flattened with their blend modes, frame tags become clips, slices
+  become sprites and pivots ([Aseprite files](../manual/assets.md#aseprite-files)).
+- Frames a packing tool stored **rotated** (TexturePacker and Free Texture Packer JSON) load upright instead of being
+  refused.
+- **`Assets.Preload` takes every kind**: sounds, music, sheets, materials, render targets and the kinds a game
+  registers, by path or with the options of the direct calls (`Assets.Preload(load => load.Atlas(path, options))`).
+  A loader can keep its decoding off the game's thread (`AssetLoader.Background`, `StagedAssetLoader`);
+  `AssetBatch.Current` names the file being loaded ([Loading screens](../manual/assets.md#loading-screens-preload)).
+- **`microengine content`**: `check` reports content that would fail at run time, `names` writes file, sprite and clip
+  names as C# constants, `pack` packs a folder into an atlas offline; `names` and `pack` have `--check` for CI
+  ([The tool](cli.md#content)).
+- `SpriteAtlasBuilder.Pack` packs without a graphics device (optionally trimming transparent margins) and
+  `PackedAtlas.ToJson` writes the atlas in the JSON the engine reads; `AtlasData.ToSheet` cuts a tool's atlas back
+  into frames; `AssetStore.Read` loads an asset without storing it.
+
 A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
 optional, for agents that find their way through a level. An eleventh: `MicroEngine.Ecs`, optional, for games
 modelled as components and systems.

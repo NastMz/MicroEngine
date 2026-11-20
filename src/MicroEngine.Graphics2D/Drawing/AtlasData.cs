@@ -14,7 +14,12 @@ namespace MicroEngine.Graphics;
 /// <see cref="AtlasOptions.Pivot"/> of the untrimmed frame, so trimmed frames line up as their untrimmed originals.
 /// </param>
 /// <param name="Duration">How long the frame shows in an animation, in seconds, when the tool wrote it (Aseprite).</param>
-public readonly record struct AtlasRegion(string Name, RectF Source, Vector2 Origin, float? Duration);
+/// <param name="Rotated">
+/// Whether the tool stored the frame turned 90 degrees clockwise to pack it tighter: <paramref name="Source"/> is then the
+/// turned rectangle as it lies in the image, and <paramref name="Origin"/> the anchor of the upright frame.
+/// <see cref="AtlasData.ToSheet"/> turns such frames upright.
+/// </param>
+public readonly record struct AtlasRegion(string Name, RectF Source, Vector2 Origin, float? Duration, bool Rotated = false);
 
 /// <summary>The order an animation plays its frames in (Aseprite's tag directions).</summary>
 public enum AnimationDirection { Forward, Reverse, PingPong, PingPongReverse }
@@ -24,7 +29,8 @@ public enum AnimationDirection { Forward, Reverse, PingPong, PingPongReverse }
 /// <param name="From">Index of the first frame in <see cref="AtlasData.Regions"/>.</param>
 /// <param name="To">Index of the last frame, inclusive.</param>
 /// <param name="Direction">How the frames play.</param>
-public sealed record AtlasAnimation(string Name, int From, int To, AnimationDirection Direction);
+/// <param name="Loop">Whether it repeats (true unless the tag says it plays a number of times: Aseprite's "repeat").</param>
+public sealed record AtlasAnimation(string Name, int From, int To, AnimationDirection Direction, bool Loop = true);
 
 /// <summary>How atlas files are read.</summary>
 /// <param name="Pivot">
@@ -42,7 +48,8 @@ public sealed record AtlasOptions(Vector2 Pivot = default, bool KeepExtensions =
 /// The description of an atlas image written by a packing tool, read without any graphics device: the JSON of
 /// TexturePacker, Free Texture Packer and Aseprite (hash or array of frames; Aseprite's frame durations and tags), and the
 /// Starling/Sparrow XML of TexturePacker, ShoeBox and Kenney's packs. Trimmed frames keep their place in the untrimmed
-/// frame; rotated frames are refused (turn rotation off in the tool).
+/// frame; frames the JSON says are rotated are marked (<see cref="AtlasRegion.Rotated"/>) and turned upright when the
+/// atlas is loaded with its image; rotated frames of the XML format are refused (turn rotation off in the tool).
 /// </summary>
 public sealed class AtlasData
 {
@@ -81,6 +88,56 @@ public sealed class AtlasData
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         try { return Parse(File.ReadAllText(path), options); }
         catch (InvalidDataException e) { throw new InvalidDataException($"{path}: {e.Message}", e); }
+    }
+
+    /// <summary>
+    /// The atlas as loose frames and clips, cut out of <paramref name="image"/>: each frame its own picture (one stored
+    /// rotated is turned upright), tags as clips. For packing a tool's atlas again, with others or after changing its
+    /// frames (<see cref="SpriteAtlasBuilder.AddSheet"/>).
+    /// </summary>
+    /// <param name="image">The atlas image.</param>
+    /// <exception cref="InvalidDataException">A frame lies outside the image, or two frames share a name.</exception>
+    public SpriteSheet ToSheet(PixelImage image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var frames = new List<SheetFrame>(Regions.Count);
+        foreach (var region in Regions)
+        {
+            var r = region.Source;
+            if (r.X < 0 || r.Y < 0 || r.Right > image.Width || r.Bottom > image.Height)
+                throw new InvalidDataException($"Frame '{region.Name}' ({r.X}, {r.Y}, {r.Width}, {r.Height}) lies outside the {image.Width}x{image.Height} atlas image.");
+            var cut = image.Crop((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
+            // Stored a quarter turn clockwise: three more quarter turns bring it back.
+            if (region.Rotated) cut = cut.Rotate90().Rotate90().Rotate90();
+            frames.Add(new SheetFrame(region.Name, cut, region.Origin));
+        }
+        var clips = new List<SheetClip>(Animations.Count);
+        foreach (var tag in Animations)
+        {
+            int count = tag.To - tag.From + 1;
+            var names = new string[count];
+            var durations = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = Regions[tag.From + i].Name;
+                durations[i] = Regions[tag.From + i].Duration ?? SpriteAtlas.DefaultFrameDuration;
+            }
+            // A later tag of the same name replaces the earlier one, as in SpriteAtlas.Create.
+            clips.RemoveAll(c => c.Name == tag.Name);
+            clips.Add(new SheetClip(tag.Name, names, durations, 0, tag.Direction, tag.Loop));
+        }
+        return new SpriteSheet(frames, clips);
+    }
+
+    /// <summary>Whether a frame is stored rotated, so the atlas needs its pixels turned (<see cref="ToSheet"/>) before it is drawn.</summary>
+    public bool HasRotatedFrames
+    {
+        get
+        {
+            foreach (var region in Regions)
+                if (region.Rotated) return true;
+            return false;
+        }
     }
 
     private static string CleanName(string raw, AtlasOptions options)
@@ -131,7 +188,9 @@ public sealed class AtlasData
                             "pingpong_reverse" => AnimationDirection.PingPongReverse,
                             var other => throw new InvalidDataException($"Frame tag '{name}' has an unknown direction '{other}'."),
                         };
-                        animations.Add(new AtlasAnimation(name, from, to, direction));
+                        // Aseprite writes "repeat" only for a tag that plays a number of times ("0" or nothing: for ever).
+                        bool loop = !tag.TryGetProperty("repeat", out var repeat) || (repeat.ValueKind == JsonValueKind.String ? repeat.GetString() : repeat.GetRawText()) is "0" or "" or null;
+                        animations.Add(new AtlasAnimation(name, from, to, direction, loop));
                     }
             }
             if (regions.Count == 0) throw new InvalidDataException("The atlas has no frames.");
@@ -146,17 +205,21 @@ public sealed class AtlasData
         string name = CleanName(rawName, options);
         if (frame.ValueKind != JsonValueKind.Object || !frame.TryGetProperty("frame", out var rect))
             throw new InvalidDataException($"Frame '{name}' has no \"frame\" rectangle.");
-        if (frame.TryGetProperty("rotated", out var rotated) && rotated.ValueKind == JsonValueKind.True)
-            throw new InvalidDataException($"Frame '{name}' is rotated in the atlas; export without rotation (TexturePacker: \"Allow rotation\" off).");
+        // TexturePacker and Free Texture Packer keep the upright size in "frame" and store the pixels turned 90 degrees clockwise.
+        bool turned = frame.TryGetProperty("rotated", out var rotated) && rotated.ValueKind == JsonValueKind.True;
         float x = Int(rect, "x"), y = Int(rect, "y"), w = Int(rect, "w"), h = Int(rect, "h");
         if (w <= 0 || h <= 0) throw new InvalidDataException($"Frame '{name}' has an empty rectangle.");
         float trimX = 0, trimY = 0, sourceW = w, sourceH = h;
         if (frame.TryGetProperty("spriteSourceSize", out var trim)) (trimX, trimY) = (Int(trim, "x"), Int(trim, "y"));
         if (frame.TryGetProperty("sourceSize", out var size)) (sourceW, sourceH) = (Int(size, "w"), Int(size, "h"));
-        Vector2? pivot = frame.TryGetProperty("pivot", out var p) && p.ValueKind == JsonValueKind.Object ? new Vector2(Float(p, "x"), Float(p, "y")) : null;
+        bool hasPivot = frame.TryGetProperty("pivot", out var p) && p.ValueKind == JsonValueKind.Object;
         float? duration = frame.TryGetProperty("duration", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetSingle() / 1000f : null;
         if (duration is <= 0) throw new InvalidDataException($"Frame '{name}' has a duration of {duration * 1000} ms; durations are positive.");
-        return new AtlasRegion(name, new RectF(x, y, w, h), Anchor(options, pivot, sourceW, sourceH, trimX, trimY), duration);
+        // A file's pivot is a fraction of the frame: multiplied at double precision, a whole-pixel anchor written as a
+        // fraction (27 of 55) comes back as that pixel.
+        var origin = hasPivot ? new Vector2((float)(Double(p, "x") * sourceW) - trimX, (float)(Double(p, "y") * sourceH) - trimY)
+            : Anchor(options, null, sourceW, sourceH, trimX, trimY);
+        return new AtlasRegion(name, turned ? new RectF(x, y, h, w) : new RectF(x, y, w, h), origin, duration, turned);
     }
 
     private static string? Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
@@ -165,8 +228,8 @@ public sealed class AtlasData
         e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? (int)MathF.Round(v.GetSingle())
             : throw new InvalidDataException($"Missing number \"{name}\".");
 
-    private static float Float(JsonElement e, string name) =>
-        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : throw new InvalidDataException($"Missing number \"{name}\".");
+    private static double Double(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : throw new InvalidDataException($"Missing number \"{name}\".");
 
     private static AtlasData ParseXml(string text, AtlasOptions options)
     {

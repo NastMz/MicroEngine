@@ -39,6 +39,7 @@ public sealed class SpriteAtlasBuilder
 {
     private readonly List<(string Name, PixelImage Image, Vector2 Origin)> _entries = [];
     private readonly HashSet<string> _names = new(StringComparer.Ordinal);
+    private readonly List<SheetClip> _clips = [];
 
     /// <summary>Adds an image under <paramref name="name"/>. The image is copied into the atlas when <see cref="Build"/> runs, so keep it unchanged until then.</summary>
     /// <param name="name">Unique, non-empty sprite name.</param>
@@ -81,6 +82,34 @@ public sealed class SpriteAtlasBuilder
         return AddFrames(name, frames, origin);
     }
 
+    /// <summary>
+    /// Adds every frame of <paramref name="sheet"/> under its name, and its clips: what a <c>.sheet</c> file or an artist's
+    /// tool described (<see cref="SpriteSheet"/>), next to whatever else the builder holds.
+    /// </summary>
+    /// <returns>This builder, for chaining.</returns>
+    /// <exception cref="ArgumentException">A frame or a clip has a name already added.</exception>
+    public SpriteAtlasBuilder AddSheet(SpriteSheet sheet)
+    {
+        ArgumentNullException.ThrowIfNull(sheet);
+        foreach (var frame in sheet.Frames) Add(frame.Name, frame.Image, frame.Origin);
+        foreach (var clip in sheet.Clips) AddClip(clip);
+        return this;
+    }
+
+    /// <summary>
+    /// Names an animation of sprites added to this builder (before or after this call): the atlas gives it with
+    /// <see cref="SpriteAtlas.Clip(string, bool?)"/> and lists it in <see cref="SpriteAtlas.Animations"/>.
+    /// </summary>
+    /// <returns>This builder, for chaining.</returns>
+    /// <exception cref="ArgumentException">A clip of that name was already added.</exception>
+    public SpriteAtlasBuilder AddClip(SheetClip clip)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        if (_clips.Any(c => c.Name == clip.Name)) throw new ArgumentException($"Duplicate clip '{clip.Name}'.", nameof(clip));
+        _clips.Add(clip);
+        return this;
+    }
+
     /// <summary>Number of sprites added so far (each frame counts as one).</summary>
     public int Count => _entries.Count;
 
@@ -94,9 +123,38 @@ public sealed class SpriteAtlasBuilder
     public SpriteAtlas Build(IGraphicsDevice device, TextureFilter? filter = null)
     {
         ArgumentNullException.ThrowIfNull(device);
-        if (_entries.Count == 0) throw new InvalidOperationException("Atlas has no sprites.");
         var sampling = filter ?? device.DefaultFilter;
-        int border = sampling == TextureFilter.Linear ? 1 : 0, pad = 1 + 2 * border;
+        var packed = Pack(extrude: sampling == TextureFilter.Linear);
+        var texture = device.CreateTexture(packed.Image, sampling);
+        var sprites = new Dictionary<string, Sprite>(StringComparer.Ordinal);
+        foreach (var region in packed.Regions) sprites[region.Name] = new Sprite(texture, region.Source, region.Origin);
+        try { return new SpriteAtlas(texture, sprites, packed.Clips); }
+        catch
+        {
+            texture.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Packs every image into one, without a graphics device: the picture and where each sprite lies in it, for tools
+    /// that write an atlas to disk (<see cref="PackedAtlas.ToJson"/>) and for tests. <see cref="Build"/> packs the same way.
+    /// </summary>
+    /// <param name="extrude">Whether each image gets a 1-pixel border repeating its edge pixels, so linear sampling and scaling never show a neighbour.</param>
+    /// <param name="trim">
+    /// Whether the fully transparent margins of each image are left out of the picture. A sprite then covers only its
+    /// opaque pixels, anchored so that it draws where the whole image would; <see cref="PackedAtlas.Untrimmed"/> keeps
+    /// what was cut.
+    /// </param>
+    /// <exception cref="InvalidOperationException">Nothing was added, or a clip names a sprite that was not.</exception>
+    public PackedAtlas Pack(bool extrude = false, bool trim = false)
+    {
+        if (_entries.Count == 0) throw new InvalidOperationException("Atlas has no sprites.");
+        foreach (var clip in _clips)
+            foreach (var frame in clip.Frames)
+                if (!_names.Contains(frame)) throw new InvalidOperationException($"Clip '{clip.Name}' names the sprite '{frame}', which was not added.");
+        if (trim) return Trimmed().Pack(extrude) with { Untrimmed = [.. _entries.Select(TrimOf)] };
+        int border = extrude ? 1 : 0, pad = 1 + 2 * border;
         var order = _entries.Select((e, i) => (e, i)).OrderByDescending(p => p.e.Image.Height).ThenBy(p => p.i).ToList();
         long area = _entries.Sum(e => (long)(e.Image.Width + pad) * (e.Image.Height + pad));
         int width = 64;
@@ -113,20 +171,35 @@ public sealed class SpriteAtlasBuilder
         int height = 1;
         while (height < y + shelf) height *= 2;
         var sheet = new PixelImage(width, height);
-        for (int i = 0; i < _entries.Count; i++)
-        {
-            var image = _entries[i].Image;
-            sheet.Blit(image, places[i].X, places[i].Y);
-            if (border > 0) Extrude(sheet, image, places[i].X, places[i].Y);
-        }
-        var texture = device.CreateTexture(sheet, sampling);
-        var sprites = new Dictionary<string, Sprite>(StringComparer.Ordinal);
+        var regions = new AtlasRegion[_entries.Count];
         for (int i = 0; i < _entries.Count; i++)
         {
             var (name, image, origin) = _entries[i];
-            sprites[name] = new Sprite(texture, new RectF(places[i].X, places[i].Y, image.Width, image.Height), origin);
+            sheet.Blit(image, places[i].X, places[i].Y);
+            if (border > 0) Extrude(sheet, image, places[i].X, places[i].Y);
+            regions[i] = new AtlasRegion(name, new RectF(places[i].X, places[i].Y, image.Width, image.Height), origin, null);
         }
-        return new SpriteAtlas(texture, sprites);
+        return new PackedAtlas(sheet, regions, [.. _clips]);
+    }
+
+    /// <summary>Where the opaque pixels of an entry lie in it, and its whole size (a fully transparent image keeps its first pixel).</summary>
+    private static AtlasTrim TrimOf((string Name, PixelImage Image, Vector2 Origin) entry)
+    {
+        var (x, y, w, h) = entry.Image.OpaqueBounds() ?? (0, 0, 1, 1);
+        return new AtlasTrim(x, y, entry.Image.Width, entry.Image.Height, w, h);
+    }
+
+    /// <summary>A builder of the same sprites and clips, each image cut down to its opaque pixels and anchored at the same point.</summary>
+    private SpriteAtlasBuilder Trimmed()
+    {
+        var trimmed = new SpriteAtlasBuilder();
+        foreach (var entry in _entries)
+        {
+            var t = TrimOf(entry);
+            trimmed.Add(entry.Name, entry.Image.Crop(t.X, t.Y, t.Width, t.Height), entry.Origin - new Vector2(t.X, t.Y));
+        }
+        foreach (var clip in _clips) trimmed.AddClip(clip);
+        return trimmed;
     }
 
     /// <summary>Copies the outermost pixels of <paramref name="image"/>, placed at (x, y), one pixel outwards (corners included).</summary>
@@ -156,11 +229,41 @@ public sealed class SpriteAtlas : IDisposable
     private readonly Dictionary<string, Sprite> _sprites;
     private readonly Dictionary<string, Sprite[]> _frames = new(StringComparer.Ordinal);
     private readonly Dictionary<string, AnimationClip> _clips = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, (Sprite[] Frames, float[] Durations)> _tags = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Tag> _tags = new(StringComparer.Ordinal);
+    private readonly List<string> _tagNames = [];
     private readonly bool _ownsTexture = true;
+
+    /// <summary>An animation as the atlas's data gives it: frames in playing order, a duration each or one rate, and whether it repeats.</summary>
+    private sealed record Tag(Sprite[] Frames, float[]? Durations, float FramesPerSecond, bool Loop);
     /// <summary>The packed texture shared by every sprite of the atlas.</summary>
     public Texture Texture { get; }
-    internal SpriteAtlas(Texture texture, Dictionary<string, Sprite> sprites) => (Texture, _sprites) = (texture, sprites);
+    internal SpriteAtlas(Texture texture, Dictionary<string, Sprite> sprites, IReadOnlyList<SheetClip>? clips = null)
+    {
+        (Texture, _sprites) = (texture, sprites);
+        if (clips is null) return;
+        foreach (var clip in clips)
+        {
+            var frames = new Sprite[clip.Frames.Count];
+            for (int i = 0; i < frames.Length; i++)
+                frames[i] = sprites.TryGetValue(clip.Frames[i], out var sprite) ? sprite
+                    : throw new InvalidDataException($"Clip '{clip.Name}' names the sprite '{clip.Frames[i]}', which is not in the atlas.");
+            var order = PlayOrder(frames.Length, clip.Direction);
+            if (!_tags.TryAdd(clip.Name, new Tag([.. order.Select(i => frames[i])], clip.Durations is { } d ? [.. order.Select(i => d[i])] : null, clip.FramesPerSecond, clip.Loop)))
+                throw new InvalidDataException($"The atlas names two animations '{clip.Name}'.");
+            _tagNames.Add(clip.Name);
+        }
+    }
+
+    /// <summary>The indices of <paramref name="count"/> frames in the order <paramref name="direction"/> plays them.</summary>
+    private static List<int> PlayOrder(int count, AnimationDirection direction)
+    {
+        var indices = Enumerable.Range(0, count).ToList();
+        if (direction is AnimationDirection.Reverse or AnimationDirection.PingPongReverse) indices.Reverse();
+        // Ping-pong plays back to the start without repeating either end: 0 1 2 1, then 0 again.
+        if (direction is AnimationDirection.PingPong or AnimationDirection.PingPongReverse && indices.Count > 2)
+            indices.AddRange(indices.Skip(1).Take(indices.Count - 2).Reverse().ToList());
+        return indices;
+    }
 
     private SpriteAtlas(Texture texture, AtlasData data, bool ownsTexture)
     {
@@ -171,6 +274,8 @@ public sealed class SpriteAtlas : IDisposable
         {
             var region = data.Regions[i];
             var r = region.Source;
+            if (region.Rotated)
+                throw new InvalidDataException($"Frame '{region.Name}' is stored rotated in the atlas image, and a texture cannot be turned: load the atlas with Assets.Atlas or SpriteAtlas.Load, which turn such frames upright, or export without rotation.");
             if (r.X < 0 || r.Y < 0 || r.Right > texture.Width || r.Bottom > texture.Height)
                 throw new InvalidDataException($"Frame '{region.Name}' ({r.X}, {r.Y}, {r.Width}, {r.Height}) lies outside the {texture.Width}x{texture.Height} atlas image.");
             if (!_sprites.TryAdd(region.Name, sprites[i] = new Sprite(texture, r, region.Origin)))
@@ -178,12 +283,10 @@ public sealed class SpriteAtlas : IDisposable
         }
         foreach (var tag in data.Animations)
         {
-            var indices = Enumerable.Range(tag.From, tag.To - tag.From + 1).ToList();
-            if (tag.Direction is AnimationDirection.Reverse or AnimationDirection.PingPongReverse) indices.Reverse();
-            // Ping-pong plays back to the start without repeating either end: 0 1 2 1, then 0 again.
-            if (tag.Direction is AnimationDirection.PingPong or AnimationDirection.PingPongReverse && indices.Count > 2)
-                indices.AddRange(indices.Skip(1).Take(indices.Count - 2).Reverse().ToList());
-            _tags[tag.Name] = ([.. indices.Select(i => sprites[i])], [.. indices.Select(i => data.Regions[i].Duration ?? DefaultFrameDuration)]);
+            var indices = PlayOrder(tag.To - tag.From + 1, tag.Direction).Select(i => tag.From + i).ToList();
+            // A later tag of the same name replaces the earlier one, as it always did.
+            if (!_tags.ContainsKey(tag.Name)) _tagNames.Add(tag.Name);
+            _tags[tag.Name] = new Tag([.. indices.Select(i => sprites[i])], [.. indices.Select(i => data.Regions[i].Duration ?? DefaultFrameDuration)], 0, tag.Loop);
         }
     }
 
@@ -220,6 +323,11 @@ public sealed class SpriteAtlas : IDisposable
         ArgumentNullException.ThrowIfNull(device);
         var data = AtlasData.Load(path, options);
         string image = imagePath ?? ImageNextTo(path, data);
+        if (data.HasRotatedFrames)
+        {
+            try { return new SpriteAtlasBuilder().AddSheet(data.ToSheet(PixelImage.Load(image))).Build(device, filter); }
+            catch (InvalidDataException e) { throw new InvalidDataException($"{path}: {e.Message}", e); }
+        }
         var texture = device.CreateTexture(PixelImage.Load(image), filter ?? device.DefaultFilter);
         try { return new SpriteAtlas(texture, data, ownsTexture: true); }
         catch (InvalidDataException e)
@@ -233,22 +341,42 @@ public sealed class SpriteAtlas : IDisposable
     internal static string ImageNextTo(string path, AtlasData data) =>
         Path.Combine(Path.GetDirectoryName(path) ?? "", data.ImagePath ?? Path.GetFileNameWithoutExtension(path) + ".png");
 
-    /// <summary>Names of the animations the atlas file tagged (Aseprite frame tags).</summary>
-    public IReadOnlyCollection<string> Animations => _tags.Keys;
+    /// <summary>Names of the animations the atlas's data gives (Aseprite frame tags, the clips of a sheet description), in its order.</summary>
+    public IReadOnlyCollection<string> Animations => _tagNames;
 
     /// <summary>
-    /// The clip of the frame tag <paramref name="name"/>, with each frame's duration from the file and its direction
-    /// (forward, reverse, ping-pong) applied. Built once per tag and loop setting, then shared.
+    /// The clip named <paramref name="name"/> in the atlas's data (an Aseprite frame tag, a clip of a sheet description),
+    /// with its timing (a duration per frame or a rate) and its direction (forward, reverse, ping-pong) applied. Built
+    /// once per name and loop setting, then shared.
     /// </summary>
-    /// <exception cref="KeyNotFoundException">The atlas has no tag of that name.</exception>
-    public AnimationClip Clip(string name, bool loop = true)
+    /// <param name="name">The clip's name (<see cref="Animations"/>).</param>
+    /// <param name="loop">Whether it repeats; null for what the data says (a tag loops unless it says it plays a number of times).</param>
+    /// <exception cref="KeyNotFoundException">The atlas has no animation of that name.</exception>
+    public AnimationClip Clip(string name, bool? loop = null)
     {
         ArgumentNullException.ThrowIfNull(name);
-        string key = loop ? name : name + "\0once";
-        if (_clips.TryGetValue(key, out var clip)) return clip;
         if (!_tags.TryGetValue(name, out var tag))
-            throw new KeyNotFoundException($"The atlas has no animation '{name}' (tags: {(_tags.Count == 0 ? "none" : string.Join(", ", _tags.Keys))}).");
-        return _clips[key] = new AnimationClip(tag.Frames, tag.Durations, loop);
+            throw new KeyNotFoundException($"The atlas has no animation '{name}' (it has: {(_tags.Count == 0 ? "none" : string.Join(", ", _tagNames))}).");
+        bool repeats = loop ?? tag.Loop;
+        string key = repeats ? name : name + "\0once";
+        if (_clips.TryGetValue(key, out var clip)) return clip;
+        return _clips[key] = tag.Durations is { } durations ? new AnimationClip(tag.Frames, durations, repeats) : new AnimationClip(tag.Frames, tag.FramesPerSecond, repeats);
+    }
+
+    /// <summary>
+    /// An <see cref="Animator"/> holding every animation of the atlas under its name (<see cref="Animations"/>), playing
+    /// <paramref name="play"/> or the first one: a character's animations with no clip built by hand.
+    /// </summary>
+    /// <param name="play">The clip to start with; null for the first of the data.</param>
+    /// <exception cref="InvalidOperationException">The atlas has no animation.</exception>
+    /// <exception cref="KeyNotFoundException">The atlas has no animation named <paramref name="play"/>.</exception>
+    public Animator CreateAnimator(string? play = null)
+    {
+        if (_tagNames.Count == 0) throw new InvalidOperationException("The atlas has no animation: its data names no clip (an Aseprite frame tag, or a strip with \"fps\" or \"durations\" in a .sheet file).");
+        var animator = new Animator();
+        foreach (var name in _tagNames) animator.Add(name, Clip(name));
+        if (play is not null) animator.Play(play);
+        return animator;
     }
 
     /// <summary>

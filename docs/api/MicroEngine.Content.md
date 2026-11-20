@@ -22,6 +22,10 @@ The loaders of a store, one per kind. The engine registers its own (images, atla
 or module adds kinds of its own, or replaces one by registering another loader with the same kind before the first
 load of that kind.
 
+ [AssetLoader](MicroEngine.Content.AssetLoader.md)
+
+Shorthands for loaders written as functions.
+
  [AssetPath](MicroEngine.Content.AssetPath.md)
 
 Content paths: relative to the source, '/'-separated.
@@ -49,6 +53,10 @@ Reading from any content source, and opening one from a path.
 Content files a host lists and opens itself, where the files are not a folder .NET can read: an Android app's
 packaged assets (opened through the platform's asset manager), files a browser page fetched. The listing is fixed
 when the source is made; names follow the folder rules (exact letter case everywhere, '/' separators).
+
+ [StagedAssetLoader<TPrepared, T\>](MicroEngine.Content.StagedAssetLoader\-2.md)
+
+A staged loader written as two functions (see [IStagedAssetLoader](MicroEngine.Content.IStagedAssetLoader.md)); loading directly runs one after the other.
 
  [ZipContentSource](MicroEngine.Content.ZipContentSource.md)
 
@@ -95,5 +103,12 @@ first time a key of that kind is asked for and shares the result.
  [IAssetStore](MicroEngine.Content.IAssetStore.md)
 
 A game's assets: where content comes from, the loaders that read it, and the scopes that hold what was loaded.
+
+ [IStagedAssetLoader](MicroEngine.Content.IStagedAssetLoader.md)
+
+A loader whose work has two stages, so a preload (<code>Assets.Preload</code>) keeps the slow one off the game's thread:
+[Prepare](MicroEngine.Content.IStagedAssetLoader.md#MicroEngine_Content_IStagedAssetLoader_Prepare_MicroEngine_Content_AssetLoadContext_) reads and decodes on any thread, touching nothing but the content, and [Complete](MicroEngine.Content.IStagedAssetLoader.md#MicroEngine_Content_IStagedAssetLoader_Complete_MicroEngine_Content_AssetLoadContext_System_Object_)
+makes the asset on the game's thread (uploads to the graphics device). A loader without stages is run whole on the
+game's thread.
 
 </div>

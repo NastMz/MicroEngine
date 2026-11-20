@@ -1,0 +1,8 @@
+// hero.png is a strip of four 16x16 frames of the gardener walking, anchored at the feet.
+{
+  "sheets": [ { "image": "hero.png", "name": "hero", "cell": [16, 16], "origin": [8, 16] } ],
+  "clips": {
+    "walk": { "strip": "hero", "fps": 8 },
+    "hop": { "frames": ["hero1", "hero3", "hero1"], "fps": 6, "loop": false }
+  }
+}

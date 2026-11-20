@@ -53,6 +53,66 @@ public sealed class AssetLoader<T>(string kind, Func<AssetLoadContext, T> load, 
     public long SizeInBytes(object asset) => size is not null && asset is T value ? size(value) : 0;
 }
 
+/// <summary>
+/// A loader whose work has two stages, so a preload (<c>Assets.Preload</c>) keeps the slow one off the game's thread:
+/// <see cref="Prepare"/> reads and decodes on any thread, touching nothing but the content, and <see cref="Complete"/>
+/// makes the asset on the game's thread (uploads to the graphics device). A loader without stages is run whole on the
+/// game's thread.
+/// </summary>
+public interface IStagedAssetLoader : IAssetLoader
+{
+    /// <summary>Reads and decodes the asset of <see cref="AssetLoadContext.Key"/>, on any thread. It touches the content only: no graphics device, no state of the game.</summary>
+    object Prepare(AssetLoadContext context);
+    /// <summary>Makes the asset from what <see cref="Prepare"/> returned, on the game's thread.</summary>
+    object Complete(AssetLoadContext context, object prepared);
+}
+
+/// <summary>A staged loader written as two functions (see <see cref="IStagedAssetLoader"/>); loading directly runs one after the other.</summary>
+/// <typeparam name="TPrepared">What the first stage gives the second (decoded pixels, parsed data).</typeparam>
+/// <typeparam name="T">The type of the assets.</typeparam>
+/// <param name="kind">The kind requests use.</param>
+/// <param name="prepare">Reads and decodes, on any thread.</param>
+/// <param name="complete">Makes the asset, on the game's thread.</param>
+/// <param name="extensions">Extensions it is chosen for (lower case, with the dot).</param>
+/// <param name="size">The memory an asset takes; null for 0.</param>
+public sealed class StagedAssetLoader<TPrepared, T>(string kind, Func<AssetLoadContext, TPrepared> prepare, Func<AssetLoadContext, TPrepared, T> complete,
+    IReadOnlyList<string>? extensions = null, Func<T, long>? size = null) : IAssetLoader<T>, IStagedAssetLoader where TPrepared : class where T : class
+{
+    /// <inheritdoc/>
+    public string Kind { get; } = string.IsNullOrWhiteSpace(kind) ? throw new ArgumentException("A loader needs a kind.", nameof(kind)) : kind;
+    /// <inheritdoc/>
+    public Type AssetType => typeof(T);
+    /// <inheritdoc/>
+    public IReadOnlyList<string> Extensions { get; } = extensions ?? [];
+    /// <inheritdoc/>
+    public T Load(AssetLoadContext context) => complete(context, prepare(context));
+    /// <inheritdoc/>
+    public long SizeInBytes(object asset) => size is not null && asset is T value ? size(value) : 0;
+    /// <inheritdoc/>
+    public object Prepare(AssetLoadContext context) => prepare(context);
+    /// <inheritdoc/>
+    public object Complete(AssetLoadContext context, object prepared) => complete(context, (TPrepared)prepared);
+}
+
+/// <summary>Shorthands for loaders written as functions.</summary>
+public static class AssetLoader
+{
+    /// <summary>
+    /// A loader of data that touches only the content (a level file, a table, a decoded sound): a preload may run it
+    /// whole on a worker thread. <paramref name="load"/> must not use the graphics device or the game's state.
+    /// </summary>
+    /// <typeparam name="T">The type of the assets.</typeparam>
+    /// <param name="kind">The kind requests use.</param>
+    /// <param name="load">Makes the asset, on any thread.</param>
+    /// <param name="extensions">Extensions it is chosen for (lower case, with the dot).</param>
+    /// <param name="size">The memory an asset takes; null for 0.</param>
+    public static IAssetLoader<T> Background<T>(string kind, Func<AssetLoadContext, T> load, IReadOnlyList<string>? extensions = null, Func<T, long>? size = null) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(load);
+        return new StagedAssetLoader<T, T>(kind, load, static (_, value) => value, extensions, size);
+    }
+}
+
 /// <summary>What a loader is asked to load, and the content it reads it from.</summary>
 public sealed class AssetLoadContext
 {

@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Art;
 
@@ -12,9 +13,9 @@ internal sealed record ArmRig(Sprite Body, Sprite Arm, Vector2 Shoulder, float L
 internal sealed record BackdropLayer(Texture Texture, float Factor, float Y, Color Fill, bool Foreground = false);
 
 /// <summary>
-/// Loads every image in <c>Content/</c> once, through the game's content source (<c>Game.Assets</c>): sprite strips
-/// are sliced into one atlas, tiles are cut from the stage tilesets, and the hero's aiming poses are derived from the
-/// authored frames. The game's asset store holds it (<see cref="Kind"/>) and disposes it with the game.
+/// Loads every image in <c>Content/</c> once, through the game's content source (<c>Game.Assets</c>): the sprite
+/// strips, props and tiles that <c>Content/sprites.sheet</c> describes are packed into one atlas, and the hero's aiming
+/// poses are derived from the authored frames. The game's asset store holds it (<see cref="Kind"/>) and disposes it with the game.
 /// </summary>
 internal sealed class Assets : IDisposable
 {
@@ -31,49 +32,12 @@ internal sealed class Assets : IDisposable
 
     public Assets(IGraphicsDevice device, AssetCache content)
     {
-        var b = new SpriteAtlasBuilder();
-        // Hero (Warped City): every strip shares the 71×67 canvas and the feet pivot.
-        foreach (var name in new[] { "idle", "run", "run-shoot", "jump", "back-jump", "crouch", "shoot", "hurt" })
-            b.AddGrid("hero_" + name, content.Image($"hero/{name}.png"), 71, 67, origin: HeroOrigin);
-        var shoot = content.Image("hero/shoot.png");
-        AddRig(b, "shoot0", shoot);
+        // Content/sprites.sheet says how every image is cut: cell sizes, anchors, tile rectangles and the rates strips play at.
+        var b = new SpriteAtlasBuilder().AddSheet(content.Sheet(Names.Path));
+        // The aiming poses are derived from authored frames.
+        AddRig(b, "shoot0", content.Image("hero/shoot.png"));
         var runShoot = content.Image("hero/run-shoot.png");
-        for (int i = 0; i < 8; i++) AddRig(b, "run-shoot" + i, runShoot.Crop(i * 71, 0, 71, 67));
-
-        Strip(b, content, "drone", "enemies/drone.png", 55, 52, new Vector2(27, 26));
-        Strip(b, content, "turret", "enemies/turret.png", 25, 23, new Vector2(12, 22));
-        Strip(b, content, "trooper_idle", "enemies/trooper-idle.png", 61, 64, new Vector2(30, 63));
-        Strip(b, content, "trooper_run", "enemies/trooper-run.png", 61, 64, new Vector2(30, 63));
-        Strip(b, content, "egg_idle", "enemies/egg-idle.png", 44, 62, new Vector2(22, 61));
-        Strip(b, content, "egg_shoot", "enemies/egg-shoot.png", 44, 62, new Vector2(22, 61));
-        Strip(b, content, "skiff", "enemies/skiff.png", 29, 29, new Vector2(14, 14));
-        Strip(b, content, "enemy_bullet", "fx/enemy-bullet.png", 12, 12, new Vector2(6, 6));
-        Strip(b, content, "explosion", "fx/explosion.png", 48, 48, new Vector2(24, 24));
-        Strip(b, content, "explosion_big", "fx/explosion-big.png", 55, 52, new Vector2(27, 26));
-        Strip(b, content, "shot", "fx/shot.png", 15, 11, new Vector2(7, 5));
-        Strip(b, content, "shot_hit", "fx/shot-hit.png", 15, 11, new Vector2(7, 5));
-        Strip(b, content, "bolt", "fx/bolt.png", 48, 32, new Vector2(24, 16));
-        Strip(b, content, "charged", "fx/charged.png", 63, 48, new Vector2(31, 24));
-        Strip(b, content, "crossed", "fx/crossed.png", 32, 32, new Vector2(16, 16));
-        Strip(b, content, "waveform", "fx/waveform.png", 95, 32, new Vector2(47, 16));
-        for (int i = 1; i <= 5; i++) Strip(b, content, "hit" + i, $"fx/hit{i}.png", 32, 32, new Vector2(16, 16));
-        Strip(b, content, "gunship", "bosses/gunship.png", 176, 96, new Vector2(88, 48));
-        Strip(b, content, "gunship_thrust", "bosses/gunship-thrust.png", 48, 48, new Vector2(24, 24));
-        Strip(b, content, "interceptor", "bosses/interceptor.png", 176, 125, new Vector2(88, 62));
-        Strip(b, content, "interceptor_thrust", "bosses/interceptor-thrust.png", 81, 58, new Vector2(40, 29));
-        Strip(b, content, "dreadnought", "bosses/dreadnought.png", 329, 160, new Vector2(164, 80));
-        Strip(b, content, "dread_thrust_back", "bosses/dreadnought-thrust-back.png", 32, 47, new Vector2(16, 23));
-        foreach (var prop in new[] { "palm", "plant", "plant-big" })
-        {
-            var img = content.Image($"stages/grotto/{prop}.png");
-            b.Add("prop_" + prop, img, new Vector2(img.Width / 2f, img.Height));
-        }
-        foreach (var prop in new[] { "tank-1", "tank-2", "tank-3", "support" })
-        {
-            var img = content.Image($"stages/lab/{prop}.png");
-            b.Add("prop_" + prop, img, new Vector2(img.Width / 2f, img.Height));
-        }
-        Tiles.AddAll(b, content);
+        for (int i = 0; i < 8; i++) AddRig(b, "run-shoot" + i, runShoot.Crop(i * HeroFrame, 0, HeroFrame, 67));
         _atlas = b.Build(device);
         ResolveRigs();
 
@@ -109,12 +73,11 @@ internal sealed class Assets : IDisposable
     public Sprite this[string name] => _atlas[name];
     /// <summary>The frames <paramref name="name"/>0, 1, 2... (the atlas collects each once).</summary>
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
+    /// <summary>The strip <paramref name="name"/> playing at the rate <c>Content/sprites.sheet</c> gives it.</summary>
+    public AnimationClip Clip(string name) => _atlas.Clip(name);
     public bool Contains(string name) => _atlas.Contains(name);
     public ArmRig Rig(string pose) => _rigs[pose];
     public IReadOnlyList<BackdropLayer> Backdrop(string theme) => _backdrops[theme];
-
-    private static void Strip(SpriteAtlasBuilder b, AssetCache content, string name, string file, int w, int h, Vector2 origin)
-        => b.AddGrid(name, content.Image(file), w, h, origin: origin);
 
     private Texture Upload(IGraphicsDevice device, PixelImage image)
     {

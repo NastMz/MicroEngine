@@ -384,14 +384,6 @@ public sealed class PixelImage
     }
 
     /// <summary>Raw RGBA8 bytes, row-major, for backends.</summary>
-    public byte[] ToRgba()
-    {
-        var bytes = new byte[_pixels.Length * 4];
-        for (int i = 0; i < _pixels.Length; i++)
-        {
-            var c = _pixels[i];
-            bytes[i * 4] = c.R; bytes[i * 4 + 1] = c.G; bytes[i * 4 + 2] = c.B; bytes[i * 4 + 3] = c.A;
-        }
-        return bytes;
-    }
+    // Color is four bytes in R, G, B, A order (a test pins that layout), so the pixels are copied as they lie.
+    public byte[] ToRgba() => System.Runtime.InteropServices.MemoryMarshal.AsBytes(_pixels.AsSpan()).ToArray();
 }

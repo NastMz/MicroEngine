@@ -93,6 +93,14 @@ their build.
 | Collections.Pooled 2.0.0-preview.27 | Pooled collections used by Arch | MIT | Copyright (c) 2018, 2019 Joel Mueller, Dzmitry Lahoda, based on code from the .NET Foundation |
 | CommunityToolkit.HighPerformance 8.2.2 | Span and memory helpers used by Arch | MIT | (c) .NET Foundation and Contributors |
 | Microsoft.Extensions.ObjectPool 7.0.0 | Object pooling used by Arch | MIT | © Microsoft Corporation |
+## Optional Aseprite files
+
+Games that add the optional `MicroEngine.Aseprite` package also ship AsepriteDotNet, a managed library, inside their
+build. The `microengine` tool carries it too, to check and pack Aseprite files.
+
+| Component | Use | Licence | Copyright |
+| --- | --- | --- | --- |
+| AsepriteDotNet 1.9.1 | Reading files saved by the Aseprite editor (`.aseprite`, `.ase`): frames, layers and their blend modes, tags, slices | MIT | Copyright 2024 Christopher Whitley |
 
 ## Browser builds of the demos
 

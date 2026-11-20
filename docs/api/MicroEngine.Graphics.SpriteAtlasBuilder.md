@@ -94,6 +94,31 @@ This builder, for chaining.
 
 <code class="paramref">name</code> is empty or already added.
 
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddClip_MicroEngine_Graphics_SheetClip_"></a> AddClip\(SheetClip\)
+
+Names an animation of sprites added to this builder (before or after this call): the atlas gives it with
+[Clip](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Nullable_System_Boolean__) and lists it in [Animations](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Animations).
+
+```csharp
+public SpriteAtlasBuilder AddClip(SheetClip clip)
+```
+
+#### Parameters
+
+`clip` [SheetClip](MicroEngine.Graphics.SheetClip.md)
+
+#### Returns
+
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+
+This builder, for chaining.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+A clip of that name was already added.
+
 ### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Nullable_System_Numerics_Vector2__"></a> AddFrames\(string, IEnumerable<PixelImage\>, Vector2?\)
 
 Adds each frame as "name0", "name1", ... sharing the same origin.
@@ -142,6 +167,31 @@ public SpriteAtlasBuilder AddGrid(string name, PixelImage sheet, int cellWidth, 
 
  [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
 
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddSheet_MicroEngine_Graphics_SpriteSheet_"></a> AddSheet\(SpriteSheet\)
+
+Adds every frame of <code class="paramref">sheet</code> under its name, and its clips: what a <code>.sheet</code> file or an artist's
+tool described ([SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)), next to whatever else the builder holds.
+
+```csharp
+public SpriteAtlasBuilder AddSheet(SpriteSheet sheet)
+```
+
+#### Parameters
+
+`sheet` [SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)
+
+#### Returns
+
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+
+This builder, for chaining.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+A frame or a clip has a name already added.
+
 ### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__"></a> Build\(IGraphicsDevice, TextureFilter?\)
 
 Shelf-packs every image into the smallest power-of-two width that fits, with a 1-pixel gap between images. Sampled
@@ -165,5 +215,36 @@ The texture's filter; null for the device's [DefaultFilter](MicroEngine.Graphics
 #### Returns
 
  [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
+
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Pack_System_Boolean_System_Boolean_"></a> Pack\(bool, bool\)
+
+Packs every image into one, without a graphics device: the picture and where each sprite lies in it, for tools
+that write an atlas to disk ([ToJson](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_ToJson_System_String_)) and for tests. [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__) packs the same way.
+
+```csharp
+public PackedAtlas Pack(bool extrude = false, bool trim = false)
+```
+
+#### Parameters
+
+`extrude` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether each image gets a 1-pixel border repeating its edge pixels, so linear sampling and scaling never show a neighbour.
+
+`trim` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the fully transparent margins of each image are left out of the picture. A sprite then covers only its
+opaque pixels, anchored so that it draws where the whole image would; [Untrimmed](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_Untrimmed) keeps
+what was cut.
+
+#### Returns
+
+ [PackedAtlas](MicroEngine.Graphics.PackedAtlas.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+Nothing was added, or a clip names a sprite that was not.
 
 </div>

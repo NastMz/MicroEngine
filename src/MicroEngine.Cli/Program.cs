@@ -21,6 +21,7 @@ namespace MicroEngine.Cli
               info                  show the game's identity and what each target needs from it
               doctor [target]       check this machine's tools for every target (or one)
               shaders               compile the game's HLSL shaders ahead of time (Shaders/ to Content/shaders/)
+              content <action>      check the content folder, write its names as C# constants, or pack an atlas
               version               print the tool's version
 
             Common options:
@@ -91,6 +92,32 @@ namespace MicroEngine.Cli
                 has Windows binaries only. The tool restores that package into the NuGet packages folder on first use;
                 MICROENGINE_DXC names another dxc.exe.
                 """,
+            ["content"] = """
+                Usage: microengine content check [--project P] [--content DIR] [--max-texture N]
+                       microengine content names [--project P] [--content DIR] [--out FILE] [--namespace NS] [--class NAME] [--check]
+                       microengine content pack <folder> [--out PATH] [--pivot X,Y] [--trim] [--extrude] [--check]
+
+                Optional steps over a game's content folder (Content/ next to the project, or --content). A game needs
+                none of them: files load as they are.
+
+                check   reads every file the way the engine will and reports what would fail when the game runs: images,
+                        sounds, fonts and shaders it cannot read, sheets and atlases whose image is missing or whose
+                        frames lie outside it, clips that name missing frames, names that differ only in letter case,
+                        source files that would ship, textures above --max-texture pixels (4096 by default, as a
+                        warning) and music only one platform decodes. Exit code 1 when there are errors.
+                names   writes a C# file of constants (GameContent.g.cs next to the project, or --out): every file's
+                        path, and the sprites, strips and clips of each sheet, Aseprite file and atlas, so a renamed or
+                        removed name fails to compile. --class names the class (GameContent), --namespace its namespace
+                        (the project's name).
+                pack    packs the images, .sheet files, Aseprite files and atlases directly inside <folder> into one
+                        atlas: <out>.png and <out>.json (default Content/atlases/<folder name>), which Assets.Atlas
+                        loads. Loose images are named by file name, as Assets.AtlasFromFolder names them. --pivot
+                        anchors them (0.5,1: the feet), --trim leaves transparent margins out, --extrude repeats each
+                        sprite's edge for linear filtering.
+
+                --check   names, pack: write nothing; fail (exit code 1) when the file on disk is not what the command
+                          would write now. For CI.
+                """,
         };
 
         public static async Task<int> RunAsync(string[] args)
@@ -114,7 +141,7 @@ namespace MicroEngine.Cli
             }
             try
             {
-                var options = Options.Parse(rest, "verbose", "debug-key", "dev", "check");
+                var options = Options.Parse(rest, "verbose", "debug-key", "dev", "check", "trim", "extrude");
                 Tool.Verbose = options.Has("verbose");
                 return command switch
                 {
@@ -125,6 +152,7 @@ namespace MicroEngine.Cli
                     "info" => Info(options),
                     "doctor" => Doctor.Check(options.Positional.FirstOrDefault()) ? 0 : 1,
                     "shaders" => CompileShaders(options),
+                    "content" => ContentTool.Run(options),
                     _ => throw new CliException($"unknown command '{command}'. Run 'microengine --help' for the list.", 2),
                 };
             }

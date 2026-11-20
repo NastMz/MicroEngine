@@ -16,13 +16,14 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Text', 'MicroEngine.Text.Shaping', 'MicroEngine.Input', 'MicroEngine.Input.Touch', 'MicroEngine.UI', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine.Saves', 'MicroEngine.Achievements', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Tiled', 'MicroEngine.Navigation', 'MicroEngine.Ecs'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Text', 'MicroEngine.Text.Shaping', 'MicroEngine.Input', 'MicroEngine.Input.Touch', 'MicroEngine.UI', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine.Saves', 'MicroEngine.Achievements', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop', 'MicroEngine.Tiled', 'MicroEngine.Navigation', 'MicroEngine.Ecs', 'MicroEngine.Aseprite'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
 const guides = {
   'MicroEngine': ['Graphics', '../manual/rendering.md'],
   'MicroEngine.Achievements': ['Achievements', '../manual/achievements.md'],
+  'MicroEngine.Aseprite': ['Aseprite files', '../manual/assets.md#aseprite-files'],
   'MicroEngine.Audio': ['Audio', '../manual/audio.md'],
   'MicroEngine.Audio.Retro': ['Synthesized sound effects', '../manual/audio.md#synthesized-sound-effects'],
   'MicroEngine.Content': ['Assets', '../manual/assets.md#handles-loaders-and-content-sources'],
@@ -89,6 +90,7 @@ const namespaceSummaries = {
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
   'MicroEngine.Navigation': 'Pathfinding (optional package): the cheapest path over a grid of cells or a graph of waypoints, grids built from a tile map or a physics world, obstacles that change while the game runs, routes straightened for agents with a size, and distance fields for many agents with one goal.',
   'MicroEngine.Ecs': 'An Entity Component System for a scene (optional package): a component store that the scene creates, steps, hashes and destroys, ordered systems, deferred changes, links between rows and scene entities, and blended drawing. Built on Arch.',
+  'MicroEngine.Aseprite': 'Aseprite files as sprite atlases (optional package): layers flattened, tags as clips with their durations and direction, slices as sprites, through the game\'s assets.',
   'MicroEngine.Physics': 'The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms.',
   'MicroEngine.Physics.Tiles': 'The tile backend of the physics contract: tile grids as static geometry, the exact swept mover, one-way platforms and moving solids that push and carry bodies.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
@@ -113,7 +115,7 @@ function run(command, args, options = {}) {
 // 1. Build the assemblies (their XML documentation files sit next to them), then let DocFX read them.
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-api-'));
 // The desktop package brings every SDK assembly but the optional shaping, Tiled, navigation and Entity Component System packages, built beside it.
-for (const project of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj', 'src/MicroEngine.Tiled/MicroEngine.Tiled.csproj', 'src/MicroEngine.Navigation/MicroEngine.Navigation.csproj', 'src/MicroEngine.Ecs/MicroEngine.Ecs.csproj'])
+for (const project of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj', 'src/MicroEngine.Tiled/MicroEngine.Tiled.csproj', 'src/MicroEngine.Navigation/MicroEngine.Navigation.csproj', 'src/MicroEngine.Ecs/MicroEngine.Ecs.csproj', 'src/MicroEngine.Aseprite/MicroEngine.Aseprite.csproj'])
   run('dotnet', ['build', project, '-c', 'Release', '-v', 'q', '-nologo', `-p:OutDir=${path.join(work, 'bin')}${path.sep}`]);
 // Without symbols DocFX cannot turn a type of another assembly into a link to its source at the current commit, which
 // would make every page change with every commit (and differ in a copy without .git).

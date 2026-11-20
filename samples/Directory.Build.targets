@@ -19,6 +19,10 @@
     <_MicroEngineTiled Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Tiled'))" />
     <PackageReference Remove="MicroEngine.Tiled" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Tiled/MicroEngine.Tiled.csproj" Condition="'@(_MicroEngineTiled)' != ''" />
+    <!-- The optional Aseprite files package, the same way. -->
+    <_MicroEngineAseprite Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Aseprite'))" />
+    <PackageReference Remove="MicroEngine.Aseprite" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Aseprite/MicroEngine.Aseprite.csproj" Condition="'@(_MicroEngineAseprite)' != ''" />
     <!-- The optional navigation package, the same way. -->
     <_MicroEngineNavigation Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Navigation'))" />
     <PackageReference Remove="MicroEngine.Navigation" />

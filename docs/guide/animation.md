@@ -10,6 +10,48 @@ each thing that moves, and combine them freely.
 | Run steps one after another over time | `Coroutines.Start` | [Scenes](../manual/scenes.md#coroutines) |
 | Move a value through several keys, several values together, with moments the game reacts to | `Track<T>` and `Timeline` | This page |
 
+## Sprite animations from data
+
+Which frames an animation plays and for how long belongs with the art, not in code. An atlas loaded from a sheet
+description, an Aseprite file or Aseprite's exported JSON carries its clips, and `CreateAnimator` gives an `Animator`
+holding all of them:
+
+<!-- code: samples/Examples/Examples/AnimationExample.cs#setup -->
+```csharp
+private AssetCache _assets = null!;
+private Animator _animator = null!;
+
+public override void Enter()
+{
+    // Content/animation.sheet cuts hero.png into frames and names two clips: "walk" loops, "hop" plays once.
+    _assets = Assets.CreateScope("animation");
+    _animator = _assets.Atlas("animation.sheet").CreateAnimator("walk");
+}
+
+public override void Exit() => _assets.Dispose();
+```
+
+The description, `Content/animation.sheet`, cuts the image and names the clips:
+
+```json
+{
+  "sheets": [ { "image": "hero.png", "name": "hero", "cell": [16, 16], "origin": [8, 16] } ],
+  "clips": {
+    "walk": { "strip": "hero", "fps": 8 },
+    "hop": { "frames": ["hero1", "hero3", "hero1"], "fps": 6, "loop": false }
+  }
+}
+```
+
+| Source of the clips | How |
+| --- | --- |
+| A `.sheet` description | A strip with `"fps"` or `"durations"` (milliseconds per frame) is a clip; `"clips"` name more, from listed frames or a whole strip; `"direction"` and `"loop"` say how it plays |
+| An Aseprite file (`.aseprite`, with the optional `MicroEngine.Aseprite` package) | Every frame tag is a clip with each frame's duration, its direction and its repeat count |
+| Aseprite's exported JSON | The same, from `frameTags` and each frame's `duration` |
+
+`atlas.Clip(name)` gives one clip (built once, shared), `atlas.Animations` lists them, and `atlas.Clip(name, loop: false)`
+overrides whether it repeats. [Assets](../manual/assets.md#sheets-and-animations) describes the formats.
+
 ## Tracks
 
 A `Track<T>` is a value that changes over time through keys. Each key has a time in seconds, a value and, optionally,

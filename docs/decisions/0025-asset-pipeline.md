@@ -100,3 +100,12 @@ bookkeeping of the amendment above moved unchanged into `MicroEngine.Content` (`
 atlases and fonts are loaders registered under the kinds `texture`, `atlas`, `folder atlas` and `font`, and content may
 come from any source the composition names (a zip archive, a host's listing), not only a folder. Games, their paths and
 their scopes are unchanged.
+
+## Amendment (2026-11-19, CONTENT-1)
+
+[ADR 0066](0066-content-production-as-data-and-optional-tools.md) changes three points above and keeps the rest.
+"The build checks, it does not convert" stands, and gains optional offline steps outside the build
+(`microengine content check`, `names`, `pack`) whose output is ordinary files. Rotated frames of the JSON atlas
+formats are no longer refused: the loader turns them upright and packs them again, so no renderer needs a rotated
+path (Starling XML stays refused). `Assets.Preload` is no longer limited to images, atlases and fonts: every loader
+may be staged, and the engine's are. Aseprite files are read directly by an optional package.

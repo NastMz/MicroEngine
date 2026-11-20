@@ -4,6 +4,7 @@ using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Gameplay;
 
@@ -254,7 +255,7 @@ public sealed class Player : Actor
         if (Barrier > 0 && (Barrier > 2 || (int)(Barrier * 10) % 2 == 0))
         {
             r.SetBlendMode(BlendMode.Additive);
-            var ring = art.Frames("charged")[(int)(Age * 14) % 6];
+            var ring = art.Clip(Names.Clips.Charged).FrameAt(Age);
             r.DrawPivoted(ring, feet + new Vector2(0, -24), Age * 2, new Vector2(0.8f, 1.1f), BarrierRing.WithAlpha(0.7f));
             r.SetBlendMode(BlendMode.Alpha);
         }
@@ -282,7 +283,7 @@ public sealed class Player : Actor
         {
             if (running) r.Draw(art.Frames("hero_run-shoot")[RunFrame], feet, flipX: flip);
             else if (_lastShot < 0.7f) r.Draw(art["hero_shoot0"], feet, flipX: flip);
-            else r.Draw(art.Frames("hero_idle")[(int)(Age * 6) % 4], feet, flipX: flip);
+            else r.Draw(art.Clip(Names.Clips.HeroIdle).FrameAt(Age), feet, flipX: flip);
             return;
         }
         var rig = art.Rig(running ? "run-shoot" + RunFrame : "shoot0");

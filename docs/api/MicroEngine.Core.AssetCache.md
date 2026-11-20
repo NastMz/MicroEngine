@@ -263,7 +263,8 @@ public AssetStore Store { get; }
 ### <a id="MicroEngine_Core_AssetCache_Atlas_System_String_MicroEngine_Graphics_AtlasOptions_System_Nullable_MicroEngine_Graphics_TextureFilter__"></a> Atlas\(string, AtlasOptions?, TextureFilter?\)
 
 The atlas a packing tool described at <code class="paramref">path</code> (TexturePacker or Aseprite JSON, Starling XML) with the
-image it names next to it.
+image it names next to it; or the sprite sheets a <code>.sheet</code> file describes ([SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)), sliced
+and packed into one atlas with their clips.
 
 ```csharp
 public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null)
@@ -273,7 +274,7 @@ public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilte
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-The atlas file.
+The atlas or sheet file.
 
 `options` [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)?
 
@@ -494,10 +495,12 @@ The file is missing or wrongly cased.
 
 ### <a id="MicroEngine_Core_AssetCache_Preload_System_String___"></a> Preload\(params string\[\]\)
 
-Starts loading <code class="paramref">paths</code> without blocking: images become textures, ".json" and ".xml" files atlases,
-".ttf" and ".otf" files fonts. Files are read and decoded on worker threads (see [BackgroundDecoding](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_BackgroundDecoding));
-the engine uploads finished ones each frame within [FrameBudgetMilliseconds](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_FrameBudgetMilliseconds). Afterwards the usual
-calls ([Texture](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Texture_System_String_System_Nullable_MicroEngine_Graphics_TextureFilter__), [Atlas](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Atlas_System_String_MicroEngine_Graphics_AtlasOptions_System_Nullable_MicroEngine_Graphics_TextureFilter__), [Font](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Font_System_String_MicroEngine_Graphics_FontOptions_)) return them at once.
+Starts loading <code class="paramref">paths</code> without blocking, each as the kind its extension chooses: images become
+textures, atlas and sheet files atlases, fonts fonts, ".wav" files sounds, ".ogg" and ".mp3" files music, compiled
+fragment shaders materials, and files of a loader the game registered that loader's kind, all with default options
+([Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___) takes options). Files are read and decoded on worker threads (see
+[BackgroundDecoding](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_BackgroundDecoding)); the engine finishes them each frame within [FrameBudgetMilliseconds](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_FrameBudgetMilliseconds).
+Afterwards the usual calls ([Texture](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Texture_System_String_System_Nullable_MicroEngine_Graphics_TextureFilter__), [Atlas](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Atlas_System_String_MicroEngine_Graphics_AtlasOptions_System_Nullable_MicroEngine_Graphics_TextureFilter__), [Sound](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Sound_System_String_)...) return them at once.
 
 ```csharp
 public AssetBatch Preload(params string[] paths)
@@ -506,6 +509,61 @@ public AssetBatch Preload(params string[] paths)
 #### Parameters
 
 `paths` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
+
+#### Returns
+
+ [AssetBatch](MicroEngine.Core.AssetBatch.md)
+
+The batch, to show progress on a loading screen or wait for.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+No loader reads a file's extension; the message names the file.
+
+### <a id="MicroEngine_Core_AssetCache_Preload_System_Action_MicroEngine_Core_AssetPreloadList__"></a> Preload\(Action<AssetPreloadList\>\)
+
+Starts loading what <code class="paramref">list</code> names, without blocking: the same calls as on this cache
+(<code>load.Atlas(path, options)</code>, <code>load.Sound(path)</code>, <code>load.Asset(kind, path)</code>...) with the same
+options, so the later direct call with those options finds the asset loaded.
+
+```csharp
+public AssetBatch Preload(Action<AssetPreloadList> list)
+```
+
+#### Parameters
+
+`list` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[AssetPreloadList](MicroEngine.Core.AssetPreloadList.md)\>
+
+#### Returns
+
+ [AssetBatch](MicroEngine.Core.AssetBatch.md)
+
+The batch, to show progress on a loading screen or wait for.
+
+#### Examples
+
+```csharp
+_batch = Assets.Preload(load =>
+{
+    load.Atlas("characters/hero.sheet", new AtlasOptions(Pivot: new Vector2(0.5f, 1)));
+    load.Files("backgrounds/castle.png", "sfx/door.wav", "music/boss.ogg");
+    load.Asset("level", "levels/castle.lvl");
+});
+```
+
+### <a id="MicroEngine_Core_AssetCache_Preload_System_Collections_Generic_IEnumerable_MicroEngine_Content_AssetKey__"></a> Preload\(IEnumerable<AssetKey\>\)
+
+Starts loading the assets of <code class="paramref">keys</code> without blocking (see [Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___)).
+
+```csharp
+public AssetBatch Preload(IEnumerable<AssetKey> keys)
+```
+
+#### Parameters
+
+`keys` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[AssetKey](MicroEngine.Content.AssetKey.md)\>
 
 #### Returns
 
@@ -575,6 +633,37 @@ public CompiledShader Shader(string path)
  [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing, wrongly cased or not a compiled shader this engine reads.
+
+### <a id="MicroEngine_Core_AssetCache_Sheet_System_String_MicroEngine_Graphics_AtlasOptions_"></a> Sheet\(string, AtlasOptions?\)
+
+The frames and clips of the sheet at <code class="paramref">path</code> as pixels, new each call (not cached: the game may
+change them): a <code>.sheet</code> description, or an artist's file a registered loader reads as a sprite sheet. Pack
+them with others through [AddSheet](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddSheet_MicroEngine_Graphics_SpriteSheet_); [Atlas](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Atlas_System_String_MicroEngine_Graphics_AtlasOptions_System_Nullable_MicroEngine_Graphics_TextureFilter__) loads the same file
+straight into an atlas.
+
+```csharp
+public SpriteSheet Sheet(string path, AtlasOptions? options = null)
+```
+
+#### Parameters
+
+`path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The sheet file.
+
+`options` [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)?
+
+The pivot of frames the file gives none; null for [Default](MicroEngine.Graphics.AtlasOptions.md#MicroEngine_Graphics_AtlasOptions_Default).
+
+#### Returns
+
+ [SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)
+
+#### Exceptions
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+The file or an image it names is missing or invalid, or no loader reads that kind of file as a sheet.
 
 ### <a id="MicroEngine_Core_AssetCache_Sound_System_String_"></a> Sound\(string\)
 

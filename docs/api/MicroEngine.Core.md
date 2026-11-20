@@ -51,6 +51,11 @@ holding it releases it.
 
 A content file that could not be loaded: missing, unreadable, in an unsupported format, or named with the wrong letter case.
 
+ [AssetPreloadList](MicroEngine.Core.AssetPreloadList.md)
+
+What a preload is asked to load ([Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___)): the loading calls of
+[AssetCache](MicroEngine.Core.AssetCache.md) with the same parameters, recorded instead of run.
+
  [CompositeInput](MicroEngine.Core.CompositeInput.md)
 
 Several input sources read as one: a key or button is down when any source has it down; the stick or axis with the largest deflection wins.

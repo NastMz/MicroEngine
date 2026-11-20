@@ -67,7 +67,7 @@ public sealed class MainGame : Game
     {
         var content = new ContentFolder();
         Sprites = new SpriteAtlasBuilder()
-            .AddGrid("hero", content.Image("hero.png"), 16, 16, origin: new Vector2(8, 16))
+            .AddSheet(Assets.Sheet("hero.sheet"))
             .Add("gem", GardenArt.Gem(), new Vector2(4, 4))
             .AddFrames("slime", GardenArt.Slime(), new Vector2(6, 8))
             .Add("grass", GardenArt.Grass())

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aseprite files: reads .aseprite and .ase files as the artist saved them (frames with their layers flattened,
+       tags as clips with each frame's duration, slices as named sprites and pivots) into the engine's sprite sheets,
+       so no export step stands between the editor and the game. An optional package of the SDK (ADR 0066): games
+       without Aseprite art do not carry the parser. AsepriteDotNet reads the files; none of its types is public, so
+       the parser can change without breaking games. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Aseprite</RootNamespace>
+    <Description>MicroEngine Aseprite files: loads .aseprite and .ase files straight into sprite atlases through the game's assets, with frame tags as animation clips (each frame's duration, direction and repeat), layers flattened with their blend modes, and slices as named sprites and pivots. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);aseprite;ase;sprite-sheet;animation;pixel-art</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+  <!-- AsepriteDotNet (MIT); THIRD-PARTY-NOTICES.md. Pinned: a new version is a deliberate change (ADR 0066). -->
+  <ItemGroup>
+    <PackageReference Include="AsepriteDotNet" Version="[1.9.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Aseprite.Tests" />
+  </ItemGroup>
+</Project>
