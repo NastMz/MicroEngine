@@ -164,6 +164,6 @@ public sealed class DungeonRunTests
         while (h.DialogueOpen) h.Press(Key.Z);
         Assert.IsTrue(play.Progress.HasCourtyardKey);
         h.WaitUntil(() => h.Game.Scenes.Current is EndingScene, 600, "the ending");
-        Assert.IsTrue(h.Game.Saves.Load()!.HasCourtyardKey, "The finished adventure is saved.");
+        Assert.IsTrue(h.Game.Slots.Load()!.HasCourtyardKey, "The finished adventure is saved.");
     }
 }

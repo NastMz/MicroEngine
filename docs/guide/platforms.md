@@ -69,7 +69,8 @@ be packaged for the web.
   that first input is not passed to the game.
 - **Display**: the canvas scales to the page; the page's own button and Alt+Enter toggle fullscreen (F11 stays the
   browser's).
-- **Saves**: `localStorage`, under `microengine/<GameId>/`, kept across reloads and separate for each game.
+- **Saves**: `localStorage`, under `microengine/<GameId>/`, kept across reloads and separate for each game; the time of each
+  slot's last write is kept beside them under `microengine.time/<GameId>/`.
 - **Lifecycle**: a hidden tab pauses the game and its sound.
 - **Size**: the download is the .NET runtime, the game and its content, compressed with Brotli on servers that
   support it; a small code-first game is about 2 MB.
@@ -102,7 +103,7 @@ write how to read and write them:
 /// </summary>
 [JsonSerializable(typeof(SaveExample.Progress))]
 [JsonSerializable(typeof(Profile))]
-[JsonSerializable(typeof(JsonObject))]   // a slot read as JSON, to upgrade old saves
+[JsonSerializable(typeof(GameSaves.Settings))]
 public partial class SaveTypes : JsonSerializerContext;
 ```
 

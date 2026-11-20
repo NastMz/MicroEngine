@@ -9,7 +9,6 @@ public sealed class Progress : IStateHashed
     public const int StartingHealth = 6;
     public const int MaxGems = 999;
 
-    public int Version { get; set; } = 1;
     /// <summary>Maximum health in half hearts.</summary>
     public int MaxHealth { get; set; } = StartingHealth;
     public int Health { get; set; } = StartingHealth;
@@ -59,12 +58,18 @@ public sealed class Progress : IStateHashed
     }
 
     /// <summary>
+    /// The save's version and the steps from earlier ones. The layout has never changed, so it is version 1 with no
+    /// steps, and the saves earlier releases wrote load as they are (their "Version" property, always 1, is no longer
+    /// read). A release that changes the layout raises the version and adds the step from the one before.
+    /// </summary>
+    public static readonly SaveSchema<Progress> Schema = new(version: 1);
+
+    /// <summary>
     /// State hash: every field, flags and visited rooms in ordinal order (a hash set's own order follows the
     /// process's randomized string hashes, so it is not the same in two runs).
     /// </summary>
     public void HashState(StateHasher hash)
     {
-        hash.Add(Version);
         hash.Add(MaxHealth);
         hash.Add(Health);
         hash.Add(Gems);
@@ -104,7 +109,10 @@ public sealed class SaveSlots(SaveStore store)
     public const string Slot = "adventure";
     public SaveStore Store { get; } = store;
     public bool HasSave => Store.Exists(Slot);
-    public Progress? Load() => Store.Load<Progress>(Slot);
-    public void Save(Progress progress) => Store.Save(Slot, progress);
+    public Progress? Load() => Store.Load(Slot, Progress.Schema).Value;
+    /// <summary>What the slot holds, as a load finds it: whether there is an adventure to continue, and why not.</summary>
+    public SaveLoadStatus Check() => Store.Load(Slot, Progress.Schema).Status;
+    /// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+    public bool Save(Progress progress) => Store.Save(Slot, progress, Progress.Schema);
     public void Delete() => Store.Delete(Slot);
 }

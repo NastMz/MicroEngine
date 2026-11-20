@@ -46,7 +46,7 @@ public sealed class ExampleTests
         var saves = Directory.CreateTempSubdirectory("examples-").FullName;
         var game = new ExamplesGame(saves);
         game.InitializeForTest(new HeadlessPlatform());
-        game.Scenes.Push(new SaveExample(saves));
+        game.Scenes.Push(new SaveExample());
         game.StepForTest();
         foreach (var action in new[] { "right", "right", "confirm" })
         {
@@ -78,11 +78,10 @@ public sealed class ExampleTests
         Assert.IsTrue(TypedSaves.Save(store, loaded));
         Assert.AreEqual(written, File.ReadAllText(Path.Combine(saves, "example.json")));
         Assert.AreEqual(2, store.Load<SaveExample.Progress>("example")!.Coins);
-        // The other declared types: a versioned profile, and a slot read as JSON for upgrades.
-        Assert.IsTrue(store.Save(ProfileSaves.Slot, new Profile { Version = ProfileSaves.CurrentVersion, Gold = 5 }, SaveTypes.Default.Profile));
-        Assert.AreEqual(5, store.Load(ProfileSaves.Slot, SaveTypes.Default.JsonObject)!["Gold"]!.GetValue<int>());
-        Assert.AreEqual(5, ProfileSaves.Load(store, out var check)!.Gold);
-        Assert.AreEqual(SaveCheck.Current, check);
+        // The other declared type is versioned: its schema uses the same metadata.
+        Assert.IsTrue(ProfileSaves.Save(store, new Profile { Gold = 5 }));
+        Assert.AreEqual(5, ProfileSaves.Load(store, out string notice).Gold);
+        Assert.AreEqual("", notice);
         Directory.Delete(saves, true);
     }
 }
@@ -610,7 +609,7 @@ public sealed class RebindExampleTests
         var platform = new HeadlessPlatform();
         var game = new ExamplesGame(saves);
         game.InitializeForTest(platform);
-        game.Scenes.Push(new RebindExample(saves));
+        game.Scenes.Push(new RebindExample());
         game.StepForTest();
 
         void Choose()
@@ -645,7 +644,7 @@ public sealed class RebindExampleTests
     }
 }
 
-/// <summary>The save-versioning example (persistence guide): old saves upgrade, newer ones are never overwritten.</summary>
+/// <summary>The save-versioning example (persistence guide): old saves load through their steps, newer ones are never replaced.</summary>
 [TestClass]
 public sealed class SaveVersionTests
 {
@@ -657,73 +656,101 @@ public sealed class SaveVersionTests
     }
 
     [TestMethod]
-    public void ASaveFromBeforeVersionsUpgradesThroughEveryStepAndKeepsTheOriginal()
+    public void ASaveFromTheFirstReleaseLoadsThroughEveryStepAndTheOriginalIsKept()
     {
-        const string original = """{ "Coins": 7 }""";
+        const string original = """{ "Coins": 7 }""";   // version 1: written before the profile had a schema
         var (storage, store) = With(original);
-        var profile = ProfileSaves.Load(store, out var check);
-        Assert.AreEqual(SaveCheck.Upgraded, check);
-        Assert.IsNotNull(profile);
-        Assert.AreEqual(7, profile.Gold, "1 -> 2 renamed Coins to Gold");
-        Assert.AreEqual(3, profile.Lives, "0 -> 1 added lives");
-        Assert.AreEqual(ProfileSaves.CurrentVersion, profile.Version);
-        Assert.AreEqual(7, store.Load<System.Text.Json.Nodes.JsonObject>("profile.v0")!["Coins"]!.GetValue<int>(), "the original is backed up");
+        var profile = ProfileSaves.Load(store, out string notice);
+        Assert.AreEqual(7, profile.Gold, "2 -> 3 renamed Coins to Gold");
+        Assert.AreEqual(3, profile.Lives, "1 -> 2 added lives");
+        StringAssert.Contains(notice, "version 1");
         Assert.AreEqual(original, storage.Read(ProfileSaves.Slot), "loading alone never rewrites the slot");
 
         Assert.IsTrue(ProfileSaves.Save(store, profile));
-        Assert.AreEqual(SaveCheck.Current, (ProfileSaves.Load(store, out check), check).check, "saved again, it is current");
+        Assert.AreEqual(original, storage.Read("profile.v1.backup"), "the first save keeps what the older version wrote");
+        Assert.AreEqual(7, ProfileSaves.Load(store, out notice).Gold);
+        Assert.AreEqual("", notice, "saved again, it is current");
     }
 
     [TestMethod]
     public void ASaveFromAnIntermediateVersionRunsOnlyTheRemainingSteps()
     {
-        var (_, store) = With("""{ "Version": 1, "Coins": 5, "Lives": 1 }""");
-        var profile = ProfileSaves.Load(store, out var check);
-        Assert.AreEqual(SaveCheck.Upgraded, check);
-        Assert.AreEqual(5, profile!.Gold);
-        Assert.AreEqual(1, profile.Lives, "the 0 -> 1 step did not run again");
+        var (_, store) = With("""{ "@version": 2, "Coins": 5, "Lives": 1 }""");
+        var profile = ProfileSaves.Load(store, out string notice);
+        Assert.AreEqual(5, profile.Gold);
+        Assert.AreEqual(1, profile.Lives, "the 1 -> 2 step did not run again");
+        StringAssert.Contains(notice, "version 2");
     }
 
     [TestMethod]
-    public void ACurrentSaveLoadsWithoutABackup()
+    public void EachStepIsTestedByItself()
     {
-        var (storage, store) = With($$"""{ "Version": {{ProfileSaves.CurrentVersion}}, "Gold": 9, "Lives": 2 }""");
-        var profile = ProfileSaves.Load(store, out var check);
-        Assert.AreEqual(SaveCheck.Current, check);
-        Assert.AreEqual(9, profile!.Gold);
-        Assert.IsFalse(storage.Exists($"profile.v{ProfileSaves.CurrentVersion}"));
+        var save = System.Text.Json.Nodes.JsonNode.Parse("""{ "Coins": 5, "Lives": 1 }""")!.AsObject();
+        ProfileSaves.RenameCoins(save);
+        Assert.AreEqual("""{"Lives":1,"Gold":5}""", save.ToJsonString());
+
+        var first = System.Text.Json.Nodes.JsonNode.Parse("""{ "Coins": 5 }""")!.AsObject();
+        ProfileSaves.AddLives(first);
+        Assert.AreEqual(3, first["Lives"]!.GetValue<int>());
     }
 
     [TestMethod]
-    public void NoSaveIsMissing()
+    public void ACurrentSaveLoadsWithoutACopy()
+    {
+        var (storage, store) = With("""{ "@version": 3, "Gold": 9, "Lives": 2 }""");
+        var profile = ProfileSaves.Load(store, out string notice);
+        Assert.AreEqual(9, profile.Gold);
+        Assert.AreEqual("", notice);
+        Assert.IsTrue(ProfileSaves.Save(store, profile));
+        Assert.HasCount(1, storage.List());
+    }
+
+    [TestMethod]
+    public void NoSaveIsANewProfile()
     {
         var (_, store) = With(null);
-        Assert.IsNull(ProfileSaves.Load(store, out var check));
-        Assert.AreEqual(SaveCheck.Missing, check);
+        var profile = ProfileSaves.Load(store, out string notice);
+        Assert.AreEqual(0, profile.Gold);
+        Assert.AreEqual(3, profile.Lives);
+        Assert.AreEqual("", notice);
     }
 
     [TestMethod]
-    [DataRow("""{ "Version": 99, "Gold": 1 }""", DisplayName = "written by a newer build")]
-    [DataRow("""{ "Version": "two", "Gold": 1 }""", DisplayName = "a version that is not a number")]
-    [DataRow("""{ "Version": 2, "Gold": "lots" }""", DisplayName = "a field of the wrong type")]
-    public void ASaveThisBuildCannotReadIsProtectedAndLeftAsItIs(string json)
+    public void ASaveFromANewerBuildIsLeftAsItIsAndNotSavedOver()
     {
-        var (storage, store) = With(json);
-        Assert.IsNull(ProfileSaves.Load(store, out var check));
-        Assert.AreEqual(SaveCheck.Protected, check);
-        Assert.AreEqual(json, storage.Read(ProfileSaves.Slot));
+        const string newer = """{ "@version": 99, "Gold": 1 }""";
+        var (storage, store) = With(newer);
+        var profile = ProfileSaves.Load(store, out string notice);
+        StringAssert.Contains(notice, "newer version");
+        Assert.AreEqual(0, profile.Gold, "the game plays on with a new profile");
+        Assert.IsFalse(ProfileSaves.Save(store, profile));
+        Assert.AreEqual(newer, storage.Read(ProfileSaves.Slot));
     }
 
     [TestMethod]
-    public void WithoutABackupAnOldSaveIsNotUpgraded()
+    public void DamagedDataIsSetAsideAndANewProfileCanBeSaved()
     {
+        var (storage, store) = With("""{ "@version": 3, "Gold": "lots" }""");
+        ProfileSaves.Load(store, out string notice);
+        StringAssert.Contains(notice, "set aside");
+        Assert.IsTrue(storage.Exists("profile.corrupt"));
+        Assert.IsTrue(ProfileSaves.Save(store, new Profile()));
+    }
+
+    [TestMethod]
+    public void WithoutACopyOfTheOriginalAnOldSaveIsNotReplaced()
+    {
+        const string original = """{ "Coins": 4 }""";
         var storage = new BackupRefusingStorage();
-        storage.Write(ProfileSaves.Slot, """{ "Coins": 4 }""");
-        Assert.IsNull(ProfileSaves.Load(new SaveStore(storage), out var check));
-        Assert.AreEqual(SaveCheck.Protected, check);
+        storage.Write(ProfileSaves.Slot, original);
+        var store = new SaveStore(storage);
+        var profile = ProfileSaves.Load(store, out _);
+        Assert.AreEqual(4, profile.Gold);
+        Assert.IsFalse(ProfileSaves.Save(store, profile));
+        Assert.AreEqual(original, storage.Read(ProfileSaves.Slot));
     }
 
-    /// <summary>Memory slots that refuse every write except the profile itself, as a full disk would refuse the backup.</summary>
+    /// <summary>Memory slots that refuse every write except the profile itself, as a full disk would refuse the copy.</summary>
     private sealed class BackupRefusingStorage : ISaveStorage
     {
         private readonly MemorySaveStorage _slots = new();
@@ -737,6 +764,61 @@ public sealed class SaveVersionTests
         public bool Exists(string slot) => _slots.Exists(slot);
         public void Delete(string slot) => _slots.Delete(slot);
         public void SetAside(string slot) => _slots.SetAside(slot);
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => _slots.List();
+    }
+}
+
+/// <summary>The samples keep the save folders they have always had.</summary>
+[TestClass]
+public sealed class SampleSaveIdTests
+{
+    [TestMethod]
+    public void TheExamplesKeepTheirSaveFolder() =>
+        Assert.AreEqual(SaveStore.DefaultDirectory("MicroEngineExamples"), new ExamplesGame().Saves.Directory);
+
+    [TestMethod]
+    public void GemGardenKeepsItsSaveFolder() =>
+        Assert.AreEqual(SaveStore.DefaultDirectory("GemGarden"), new GemGarden.MainGame().Saves.Directory);
+}
+
+/// <summary>The save games of a "load game" screen, and the settings as one more slot of the same store.</summary>
+[TestClass]
+public sealed class GameSavesTests
+{
+    [TestMethod]
+    public void TheSaveGamesAreListedNewestFirstWithoutTheOtherSlots()
+    {
+        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
+        var store = new SaveStore("Examples", saves);
+        Assert.IsTrue(ProfileSaves.Save(store, new Profile()));
+        Assert.IsTrue(GameSaves.SaveSettings(store, new GameSaves.Settings { Fullscreen = true }));
+        foreach (var (slot, hour) in new[] { ("save-1", 9), ("save-2", 11), ("save-3", 10) })
+        {
+            Assert.IsTrue(store.Save(slot, new Profile { Gold = hour }, ProfileSaves.Schema));
+            File.SetLastWriteTimeUtc(Path.Combine(saves, slot + ".json"), new DateTime(2026, 11, 19, hour, 0, 0, DateTimeKind.Utc));
+        }
+
+        var games = GameSaves.SaveGames(store);
+        CollectionAssert.AreEqual(new[] { "save-2", "save-3", "save-1" }, games.Select(s => s.Name).ToArray());
+        StringAssert.StartsWith(GameSaves.Describe(games[0]), "save-2   ");
+        Assert.AreEqual("save-9", GameSaves.Describe(new MicroEngine.Platform.SlotInfo("save-9", 2, null)), "a medium that keeps no times");
+        Directory.Delete(saves, true);
+    }
+
+    [TestMethod]
+    public void TheSettingsDefaultUntilSavedAndComeBack()
+    {
+        var store = new SaveStore(new MemorySaveStorage());
+        var settings = GameSaves.LoadSettings(store);
+        Assert.AreEqual(1f, settings.MusicVolume);
+        Assert.IsFalse(settings.Fullscreen);
+
+        settings.MusicVolume = 0.25f;
+        settings.Fullscreen = true;
+        Assert.IsTrue(GameSaves.SaveSettings(store, settings));
+        var again = GameSaves.LoadSettings(store);
+        Assert.AreEqual(0.25f, again.MusicVolume);
+        Assert.IsTrue(again.Fullscreen);
     }
 }
 

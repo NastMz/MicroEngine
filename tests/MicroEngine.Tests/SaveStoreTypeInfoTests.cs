@@ -65,6 +65,7 @@ public sealed partial class SaveStoreTypeInfoTests
         {
             if (Slots.Remove(slot, out var text)) Slots[slot + ".corrupt"] = text;
         }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 
     private static Progress Sample() => new()
@@ -224,7 +225,7 @@ public sealed partial class SaveStoreTypeInfoTests
     public void Missing_metadata_is_a_programming_error()
     {
         var store = new SaveStore(new MemoryStorage());
-        Assert.ThrowsExactly<ArgumentNullException>(() => store.Save("slot", new Simple(), null!));
-        Assert.ThrowsExactly<ArgumentNullException>(() => store.Load<Simple>("slot", null!));
+        Assert.ThrowsExactly<ArgumentNullException>(() => store.Save("slot", new Simple(), (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Simple>)null!));
+        Assert.ThrowsExactly<ArgumentNullException>(() => store.Load("slot", (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Simple>)null!));
     }
 }

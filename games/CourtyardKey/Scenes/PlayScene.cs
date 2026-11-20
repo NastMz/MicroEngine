@@ -30,6 +30,7 @@ public sealed partial class PlayScene : Scene
     private EntityId _room, _leaving;
     private RoomRenderer _tiles = null!;
     private Hud _hud = null!;
+    internal Hud Hud => _hud;
     private float _lowHealthTimer, _ambientTimer;
     private float _fade;
     private Color _fadeColor = Color.Black;
@@ -296,8 +297,8 @@ public sealed partial class PlayScene : Scene
     {
         Progress.Health = Hero.Health.Current;
         Progress.MaxHealth = Hero.Health.Max;
-        G.Saves.Save(Progress);
-        if (toast) _hud.Toast("Progress saved");
+        bool saved = G.Slots.Save(Progress);
+        if (toast) _hud.Toast(saved ? "Progress saved" : "Could not save");
     }
 }
 

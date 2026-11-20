@@ -159,6 +159,66 @@ public abstract class Game : IEngineModule, IStateHashed
     /// high-resolution 2D.
     /// </summary>
     public Camera2D CreateCamera() => new(Width, Height, Settings.Presentation);
+    /// <summary>
+    /// The game's saves: one <see cref="SaveStore"/> for its slots (progress, settings, achievements), created the first
+    /// time it is used (<see cref="CreateSaves"/>). It keeps them where the host's composition says
+    /// (<see cref="Hosting.HostBuilder.Storage"/>), else in the platform's default medium: files in the user's data folder,
+    /// the page's localStorage in browsers. Use it from <see cref="Configure"/>, <see cref="Load"/> or later, not from
+    /// the game's constructor: the host hands over its medium once the game exists.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// protected override void Load()
+    /// {
+    ///     _progress = Saves.Load("progress", ProgressSchema).Value ?? new Progress();
+    /// }
+    /// </code>
+    /// </example>
+    public SaveStore Saves => _saves ??= CreateSaves() ?? throw new InvalidOperationException("CreateSaves returned null.");
+    private SaveStore? _saves;
+    private Func<string, IStorage>? _hostStorage;
+    private string? _saveId;
+
+    /// <summary>
+    /// The id the game's saves are kept under: it names the save folder and the browser's key prefix. By default the
+    /// application id of the game's project (<see cref="AppIdentity.Id"/>), else the title as a folder name. A game
+    /// that changes its application id after release overrides it with the old one, so its players keep their saves.
+    /// </summary>
+    protected virtual string SaveId => _saveId ??= DefaultSaveId(AppIdentity.Of(this)?.Id, Settings.Title);
+
+    /// <summary>The application id when the project declares one, else the title as a folder name.</summary>
+    internal static string DefaultSaveId(string? applicationId, string title) => applicationId ?? FolderName(title);
+
+    /// <summary>
+    /// Creates <see cref="Saves"/>, once. By default a store for <see cref="SaveId"/> on the composition's medium, else
+    /// on the platform's default (<see cref="SaveStore.DefaultStorage(string)"/>). Override it to build the store by hand:
+    /// a folder of the game's choice (<c>new SaveStore(SaveId, directory)</c>, as tests do) or a storage of its own
+    /// (<c>new SaveStore(storage)</c>).
+    /// </summary>
+    protected virtual SaveStore CreateSaves() => new(_hostStorage?.Invoke(SaveId) ?? SaveStore.DefaultStorage(SaveId));
+
+    /// <summary>
+    /// The host's composition reaches a game it created: its save medium becomes the medium of <see cref="Saves"/>.
+    /// </summary>
+    internal void AttachHost(Hosting.HostBuilder host)
+    {
+        if (host.Storage is not { } storage || ReferenceEquals(storage, _hostStorage)) return;
+        if (_saves is not null)
+            throw new InvalidOperationException("The game used Saves in its constructor, before the host could hand over the composition's save medium (HostBuilder.Storage), so its saves would not be kept there. Use Saves from Configure, Load or later; declare achievements from Configure.");
+        _hostStorage = storage;
+    }
+
+    /// <summary>A title as a folder name on every system: what a file name cannot hold becomes "_".</summary>
+    private static string FolderName(string title)
+    {
+        var name = string.Create(title.Length, title, static (span, text) =>
+        {
+            for (int i = 0; i < span.Length; i++)
+                span[i] = text[i] < ' ' || text[i] is '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|' ? '_' : text[i];
+        }).Trim(' ', '.');
+        return name.Length == 0 ? "game" : name;
+    }
+
     private AchievementTracker? _achievements;
     /// <summary>The game's achievements; available after <see cref="TrackAchievements"/>.</summary>
     public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call TrackAchievements from the game's constructor or Configure.");
@@ -256,17 +316,19 @@ public abstract class Game : IEngineModule, IStateHashed
     /// Turns achievements on: call it from the game's constructor or from <see cref="Configure"/>, before the engine is
     /// composed. It adds the achievements module (an <see cref="AchievementTracker"/> service over
     /// <paramref name="catalog"/> and the <c>engine.achievements</c> system that writes progress) and the saves module
-    /// when the game has none. Progress persists in the "achievements" slot of <paramref name="store"/>. Report progress
+    /// when the game has none. Progress persists in the "achievements" slot of <paramref name="store"/>: the game's own
+    /// saves (<see cref="Saves"/>) when it is null, which is the usual call from <see cref="Configure"/>
+    /// (<c>TrackAchievements(catalog)</c>); the constructor is too early for <see cref="Saves"/>. Report progress
     /// through <see cref="Achievements"/>. The game shows unlocks its own way: subscribe to
     /// <see cref="AchievementTracker.Unlocked"/> on <see cref="Achievements"/>, and draw a banner above every scene from
     /// <see cref="DrawAboveScenes"/>. A game that never calls it has no achievement service, system or file.
     /// </summary>
     /// <exception cref="InvalidOperationException">The engine was already composed (called from <see cref="Load"/> or later).</exception>
-    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
+    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore? store = null)
     {
         if (_engine is not null)
             throw new InvalidOperationException("Achievements are declared before the engine is composed: call TrackAchievements from the game's constructor or from Configure, not from Load.");
-        ArgumentNullException.ThrowIfNull(store);
+        store ??= Saves;
         _achievements = new AchievementTracker(catalog, store);
         _achievementStore = store;
         return _achievements;

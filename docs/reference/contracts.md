@@ -34,7 +34,7 @@ public abstract class Game
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
     protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
     public void Quit() => QuitRequested = true;
-    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
+    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore? store = null)
     protected virtual void DrawAboveScenes(IRenderer canvas) { }
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
     public void StepForTest()
@@ -332,18 +332,47 @@ in [Configuration](configuration.md#default-input-actions).
 ```csharp
 public sealed class SaveStore
 {
-    public static Func<string, ISaveStorage>? DefaultStorage { get; set; }
-    public string Directory => _storage.Location;
     public SaveStore(string gameId, string? directory = null)
     public SaveStore(ISaveStorage storage)
+    public SaveStore(IStorage storage)
+    public static IStorage DefaultStorage(string gameId)
     public static string DefaultDirectory(string gameId)
+    public string Directory { get; }
+    public IStorage Storage { get; }
     public T? Load<T>(string slot) where T : class
     public bool Save<T>(string slot, T data)
-    public bool Exists(string slot) => _storage.Exists(slot);
-    public void Delete(string slot) => _storage.Delete(slot);
+    public T? Load<T>(string slot, JsonTypeInfo<T> typeInfo) where T : class
+    public bool Save<T>(string slot, T data, JsonTypeInfo<T> typeInfo)
+    public SaveLoadResult<T> Load<T>(string slot, SaveSchema<T> schema) where T : class
+    public bool Save<T>(string slot, T data, SaveSchema<T> schema) where T : class
+    public IReadOnlyList<SlotInfo> Slots(string prefix = "")
+    public IReadOnlyList<SlotInfo> Backups(string slot)
+    public SaveLoadResult<T> LoadBackup<T>(string backup, SaveSchema<T> schema) where T : class
+    public void DeleteBackup(string backup)
+    public bool Exists(string slot)
+    public void Delete(string slot)
 }
 
-public interface ISaveStorage
+public sealed class SaveSchema<T> where T : class
+{
+    public SaveSchema(int version, JsonTypeInfo<T> typeInfo)
+    public SaveSchema(int version)                                   // by reflection
+    public int Version { get; }
+    public SaveSchema<T> Migrate(int from, Action<JsonObject> step)   // from -> from + 1
+    public SaveLoadResult<T> Read(string text)
+    public string Write(T value)
+}
+
+public readonly struct SaveLoadResult<T> where T : class
+{
+    public SaveLoadStatus Status { get; }   // Missing, Loaded, Migrated, TooNew, MigrationFailed, Corrupt, Unreadable
+    public T? Value { get; }
+    public int Version { get; }
+    public Exception? Error { get; }
+    public bool Protected { get; }
+}
+
+public interface IStorage   // ISaveStorage : IStorage
 {
     string Location { get; }
     string? Read(string slot);
@@ -351,7 +380,10 @@ public interface ISaveStorage
     bool Exists(string slot);
     void Delete(string slot);
     void SetAside(string slot);
+    IReadOnlyList<SlotInfo> List();
 }
+
+public readonly record struct SlotInfo(string Name, long Size, DateTimeOffset? LastWrite);
 ```
 
 | Rule | Behaviour |
@@ -359,6 +391,8 @@ public interface ISaveStorage
 | Missing or corrupt slot | `Load` returns null; corrupt data is set aside (`<slot>.corrupt.json` for files) |
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
+| Versioned save (`SaveSchema<T>`) | The version is the property `"@version"`, after the serializer's own leading properties; a save without one is version 1; a save reads the slot as a load would before replacing it: an older save is copied to `<slot>.v<version>.backup` (never over an existing copy) and replaced, a newer one or one its steps fail on is refused, text that is not a save is set aside; the calls without a schema refuse to write a slot that holds a version; protection follows the last load of the slot |
+| A game's store | `Game.Saves`: `SaveId` (the application id, else the title) on the composition's medium (`host.Storage`), else the platform's default; `Game.CreateSaves()` builds it by hand |
 | Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); Android and iOS folders are part of `DefaultDirectory`; `DefaultStorage(gameId)` returns the platform's default medium, `BrowserStorage` (`localStorage`) in browsers |
 
 Implementations: `FileSaveStorage` (`MicroEngine.Saves.dll`, carried by the `MicroEngine` package), `BrowserStorage` (`MicroEngine.Platform`). See

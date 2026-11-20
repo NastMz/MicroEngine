@@ -84,6 +84,20 @@ public bool Exists(string slot)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_FileSaveStorage_List"></a> List\(\)
+
+The slot files in the directory (<code>&lt;slot&gt;.json</code>) with their size in bytes and last write time; empty
+when the directory does not exist yet. Copies set aside (<code>&lt;slot&gt;.corrupt.json</code>) and files that are not
+slots are left out.
+
+```csharp
+public IReadOnlyList<SlotInfo> List()
+```
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SlotInfo](MicroEngine.Platform.SlotInfo.md)\>
+
 ### <a id="MicroEngine_Core_FileSaveStorage_Read_System_String_"></a> Read\(string\)
 
 The slot's text, or null when it does not exist.

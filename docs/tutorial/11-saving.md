@@ -1,7 +1,8 @@
 # 11. Saving the best score
 
-The best score should survive closing the game. MicroEngine's `SaveStore` writes small JSON save slots to the right
-place on every platform: a file in the player's data folder on desktops and phones, the browser's storage on the web.
+The best score should survive closing the game. Every game has a store, `Saves`, that writes small JSON save slots to
+the right place on every platform: a file in the player's data folder on desktops and phones, the browser's storage on
+the web.
 
 ## What to save
 
@@ -22,16 +23,24 @@ they are written in one piece.
 
 ## The store
 
-`MainGame` creates the store in its constructor and loads the best score in `Load`:
+`MainGame` loads the best score in `Load`, from the store every game has:
 
 <!-- code: samples/GemGarden/part4-complete/MainGame.cs#save-store -->
 ```csharp title="MainGame.cs"
 private const string SaveSlot = "progress";
 
-/// <param name="saveDirectory">Where the save file lives; null uses the player's save folder (tests pass a temporary one).</param>
-public MainGame(string? saveDirectory = null) => Saves = new SaveStore("GemGarden", saveDirectory);
+private readonly string? _saveDirectory;
 
-public SaveStore Saves { get; }
+/// <param name="saveDirectory">A folder for the save file, for tests; null keeps it in the player's save folder.</param>
+public MainGame(string? saveDirectory = null) => _saveDirectory = saveDirectory;
+
+/// <summary>The id the saves are kept under: it names the save folder, so it never changes once players have saves.</summary>
+protected override string SaveId => "GemGarden";
+
+/// <summary>The store behind <c>Saves</c>: the one every game comes with, or one in the folder a test asked for.</summary>
+protected override SaveStore CreateSaves() =>
+    _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
+
 public int BestScore { get; private set; }
 ```
 
@@ -56,15 +65,19 @@ protected override void Load()
 protected override void Unload() => Sprites.Dispose();
 ```
 
-- `new SaveStore("GemGarden", saveDirectory)`: the first argument is the game's save id. It names the folder (or the
-  browser storage keys), so two games never read each other's saves. Use one id per game and never change it after
-  release.
-- With no directory, the store uses the player's data folder: `%LOCALAPPDATA%\MicroEngine\GemGarden` on Windows,
-  `~/.local/share/MicroEngine/GemGarden` on Linux (or `$XDG_DATA_HOME`), `~/Library/Application Support/MicroEngine/GemGarden`
-  on macOS, the app's own storage on phones, and `localStorage` in a browser. Each slot is `<slot>.json` there.
-- The optional `saveDirectory` lets tests use a temporary folder instead of the player's saves.
+- `Saves` is the game's store. It keeps its slots under `SaveId`, which names the folder (or the browser storage
+  keys), so two games never read each other's saves. Without the override it is the project's application id; Gem
+  Garden names its own, `"GemGarden"`. Use one id per game and never change it after release.
+- The store uses the player's data folder: `%LOCALAPPDATA%\MicroEngine\GemGarden` on Windows,
+  `~/.local/share/MicroEngine/GemGarden` on Linux (or `$XDG_DATA_HOME`),
+  `~/Library/Application Support/MicroEngine/GemGarden` on macOS, the app's own storage on phones, and
+  `localStorage` in a browser. Each slot is `<slot>.json` there.
+- `CreateSaves` is where a game builds its store by hand. Gem Garden does it only when a folder was asked for: the
+  optional `saveDirectory` lets tests use a temporary folder instead of the player's saves. Without it, the game gets
+  the store it comes with.
 - `Saves.Load<SaveData>("progress")` returns the saved object, or `null` when there is no save yet. `?.BestScore ?? 0`
   turns "no save" into a best score of 0.
+- Use `Saves` from `Load` or later, not from the constructor.
 
 Because `MainGame` now has a constructor with an optional parameter, `Configure` (`new MainGame()`) and `Program.cs`
 still work unchanged.
@@ -97,8 +110,11 @@ the player.
 - A slot that exists but cannot be read (a locked file, blocked storage) also loads as `null`, and the store then
   **refuses to overwrite it**, so a temporary glitch cannot replace a real save with a fresh one.
 
-`Exists(slot)` and `Delete(slot)` complete the API (a "new game" option deletes the slot). Formats, locations and
-custom storage (a cloud service, a console's save API): [Saving data](../manual/persistence.md).
+`Exists(slot)` and `Delete(slot)` complete the basics (a "new game" option deletes the slot), and `Slots()` lists the
+slots for a "load game" screen. When a later release changes what `SaveData` holds, give the save a version so the
+saves players already have keep loading: [Versions and migrations](../manual/persistence.md#versions-and-migrations).
+Formats, locations and custom storage (a cloud service, a console's save API):
+[Saving data](../manual/persistence.md).
 
 ## Run part 4
 

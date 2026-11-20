@@ -137,7 +137,8 @@ The composition chose no game ([UseGame](MicroEngine.Core.HostBuilderExtensions.
 
 ### <a id="MicroEngine_Core_GameHost_CreateGame"></a> CreateGame\(\)
 
-A new game, built by the composition's [UseGame](MicroEngine.Core.HostBuilderExtensions.md#MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__).
+A new game, built by the composition's [UseGame](MicroEngine.Core.HostBuilderExtensions.md#MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__) and given the composition's
+save medium ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)) for its [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves).
 
 ```csharp
 public Game CreateGame()
@@ -146,6 +147,12 @@ public Game CreateGame()
 #### Returns
 
  [Game](MicroEngine.Core.Game.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The factory returned null, or the game used [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) in its constructor while the composition has a save medium.
 
 ### <a id="MicroEngine_Core_GameHost_CreateLoop_MicroEngine_Core_Game_MicroEngine_Core_IPlatform_MicroEngine_Core_RunOptions_"></a> CreateLoop\(Game, IPlatform, RunOptions\)
 

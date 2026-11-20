@@ -8,6 +8,8 @@
 //    published trimmed and self-contained with every trim warning an error, and the published program is run: it must
 //    save, load, read a slot an earlier version wrote, and set a corrupt slot aside. It also tracks achievements with
 //    that store (the engine's own saved type): they must unlock, persist, and load a file an earlier version wrote.
+//    And it keeps a versioned save (SaveSchema): a save of version 1 must load through its two steps, be copied before
+//    it is replaced, load as current afterwards, and a save from a newer version must be refused and left alone.
 // 2. "plain": the same game with Save(slot, data) and Load<T>(slot). Its build, with the trim and AOT analyzers on, must
 //    name those two calls (IL2026, IL3050) in the game's own file, and the trimmed program must fail in them.
 // 3. --aot: the typed game is also published with NativeAOT and run. NativeAOT needs the platform's native linker
@@ -103,7 +105,16 @@ public abstract class Item { public string Name { get; set; } = ""; }
 public sealed class Potion : Item { public int Heals { get; set; } }
 public sealed class Key : Item { public string Door { get; set; } = ""; }
 
+// A versioned save, at version 3: version 1 had "Coins" and no lives.
+public sealed class Profile
+{
+    public int Gold { get; set; }
+    public int Lives { get; set; } = 3;
+    public List<Item> Bag { get; set; } = [];
+}
+
 [JsonSerializable(typeof(Progress))]
+[JsonSerializable(typeof(Profile))]
 public partial class GameSaves : JsonSerializerContext;
 `;
 const program = (save, load) => `using MicroEngine.Core;
@@ -140,6 +151,22 @@ try
     File.WriteAllText(Path.Combine(dir, "achievements.json"), "{\\"Entries\\":{\\"ten\\":{\\"Unlocked\\":false,\\"Progress\\":7,\\"When\\":1},\\"gone\\":{\\"Progress\\":2}}}");
     var earlier = new AchievementTracker(catalog, store);
     Console.WriteLine($"achievements earlier: {earlier.IsUnlocked("first")} {earlier.Progress("ten")} {earlier.AddProgress("ten", 3)} {File.ReadAllText(Path.Combine(dir, "achievements.json")).Contains("gone")}");
+    // A versioned save: the schema's steps change the save as JSON and the type is built with the game's metadata.
+    var schema = new SaveSchema<Profile>(3, GameSaves.Default.Profile)
+        .Migrate(1, save => save["Lives"] = 5)
+        .Migrate(2, save => { save["Gold"] = save["Coins"]?.DeepClone(); save.Remove("Coins"); });
+    File.WriteAllText(Path.Combine(dir, "profile.json"), "{ \\"Coins\\": 7, \\"Bag\\": [ { \\"kind\\": \\"potion\\", \\"Name\\": \\"red\\", \\"Heals\\": 5 } ] }");
+    var first = store.Load("profile", schema);
+    Console.WriteLine($"versioned old: {first.Status} {first.Version} {first.Value?.Gold} {first.Value?.Lives} {(first.Value?.Bag[0] as Potion)?.Heals}");
+    Console.WriteLine("versioned save: " + store.Save("profile", first.Value!, schema) + " " + string.Join(",", store.Backups("profile").Select(copy => copy.Name)) + " " + File.ReadAllText(Path.Combine(dir, "profile.json")).ReplaceLineEndings("").Replace(" ", ""));
+    var current = store.Load("profile", schema);
+    Console.WriteLine($"versioned current: {current.Status} {current.Version} {current.Value?.Gold}");
+    var copy = store.LoadBackup("profile.v1.backup", schema);
+    Console.WriteLine($"versioned copy: {copy.Status} {copy.Value?.Gold}");
+    File.WriteAllText(Path.Combine(dir, "newer.json"), "{ \\"@version\\": 9, \\"Gold\\": 1 }");
+    var newer = store.Load("newer", schema);
+    Console.WriteLine($"versioned newer: {newer.Status} {newer.Version} {newer.Protected} {store.Save("newer", new Profile(), schema)} {File.ReadAllText(Path.Combine(dir, "newer.json")).Contains("9")}");
+    Console.WriteLine("slots: " + string.Join(",", store.Slots().Select(slot => slot.Name)));
     return 0;
 }
 catch (Exception e)
@@ -154,7 +181,11 @@ finally
 `;
 const expected = ['missing: True', 'save: True', 'load: 3 Ada 2 Hard 1200 5 cellar', 'old: 7 Pip 0', 'corrupt: True True False',
   'achievements: True True {"Version":1,"Entries":{"ten":{"Progress":3,"Unlocked":false},"first":{"Progress":1,"Unlocked":true}}}',
-  'achievements again: True 3 False', 'achievements earlier: False 7 True True'];
+  'achievements again: True 3 False', 'achievements earlier: False 7 True True',
+  'versioned old: Migrated 1 7 5 5',
+  'versioned save: True profile.v1.backup {"@version":3,"Gold":7,"Lives":5,"Bag":[{"kind":"potion","Heals":5,"Name":"red"}]}',
+  'versioned current: Loaded 3 7', 'versioned copy: Migrated 7', 'versioned newer: TooNew 9 True False True',
+  'slots: achievements,newer,old,profile,progress'];
 
 // The windowed game: what the smallest game does (an image made in code, an atlas, a sound, a scene that moves a
 // sprite by input, text), so the NativeAOT program opens a window, loads, updates, draws and captures frames.

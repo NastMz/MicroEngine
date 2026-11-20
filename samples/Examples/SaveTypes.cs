@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using MicroEngine.Core;
 
@@ -11,7 +10,7 @@ namespace Examples;
 /// </summary>
 [JsonSerializable(typeof(SaveExample.Progress))]
 [JsonSerializable(typeof(Profile))]
-[JsonSerializable(typeof(JsonObject))]   // a slot read as JSON, to upgrade old saves
+[JsonSerializable(typeof(GameSaves.Settings))]
 public partial class SaveTypes : JsonSerializerContext;
 #endregion
 

@@ -8,7 +8,7 @@ using MicroEngine.UI;
 namespace Examples;
 
 /// <summary>A save slot: what is saved, loading it back, saving, deleting, and where the file lives.</summary>
-public sealed class SaveExample(string? saveDirectory) : Scene
+public sealed class SaveExample : Scene
 {
     #region data
     /// <summary>The saved data: any class System.Text.Json can write (public properties with getters and setters).</summary>
@@ -27,8 +27,8 @@ public sealed class SaveExample(string? saveDirectory) : Scene
 
     public override void Enter()
     {
-        // One store per game: the id names the save folder (or the browser's storage keys).
-        _store = new SaveStore("MicroEngineExamples", saveDirectory);
+        // The game's store: one per game, in the save folder of the system it runs on (the page's storage in a browser).
+        _store = Game.Saves;
         _progress = _store.Load<Progress>("example") ?? new Progress();   // null: no save yet, or unreadable
         _status = _store.Exists("example") ? "LOADED" : "NO SAVE YET";
     }

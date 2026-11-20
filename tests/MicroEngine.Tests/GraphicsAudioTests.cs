@@ -399,6 +399,7 @@ public sealed class AudioTests
         {
             if (Slots.Remove(slot, out var text)) Slots[slot + ".corrupt"] = text;
         }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 
     [TestMethod]
@@ -437,6 +438,7 @@ public sealed class AudioTests
         public bool Exists(string slot) => Slots.ContainsKey(slot);
         public void Delete(string slot) => Slots.Remove(slot);
         public void SetAside(string slot) { }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 
     [TestMethod]

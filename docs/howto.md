@@ -275,7 +275,7 @@ Textures default to linear sampling and the canvas fills any window. [HD canvase
 
 ## ...save the game?
 
-Use a `SaveStore` with your game's id and save any JSON-serializable class to a named slot:
+Use the game's store (`Saves`, or `Game.Saves` from a scene) and save any JSON-serializable class to a named slot:
 
 <!-- code: samples/Examples/Examples/SaveExample.cs#use -->
 ```csharp
@@ -285,8 +285,8 @@ private string _status = "";
 
 public override void Enter()
 {
-    // One store per game: the id names the save folder (or the browser's storage keys).
-    _store = new SaveStore("MicroEngineExamples", saveDirectory);
+    // The game's store: one per game, in the save folder of the system it runs on (the page's storage in a browser).
+    _store = Game.Saves;
     _progress = _store.Load<Progress>("example") ?? new Progress();   // null: no save yet, or unreadable
     _status = _store.Exists("example") ? "LOADED" : "NO SAVE YET";
 }

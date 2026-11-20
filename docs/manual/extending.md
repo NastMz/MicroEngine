@@ -65,7 +65,7 @@ step still produce one `Pressed`.
 ```csharp
 /// <summary>
 /// Where save slots live is an ISaveStorage: files on desktops and phones, localStorage in browsers. This one keeps them
-/// in memory (tests, a demo kiosk); a cloud service or a console's save API would implement the same six members.
+/// in memory (tests, a demo kiosk); a cloud service or a console's save API would implement the same seven members.
 /// </summary>
 public sealed class MemorySaveStorage : ISaveStorage
 {
@@ -80,16 +80,20 @@ public sealed class MemorySaveStorage : ISaveStorage
     {
         if (_slots.Remove(slot, out var text)) _slots[slot + ".corrupt"] = text;
     }
+    // A copy set aside is not a slot. This storage keeps no times, so LastWrite is null.
+    public IReadOnlyList<SlotInfo> List() =>
+        [.. _slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new SlotInfo(s.Key, s.Value.Length, null))];
 }
 ```
 
-`SaveStore` keeps its guarantees on top of any storage: it serializes, sets aside data it cannot parse
-(`SetAside`), never overwrites a slot it could not read, and turns refused writes into `false`. A storage only reports
-failures as `IOException` or `UnauthorizedAccessException`. Use it for one store with `new SaveStore(storage)`, or for
-every store of a composition: the game's `Configure` entry point sets `host.Storage = gameId => new MyStorage(gameId)`
-and the game creates its stores with `host.SaveStore(gameId)`
-([One composition for every platform](backends.md#one-composition-for-every-platform)). There is no process-wide
-setting.
+`SaveStore` keeps its guarantees on top of any storage: it serializes, versions and migrates, sets aside data it
+cannot parse (`SetAside`), never overwrites a slot it could not read or use, and turns refused writes into `false`. A
+storage only reports failures as `IOException` or `UnauthorizedAccessException`, and lists the slots it holds
+(`List`) with what it knows about each: a size, and the time of the last write or `null`. Install it for the game
+from the composition: the game's `Configure` entry point sets `host.Storage = saveId => new MyStorage(saveId)` and
+`Game.Saves` is a store on it
+([One composition for every platform](backends.md#one-composition-for-every-platform)). Or use it for one store
+built by hand, `new SaveStore(storage)`. There is no process-wide setting.
 
 ## A transition
 

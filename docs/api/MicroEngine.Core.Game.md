@@ -317,6 +317,45 @@ public Random Random { get; }
 
  [Random](https://learn.microsoft.com/dotnet/api/system.random)
 
+### <a id="MicroEngine_Core_Game_SaveId"></a> SaveId
+
+The id the game's saves are kept under: it names the save folder and the browser's key prefix. By default the
+application id of the game's project ([Id](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_Id)), else the title as a folder name. A game
+that changes its application id after release overrides it with the old one, so its players keep their saves.
+
+```csharp
+protected virtual string SaveId { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Core_Game_Saves"></a> Saves
+
+The game's saves: one [SaveStore](MicroEngine.Core.SaveStore.md) for its slots (progress, settings, achievements), created the first
+time it is used ([CreateSaves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateSaves)). It keeps them where the host's composition says
+([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)), else in the platform's default medium: files in the user's data folder,
+the page's localStorage in browsers. Use it from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later, not from
+the game's constructor: the host hands over its medium once the game exists.
+
+```csharp
+public SaveStore Saves { get; }
+```
+
+#### Property Value
+
+ [SaveStore](MicroEngine.Core.SaveStore.md)
+
+#### Examples
+
+```csharp
+protected override void Load()
+{
+    _progress = Saves.Load("progress", ProgressSchema).Value ?? new Progress();
+}
+```
+
 ### <a id="MicroEngine_Core_Game_Scenes"></a> Scenes
 
 The scene stack. Push the first scene from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load).
@@ -535,6 +574,21 @@ protected virtual InputMap CreateInput()
 
  [InputMap](MicroEngine.Input.InputMap.md)
 
+### <a id="MicroEngine_Core_Game_CreateSaves"></a> CreateSaves\(\)
+
+Creates [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves), once. By default a store for [SaveId](MicroEngine.Core.Game.md#MicroEngine_Core_Game_SaveId) on the composition's medium, else
+on the platform's default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)). Override it to build the store by hand:
+a folder of the game's choice (<code>new SaveStore(SaveId, directory)</code>, as tests do) or a storage of its own
+(<code>new SaveStore(storage)</code>).
+
+```csharp
+protected virtual SaveStore CreateSaves()
+```
+
+#### Returns
+
+ [SaveStore](MicroEngine.Core.SaveStore.md)
+
 ### <a id="MicroEngine_Core_Game_CreateTouchLayout"></a> CreateTouchLayout\(\)
 
 Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
@@ -643,25 +697,27 @@ Runs the phases that come before drawing for one fixed step, with a frame that s
 [BeginFrame](MicroEngine.Kernel.FramePhase.md), [Input](MicroEngine.Kernel.FramePhase.md), the four fixed phases,
 [Update](MicroEngine.Kernel.FramePhase.md) and [LateUpdate](MicroEngine.Kernel.FramePhase.md). The loop's clock does not move.
 
-### <a id="MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_"></a> TrackAchievements\(IEnumerable<Achievement\>, SaveStore\)
+### <a id="MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_"></a> TrackAchievements\(IEnumerable<Achievement\>, SaveStore?\)
 
 Turns achievements on: call it from the game's constructor or from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), before the engine is
 composed. It adds the achievements module (an [AchievementTracker](MicroEngine.Core.AchievementTracker.md) service over
 <code class="paramref">catalog</code> and the <code>engine.achievements</code> system that writes progress) and the saves module
-when the game has none. Progress persists in the "achievements" slot of <code class="paramref">store</code>. Report progress
+when the game has none. Progress persists in the "achievements" slot of <code class="paramref">store</code>: the game's own
+saves ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) when it is null, which is the usual call from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)
+(<code>TrackAchievements(catalog)</code>); the constructor is too early for [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves). Report progress
 through [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements). The game shows unlocks its own way: subscribe to
 [Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked) on [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements), and draw a banner above every scene from
 [DrawAboveScenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_). A game that never calls it has no achievement service, system or file.
 
 ```csharp
-protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
+protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore? store = null)
 ```
 
 #### Parameters
 
 `catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
 
-`store` [SaveStore](MicroEngine.Core.SaveStore.md)
+`store` [SaveStore](MicroEngine.Core.SaveStore.md)?
 
 #### Returns
 

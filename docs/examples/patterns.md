@@ -145,54 +145,44 @@ public static PixelImage RuinStones()
 Games that use files load them through `Game.Assets` in the same `Load`,
 as all four demos do. See [Rendering](../manual/rendering.md) and [Assets](../manual/assets.md).
 
-## Saving progress through `SaveStore`
+## Saving progress through the game's store
 
-Each game creates one `SaveStore` with its own id, loads its slot in `Load` and falls back to fresh data. From
+Each game saves through `Saves`, the store it comes with, loads its slot in `Load` and falls back to fresh data. From
 [`games/MeadowRun/MeadowGame.cs`](../../games/MeadowRun/MeadowGame.cs):
 
 ```csharp
 private const string SaveSlot = "progress";
+private static readonly SaveSchema<SaveData> SaveFormat = new(version: 1);
 // ...
-public SaveStore Store { get; } = new("MeadowRun", saveDirectory);
+/// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+protected override string SaveId => "MeadowRun";
 // ...
-Save = Store.Load<SaveData>(SaveSlot) ?? new SaveData();
+Save = Saves.Load(SaveSlot, SaveFormat).Value ?? new SaveData();
 // ...
 public void Persist()
 {
-    try { Store.Save(SaveSlot, Save); }
+    try { Saves.Save(SaveSlot, Save, SaveFormat); }
     catch (IOException) { /* A read-only disk must not crash the game; progress stays in memory. */ }
     catch (UnauthorizedAccessException) { }
 }
 ```
 
-`Load` returns null for a missing or unreadable slot; `Save` returns false when the medium refuses the write.
+`Load` has no value for a missing, damaged or unusable slot; `Save` returns false when the medium refuses the write.
 Trail Duel keeps the same calls on its state type, from
 [`games/TrailDuel/Rules/GameState.cs`](../../games/TrailDuel/Rules/GameState.cs):
 
 ```csharp
-public const int CurrentSaveVersion = 1;
+public static readonly SaveSchema<GameState> Schema = new(version: 1);
 
-/// <summary>The format of the save this state was read from (0 for a save written before versions existed); stamped on saving.</summary>
-public int SaveVersion { get; set; }
+public void Save(SaveStore store) => store.Save(SaveSlot, this, Schema);
 
-public void Save(SaveStore store)
-{
-    SaveVersion = CurrentSaveVersion;
-    store.Save(SaveSlot, this);
-}
-
-/// <summary>The saved adventure, or null without one; an older save is brought up to <see cref="CurrentSaveVersion"/>.</summary>
-public static GameState? Load(SaveStore store)
-{
-    var state = store.Load<GameState>(SaveSlot);
-    // Version 0 (no field) has the same layout as version 1: nothing to convert.
-    if (state is { SaveVersion: < CurrentSaveVersion }) state.SaveVersion = CurrentSaveVersion;
-    return state;
-}
+public static GameState? Load(SaveStore store) => store.Load(SaveSlot, Schema).Value;
 ```
 
-The saved data carries a format version. A save written before the field existed reads as version 0; when the
-format changes, the game raises the number and converts older saves in `Load`, so players keep their progress.
+The schema gives the save a version. The layout of these saves has never changed, so they are at version 1 with no
+steps, and the saves earlier releases wrote load as they are; when a release changes the layout, the game raises the
+number and adds the step that converts the previous one, so players keep their progress
+([Versions and migrations](../manual/persistence.md#versions-and-migrations)).
 
 The same code saves to `localStorage` in a browser. See [Persistence](../manual/persistence.md).
 
@@ -216,7 +206,7 @@ game's own banners (`OptionList`, `AchievementBanners` and `AchievementList` are
 banners' position, the unlock sound) stays in `Load`, from `MeadowGame.cs`:
 
 ```csharp
-public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog, Store));
+public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog));
 
 protected override void DrawAboveScenes(IRenderer canvas) => Banners.Draw(canvas, Font);
 

@@ -1,6 +1,10 @@
 # 0054 — Saves without reflection through the game's own type metadata
 
-Status: Accepted (2026-11-13), by the owner. Evidence: [AOT-1](../evaluations/aot-1.md).
+Status: Accepted (2026-11-13), by the owner. Evidence: [AOT-1](../evaluations/aot-1.md). Amended by
+[ADR 0063](0063-versioned-saves-and-the-games-store.md): decision 2's "there is no migration" holds for the calls
+described here; a save loaded and written through a `SaveSchema<T>` carries a version (`"@version"`) and migrates,
+on the same metadata and still without reflection, and the calls described here read such a slot but do not write
+it.
 
 ## Context
 

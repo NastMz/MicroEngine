@@ -17,22 +17,31 @@ public sealed class CourtyardKeyGame : Game
 {
     public const string GameId = "CourtyardKey";
     private readonly string? _start;
+    private readonly string? _saveDirectory;
+    private SaveSlots? _slots;
 
     /// <param name="saveDirectory">Where the save slot lives (tests pass a temporary folder).</param>
     /// <param name="start">Optional debug checkpoint name, see <see cref="DebugStart"/>.</param>
     public CourtyardKeyGame(string? saveDirectory = null, string? start = null)
     {
         _start = start;
-        Saves = new SaveSlots(new SaveStore(GameId, saveDirectory));
-        // Declared before the engine is composed, so it adds the achievements module.
-        TrackAchievements(CourtyardAchievements.Catalog, Saves.Store);
+        _saveDirectory = saveDirectory;
     }
+
+    /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+    protected override string SaveId => "CourtyardKey";
+
+    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
+    protected override SaveStore CreateSaves() => _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = UI.UiStyle.Theme };
 
-    /// <summary>Advances the banners every step.</summary>
-    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, Achievements);
+    /// <summary>
+    /// Declares the achievements, kept in the game's saves, before the engine is composed (so it adds their module), and
+    /// advances the banners every step.
+    /// </summary>
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(CourtyardAchievements.Catalog));
 
     /// <summary>The unlock banners stay up while scenes change.</summary>
     protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
@@ -43,7 +52,8 @@ public sealed class CourtyardKeyGame : Game
 
     public override GameSettings Settings { get; } = new("Courtyard Key") { Background = Pal.Ink };
     public Sprites Art { get; private set; } = null!;
-    public SaveSlots Saves { get; }
+    /// <summary>The adventure's slot in the game's saves.</summary>
+    public SaveSlots Slots => _slots ??= new SaveSlots(Saves);
     /// <summary>The adventure scene while one is active (title and ending have none).</summary>
     public PlayScene? Play { get; internal set; }
 

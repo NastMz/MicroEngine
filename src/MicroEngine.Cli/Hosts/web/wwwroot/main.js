@@ -57,7 +57,10 @@ function openStorage() {
   } catch (e) {
     notify('Progress will not be kept: this browser blocks site storage.');
     const memory = new Map();
-    return { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, String(v)), removeItem: k => memory.delete(k) };
+    return {
+      getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, String(v)), removeItem: k => memory.delete(k),
+      get length() { return memory.size; }, key: i => [...memory.keys()][i] ?? null,
+    };
   }
 }
 const storage = openStorage();
@@ -72,6 +75,15 @@ const storageImports = {
     }
   },
   remove: key => storage.removeItem(key),
+  // The keys that start with a game's prefix: how a game lists its save slots.
+  keys: prefix => {
+    const keys = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key !== null && key.startsWith(prefix)) keys.push(key);
+    }
+    return keys;
+  },
 };
 
 // Audio: the game's mixer renders on this thread, once per frame, up to 100 ms ahead, and the page plays what it

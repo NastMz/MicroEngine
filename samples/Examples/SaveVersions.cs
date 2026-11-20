@@ -1,100 +1,59 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using MicroEngine.Core;
 
 namespace Examples;
 
 #region data
-/// <summary>The saved data in its current shape. <see cref="Version"/> records the shape a slot was written in.</summary>
+/// <summary>The saved data in its current shape, version 3. It holds no version itself: the schema does.</summary>
 public sealed class Profile
 {
-    public int Version { get; set; }
     public int Gold { get; set; }
     public int Lives { get; set; } = 3;
 }
 #endregion
 
-#region check
-/// <summary>What <see cref="ProfileSaves.Load"/> found.</summary>
-public enum SaveCheck
-{
-    /// <summary>No usable save: start a new game (missing, or corrupt and set aside by the store).</summary>
-    Missing,
-    /// <summary>A save in the current shape.</summary>
-    Current,
-    /// <summary>An older save, upgraded in memory; the original is kept in a backup slot.</summary>
-    Upgraded,
-    /// <summary>A save this build cannot upgrade safely (written by a newer build, or the backup failed): never save over it.</summary>
-    Protected,
-}
-#endregion
-
-#region upgrade
-/// <summary>
-/// One slot whose shape changes between releases. Old saves are read as JSON, copied to a backup slot, upgraded one
-/// version at a time and only then turned into a <see cref="Profile"/>; saves from a newer build are left alone.
-/// </summary>
+/// <summary>The slot a profile is kept in, how its shape changed between releases, and loading and saving it.</summary>
 public static class ProfileSaves
 {
+    #region schema
     public const string Slot = "profile";
 
-    // Each entry turns version i into version i + 1. Append a step for every change; never edit a published one.
-    private static readonly Action<JsonObject>[] Upgrades =
-    [
-        // 0 -> 1: lives arrived; saves from before start with three.
-        json => json["Lives"] = 3,
-        // 1 -> 2: "Coins" was renamed "Gold".
-        json => { json["Gold"] = json["Coins"]?.DeepClone(); json.Remove("Coins"); },
-    ];
+    /// <summary>
+    /// This build writes version 3. One step for each earlier version: append a step for every change, and never edit
+    /// one that has shipped.
+    /// </summary>
+    public static readonly SaveSchema<Profile> Schema = new SaveSchema<Profile>(version: 3, SaveTypes.Default.Profile)
+        .Migrate(from: 1, AddLives)
+        .Migrate(from: 2, RenameCoins);
 
-    /// <summary>The shape this build writes: one more than the last upgrade step.</summary>
-    public static int CurrentVersion => Upgrades.Length;
+    /// <summary>1 to 2: lives arrived; saves from before start with three.</summary>
+    public static void AddLives(JsonObject save) => save["Lives"] = 3;
 
-    public static Profile? Load(SaveStore store, out SaveCheck check)
+    /// <summary>2 to 3: "Coins" was renamed "Gold".</summary>
+    public static void RenameCoins(JsonObject save)
     {
-        check = SaveCheck.Missing;
-        if (store.Load<JsonObject>(Slot) is not { } json) return null;   // missing, corrupt or unreadable
+        save["Gold"] = save["Coins"]?.DeepClone();
+        save.Remove("Coins");
+    }
+    #endregion
 
-        int version = 0;                                                  // saves from before versions existed
-        if (json["Version"] is { } field && !(field is JsonValue value && value.TryGetValue(out version)))
+    #region use
+    /// <summary>The saved profile, or a new one; <paramref name="notice"/> is what to tell the player, if anything.</summary>
+    public static Profile Load(SaveStore store, out string notice)
+    {
+        var loaded = store.Load(Slot, Schema);
+        notice = loaded.Status switch
         {
-            check = SaveCheck.Protected;                                  // a version this build cannot read
-            return null;
-        }
-        if (version > CurrentVersion)
-        {
-            check = SaveCheck.Protected;                                  // written by a newer build
-            return null;
-        }
-        if (version < CurrentVersion)
-        {
-            // Keep the original before changing anything; without a copy, do not upgrade.
-            if (!store.Save($"{Slot}.v{version}", json))
-            {
-                check = SaveCheck.Protected;
-                return null;
-            }
-            for (int v = version; v < CurrentVersion; v++) Upgrades[v](json);
-            json["Version"] = CurrentVersion;
-        }
-        try
-        {
-            var profile = json.Deserialize<Profile>();
-            check = profile is null ? SaveCheck.Protected : version < CurrentVersion ? SaveCheck.Upgraded : SaveCheck.Current;
-            return profile;
-        }
-        catch (JsonException)
-        {
-            check = SaveCheck.Protected;                                  // a field holds a value of the wrong type
-            return null;
-        }
+            SaveLoadStatus.Migrated => $"Your save was updated from version {loaded.Version}.",
+            SaveLoadStatus.TooNew => "This save is from a newer version of the game. Progress will not be saved.",
+            SaveLoadStatus.MigrationFailed or SaveLoadStatus.Unreadable => "The save could not be read. Progress will not be saved.",
+            SaveLoadStatus.Corrupt => "The save was damaged and has been set aside.",
+            _ => "",   // Loaded, Missing
+        };
+        return loaded.Value ?? new Profile();
     }
 
-    /// <summary>Writes the profile in the current shape; false when the medium refused.</summary>
-    public static bool Save(SaveStore store, Profile profile)
-    {
-        profile.Version = CurrentVersion;
-        return store.Save(Slot, profile);
-    }
+    /// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+    public static bool Save(SaveStore store, Profile profile) => store.Save(Slot, profile, Schema);
+    #endregion
 }
-#endregion

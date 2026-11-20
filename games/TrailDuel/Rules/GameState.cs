@@ -33,8 +33,7 @@ public sealed class GameState : IStateHashed
     /// <summary>
     /// State hash: position and facing, party and box (count then each creature), bag, money, story flags and the
     /// seen/caught sets (sorted by ordinal, so neither set's internal order counts), starter, respawn point, play time
-    /// and battles won. Everything here is gameplay state; none of it is written while drawing. Left out: the save
-    /// format version, which describes the file, not the adventure.
+    /// and battles won. Everything here is gameplay state; none of it is written while drawing.
     /// </summary>
     public void HashState(StateHasher hash)
     {
@@ -142,27 +141,19 @@ public sealed class GameState : IStateHashed
     }
 
     /// <summary>
-    /// The save format this build writes. Version 1 is the first to carry it; saves from earlier releases have the same
-    /// layout without the field, so they read as 0 and load unchanged. A future format change raises this number and
-    /// converts older saves in <see cref="Load"/>.
+    /// The save's version and the steps from earlier ones. The layout has never changed, so it is version 1 with no
+    /// steps: every save an earlier release wrote loads as it is (those releases wrote no version, or a "SaveVersion"
+    /// property of their own that nothing reads any more). A release that changes the layout raises the version and
+    /// adds the step from the one before.
     /// </summary>
-    public const int CurrentSaveVersion = 1;
+    public static readonly SaveSchema<GameState> Schema = new(version: 1);
 
-    /// <summary>The format of the save this state was read from (0 for a save written before versions existed); stamped on saving.</summary>
-    public int SaveVersion { get; set; }
+    /// <summary>False when nothing was written: the medium refused, or the slot holds a save this build must not replace.</summary>
+    public bool Save(SaveStore store) => store.Save(SaveSlot, this, Schema);
 
-    public void Save(SaveStore store)
-    {
-        SaveVersion = CurrentSaveVersion;
-        store.Save(SaveSlot, this);
-    }
-
-    /// <summary>The saved adventure, or null without one; an older save is brought up to <see cref="CurrentSaveVersion"/>.</summary>
-    public static GameState? Load(SaveStore store)
-    {
-        var state = store.Load<GameState>(SaveSlot);
-        // Version 0 (no field) has the same layout as version 1: nothing to convert.
-        if (state is { SaveVersion: < CurrentSaveVersion }) state.SaveVersion = CurrentSaveVersion;
-        return state;
-    }
+    /// <summary>
+    /// The saved adventure, or null without one the game can use (none, damaged, or written by a newer release, which
+    /// the store then refuses to replace).
+    /// </summary>
+    public static GameState? Load(SaveStore store) => store.Load(SaveSlot, Schema).Value;
 }

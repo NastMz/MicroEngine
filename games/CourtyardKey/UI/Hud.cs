@@ -30,6 +30,8 @@ public sealed class Hud(PlayScene world)
     public string? LastRoomName { get; private set; }
 
     public void Toast(string text) { _toast = text; _toastTime = 2.4f; }
+    /// <summary>The last toast shown.</summary>
+    internal string? ToastText => _toast;
     public void Banner(string text) { _banner = text; _bannerTime = 2.6f; }
     public void RoomName(string text) { LastRoomName = text; _roomTime = 2.2f; }
     public void Flash(Color color, float seconds) { _flash = color; _flashTime = _flashDuration = seconds; }

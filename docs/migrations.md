@@ -75,6 +75,56 @@ default case gets a new value; treat it as the keyboard for prompts. `PointerSta
 `Forward`, `Delta`, `Kind`, `PressedButtons`, `ReleasedButtons`), which take part in its equality: code that compares
 a whole `PointerState` with one it built compares the members it means instead. `InputEvent.PointerMove` takes an
 optional `delta` after `time`, and `IInputSource` has `RightStick`, with a default that reads the two axes.
+### A storage lists its slots
+
+`IStorage`, and `ISaveStorage` with it, has a new member: `IReadOnlyList<SlotInfo> List()`. A storage of your own no
+longer compiles until it has one. Return every slot that holds data, without the copies `SetAside` made, each as
+`new SlotInfo(name, size, lastWrite)`; pass `null` for the time when the storage keeps none. `FileSaveStorage` and
+`BrowserStorage` already do. A page of your own that hosts a browser game adds a `storage.keys(prefix)` function to
+the `microengine` JavaScript module, returning the `localStorage` keys that start with `prefix`; the tool's page has
+it.
+
+### Saves read the slot before writing it
+
+`SaveStore.Save` reads what the slot holds before it replaces it, so a storage of your own sees one `Read` for each
+`Write`. The calls without a schema, `Save(slot, data)` and `Save(slot, data, typeInfo)`, now return `false` and
+leave the slot alone when it holds a save with a version (a `"@version"` property), when the game has used that slot
+through a `SaveSchema<T>`, or when the medium cannot read it; a slot that never had a version is written as before,
+with the same text. A slot that could not be read is protected until a later load of it succeeds, where before only
+`Delete` lifted the protection.
+
+### Slot names that end with `.backup` are refused
+
+`SaveStore` throws `ArgumentException` for a slot whose name ends with `.backup`, in any letter case: that is where it
+keeps the original of a save it migrated (`<slot>.v<version>.backup`). `Backups`, `LoadBackup` and `DeleteBackup`
+take those names. Rename a slot of your own that ends that way; to keep its data, read it once through
+`Saves.Storage` under the old name and save it under the new one.
+
+### A game has a member named `Saves`
+
+`Game.Saves` is the game's store. A game class that declares its own `Saves` member now hides it and the compiler
+warns (`CS0108`), which fails a build that treats warnings as errors. Remove the member and use the inherited one. A
+game that built its store with a folder of its own overrides `CreateSaves()` instead:
+
+```csharp
+protected override SaveStore CreateSaves() =>
+    _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
+```
+
+`Game.Saves` keeps its slots under `Game.SaveId`, the application id of the project. A released game that built its
+store with another id (`new SaveStore("MyGame")`) overrides `SaveId` to return that id, or its players' saves stay in
+the old folder, unread. `TrackAchievements(catalog, store)` still takes a store; without one it uses `Saves`.
+
+### `Save` and `Load` with a literal `null` third argument
+
+`store.Save(slot, data, null)` and `store.Load<T>(slot, null)` no longer compile: the argument could be the type's
+metadata or its schema. Neither accepts `null`; pass one of them.
+
+### Hand-written save versions
+
+Nothing has to change: a game that keeps a version property in its saved class and upgrades old saves itself keeps
+working. To move to a schema, see
+[A save that already has a version of its own](manual/persistence.md#a-save-that-already-has-a-version-of-its-own).
 
 ### A submitted command list holds nothing
 

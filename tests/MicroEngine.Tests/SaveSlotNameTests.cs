@@ -27,6 +27,7 @@ public sealed partial class SaveSlotNameTests
         public bool Exists(string slot) { Calls++; return Slots.ContainsKey(slot); }
         public void Delete(string slot) { Calls++; Slots.Remove(slot); }
         public void SetAside(string slot) { Calls++; Slots.Remove(slot); }
+        public IReadOnlyList<MicroEngine.Platform.SlotInfo> List() => [.. Slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new MicroEngine.Platform.SlotInfo(s.Key, s.Value.Length, null))];
     }
 
     private string _root = "";

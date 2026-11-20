@@ -56,7 +56,7 @@ public sealed class LaunchOptionsTests
             Assert.IsNotNull(play, $"started in {game.Scenes.Current?.GetType().Name}");
             Assert.AreEqual(1, play.LevelIndex);
             Assert.AreEqual(PipForm.Bloom, play.Stage.Player.Form);
-            Assert.AreEqual(save, game.Store.Directory);
+            Assert.AreEqual(save, game.Saves.Directory);
         }
         finally
         {

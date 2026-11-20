@@ -334,6 +334,17 @@ platform behaves the same whatever the mode the run ends up with.
 
 How a run ended.
 
+ [SaveSchema<T\>](MicroEngine.Core.SaveSchema\-1.md)
+
+How a saved type changes between releases of a game: the version this build writes and one step for each earlier
+version, which turns a save of that version into the next. [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_)
+runs the steps a save needs, in order, and [Save``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Save__1_System_String___0_) stamps the
+current version.
+
+ [SaveSchema](MicroEngine.Core.SaveSchema.md)
+
+What every [SaveSchema`1](MicroEngine.Core.md) shares.
+
  [SaveStore](MicroEngine.Core.SaveStore.md)
 
 Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
@@ -396,6 +407,10 @@ One recorded drawing call.
  [RenderTargetSize](MicroEngine.Core.RenderTargetSize.md)
 
 The size of a render target of the assets (the options of a "render target" asset key).
+
+ [SaveLoadResult<T\>](MicroEngine.Core.SaveLoadResult\-1.md)
+
+The outcome of loading a versioned save: the value when there is one, and otherwise why there is none.
 
  [SystemTiming](MicroEngine.Core.SystemTiming.md)
 
@@ -468,6 +483,10 @@ renderers; raylib's OpenGL ignores it.
  [PlatformParts](MicroEngine.Core.PlatformParts.md)
 
 The subsystems a host may supply to a profile instead of the profile's own.
+
+ [SaveLoadStatus](MicroEngine.Core.SaveLoadStatus.md)
+
+What [Load``1](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_Load__1_System_String_) found in a slot.
 
  [WindowMode](MicroEngine.Core.WindowMode.md)
 

@@ -31,7 +31,7 @@ public sealed class PlaythroughTests
         Assert.IsTrue(h.DialogueOpen, "The elder starts talking.");
         h.ClearDialogue();
         Assert.IsTrue(play.Progress.HasSword);
-        Assert.IsTrue(h.Game.Saves.HasSave, "Receiving the sword saves the game.");
+        Assert.IsTrue(h.Game.Slots.HasSave, "Receiving the sword saves the game.");
 
         // North along the old road.
         h.WalkToTile(9.9f, 4.7f);
@@ -54,7 +54,7 @@ public sealed class PlaythroughTests
 
         Assert.AreEqual("dungeon:1,3", play.Room.Key);
         Assert.AreEqual(Dungeon.EntranceCheckpoint, play.Progress.Entrance, "The dungeon entrance is the new checkpoint.");
-        var saved = h.Game.Saves.Load();
+        var saved = h.Game.Slots.Load();
         Assert.IsNotNull(saved);
         Assert.IsTrue(saved.HasSword);
         Assert.AreEqual(Dungeon.Id, saved.Entrance.Area);

@@ -182,8 +182,8 @@ game's `Configure` runs, which may change them:
 
 Add to `host.Platforms()` rather than replacing it, so every host keeps its own platform. `host.Kind` says which host is
 composing, `host.Request` what the launch asked for, and `host.Environment.Variable(name)` reads a developer variable
-(an environment variable on desktop, the page's or the launch's elsewhere). `host.SaveStore(gameId)` creates a store on
-the composition's medium. Nothing here is process-wide: two hosts in one process (an editor, tests running in
+(an environment variable on desktop, the page's or the launch's elsewhere). `Game.Saves` is a store on the composition's medium, and `host.SaveStore(gameId)` creates one for a game that takes
+its store as a constructor argument. Nothing here is process-wide: two hosts in one process (an editor, tests running in
 parallel) keep their own content folder and storage.
 
 The launch's rules are the same on every host (`LaunchRequest`, `GameHost`): a run with a script is in deterministic
