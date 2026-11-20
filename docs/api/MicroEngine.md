@@ -10,6 +10,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Achievements](MicroEngine.Achievements.md)
 
+ [MicroEngine.Aseprite](MicroEngine.Aseprite.md)
+
  [MicroEngine.Audio](MicroEngine.Audio.md)
 
  [MicroEngine.Content](MicroEngine.Content.md)
