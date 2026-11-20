@@ -62,7 +62,7 @@ export const scopes = {
   box2d: file => !always(file) && !docs(file) && !/^(games|site|platforms|templates|sdk|benchmarks)\//.test(file)
     && (!/^src\//.test(file) || /^src\/MicroEngine\.(Physics|Kernel|Scene)[./]/.test(file))
     && (!/^tests\//.test(file) || /^tests\/(MicroEngine\.Physics\.Box2D\.Tests|Shared)\//.test(file))
-    && (!/^samples\//.test(file) || /^samples\/PhysicsSubstitution\//.test(file))
+    && (!/^samples\//.test(file) || /^samples\/Physics(Substitution|Playground)\//.test(file))
     && (!/^web\//.test(file) || /^web\/(toolchain\.env|setup\.sh|serve\.mjs)$/.test(file)),
   sdk: file => sdkSamples.test(file) || (!always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
     && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md')),
