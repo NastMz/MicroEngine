@@ -259,4 +259,10 @@ protected void SetParameter(int index, float value)
 
 `value` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+Called from [Process](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Process_System_Span_System_Single__): the effect is taken out of the mix ([Faulted](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Faulted)).
+
 </div>
