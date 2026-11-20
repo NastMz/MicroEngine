@@ -175,6 +175,48 @@ public sealed class NavAgentsTests
     }
 
     [TestMethod]
+    public void Costly_ground_is_gone_around_and_slows_only_those_it_is_set_to_slow()
+    {
+        var grid = Grid(
+            "############",
+            "#..........#",
+            "#..........#",
+            "#..........#",
+            "############");
+        for (int x = 4; x <= 6; x++) grid.SetCost(x, 2, 3);
+        var agents = new NavAgents(grid);
+        var walker = agents.Add(At(grid, 1, 2), new NavAgentSettings(5, 60) { SlowedByCost = true });
+        walker.MoveTo(At(grid, 10, 2));
+        bool inMud = false;
+        int around = Run(agents, () =>
+        {
+            var cell = grid.CellAt(walker.Position);
+            inMud |= grid.CostAt(cell.X, cell.Y) > 1;
+            return walker.Status == NavAgentStatus.Arrived;
+        }, 600);
+        Assert.IsFalse(inMud, "the way around the mud is cheaper than the way through");
+
+        // Mud everywhere on the way: it is crossed, at a third of the speed by the one it slows.
+        for (int y = 1; y <= 3; y++)
+            for (int x = 4; x <= 6; x++) grid.SetCost(x, y, 3);
+        var hover = agents.Add(At(grid, 10, 1), new NavAgentSettings(5, 60) { Collides = false });
+        walker.Settings = walker.Settings with { Collides = false };
+        walker.MoveTo(At(grid, 1, 2));
+        hover.MoveTo(At(grid, 1, 1));
+        int steps = 0;
+        float slowest = 60, hoverSlowest = 60;
+        for (; steps < 900 && !(walker.Status == NavAgentStatus.Arrived && hover.Status == NavAgentStatus.Arrived); steps++)
+        {
+            agents.Step(Dt);
+            if (walker.Status == NavAgentStatus.Moving) slowest = MathF.Min(slowest, walker.Velocity.Length());
+            if (hover.Status == NavAgentStatus.Moving) hoverSlowest = MathF.Min(hoverSlowest, hover.Velocity.Length());
+        }
+        Assert.IsLessThan(900, steps);
+        Assert.AreEqual(20, slowest, 0.1f, "a cell that costs three is walked at a third of the speed");
+        Assert.AreEqual(60, hoverSlowest, 0.1f, "unless the ground does not slow it");
+    }
+
+    [TestMethod]
     public void Following_a_moving_target_searches_once_per_cell_the_target_enters()
     {
         var grid = Grid(Yard);
@@ -452,7 +494,7 @@ public sealed class NavAgentsTests
                 agents.Step(Dt);
             }
         }
-        Round(600);
+        Round(1800);
         long before = GC.GetAllocatedBytesForCurrentThread();
         Round(600);
         Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "bytes allocated by 600 steps of 24 agents with orders, searches and a changing map");

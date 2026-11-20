@@ -12,8 +12,10 @@ it. Newest first.
 `radius` only to straighten the route. For an agent wider than a cell (`radius` above half a cell) the search now
 avoids passages the body does not fit through, so a route that squeezed through a one-cell gap goes around or ends at
 the nearest place the body reaches (`PathStatus.Unreachable`). For every radius above zero, a route to a point so
-close to a wall that the body would touch it now ends beside that point, where the body is clear. Routes of agents
-no wider than a cell through open ground are unchanged.
+close to a wall that the body would touch it now ends beside that point, where the body is clear. A route that starts
+on costly ground (`SetCost`) and whose cheapest path leaves it now leaves it by that path: the cost of the cell the
+agent stands in no longer lets a straightened leg cross ground that costly (`FindPath`, `Smooth`). Routes of
+agents no wider than a cell through open ground are unchanged.
 
 `NavGrid.IsOpen(path, from)` gained the optional parameter `radius`, and `DistanceField`'s constructor the optional
 parameter `radius`: source compiles unchanged; code compiled against the earlier package must be rebuilt.

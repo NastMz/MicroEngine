@@ -359,11 +359,11 @@ public sealed class NavGrid : INavGraph
         if (path.Count > 0) Straighten(path, from, exact ? Settle(to, path[^1], radius) : null, waypoints, radius);
     }
 
-    /// <summary>Whether the straight way between two points is clear for a body, crossing no ground costlier than where it starts and ends.</summary>
+    /// <summary>Whether the straight way between two points is clear for a body, crossing no ground costlier than where it ends.</summary>
     internal bool HasDirectWay(Vector2 from, Vector2 to, float radius)
     {
-        int a = NodeAt(from), b = NodeAt(to);
-        return a >= 0 && b >= 0 && Clear(from, to, radius, Math.Max(_cost[a], _cost[b]));
+        int b = NodeAt(to);
+        return b >= 0 && Clear(from, to, radius, _cost[b]);
     }
 
     /// <summary>
@@ -597,7 +597,9 @@ public sealed class NavGrid : INavGraph
             return;
         }
         var anchor = from;
-        float anchorCost = _cost[path[0]];
+        // What a leg may cross is what the cells it replaces cost to enter. The cell the agent stands in is not
+        // entered: standing in mud is no licence to walk on through it.
+        float anchorCost = 0;
         int i = 0;
         while (i < count)
         {

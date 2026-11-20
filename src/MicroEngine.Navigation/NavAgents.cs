@@ -596,6 +596,12 @@ public sealed class NavAgents : SceneSystem
             if (agent.State == NavAgentStatus.Moving && agent.Points.Count > 0) agent.Points[^1] = end;
             else if (agent.State == NavAgentStatus.Arrived && Vector2.Distance(agent.Place, end) > Tolerance(agent))
             {
+                // Straight there when nothing is between them; around a corner, a route is searched.
+                if (!grid.HasDirectWay(agent.Place, end, agent.Radius))
+                {
+                    Request(agent);
+                    return;
+                }
                 agent.Points.Clear();
                 agent.Points.Add(end);
                 agent.State = NavAgentStatus.Moving;
@@ -759,8 +765,9 @@ public sealed class NavAgents : SceneSystem
                 else Arrive(agent);
                 return;
             }
-            // Past the points reached, and past a corner as soon as the way to the point after it is clear.
-            float reach = MathF.Max(config.Radius, speed * dt);
+            // Past the points reached, and past a corner as soon as the way to the point after it is clear (and
+            // crosses no ground costlier than the route does).
+            float reach = speed * dt;
             while (points.Count > 1)
             {
                 float left = Vector2.Distance(position, points[0]);
@@ -882,14 +889,15 @@ public sealed class NavAgents : SceneSystem
             float slack = 0.25f * MathF.Max(config.Radius, 1e-3f * Grid.CellSize);
             Near(agent, slack);
             bool lastLeg = agent.Field is null && agent.Points.Count == 1, beside = false;
-            bool close = lastLeg || (agent.Field is not null && Left(agent) < Grid.CellSize);
+            // Followers of a field all head for the middle of its goal's cell, which only one of them can stand on.
+            bool close = agent.Field is not null && Left(agent) < Grid.CellSize;
             foreach (var other in _near)
             {
                 if (other == agent || !other.Config.Collides || other.State == NavAgentStatus.Planning) continue;
                 float reach = config.Radius + other.Radius;
                 if (Vector2.Distance(agent.Place, other.Place) > reach + slack) continue;
-                // Those sent to the same place: the ones that arrived, and at the end of the way the ones still
-                // pressing for the point, which not all of them can stand on.
+                // Those sent to the same place: the ones that arrived, and in the goal's cell of a field the ones
+                // still pressing for its middle.
                 bool together = (other.State == NavAgentStatus.Arrived || (close && other.State == NavAgentStatus.Moving))
                     && (agent.Field is not null ? other.Field == agent.Field : other.Field is null && other.TargetNode >= 0 && Vector2.Distance(agent.Target, other.Target) <= reach);
                 // Somebody who is not going anywhere stands on the very point it was sent to.
