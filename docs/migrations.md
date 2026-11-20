@@ -28,6 +28,29 @@ parameter each (`Rotated`, `Loop`).
 `Assets.Preload("music/theme.ogg")` and other files that are not images, atlases or fonts no longer throw
 `ArgumentException`: they load. A file whose extension no loader reads still throws, naming the file. A preload by
 path of a `.json` file still treats it as an atlas.
+### Audio: buses are objects, and the mixer has a limiter
+
+Source that calls `Audio.AddBus`, `Audio.SetBusVolume`, `Audio.Set` or `Audio.PlayMusic` compiles unchanged; code
+compiled against an earlier package must be rebuilt, because these signatures changed:
+
+| Member | Before | Now |
+| --- | --- | --- |
+| `AudioMixer.AddBus`, `AudioEngine.AddBus` | returned nothing / the bus | both return the `AudioBus` |
+| `AudioMixer.SetBusVolume(name, volume)` | two parameters | an optional `fadeSeconds` |
+| `AudioMixer.Set(voice, volume, pan, pitch)`, `AudioEngine.Set`, `AudioEngine.SetPitch` | no time | an optional `seconds` |
+| `AudioMixer.PlayMusic(name, fadeSeconds)` | two parameters | an optional `crossfade` |
+| `AudioEngineSettings` | | a new `Limiter` property |
+
+Behaviour that changed: a game's mix that goes over full scale is now turned down by the limiter after `master`
+instead of being clipped by the sound card. A mix within full scale is unchanged, sample for sample. To get the old
+behaviour:
+
+```csharp
+Audio.Limiter.Bypass = true;
+```
+
+`Compressor`, `Delay`, `Limiter` and `Reverb` are now type names in `MicroEngine.Audio.Effects`; a game with types of
+those names that imports that namespace qualifies one of them.
 ### The physics contract is version 2
 
 `IPhysicsWorld2D` gained members (dynamics control, joints, tile geometry, `BoundsOf`). Every one has a default that

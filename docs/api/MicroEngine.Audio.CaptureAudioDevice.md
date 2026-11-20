@@ -35,6 +35,7 @@ public sealed class CaptureAudioDevice : MixerAudioDevice, IAudioDevice, IDispos
 [MixerAudioDevice.PlayVoice\(SoundHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayVoice\_MicroEngine\_Audio\_SoundHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayMusicVoice\(MusicHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusicVoice\_MicroEngine\_Audio\_MusicHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayMusic\(MusicHandle, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusic\_MicroEngine\_Audio\_MusicHandle\_System\_Single\_), 
+[MixerAudioDevice.CrossfadeMusic\(MusicHandle, float, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_CrossfadeMusic\_MicroEngine\_Audio\_MusicHandle\_System\_Single\_System\_Single\_), 
 [MixerAudioDevice.StopMusic\(\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_StopMusic), 
 [MixerAudioDevice.SetMusicVolume\(float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_SetMusicVolume\_System\_Single\_), 
 [MixerAudioDevice.PauseMusic\(bool\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PauseMusic\_System\_Boolean\_), 

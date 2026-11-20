@@ -2,7 +2,8 @@
 
 MicroEngine audio has two halves. The core synthesizes sound effects (`Synth`) and step-sequenced music (`Song`)
 into `AudioClip`s, and decodes PCM WAV files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
-sounds and music, plays them by name, and fades music in and out. Playback itself is done by the backend's
+sounds and music, plays them by name, fades and crossfades music, and groups sounds in buses that carry effects (a
+reverb, a filter, music that drops under a voice line). Playback itself is done by the backend's
 `IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only. Every
 device is the engine's one mixer playing through the platform's output
 ([One mixer on every platform](#one-mixer-on-every-platform)).
@@ -15,7 +16,9 @@ device is the engine's one mixer playing through the platform's output
 | `SfxParams` + `Synth.Render` | Retro sound effects in the spirit of sfxr |
 | `Synth.Layer`, `Synth.NoteFrequency` | Mix clips at time offsets; note name to Hz (`"C5"`, `"F#3"`) |
 | `Instrument`, `Song` | Tracker-style voices and a step sequencer rendered to a looping stereo clip |
-| `AudioMixer` | Named sound bank, music with fades, volumes |
+| `AudioMixer` | Named sound bank, music with fades and crossfades, voices, buses |
+| `AudioBus` | A group of sounds: one volume (`Volume`, `FadeTo`) and one chain of effects (`Add`, `Insert`, `Remove`) |
+| `AudioEffect` | A processor on a bus. Built in (`MicroEngine.Audio.Effects`): `LowPass`, `HighPass`, `Compressor`, `Reverb`, `Delay`, `Limiter`; a game writes its own |
 | `IAudioDevice` | The platform's device. Every backend device is the engine's own mixer (`MixerAudioDevice`, `AudioEngine`) playing through the backend's PCM sink (an SDL audio stream on the SDL platform, the default on desktops and phones; a raylib audio stream on raylib desktops; an AudioWorklet in browsers); `SilentAudioDevice` headless or without hardware |
 
 The synthesizer (`Synth`, `SfxParams`, `Wave`, `Song`, `Instrument`) is in the `MicroEngine.Audio.Retro` namespace, so
@@ -83,7 +86,7 @@ registering it.
 | `PlayVoice(name, parameters)` | Plays a sound as a voice and returns its `VoiceHandle` ([Sounds that keep playing](#sounds-that-keep-playing)) |
 | `PlayMusicVoice(name, parameters)` | Plays registered music as one more voice, beside the music track |
 | `Set(voice, volume, pan, pitch)`, `Pause(voice, paused)`, `Stop(voice, fadeSeconds)`, `IsPlaying(voice)` | Change, pause, stop or ask about a voice while it plays |
-| `AddBus(name, parent)`, `SetBusVolume(name, volume)`, `BusVolume(name)`, `HasBus(name)` | Groups of sounds with one volume ([Buses](#buses)) |
+| `AddBus(name, parent)`, `SetBusVolume(name, volume)`, `BusVolume(name)`, `HasBus(name)` | Groups of sounds with one volume ([Buses and effects](#buses-and-effects)) |
 
 <!-- sdk-version: history -->
 **Music changes are fade-out then fade-in, not an overlapping crossfade.** With a fade, the current track fades to
@@ -173,16 +176,6 @@ nothing and returns `false`. `PlayVoice` returns `VoiceHandle.None` when every v
 `None` do nothing too, so game code needs no special case. A headless test still sees the sound's name in
 `SilentAudioDevice.Played`.
 
-### Buses
-
-Every sound plays through a bus, and a bus has a volume that scales everything on it. Three exist: `master`, and under
-it `sfx` (where sounds play unless their parameters name another) and `music` (the music track). `AddBus(name, parent)`
-adds one under a bus that exists (`master` by default), up to 32 in all: `ambience`, `voices`, `ui`.
-`SetBusVolume(name, volume)` takes 0..4 and changes what is already playing, from the current update on;
-`BusVolume(name)` reads it back, also on a device without sound. A settings screen with a slider per group sets bus
-volumes: `sfx` reaches the sounds of `Play` too (on top of `SfxVolume`), `music` the music track (on top of
-`MusicVolume`), `master` everything.
-
 ### Music beside the music
 
 `PlayMusicVoice(name, parameters)` plays registered music as one more voice without replacing the track `PlayMusic`
@@ -190,6 +183,157 @@ plays: rain under the theme, a second layer of the same piece that fades in when
 `VoiceHandle` like any voice, so `Set` and `Stop(voice, fadeSeconds)` fade it. Name the `music` bus in its parameters
 to keep it with the music; it loops when the parameters say so. `MusicVolume`, `CurrentMusic` and the fades of
 `PlayMusic` are those of the music track only. Streamed music (OGG) keeps its own pitch.
+
+## Buses and effects
+
+Every sound plays through a bus. A bus mixes its sounds and the buses under it, passes the mix through its effects and
+scales it by its volume. Three exist: `master`, and under it `sfx` (where sounds play unless their parameters name
+another) and `music` (the music track). `AddBus(name, parent)` adds one under a bus that exists (`master` by default),
+up to 32 in all: `ambience`, `voice`, `ui`. `Audio.Bus(name)` is the bus itself.
+
+| On a bus | What it does |
+| --- | --- |
+| `Volume`, `Audio.SetBusVolume(name, volume)` | Scales everything on the bus, 0..4, from the current update on; `Audio.BusVolume(name)` reads it back |
+| `FadeTo(volume, seconds)`, `Audio.SetBusVolume(name, volume, fadeSeconds)` | Moves the volume there over a time, without a step in the sound |
+| `Add(effect)`, `Insert(index, effect)` | Puts an effect in the chain; `Add` returns the bus, to add another |
+| `Remove(effect)`, `ClearEffects()`, `Effects` | Takes effects out; lists them in order |
+
+A settings screen with a slider per group sets bus volumes: `sfx` reaches the sounds of `Play` too (on top of
+`SfxVolume`), `music` the music track (on top of `MusicVolume`), `master` everything.
+
+### Effects
+
+An effect is an object the game keeps: it is added to a bus once and its properties are changed while it plays. This
+scene puts a room around every sound effect, and two effects on the music. Source:
+[`MixExample.cs`](../../samples/Examples/Examples/MixExample.cs).
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-setup -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasBus("voice"))
+    {
+        Audio.AddBus("voice");                                 // the bus of spoken lines, beside "sfx" and "music"
+        Audio.AddMusic("mix-loop", MixSounds.Loop());
+        Audio.AddSound("mix-line", MixSounds.Line());
+        Audio.AddSound("mix-chime", MixSounds.Chime());
+    }
+    Audio.Bus("sfx").Add(_room);                               // every sound effect is heard in a room
+    Audio.Bus("music").Add(_muffle).Add(_duck);                // the music: muffled on demand, and under the voice
+    _music = Audio.PlayMusicVoice("mix-loop", new PlayParameters { Loop = true, Bus = "music", Volume = 0.6f, FadeIn = 0.5f });
+}
+
+public override void Exit()
+{
+    Audio.Stop(_music, fadeSeconds: 0.3f);
+    Audio.Bus("sfx").Remove(_room);                            // the buses go back to what they were
+    Audio.Bus("music").Remove(_muffle);
+    Audio.Bus("music").Remove(_duck);
+    Audio.Bus("sfx").Volume = 1;
+}
+```
+
+| Effect | Properties | Use |
+| --- | --- | --- |
+| `LowPass` | `Cutoff` (Hz), `Resonance` | Muffled: music behind a pause menu, under water, behind a wall |
+| `HighPass` | `Cutoff` (Hz), `Resonance` | Thin: a radio, a telephone; a rumble removed |
+| `Compressor` | `Threshold` and `Makeup` (dB), `Ratio`, `Attack`, `Release`, `Range`, `Sidechain` | Evens out a bus, or turns it down while another bus sounds (`Compressor.Duck`) |
+| `Reverb` | `RoomSize`, `Damping`, `Wet`, `Dry`, `Width` | A space around the sounds, from a small room to a hall |
+| `Delay` | `Time` (up to 2 s), `Feedback`, `Wet`, `Dry` | An echo |
+| `Limiter` | `Threshold`, `Release` | Keeps a bus within a ceiling |
+
+Effects run in the order of the chain, before the bus's volume. A property set on an effect takes effect at the
+update that set it and glides to its new value over a fiftieth of a second, so a filter can be swept every update
+without clicks. `effect.Bypass = true` lets the sound through unchanged without taking the effect out; an effect taken
+out of a chain (`Remove`) stops at once, tail included. Values are clamped to each property's range, and a value that is
+not a number is ignored. All of it works on a device without sound: the buses keep their effects and volumes, so the
+same code runs headless.
+
+### A muffled pause
+
+A low-pass filter added once and switched in while the game is paused, and the sound effects faded down:
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-pause -->
+```csharp
+private void SetPaused(bool paused)
+{
+    Paused = paused;
+    _muffle.Bypass = !paused;                                  // the filter is switched in, not added again
+    Audio.Bus("sfx").FadeTo(paused ? 0.3f : 1f, seconds: 0.3f); // and the sound effects fade down, without a step
+}
+```
+
+### Ducking: music under a voice line
+
+`Compressor.Duck(bus)` makes a compressor that listens to another bus: while that bus sounds, the bus it is on drops
+(12 dB unless told otherwise), and it comes back when the other falls silent. It is added once, in the scene's `Enter`
+above (`Audio.Bus("music").Add(Compressor.Duck("voice"))`); from then on a line played on the `voice` bus is all it
+takes:
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-duck -->
+```csharp
+// A voice line on the "voice" bus: the compressor on the music bus listens to that bus and turns the music
+// down while the line plays. Nothing else to do here.
+if (Input.Pressed("action") && !Audio.IsPlaying(_line))
+    _line = Audio.PlayVoice("mix-line", new PlayParameters { Bus = "voice", Volume = 0.8f });
+```
+
+Any `Compressor` can listen to another bus through its `Sidechain` property. The bus it listens to cannot be its own
+bus or one its bus plays into (`music` cannot listen to `master`), and two buses cannot listen to each other: `Add`
+and the property throw `ArgumentException` for those, and for a bus that does not exist.
+
+### The limiter after master
+
+When many loud sounds play at once the mix can go over full scale, which a sound card clips. The mixer has a
+`Limiter` after `master` (`Audio.Limiter`), switched on in every game: it turns the mix down the moment it would go
+over and lets go over a tenth of a second, with no delay. While the mix stays within full scale it does nothing at
+all: every sample leaves the mixer exactly as it was mixed. `Audio.Limiter.Bypass = true` switches it off;
+`Threshold` lowers the ceiling.
+
+### Effects of your own
+
+An effect is a class that derives from `AudioEffect` and processes a block of samples in place; a game or a package
+adds it to a bus like the built-in ones. See [an audio effect](extending.md#an-audio-effect).
+
+The game's thread sets an effect's properties and the audio thread runs its `Process`; the values cross between them
+through `SetParameter` and `OnParameter`. An effect that sets one of its own properties inside `Process` is taken out
+of the mix and reported by `Faulted`, like one that throws.
+
+## Fades and crossfades
+
+Volume, pan and pitch can move to a new value over a time instead of jumping to it. The mixer moves them a little at
+every output sample, from the update that asked, and lands exactly on the value.
+
+| Call | What moves |
+| --- | --- |
+| `PlayVoice(name, new PlayParameters { FadeIn = 0.5f })` | The sound rises from silence to its volume |
+| `Audio.Set(voice, volume:, pan:, pitch:, seconds: 0.3f)` | A voice's volume, pan and pitch move there over the time |
+| `Audio.Stop(voice, fadeSeconds: 0.3f)` | The voice falls to silence, then ends |
+| `Audio.Bus("sfx").FadeTo(0.3f, seconds: 0.3f)` | A bus's volume |
+| `Audio.PlayMusic("battle", crossfade: 1.5f)` | The new track rises while the current one falls, both over the time |
+
+A sound that crosses the screen once is one call after it starts:
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-chime -->
+```csharp
+_chimeAge += dt;
+_chimeIn -= dt;
+if (_chimeIn <= 0)
+{
+    (_chimeIn, _chimeAge) = (2f, 0);
+    // It starts on the left and the mixer moves it to the right over its length, frame by frame.
+    var chime = Audio.PlayVoice("mix-chime", new PlayParameters { Pan = 0, Volume = 0.7f });
+    Audio.Set(chime, pan: 1, seconds: ChimeSeconds);
+}
+```
+
+Without `seconds`, `Set` changes the values at once, which is what a value set again every update needs (a sound that
+follows something that moves, as in [Sounds that keep playing](#sounds-that-keep-playing)). A change without a time
+ends a ramp that was running; a ramp stands still while its sound is paused.
+
+`PlayMusic(name)` keeps its behaviour: the current track fades out, then the new one starts. With `crossfade`, the two
+overlap: the new track is `CurrentMusic` at once and rises in a straight line while the old one falls. On a device
+without sound, and for a `Song` that is still being rendered in a browser, the music switches without the overlap.
 
 ## One mixer on every platform
 
@@ -328,12 +472,19 @@ sound and resumes it when shown again.
 
 ## Limitations
 
-- `PlayMusic` changes track with fade-out then fade-in, not an overlapping crossfade; a crossfade is two music voices
-  whose volumes the game sets.
-- No listener or emitters: a sound's position is the `pan` and `volume` the game sets. No effects on buses (reverb,
-  filters), and a bus has a volume but no pitch.
-- Volume, pan and pitch change in one step at the update that sets them, not as a ramp: large jumps on a loud sound
-  can click, so change them a little every update or fade with `Stop`.
+- No listener or emitters: a sound's position is the `pan` and `volume` the game sets (once, with a time, or every
+  update).
+- Effects are on buses, not on single voices: a sound that needs processing of its own plays on a bus of its own, and
+  there are 32 buses. A bus has a volume and effects but no pitch.
+- A crossfade and every ramp are straight lines in gain, so two unrelated tracks dip slightly in loudness half way
+  through a crossfade.
+- The limiter looks at nothing ahead: a mix that jumps over full scale is turned down from that sample on, which
+  bends the first peak instead of clipping the whole passage. An effect taken out of a chain is cut, tail included;
+  bypass keeps it in place.
+- Without a time, volume, pan and pitch change in one step at the update that sets them: a large jump on a loud sound
+  can click, so give `Set` a time or change them a little every update.
+- No playback position: a game cannot read where a sound or the music is, start it from the middle, schedule it for a
+  later moment or loop a part of it (an intro followed by a loop is two pieces of music).
 - Streamed music keeps its own pitch.
 - Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
 - Sound is not instant: it is heard after the queue that keeps pauses from being heard, 60 ms on the SDL platform

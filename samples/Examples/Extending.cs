@@ -89,3 +89,51 @@ public sealed class OwnControlsGame : Game
     protected override void Load() { }
 }
 #endregion
+
+#region audio-effect
+/// <summary>
+/// An audio effect of your own: the volume of a bus wobbles <see cref="Rate"/> times a second. Added to a bus like the
+/// built-in ones: <c>Audio.Bus("sfx").Add(new Tremolo { Rate = 6 })</c>.
+/// </summary>
+public sealed class Tremolo : AudioEffect
+{
+    // The audio thread's own copies: it never reads what the game's thread writes.
+    private float _rate = 5, _depth = 0.5f, _phase, _step;
+    private int _channels = 2;
+
+    public Tremolo() : base(parameters: 2)
+    {
+        SetParameter(0, 5);
+        SetParameter(1, 0.5f);
+    }
+
+    /// <summary>Wobbles per second.</summary>
+    public float Rate { get => GetParameter(0); set => SetParameter(0, Math.Clamp(value, 0.1f, 40)); }
+    /// <summary>How far the volume drops, 0 (not at all) to 1 (to silence).</summary>
+    public float Depth { get => GetParameter(1); set => SetParameter(1, Math.Clamp(value, 0, 1)); }
+
+    // The game's thread, once, when the effect is added to a bus: the place to allocate.
+    protected override void Prepare(int sampleRate, int channels) => (_step, _channels) = (MathF.Tau / sampleRate, channels);
+
+    // The audio thread, at the exact moment in the sound of the update that set the property.
+    protected override void OnParameter(int index, float value)
+    {
+        if (index == 0) _rate = value;
+        else _depth = value;
+    }
+
+    protected override void Reset() => _phase = 0;
+
+    // The audio thread: interleaved samples, changed in place. No allocation, no lock, no exception.
+    protected override void Process(Span<float> buffer)
+    {
+        for (int i = 0; i < buffer.Length; i += _channels)
+        {
+            float gain = 1 - _depth * (0.5f - 0.5f * MathF.Cos(_phase));
+            _phase += _step * _rate;
+            if (_phase >= MathF.Tau) _phase -= MathF.Tau;
+            for (int c = 0; c < _channels; c++) buffer[i + c] *= gain;
+        }
+    }
+}
+#endregion

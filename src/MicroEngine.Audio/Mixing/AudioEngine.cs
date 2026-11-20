@@ -44,6 +44,11 @@ public readonly record struct PlayParameters
     public int Priority { get; init; }
     /// <summary>The bus the sound plays through ("sfx" by default; the engine also has "music" and "master").</summary>
     public string Bus { get; init; } = AudioEngine.SfxBus;
+    /// <summary>
+    /// Seconds the sound takes to rise from silence to <see cref="Volume"/>, frame by frame (0, the default: it starts
+    /// at its volume). A value that is not a number counts as 0.
+    /// </summary>
+    public float FadeIn { get; init; }
 }
 
 /// <summary>Settings of an <see cref="AudioEngine"/>.</summary>
@@ -60,6 +65,14 @@ public sealed record AudioEngineSettings
     public int? DelayFrames { get; init; }
     /// <summary>Output frames of streamed music decoded ahead (by <see cref="AudioEngine.Pump"/>); half a second by default.</summary>
     public double StreamAheadSeconds { get; init; } = 0.5;
+    /// <summary>
+    /// Whether the limiter after "master" (<see cref="AudioEngine.Limiter"/>) starts switched on: a mix that goes over
+    /// full scale is then turned down instead of clipped, and a mix within full scale is not touched. Null (the
+    /// default) leaves it to whoever creates the mixer: the devices games play through
+    /// (<see cref="MixerAudioDevice"/>) switch it on; an <see cref="AudioEngine"/> created directly renders exactly what
+    /// it is told and leaves it off.
+    /// </summary>
+    public bool? Limiter { get; init; }
 }
 
 /// <summary>
@@ -79,24 +92,34 @@ public interface IAudioStream : IDisposable
 }
 
 /// <summary>
-/// A named mix stage: the sounds and buses under it are scaled by its <see cref="Volume"/>. Buses form a tree under
-/// "master": a bus is created under a parent that already exists and is never moved, so there is no cycle.
+/// A named mix stage: the sounds and buses under it are mixed together, pass through its effects
+/// (<see cref="Add"/>) and are scaled by its <see cref="Volume"/>. Buses form a tree under "master": a bus is created
+/// under a parent that already exists and is never moved, so there is no cycle.
 /// </summary>
+/// <remarks>
+/// A bus without effects costs nothing: its sounds are added straight into the bus above it. With an effect, the bus is
+/// mixed into a buffer of its own first (a submix), processed there, scaled by its volume and added to the bus above.
+/// </remarks>
 public sealed class AudioBus
 {
-    private readonly AudioEngine _engine;
+    private readonly List<AudioEffect> _effects = [];
     private float _volume = 1;
 
-    internal AudioBus(AudioEngine engine, int index, string name, AudioBus? parent) => (_engine, Index, Name, Parent) = (engine, index, name, parent);
+    internal AudioBus(AudioEngine? engine, List<AudioBus> siblings, int index, string name, AudioBus? parent) =>
+        (Engine, Siblings, Index, Name, Parent) = (engine, siblings, index, name, parent);
 
+    /// <summary>The mixer that renders the bus; null for the buses of a device without one (headless), which only keep what they are told.</summary>
+    internal AudioEngine? Engine { get; }
+    /// <summary>Every bus of the same mixer, this one included.</summary>
+    internal List<AudioBus> Siblings { get; }
     internal int Index { get; }
     /// <summary>The bus's name.</summary>
     public string Name { get; }
     /// <summary>The bus it plays into; null for "master".</summary>
     public AudioBus? Parent { get; }
     /// <summary>
-    /// Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step. A value that is not
-    /// a number is ignored.
+    /// Gain of everything on the bus, clamped to 0..4; it changes at the frame of the current step, at once (use
+    /// <see cref="FadeTo"/> for a change without a step in the sound). A value that is not a number is ignored.
     /// </summary>
     public float Volume
     {
@@ -105,8 +128,86 @@ public sealed class AudioBus
         {
             if (float.IsNaN(value)) return;
             _volume = Math.Clamp(value, 0, 4);
-            _engine.SetBusVolume(Index, _volume);
+            Engine?.SetBusVolume(Index, _volume, 0);
         }
+    }
+
+    /// <summary>
+    /// Moves <see cref="Volume"/> to <paramref name="volume"/> (clamped to 0..4) over <paramref name="seconds"/>, frame
+    /// by frame from the current step's frame; <see cref="Volume"/> reads the new value at once. A volume that is not a
+    /// number is ignored; 0 seconds or less changes it at once.
+    /// </summary>
+    public void FadeTo(float volume, float seconds)
+    {
+        if (float.IsNaN(volume)) return;
+        _volume = Math.Clamp(volume, 0, 4);
+        Engine?.SetBusVolume(Index, _volume, float.IsNaN(seconds) ? 0 : seconds);
+    }
+
+    /// <summary>The bus's effects, in the order the mix passes through them.</summary>
+    public IReadOnlyList<AudioEffect> Effects => _effects;
+
+    /// <summary>Adds <paramref name="effect"/> at the end of the chain, from the current step's frame; returns the bus, to add another.</summary>
+    /// <exception cref="InvalidOperationException">The effect is already on a bus, or has played on another mixer.</exception>
+    /// <exception cref="ArgumentException">The effect listens to a bus that does not exist, to this bus or to one this bus plays into.</exception>
+    public AudioBus Add(AudioEffect effect) => Insert(_effects.Count, effect);
+
+    /// <summary>Adds <paramref name="effect"/> at <paramref name="index"/> of the chain (0: first), from the current step's frame.</summary>
+    /// <exception cref="InvalidOperationException">The effect is already on a bus, or has played on another mixer.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not in 0..<c>Effects.Count</c>.</exception>
+    /// <exception cref="ArgumentException">The effect listens to a bus that does not exist, to this bus or to one this bus plays into.</exception>
+    public AudioBus Insert(int index, AudioEffect effect)
+    {
+        ArgumentNullException.ThrowIfNull(effect);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _effects.Count);
+        if (effect.Bus is not null) throw new InvalidOperationException($"The effect is already on bus '{effect.Bus.Name}'; remove it from that bus first.");
+        // The mixer that prepared an effect may still be rendering it after it left its bus (until the chain without
+        // it reaches its frame): another mixer's thread must never process it at the same time.
+        if (Engine is not null && effect.Owner is not null && effect.Owner != Engine)
+            throw new InvalidOperationException("The effect has played on another mixer, which may still be processing it; create a new effect for this one.");
+        _effects.Insert(index, effect);
+        effect.Bus = this;
+        try { GraphChanged(); }
+        catch
+        {
+            _effects.RemoveAt(index);
+            effect.Bus = null;
+            throw;
+        }
+        return this;
+    }
+
+    /// <summary>Takes <paramref name="effect"/> out of the chain, from the current step's frame (what it still held, a reverb's tail, is not heard).</summary>
+    /// <returns>Whether it was on this bus.</returns>
+    public bool Remove(AudioEffect effect)
+    {
+        if (effect is null || !_effects.Remove(effect)) return false;
+        effect.Bus = null;
+        Engine?.Forget(effect);
+        GraphChanged();
+        return true;
+    }
+
+    /// <summary>Takes every effect out of the chain.</summary>
+    public void ClearEffects()
+    {
+        if (_effects.Count == 0) return;
+        foreach (var effect in _effects)
+        {
+            effect.Bus = null;
+            Engine?.Forget(effect);
+        }
+        _effects.Clear();
+        GraphChanged();
+    }
+
+    /// <summary>Checks the buses' effects (the buses they listen to) and tells the mixer, if any, that the chains changed.</summary>
+    /// <exception cref="ArgumentException">An effect listens to a bus that does not exist, to its own bus or to one its bus plays into, or two buses listen to each other.</exception>
+    internal void GraphChanged()
+    {
+        int[] order = AudioEngine.Order(Siblings);
+        Engine?.PostGraph(order);
     }
 }
 
@@ -148,6 +249,10 @@ public sealed class AudioEngine : IDisposable
     private const int MaxBuses = 32, QueueSize = 4096;
     /// <summary>Changes to one sound, or volumes of one bus, that can wait for their frames at once, each for its own.</summary>
     private const int WaitingChanges = 8;
+    /// <summary>Changes to effects and bus fades that can wait for their frames at once; beyond that the oldest take effect early.</summary>
+    private const int WaitingEvents = 256;
+    /// <summary>The most frames mixed at once: the length of a bus's submix buffer.</summary>
+    private const int ChunkFrames = 1024;
 
     private readonly IAudioSink _sink;
     private readonly int _channels, _rate, _updateRate;
@@ -167,6 +272,23 @@ public sealed class AudioEngine : IDisposable
     private readonly int[] _busParent = new int[MaxBuses];
     private readonly float[] _busVolume = new float[MaxBuses], _busGain = new float[MaxBuses];
     private readonly List<StreamFeed> _feeds = [];
+    // The mix graph. Main thread: each bus's submix buffer once it needed one, the effects the render function has been
+    // told of, whether the latest chains could not be queued, and the buses whose volume has been faded (their volume
+    // then always travels with the fades, in order).
+    private readonly float[]?[] _buffers = new float[MaxBuses][];
+    private readonly HashSet<AudioEffect> _sentEffects = [];
+    private readonly bool[] _busFaded = new bool[MaxBuses];
+    private bool _graphUnsent;
+    private int _unsentEffects;
+    // The sink's thread: the chains it renders, the timed changes waiting for their frames (a ring, oldest first), and
+    // for each segment where each bus is mixed: into itself (a submix) or into the nearest submix above it.
+    private Graph _graph = Graph.Empty;
+    private readonly Event[] _events = new Event[WaitingEvents];
+    private int _eventHead, _eventCount;
+    private readonly bool[] _busSubmix = new bool[MaxBuses];
+    private readonly int[] _busDestination = new int[MaxBuses];
+    private readonly float[] _busAbove = new float[MaxBuses], _busFadeTarget = new float[MaxBuses], _busFadeStep = new float[MaxBuses];
+    private readonly long[] _busFadeLeft = new long[MaxBuses];
     private long _step, _offset, _played, _position;
     // Frames the output did not play: the main thread adds to _skipped, the sink's thread follows it with _skew.
     private long _skipped, _skew;
@@ -207,6 +329,15 @@ public sealed class AudioEngine : IDisposable
         CreateBus(MasterBus, null);
         CreateBus(SfxBus, _buses[0]);
         CreateBus(MusicBus, _buses[0]);
+        // The limiter is not in master's chain: it comes after master's volume, last. It is prepared and given its
+        // values here, before the sink renders anything.
+        Limiter = new Effects.Limiter { Bypass = settings.Limiter != true };
+        Limiter.PrepareFor(_rate, _channels);
+        for (int i = 0; i < Limiter.ParameterCount; i++) Limiter.Deliver(i, Limiter.ParameterValue(i));
+        Limiter.Bypassed = Limiter.Bypass;
+        Limiter.Bus = _buses[0];
+        Limiter.Owner = this;
+        _sentEffects.Add(Limiter);
         _sinkThread = sink.Schedule == AudioSinkSchedule.SinkThread;
         sink.Start(CountedRender);
     }
@@ -317,7 +448,7 @@ public sealed class AudioEngine : IDisposable
 
     private AudioBus CreateBus(string name, AudioBus? parent)
     {
-        var bus = new AudioBus(this, _buses.Count, name, parent);
+        var bus = new AudioBus(this, _buses, _buses.Count, name, parent);
         _busParent[bus.Index] = parent?.Index ?? -1;
         _busVolume[bus.Index] = 1;
         _buses.Add(bus);
@@ -325,13 +456,192 @@ public sealed class AudioEngine : IDisposable
         return bus;
     }
 
-    internal void SetBusVolume(int bus, float volume)
+    /// <summary>
+    /// The limiter after "master": it keeps the mix within full scale instead of letting the device clip it, and leaves
+    /// every sample as it is while the mix stays within its threshold. <see cref="AudioEngineSettings.Limiter"/> says
+    /// whether it starts on (a game's device has it on); <see cref="AudioEffect.Bypass"/> switches it.
+    /// </summary>
+    public Effects.Limiter Limiter { get; }
+
+    /// <summary>Effects that threw while rendering and were taken out of the mix (<see cref="AudioEffect.Faulted"/>).</summary>
+    public int FaultedEffects => Volatile.Read(ref _faulted);
+    private int _faulted;
+
+    internal void SetBusVolume(int bus, float volume, float seconds)
     {
         Anchor();
-        if (Flush() && TryPost(new Command { Op = Op.Bus, Slot = bus, Volume = volume, Frame = Now })) return;
+        long frames = Frames(seconds);
+        if (frames > 0 && !_busFaded[bus])
+        {
+            // A fade is rendered in the bus's own buffer, gain by gain: the render function gets the buffer first.
+            _busFaded[bus] = true;
+            PostGraph(Order(_buses));
+        }
+        bool sent = Flush() && TryPost(_busFaded[bus]
+            ? new Command { Op = Op.BusFade, Slot = bus, Volume = volume, Fade = frames, Frame = Now }
+            : new Command { Op = Op.Bus, Slot = bus, Volume = volume, Frame = Now });
+        if (sent) return;
         DroppedCommands++;
         if (!_busUnsent[bus]) _unsent++;
         _busUnsent[bus] = true;
+    }
+
+    // ---- Effects (main thread)
+
+    /// <summary>
+    /// The order buses are processed in: a bus after the buses that play into it and after the buses its effects
+    /// listen to.
+    /// </summary>
+    /// <exception cref="ArgumentException">An effect listens to a bus that does not exist, to its own bus or to one its bus plays into, or buses listen to each other in a circle.</exception>
+    internal static int[] Order(List<AudioBus> buses)
+    {
+        int count = buses.Count;
+        // needs[b]: buses that must be processed before b, as a bit set (at most 32 buses).
+        Span<uint> needs = stackalloc uint[count];
+        for (int b = 0; b < count; b++)
+        {
+            var bus = buses[b];
+            if (bus.Parent is { } parent) needs[parent.Index] |= 1u << b;
+            foreach (var effect in bus.Effects)
+            {
+                if (effect.Key is not { } name) continue;
+                AudioBus? key = null;
+                foreach (var other in buses) if (other.Name == name) key = other;
+                if (key is null) throw new ArgumentException($"An effect on bus '{bus.Name}' listens to bus '{name}', which does not exist.");
+                for (var up = bus; up is not null; up = up.Parent)
+                    if (up == key) throw new ArgumentException($"An effect on bus '{bus.Name}' cannot listen to '{name}': '{bus.Name}' plays into it, so its mix is not known yet.");
+                needs[b] |= 1u << key.Index;
+            }
+        }
+        var order = new int[count];
+        uint done = 0;
+        for (int placed = 0; placed < count;)
+        {
+            int before = placed;
+            for (int b = 0; b < count; b++)
+                if ((done & 1u << b) == 0 && (needs[b] & ~done) == 0)
+                {
+                    order[placed++] = b;
+                    done |= 1u << b;
+                }
+            if (placed == before) throw new ArgumentException("Audio buses listen to each other in a circle: an effect cannot listen to a bus that, through its own effects or the buses under it, waits for this one.");
+        }
+        return order;
+    }
+
+    /// <summary>Hands the buses' chains, as they are now, to the render function, from the current step's frame.</summary>
+    internal void PostGraph(int[] order)
+    {
+        Anchor();
+        if (Flush()) SendGraph(order);
+        else if (!_graphUnsent)
+        {
+            DroppedCommands++;
+            _graphUnsent = true;
+            _unsent++;
+        }
+    }
+
+    /// <summary>Queues the chains as they are now; false, keeping them to send later (<see cref="Flush"/>), when the queue is full.</summary>
+    private bool SendGraph(int[] order)
+    {
+        var graph = new Graph { Order = order };
+        List<AudioEffect>? entering = null;
+        for (int b = 0; b < _buses.Count; b++)
+        {
+            var effects = _buses[b].Effects;
+            if (effects.Count == 0) continue;
+            graph.Submix[b] = true;
+            var chain = graph.Chains[b] = new AudioEffect[effects.Count];
+            var keys = graph.Keys[b] = new int[effects.Count];
+            for (int i = 0; i < chain.Length; i++)
+            {
+                var effect = chain[i] = effects[i];
+                keys[i] = effect.Key is { } name ? _busNames[name].Index : -1;
+                if (keys[i] >= 0) graph.Submix[keys[i]] = true;
+                if (_sentEffects.Contains(effect)) continue;
+                // Its buffers are made here, on the game's thread, before the render function ever sees it, and only
+                // then: an effect that comes back to a chain may still be rendered by the chain it left, so nothing
+                // on this thread touches it again. From here on it is this mixer's.
+                if (effect.Owner is null)
+                {
+                    effect.PrepareFor(_rate, _channels);
+                    effect.Owner = this;
+                }
+                (entering ??= []).Add(effect);
+            }
+        }
+        for (int b = 1; b < _buses.Count; b++)
+        {
+            if (graph.Submix[b] || _busFaded[b]) _buffers[b] ??= new float[ChunkFrames * _channels];
+            graph.Buffers[b] = _buffers[b];
+        }
+        if (entering is not null)
+        {
+            graph.Entering = [.. entering];
+            graph.EnteringBypass = new bool[entering.Count];
+            graph.EnteringValues = new float[entering.Count][];
+            for (int i = 0; i < entering.Count; i++)
+            {
+                var effect = entering[i];
+                graph.EnteringBypass[i] = effect.Bypass;
+                var values = graph.EnteringValues[i] = new float[effect.ParameterCount];
+                for (int p = 0; p < values.Length; p++) values[p] = effect.ParameterValue(p);
+            }
+        }
+        if (!TryPost(new Command { Op = Op.Graph, Graph = graph, Frame = Now }))
+        {
+            // The sink stopped reading: the chains as they are then are sent when it reads again (Flush).
+            DroppedCommands++;
+            if (!_graphUnsent) _unsent++;
+            _graphUnsent = true;
+            return false;
+        }
+        if (_graphUnsent) _unsent--;
+        _graphUnsent = false;
+        _sentEffects.Clear();
+        _sentEffects.Add(Limiter);
+        for (int b = 0; b < _buses.Count; b++) foreach (var effect in _buses[b].Effects) _sentEffects.Add(effect);
+        return true;
+    }
+
+    internal void PostParameter(AudioEffect effect, int index, float value)
+    {
+        // An effect the render function has not heard of yet gets its values with the chain it arrives in.
+        if (!_sentEffects.Contains(effect)) return;
+        Anchor();
+        if (Flush() && TryPost(new Command { Op = Op.Parameter, Effect = effect, Slot = index, Volume = value, Frame = Now })) return;
+        KeepEffect(effect);
+    }
+
+    internal void PostBypass(AudioEffect effect, bool bypass)
+    {
+        if (!_sentEffects.Contains(effect)) return;
+        Anchor();
+        if (Flush() && TryPost(new Command { Op = Op.Bypass, Effect = effect, Paused = bypass, Frame = Now })) return;
+        KeepEffect(effect);
+    }
+
+    /// <summary>An effect left its bus: the render function is no longer taken to know it, and changes to it that waited for room in the queue are of no use.</summary>
+    internal void Forget(AudioEffect effect)
+    {
+        // Whatever chain it enters next, it enters as new (cleared, with its values), also when the chain without it
+        // could not be queued and the render function never saw it leave.
+        _sentEffects.Remove(effect);
+        if (!effect.Unsent) return;
+        effect.Unsent = false;
+        _unsentEffects--;
+        _unsent--;
+    }
+
+    /// <summary>The queue had no room for a change to <paramref name="effect"/>: all its values are sent when it has.</summary>
+    private void KeepEffect(AudioEffect effect)
+    {
+        DroppedCommands++;
+        if (effect.Unsent) return;
+        effect.Unsent = true;
+        _unsentEffects++;
+        _unsent++;
     }
 
     // ---- Playing
@@ -398,6 +708,7 @@ public sealed class AudioEngine : IDisposable
         l.Frames = clip is null ? 0 : clip.Samples.Length / clip.Channels;
         l.Rate = clip is null ? 1 : (double)clip.SampleRate / _rate;
         l.Step = step;
+        l.StepRamp = 0;
         l.Position = 0;
         l.PositionFrame = at;
         l.Limit = long.MaxValue;
@@ -406,7 +717,7 @@ public sealed class AudioEngine : IDisposable
         TryPost(new Command
         {
             Op = Op.Start, Slot = slot, Frame = at, Clip = clip, Feed = feed, Step = step, Loop = p.Loop, Bus = bus.Index,
-            Volume = l.Volume, Left = l.Left, Right = l.Right,
+            Volume = l.Volume, Left = l.Left, Right = l.Right, Fade = Frames(p.FadeIn),
         });
         return new VoiceHandle(slot, l.Generation);
     }
@@ -423,6 +734,52 @@ public sealed class AudioEngine : IDisposable
                 victim = i;
         }
         return _logical[victim].Priority <= priority ? victim : -1;
+    }
+
+    /// <summary>The longest ramp or fade, in frames (over twelve hours at 48 kHz): a longer or endless time is this long, so frame counts never overflow.</summary>
+    private const long LongestRamp = int.MaxValue;
+
+    /// <summary>The frames of a time in seconds, at least one for any time above zero and at most <see cref="LongestRamp"/>; 0 for none, or for a value that is not a number.</summary>
+    private long Frames(double seconds) => seconds > 0 ? Math.Clamp((long)Math.Round(seconds * _rate), 1, LongestRamp) : 0;
+
+    /// <summary>
+    /// Brings the timeline's view of a sound (where it is in its clip, and its speed) to frame <paramref name="now"/>:
+    /// it advanced at its speed since the last change, through what is left of a pitch ramp, unless paused.
+    /// </summary>
+    private static void Settle(ref Logical l, long now)
+    {
+        long frames = Math.Max(0, now - l.PositionFrame);
+        if (!l.Paused && frames > 0)
+        {
+            long ramp = Math.Min(frames, l.StepRamp);
+            if (ramp > 0)
+            {
+                // Each frame of a ramp plays one step faster than the one before: the sum of those speeds.
+                double delta = (l.StepTarget - l.Step) / l.StepRamp;
+                l.Position += ramp * l.Step + delta * ramp * (ramp + 1) / 2;
+                l.StepRamp -= ramp;
+                l.Step = l.StepRamp == 0 ? l.StepTarget : l.Step + delta * ramp;
+            }
+            l.Position += (frames - ramp) * l.Step;
+        }
+        l.PositionFrame = Math.Max(now, l.PositionFrame);
+    }
+
+    /// <summary>Frames a clip that does not loop still has to play, from where <see cref="Settle"/> left it.</summary>
+    private static long FramesLeft(in Logical l)
+    {
+        double remaining = l.Frames - l.Position;
+        if (l.StepRamp > 0)
+        {
+            long ramp = l.StepRamp;
+            double delta = (l.StepTarget - l.Step) / ramp, covered = ramp * l.Step + delta * ramp * (ramp + 1) / 2;
+            if (covered < remaining) return ramp + Math.Max(0, (long)Math.Ceiling((remaining - covered) / l.StepTarget));
+            // It ends inside the ramp: the frame where the sum of the speeds reaches what is left.
+            double a = delta / 2, b = l.Step + delta / 2;
+            double frames = Math.Abs(a) < 1e-18 ? remaining / b : (-b + Math.Sqrt(Math.Max(0, b * b + 4 * a * remaining))) / (2 * a);
+            return Math.Max(0, (long)Math.Ceiling(frames));
+        }
+        return Math.Max(0, (long)Math.Ceiling(remaining / l.Step));
     }
 
     /// <summary>The speed factor of a pitch: clamped, and 1 for a value that is not a number (which no clamp catches).</summary>
@@ -447,7 +804,7 @@ public sealed class AudioEngine : IDisposable
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
-        long fade = Math.Max(0, (long)Math.Round(fadeSeconds * _rate));
+        long fade = Frames(fadeSeconds);
         ref var l = ref _logical[voice.Index];
         l.Limit = Math.Min(l.Limit, Now + fade);
         l.End = Math.Min(l.End, l.Limit);
@@ -459,10 +816,11 @@ public sealed class AudioEngine : IDisposable
 
     /// <summary>
     /// Changes the volume (0..1) and pan (0..1) of <paramref name="voice"/> from the current step's frame; null, or a
-    /// value that is not a number, keeps a value.
+    /// value that is not a number, keeps a value. With <paramref name="seconds"/>, the values move there over that
+    /// time, frame by frame, instead of at once (a ramp stands still while the sound is paused).
     /// </summary>
     /// <returns>Whether it was playing.</returns>
-    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null)
+    public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, double seconds = 0)
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
@@ -472,7 +830,7 @@ public sealed class AudioEngine : IDisposable
         ref var l = ref _logical[voice.Index];
         if (gain >= 0) l.Volume = gain;
         if (left >= 0) (l.Left, l.Right) = (left, right);
-        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right }, Unsent.Values);
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = Now, Volume = gain, Left = left, Right = right, Fade = Frames(seconds) }, Unsent.Values);
         return true;
     }
 
@@ -480,10 +838,11 @@ public sealed class AudioEngine : IDisposable
     /// Changes the pitch of <paramref name="voice"/> from the current step's frame: the playback speed factor, 1 for the
     /// clip's own pitch, clamped to 0.01..100 as when a sound starts. The sound goes on from where it is, and the
     /// mixer's timeline moves its end accordingly. Streams play at their own pitch. A pitch that is not a number
-    /// changes nothing.
+    /// changes nothing. With <paramref name="seconds"/>, the speed moves there over that time, frame by frame (a
+    /// glide), instead of at once.
     /// </summary>
     /// <returns>Whether it was playing and is a clip; false for a stale handle or a stream.</returns>
-    public bool SetPitch(VoiceHandle voice, float pitch)
+    public bool SetPitch(VoiceHandle voice, float pitch, double seconds = 0)
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
@@ -492,16 +851,18 @@ public sealed class AudioEngine : IDisposable
         if (float.IsNaN(pitch)) return true;
         long now = Now;
         // Where the sound is on the timeline: it advanced at the old speed since the last change, unless paused.
-        if (!l.Paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
-        l.PositionFrame = Math.Max(now, l.PositionFrame);
-        l.Step = l.Rate * Speed(pitch);
+        Settle(ref l, now);
+        double speed = l.Rate * Speed(pitch);
+        long ramp = Frames(seconds);
+        if (ramp > 0) (l.StepTarget, l.StepRamp) = (speed, ramp);
+        else (l.Step, l.StepRamp) = (speed, 0);
         if (!l.Loop && l.Frames > 0)
         {
-            long left = Math.Max(0, (long)Math.Ceiling((l.Frames - l.Position) / l.Step));
+            long left = FramesLeft(l);
             if (l.Paused) l.Remaining = left;
             else l.End = Math.Min(now + left, l.Limit);
         }
-        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = l.Step }, Unsent.Values);
+        Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = speed, Fade = ramp }, Unsent.Values);
         return true;
     }
 
@@ -515,8 +876,7 @@ public sealed class AudioEngine : IDisposable
         if (l.Paused == paused) return true;
         long now = Now;
         // A sound paused before its start frame (the timeline went back to a sink that had stopped) has played nothing.
-        if (paused) l.Position += Math.Max(0, now - l.PositionFrame) * l.Step;
-        l.PositionFrame = Math.Max(now, l.PositionFrame);
+        Settle(ref l, now);
         if (paused)
         {
             l.Remaining = l.End == long.MaxValue ? long.MaxValue : l.End - Math.Max(now, l.Start);
@@ -677,7 +1037,7 @@ public sealed class AudioEngine : IDisposable
             // The values of a sound that ended or was stopped at once are of no use; its voice is taken again only after
             // what is left here is sent.
             if ((l.Unsent & Unsent.Values) != 0 && l.Active
-                && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is null ? l.Step : 0 })) return false;
+                && !TryPost(new Command { Op = Op.Set, Slot = slot, Frame = now, Volume = l.Volume, Left = l.Left, Right = l.Right, Step = l.Feed is not null ? 0 : l.StepRamp > 0 ? l.StepTarget : l.Step })) return false;
             l.Unsent &= ~Unsent.Values;
             // A resume is sent even when the sound has since ended on the timeline: the render function still holds it
             // paused, and plays what is left as it would have had the resume been queued.
@@ -687,13 +1047,37 @@ public sealed class AudioEngine : IDisposable
             l.Unsent = Unsent.None;
             _unsent--;
         }
+        // The chains before anything that depends on them: a faded bus's buffer, an effect's values.
+        if (_graphUnsent && !SendGraph(Order(_buses))) return false;
         for (int bus = 0; bus < _buses.Count; bus++)
         {
             if (!_busUnsent[bus]) continue;
-            if (!TryPost(new Command { Op = Op.Bus, Slot = bus, Volume = _buses[bus].Volume, Frame = now })) return false;
+            if (!TryPost(new Command { Op = _busFaded[bus] ? Op.BusFade : Op.Bus, Slot = bus, Volume = _buses[bus].Volume, Frame = now })) return false;
             _busUnsent[bus] = false;
             _unsent--;
         }
+        if (_unsentEffects > 0)
+        {
+            if (!FlushEffect(Limiter, now)) return false;
+            for (int bus = 0; bus < _buses.Count; bus++)
+                foreach (var effect in _buses[bus].Effects) if (!FlushEffect(effect, now)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>Sends every value of an effect whose changes the queue had no room for; false while it still has none.</summary>
+    private bool FlushEffect(AudioEffect effect, long now)
+    {
+        if (!effect.Unsent) return true;
+        // Room for all of it or nothing, so a part is never sent twice.
+        int free = (Volatile.Read(ref _tail) - _head - 1 + QueueSize) % QueueSize;
+        if (free < effect.ParameterCount + 1) return false;
+        for (int p = 0; p < effect.ParameterCount; p++)
+            TryPost(new Command { Op = Op.Parameter, Effect = effect, Slot = p, Volume = effect.ParameterValue(p), Frame = now });
+        TryPost(new Command { Op = Op.Bypass, Effect = effect, Paused = effect.Bypass, Frame = now });
+        effect.Unsent = false;
+        _unsentEffects--;
+        _unsent--;
         return true;
     }
 
@@ -734,11 +1118,12 @@ public sealed class AudioEngine : IDisposable
             Skip(start, to);
             (start, _skew) = (to, skipped);
         }
-        // Bus volumes change at their exact frames: the block is mixed in segments between those frames.
+        // Bus volumes, effect chains and their parameters change at their exact frames: the block is mixed in segments
+        // between those frames, none longer than a submix buffer.
         int done = 0;
         while (done < frames)
         {
-            long segmentStart = start + done, segmentEnd = start + frames;
+            long segmentStart = start + done, segmentEnd = Math.Min(start + frames, segmentStart + ChunkFrames);
             for (int b = 0; b < MaxBuses; b++)
             {
                 int first = b * WaitingChanges;
@@ -749,15 +1134,166 @@ public sealed class AudioEngine : IDisposable
                 }
                 if (_busChanges[b] > 0) segmentEnd = Math.Min(segmentEnd, _busWaiting[first].At);
             }
+            while (_eventCount > 0 && _events[_eventHead].At <= segmentStart) ApplyEvent();
+            if (_eventCount > 0) segmentEnd = Math.Min(segmentEnd, _events[_eventHead].At);
+            var graph = _graph;
+            // Where each bus is mixed. A bus with effects, one an effect listens to and one whose volume is fading are
+            // mixed in a buffer of their own (a submix); any other bus is not mixed at all: its sounds go straight into
+            // the nearest submix above it (or the output), scaled by the volumes on the way, as they always did.
             for (int b = 0; b < MaxBuses; b++)
-                _busGain[b] = _busVolume[b] * (_busParent[b] >= 0 ? _busGain[_busParent[b]] : 1);
+            {
+                if (_busFadeLeft[b] > 0) segmentEnd = Math.Min(segmentEnd, segmentStart + _busFadeLeft[b]);
+                int parent = _busParent[b];
+                bool submix = graph.Submix[b] || _busFadeLeft[b] > 0;
+                if (submix && b > 0 && graph.Buffers[b] is null)
+                {
+                    // The chains always arrive before a fade and carry its buffer; should one ever not, the fade ends
+                    // here instead of the render function failing.
+                    (_busFadeLeft[b], _busVolume[b], submix) = (0, _busFadeTarget[b], false);
+                }
+                _busSubmix[b] = submix;
+                _busAbove[b] = parent < 0 || _busSubmix[parent] ? 1 : _busGain[parent];
+                _busGain[b] = submix ? 1 : _busVolume[b] * (parent >= 0 ? _busAbove[b] : 1);
+                _busDestination[b] = submix ? b : parent < 0 ? 0 : _busDestination[parent];
+            }
             int count = (int)(segmentEnd - segmentStart);
             var segment = buffer.Slice(done * _channels, count * _channels);
+            for (int b = 1; b < MaxBuses; b++)
+                if (_busSubmix[b]) graph.Buffers[b].AsSpan(0, segment.Length).Clear();
             for (int v = 0; v < _voices.Length; v++)
-                if (_voices[v].Active || _hasIncoming[v]) Mix(v, segment, segmentStart, count);
+                if (_voices[v].Active || _hasIncoming[v]) Mix(v, graph, segment, segmentStart, count);
+            var order = graph.Order;
+            for (int i = 0; i < order.Length; i++)
+                if (_busSubmix[order[i]]) Submix(graph, order[i], segment);
+            if (!Limiter.Bypassed && !Limiter.Failed) Run(Limiter, segment, default, false);
             done += count;
         }
         Volatile.Write(ref _position, rendered + frames);
+    }
+
+    /// <summary>
+    /// Finishes a bus mixed in its own buffer: its effects in order, then its volume (gain by gain while it fades), then
+    /// into the nearest submix above it. "master" is finished in the output itself.
+    /// </summary>
+    private void Submix(Graph graph, int bus, Span<float> output)
+    {
+        var mix = bus == 0 ? output : graph.Buffers[bus].AsSpan(0, output.Length);
+        if (graph.Chains[bus] is { } chain)
+        {
+            var keys = graph.Keys[bus]!;
+            for (int i = 0; i < chain.Length; i++)
+            {
+                var effect = chain[i];
+                if (effect.Bypassed || effect.Failed) continue;
+                int key = keys[i];
+                Run(effect, mix, key < 0 ? default : graph.Buffers[key].AsSpan(0, output.Length), key >= 0);
+            }
+        }
+        if (_busFadeLeft[bus] > 0)
+        {
+            // The segment ends with the fade at the latest, so every frame here takes one step of it.
+            // Each frame's volume is counted from the end of the fade backwards: no error builds up over a long fade.
+            float volume = _busVolume[bus], target = _busFadeTarget[bus], step = _busFadeStep[bus];
+            long left = _busFadeLeft[bus];
+            for (int i = 0; i < mix.Length; i += _channels)
+            {
+                volume = target - step * --left;
+                for (int c = 0; c < _channels; c++) mix[i + c] *= volume;
+            }
+            _busFadeLeft[bus] = left;
+            _busVolume[bus] = volume;
+        }
+        else if (_busVolume[bus] != 1)
+        {
+            float volume = _busVolume[bus];
+            for (int i = 0; i < mix.Length; i++) mix[i] *= volume;
+        }
+        if (bus == 0) return;
+        int into = _busDestination[_busParent[bus]];
+        var above = into == 0 ? output : graph.Buffers[into].AsSpan(0, output.Length);
+        float gain = _busAbove[bus];
+        for (int i = 0; i < mix.Length; i++) above[i] += mix[i] * gain;
+    }
+
+    /// <summary>Runs an effect over a segment. One that throws takes no further part in the mix: nothing escapes the render function.</summary>
+    private void Run(AudioEffect effect, Span<float> mix, ReadOnlySpan<float> key, bool keyed)
+    {
+        try
+        {
+            if (keyed) effect.Run(mix, key);
+            else effect.Run(mix);
+        }
+        catch (Exception e)
+        {
+            Fail(effect, e);
+        }
+    }
+
+    private void Fail(AudioEffect effect, Exception error)
+    {
+        effect.Failed = true;
+        effect.Fault(error);
+        Volatile.Write(ref _faulted, _faulted + 1);
+    }
+
+    /// <summary>Applies the oldest waiting change to the graph.</summary>
+    private void ApplyEvent()
+    {
+        ref var e = ref _events[_eventHead];
+        switch (e.Op)
+        {
+            case Op.Graph:
+                var graph = _graph = e.Graph!;
+                for (int i = 0; i < graph.Entering.Length; i++)
+                {
+                    var entering = graph.Entering[i];
+                    entering.Bypassed = graph.EnteringBypass[i];
+                    try
+                    {
+                        entering.Clear();
+                        var values = graph.EnteringValues[i];
+                        for (int p = 0; p < values.Length; p++) entering.Deliver(p, values[p]);
+                    }
+                    catch (Exception error)
+                    {
+                        Fail(entering, error);
+                    }
+                }
+                break;
+            case Op.Parameter:
+                try { e.Effect!.Deliver(e.Index, e.Value); }
+                catch (Exception error) { Fail(e.Effect!, error); }
+                break;
+            case Op.Bypass:
+                var effect = e.Effect!;
+                if (effect.Bypassed && !e.Flag)
+                {
+                    try { effect.Clear(); }
+                    catch (Exception error) { Fail(effect, error); }
+                }
+                effect.Bypassed = e.Flag;
+                break;
+            case Op.BusFade:
+                // A fade from where the volume is, also in the middle of another fade; no frames: at once.
+                _busFadeLeft[e.Index] = e.Frames;
+                _busFadeTarget[e.Index] = e.Value;
+                if (e.Frames > 0) _busFadeStep[e.Index] = (e.Value - _busVolume[e.Index]) / e.Frames;
+                else _busVolume[e.Index] = e.Value;
+                break;
+        }
+        e.Graph = null;
+        e.Effect = null;
+        _eventHead = (_eventHead + 1) % WaitingEvents;
+        _eventCount--;
+    }
+
+    /// <summary>Keeps a change to the graph until its frame; with no room left, the oldest one takes effect now.</summary>
+    private ref Event Wait(long at)
+    {
+        if (_eventCount == WaitingEvents) ApplyEvent();
+        ref var e = ref _events[(_eventHead + _eventCount++) % WaitingEvents];
+        e = new Event { At = at };
+        return ref e;
     }
 
     /// <summary>
@@ -767,6 +1303,14 @@ public sealed class AudioEngine : IDisposable
     /// </summary>
     private void Skip(long from, long to)
     {
+        // Changes to the graph in those frames take effect; a fade that was running in them is over.
+        while (_eventCount > 0 && _events[_eventHead].At < to) ApplyEvent();
+        for (int b = 0; b < MaxBuses; b++)
+        {
+            if (_busFadeLeft[b] == 0) continue;
+            _busFadeLeft[b] = 0;
+            _busVolume[b] = _busFadeTarget[b];
+        }
         for (int slot = 0; slot < _voices.Length; slot++)
         {
             ref var voice = ref _voices[slot];
@@ -780,6 +1324,8 @@ public sealed class AudioEngine : IDisposable
             while (voice.Active && pos < to)
             {
                 while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
+                // A ramp that was running in frames nobody heard is over.
+                if (voice.Ramping) FinishRamps(ref voice);
                 long end = voice.StopAt == long.MaxValue ? long.MaxValue : voice.StopAt + voice.Fade;
                 if (pos >= end) { Silence(ref voice); break; }
                 long next = Math.Min(to, end);
@@ -799,10 +1345,12 @@ public sealed class AudioEngine : IDisposable
     /// <summary>The newest sound of a voice: the one waiting for its start frame, if any.</summary>
     private ref Voice Target(int slot) => ref _hasIncoming[slot] ? ref _incoming[slot] : ref _voices[slot];
 
-    private void Mix(int slot, Span<float> buffer, long start, int frames)
+    private void Mix(int slot, Graph graph, Span<float> output, long start, int frames)
     {
         ref var voice = ref _voices[slot];
         float busGain = _busGain[voice.Bus];
+        int into = _busDestination[voice.Bus];
+        var buffer = into == 0 ? output : graph.Buffers[into].AsSpan(0, output.Length);
         for (int f = 0; f < frames; f++)
         {
             long pos = start + f;
@@ -813,6 +1361,8 @@ public sealed class AudioEngine : IDisposable
                 _hasIncoming[slot] = false;
                 _incoming[slot] = default;
                 busGain = _busGain[voice.Bus];
+                into = _busDestination[voice.Bus];
+                buffer = into == 0 ? output : graph.Buffers[into].AsSpan(0, output.Length);
             }
             if (!voice.Active)
             {
@@ -823,6 +1373,7 @@ public sealed class AudioEngine : IDisposable
             while (voice.Changes > 0 && pos >= voice.Pending[0].At) ApplyPending(ref voice);
             if (pos >= voice.StopAt + voice.Fade) { Silence(ref voice); continue; }
             if (voice.Paused) continue;
+            if (voice.Ramping) Ramp(ref voice);
             float gain = voice.Volume * busGain;
             if (pos >= voice.StopAt) gain *= 1f - (float)(pos - voice.StopAt) / voice.Fade;
             float l, r;
@@ -877,12 +1428,62 @@ public sealed class AudioEngine : IDisposable
     private static void ApplyPending(ref Voice voice)
     {
         ref var change = ref voice.Pending[0];
-        if (change.Volume >= 0) voice.Volume = change.Volume;
-        if (change.Left >= 0) (voice.Left, voice.Right) = (change.Left, change.Right);
+        if (change.Volume >= 0)
+        {
+            voice.VolumeLeft = change.VolumeRamp;
+            if (change.VolumeRamp > 0) (voice.VolumeTarget, voice.VolumeStep) = (change.Volume, (change.Volume - voice.Volume) / change.VolumeRamp);
+            else voice.Volume = change.Volume;
+        }
+        if (change.Left >= 0)
+        {
+            voice.PanLeft = change.PanRamp;
+            if (change.PanRamp > 0)
+            {
+                (voice.LeftTarget, voice.RightTarget) = (change.Left, change.Right);
+                (voice.LeftStep, voice.RightStep) = ((change.Left - voice.Left) / change.PanRamp, (change.Right - voice.Right) / change.PanRamp);
+            }
+            else (voice.Left, voice.Right) = (change.Left, change.Right);
+        }
         if (change.Pause != 0) voice.Paused = change.Pause > 0;
-        if (change.Step > 0) voice.Step = change.Step;
+        if (change.Step > 0)
+        {
+            voice.StepLeft = change.StepRamp;
+            if (change.StepRamp > 0) (voice.StepTarget, voice.StepDelta) = (change.Step, (change.Step - voice.Step) / change.StepRamp);
+            else voice.Step = change.Step;
+        }
+        voice.Ramping = voice.VolumeLeft > 0 || voice.PanLeft > 0 || voice.StepLeft > 0;
         voice.Changes--;
         for (int i = 0; i < voice.Changes; i++) voice.Pending[i] = voice.Pending[i + 1];
+    }
+
+    /// <summary>One frame of the ramps of <paramref name="voice"/>: each value takes one step, and its target exactly at the last one.</summary>
+    private static void Ramp(ref Voice voice)
+    {
+        if (voice.VolumeLeft > 0)
+        {
+            // From the end backwards, not step upon step: no error builds up over a long ramp.
+            voice.Volume = voice.VolumeTarget - voice.VolumeStep * --voice.VolumeLeft;
+        }
+        if (voice.PanLeft > 0)
+        {
+            voice.PanLeft--;
+            voice.Left = voice.LeftTarget - voice.LeftStep * voice.PanLeft;
+            voice.Right = voice.RightTarget - voice.RightStep * voice.PanLeft;
+        }
+        if (voice.StepLeft > 0)
+        {
+            voice.Step = voice.StepTarget - voice.StepDelta * --voice.StepLeft;
+        }
+        voice.Ramping = voice.VolumeLeft > 0 || voice.PanLeft > 0 || voice.StepLeft > 0;
+    }
+
+    private static void FinishRamps(ref Voice voice)
+    {
+        if (voice.VolumeLeft > 0) voice.Volume = voice.VolumeTarget;
+        if (voice.PanLeft > 0) (voice.Left, voice.Right) = (voice.LeftTarget, voice.RightTarget);
+        if (voice.StepLeft > 0) voice.Step = voice.StepTarget;
+        voice.VolumeLeft = voice.PanLeft = voice.StepLeft = 0;
+        voice.Ramping = false;
     }
 
     /// <summary>
@@ -911,10 +1512,10 @@ public sealed class AudioEngine : IDisposable
                 }
                 ref var from = ref pending[join];
                 ref var into = ref pending[join + 1];
-                if (into.Volume < 0) into.Volume = from.Volume;
-                if (into.Left < 0) (into.Left, into.Right) = (from.Left, from.Right);
+                if (into.Volume < 0) (into.Volume, into.VolumeRamp) = (from.Volume, from.VolumeRamp);
+                if (into.Left < 0) (into.Left, into.Right, into.PanRamp) = (from.Left, from.Right, from.PanRamp);
                 if (into.Pause == 0) into.Pause = from.Pause;
-                if (into.Step <= 0) into.Step = from.Step;
+                if (into.Step <= 0) (into.Step, into.StepRamp) = (from.Step, from.StepRamp);
                 voice.Changes--;
                 for (int k = join; k < voice.Changes; k++) pending[k] = pending[k + 1];
             }
@@ -959,6 +1560,12 @@ public sealed class AudioEngine : IDisposable
                         Active = true, Clip = c.Clip, Feed = c.Feed, Step = c.Step, Loop = c.Loop, Bus = c.Bus, Volume = c.Volume,
                         Left = c.Left, Right = c.Right, Start = at, StopAt = long.MaxValue,
                     };
+                    if (c.Fade > 0)
+                    {
+                        // A fade-in: from silence to its volume, one step per frame.
+                        (started.Volume, started.VolumeTarget, started.VolumeStep) = (0, c.Volume, c.Volume / c.Fade);
+                        (started.VolumeLeft, started.Ramping) = ((int)Math.Min(c.Fade, int.MaxValue), true);
+                    }
                     if (_voices[c.Slot].Active && at > blockStart)
                     {
                         _incoming[c.Slot] = started;
@@ -983,9 +1590,10 @@ public sealed class AudioEngine : IDisposable
                     ref var change = ref Waiting(ref Target(c.Slot), at);
                     if (c.Op == Op.Set)
                     {
-                        if (c.Volume >= 0) change.Volume = c.Volume;
-                        if (c.Left >= 0) (change.Left, change.Right) = (c.Left, c.Right);
-                        if (c.Step > 0) change.Step = c.Step;
+                        int ramp = (int)Math.Min(c.Fade, int.MaxValue);
+                        if (c.Volume >= 0) (change.Volume, change.VolumeRamp) = (c.Volume, ramp);
+                        if (c.Left >= 0) (change.Left, change.Right, change.PanRamp) = (c.Left, c.Right, ramp);
+                        if (c.Step > 0) (change.Step, change.StepRamp) = (c.Step, ramp);
                     }
                     else change.Pause = c.Paused ? 1 : -1;
                     break;
@@ -1006,15 +1614,33 @@ public sealed class AudioEngine : IDisposable
                         _busChanges[c.Slot] = waiting + 1;
                     }
                     break;
+                case Op.BusFade:
+                    ref var fade = ref Wait(at);
+                    (fade.Op, fade.Index, fade.Value, fade.Frames) = (Op.BusFade, c.Slot, c.Volume, c.Fade);
+                    break;
+                case Op.Graph:
+                    ref var chains = ref Wait(at);
+                    (chains.Op, chains.Graph) = (Op.Graph, c.Graph);
+                    break;
+                case Op.Parameter:
+                    ref var parameter = ref Wait(at);
+                    (parameter.Op, parameter.Effect, parameter.Index, parameter.Value) = (Op.Parameter, c.Effect, c.Slot, c.Volume);
+                    break;
+                case Op.Bypass:
+                    ref var bypass = ref Wait(at);
+                    (bypass.Op, bypass.Effect, bypass.Flag) = (Op.Bypass, c.Effect, c.Paused);
+                    break;
             }
             c.Clip = null;
             c.Feed = null;
+            c.Graph = null;
+            c.Effect = null;
             tail = (tail + 1) % QueueSize;
         }
         Volatile.Write(ref _tail, tail);
     }
 
-    private enum Op : byte { Start, Stop, Set, Pause, Bus }
+    private enum Op : byte { Start, Stop, Set, Pause, Bus, BusFade, Graph, Parameter, Bypass }
 
     /// <summary>What of a voice the queue had no room for, kept on the main thread until it has.</summary>
     [Flags]
@@ -1027,9 +1653,45 @@ public sealed class AudioEngine : IDisposable
         public long Frame, Fade;
         public AudioClip? Clip;
         public StreamFeed? Feed;
+        public Graph? Graph;
+        public AudioEffect? Effect;
         public double Step;
         public float Volume, Left, Right;
         public bool Loop, Paused;
+    }
+
+    /// <summary>
+    /// The buses' effect chains as the render function sees them, made on the main thread and never changed after: a
+    /// new one replaces it at its frame. Indexed by bus.
+    /// </summary>
+    private sealed class Graph
+    {
+        public static readonly Graph Empty = new();
+        public readonly AudioEffect[]?[] Chains = new AudioEffect[MaxBuses][];
+        /// <summary>For each effect of a chain, the bus it listens to, or -1.</summary>
+        public readonly int[]?[] Keys = new int[MaxBuses][];
+        /// <summary>The submix buffers of the buses that have one ("master" mixes in the output itself).</summary>
+        public readonly float[]?[] Buffers = new float[MaxBuses][];
+        /// <summary>Buses mixed in their own buffer: they have effects, or an effect listens to them.</summary>
+        public readonly bool[] Submix = new bool[MaxBuses];
+        /// <summary>Every bus, each after the buses that play into it and the ones its effects listen to.</summary>
+        public int[] Order = [];
+        /// <summary>Effects the render function has not seen: it clears them and gives them these values.</summary>
+        public AudioEffect[] Entering = [];
+        public bool[] EnteringBypass = [];
+        public float[][] EnteringValues = [];
+    }
+
+    /// <summary>A change to the graph waiting for its frame.</summary>
+    private struct Event
+    {
+        public long At, Frames;
+        public Op Op;
+        public int Index;
+        public float Value;
+        public bool Flag;
+        public Graph? Graph;
+        public AudioEffect? Effect;
     }
 
     /// <summary>A voice as the sink's thread renders it.</summary>
@@ -1042,6 +1704,11 @@ public sealed class AudioEngine : IDisposable
         public float Volume, Left, Right;
         public int Bus;
         public long Start, StopAt, Fade;
+        // Ramps: what each value still has to move per frame, where it ends, and the frames left.
+        public bool Ramping;
+        public float VolumeStep, VolumeTarget, LeftStep, RightStep, LeftTarget, RightTarget;
+        public double StepDelta, StepTarget;
+        public int VolumeLeft, PanLeft, StepLeft;
         // The changes waiting for their frames, oldest first.
         public int Changes;
         public WaitingList Pending;
@@ -1054,6 +1721,8 @@ public sealed class AudioEngine : IDisposable
         public float Volume, Left, Right;
         public int Pause;
         public double Step;
+        // Frames each value takes to get there; 0: at once.
+        public int VolumeRamp, PanRamp, StepRamp;
     }
 
     /// <summary>The waiting changes of a voice, inside it: nothing is allocated for them while rendering.</summary>
@@ -1074,6 +1743,9 @@ public sealed class AudioEngine : IDisposable
         // Live pitch: the clip's frames, its rate over the output's, its speed now, and its position at PositionFrame.
         public long Frames, PositionFrame, Limit;
         public double Rate, Step, Position;
+        // A pitch ramp: the speed it ends at and the frames it still takes from PositionFrame (0: none).
+        public double StepTarget;
+        public long StepRamp;
         // What the render function was last asked for, to send again if the queue had no room for it.
         public float Volume, Left, Right;
         public long StopFrame, StopFade;

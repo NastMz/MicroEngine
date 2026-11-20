@@ -37,6 +37,21 @@ modelled as components and systems.
 
 **Added**
 
+- Effects on audio buses ([Buses and effects](../manual/audio.md#buses-and-effects)): `Audio.Bus(name)` is an
+  `AudioBus` with a chain of effects (`Add`, `Insert`, `Remove`). Built in, in `MicroEngine.Audio.Effects`: `LowPass`,
+  `HighPass`, `Compressor` (with `Sidechain`, and `Compressor.Duck(bus)` to turn music down under a voice line),
+  `Reverb`, `Delay` and `Limiter`. Their properties change while they play, without clicks, and `Bypass` switches one
+  out. A game writes its own by deriving from `AudioEffect` ([an audio effect](../manual/extending.md#an-audio-effect)).
+  A mix that uses no effect sounds exactly as before.
+- A limiter after the `master` bus, on in every game (`Audio.Limiter`): a mix louder than full scale is turned down
+  instead of clipped; a mix within full scale is not touched.
+- Fades ([Fades and crossfades](../manual/audio.md#fades-and-crossfades)): `Audio.Set(voice, ..., seconds:)` moves a
+  voice's volume, pan and pitch over a time, `PlayParameters.FadeIn` raises a sound from silence,
+  `AudioBus.FadeTo` and `Audio.SetBusVolume(name, volume, fadeSeconds)` fade a bus, and
+  `Audio.PlayMusic(name, crossfade:)` overlaps the new track with the old one. A fade or ramp lasts at most
+  `int.MaxValue` output frames (over twelve hours); a longer or endless time is that long.
+- `Audio.SupportsVoices` tells whether `PlayVoice` returns voices on the current device (false headless, muted or
+  without audio hardware). The Examples sample has "Effects on buses".
 - [Physics](../manual/physics.md) for more kinds of game:
   - A scene has a physics world: `Scene.Physics` (`ScenePhysics`) is made on first use, stepped after the scene's
     `Update` on its world's clock, written to the owners' transforms, part of the state hash and disposed with the

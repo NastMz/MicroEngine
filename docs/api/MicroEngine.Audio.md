@@ -8,6 +8,8 @@ Guide: [Audio](../manual/audio.md)
 
 ### Namespaces
 
+ [MicroEngine.Audio.Effects](MicroEngine.Audio.Effects.md)
+
  [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)
 
 ### Classes
@@ -19,12 +21,19 @@ The audio loaders of the content store (<code>Game.Assets.Sound</code>, <code>Ga
 
  [AudioBus](MicroEngine.Audio.AudioBus.md)
 
-A named mix stage: the sounds and buses under it are scaled by its [Volume](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Volume). Buses form a tree under
-"master": a bus is created under a parent that already exists and is never moved, so there is no cycle.
+A named mix stage: the sounds and buses under it are mixed together, pass through its effects
+([Add](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Add_MicroEngine_Audio_AudioEffect_)) and are scaled by its [Volume](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Volume). Buses form a tree under "master": a bus is created
+under a parent that already exists and is never moved, so there is no cycle.
 
  [AudioClip](MicroEngine.Audio.AudioClip.md)
 
 Uncompressed audio: interleaved float samples in -1..1.
+
+ [AudioEffect](MicroEngine.Audio.AudioEffect.md)
+
+A processor in a bus's effect chain ([Add](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Add_MicroEngine_Audio_AudioEffect_)): it changes the bus's mix in place, one block at a
+time, on the thread that renders audio. The built-in effects (<code>MicroEngine.Audio.Effects</code>) derive from it, and so
+does an effect a game or a package writes.
 
  [AudioEngineSettings](MicroEngine.Audio.AudioEngineSettings.md)
 

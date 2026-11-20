@@ -44,6 +44,22 @@ public int? DelayFrames { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)?
 
+### <a id="MicroEngine_Audio_AudioEngineSettings_Limiter"></a> Limiter
+
+Whether the limiter after "master" ([Limiter](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Limiter)) starts switched on: a mix that goes over
+full scale is then turned down instead of clipped, and a mix within full scale is not touched. Null (the
+default) leaves it to whoever creates the mixer: the devices games play through
+([MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md)) switch it on; an [AudioEngine](MicroEngine.Audio.AudioEngine.md) created directly renders exactly what
+it is told and leaves it off.
+
+```csharp
+public bool? Limiter { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)?
+
 ### <a id="MicroEngine_Audio_AudioEngineSettings_MaxVoices"></a> MaxVoices
 
 Sounds that can play at once (32 by default); the voice policy decides beyond that.

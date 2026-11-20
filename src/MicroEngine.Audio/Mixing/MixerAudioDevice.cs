@@ -24,7 +24,9 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     /// <summary>A device mixing into <paramref name="sink"/>, which starts rendering now.</summary>
     public MixerAudioDevice(IAudioSink sink, AudioEngineSettings? settings = null)
     {
-        Engine = new AudioEngine(sink, settings);
+        settings ??= new AudioEngineSettings();
+        // A game's mix is kept within full scale unless the settings say otherwise.
+        Engine = new AudioEngine(sink, settings with { Limiter = settings.Limiter ?? true });
         _decoders["ogg"] = VorbisStream.Open;
     }
 
@@ -128,6 +130,21 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
         StopMusic();
         var track = _music[music.Id];
         var parameters = new PlayParameters { Volume = volume, Loop = track.Loop, Bus = AudioEngine.MusicBus, Priority = int.MaxValue };
+        _musicVoice = track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
+        _current = music;
+    }
+
+    /// <summary>
+    /// Starts <paramref name="music"/> rising from silence to <paramref name="volume"/> while the music that was
+    /// playing falls to silence, both over <paramref name="seconds"/>, frame by frame; the new track is
+    /// <see cref="CurrentMusic"/> at once. With no music playing it is a fade-in.
+    /// </summary>
+    public void CrossfadeMusic(MusicHandle music, float volume, float seconds)
+    {
+        ArgumentNullException.ThrowIfNull(music);
+        Engine.Stop(_musicVoice, seconds);
+        var track = _music[music.Id];
+        var parameters = new PlayParameters { Volume = volume, Loop = track.Loop, Bus = AudioEngine.MusicBus, Priority = int.MaxValue, FadeIn = seconds };
         _musicVoice = track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
         _current = music;
     }

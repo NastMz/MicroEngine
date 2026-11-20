@@ -1012,3 +1012,46 @@ public static void Assign(InputMap map, string action, in InputEvent press)
 ```
 
 Manual: [The mouse in actions](../manual/input.md#the-mouse-in-actions).
+
+## Effects on buses
+
+A reverb on the sound effects, music that drops under a voice line and goes muffled behind a pause, and a chime that
+crosses the screen on a pan ramp. Source: [`MixExample.cs`](../../samples/Examples/Examples/MixExample.cs).
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-setup -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasBus("voice"))
+    {
+        Audio.AddBus("voice");                                 // the bus of spoken lines, beside "sfx" and "music"
+        Audio.AddMusic("mix-loop", MixSounds.Loop());
+        Audio.AddSound("mix-line", MixSounds.Line());
+        Audio.AddSound("mix-chime", MixSounds.Chime());
+    }
+    Audio.Bus("sfx").Add(_room);                               // every sound effect is heard in a room
+    Audio.Bus("music").Add(_muffle).Add(_duck);                // the music: muffled on demand, and under the voice
+    _music = Audio.PlayMusicVoice("mix-loop", new PlayParameters { Loop = true, Bus = "music", Volume = 0.6f, FadeIn = 0.5f });
+}
+
+public override void Exit()
+{
+    Audio.Stop(_music, fadeSeconds: 0.3f);
+    Audio.Bus("sfx").Remove(_room);                            // the buses go back to what they were
+    Audio.Bus("music").Remove(_muffle);
+    Audio.Bus("music").Remove(_duck);
+    Audio.Bus("sfx").Volume = 1;
+}
+```
+
+<!-- code: samples/Examples/Examples/MixExample.cs#mix-pause -->
+```csharp
+private void SetPaused(bool paused)
+{
+    Paused = paused;
+    _muffle.Bypass = !paused;                                  // the filter is switched in, not added again
+    Audio.Bus("sfx").FadeTo(paused ? 0.3f : 1f, seconds: 0.3f); // and the sound effects fade down, without a step
+}
+```
+
+Manual: [Buses and effects](../manual/audio.md#buses-and-effects), [Fades and crossfades](../manual/audio.md#fades-and-crossfades).

@@ -121,6 +121,24 @@ The file extension without the dot.
 
 Opens a stream over the file's bytes; throws `InvalidDataException` for bytes it cannot decode.
 
+### <a id="MicroEngine_Audio_MixerAudioDevice_CrossfadeMusic_MicroEngine_Audio_MusicHandle_System_Single_System_Single_"></a> CrossfadeMusic\(MusicHandle, float, float\)
+
+Starts <code class="paramref">music</code> rising from silence to <code class="paramref">volume</code> while the music that was
+playing falls to silence, both over <code class="paramref">seconds</code>, frame by frame; the new track is
+[CurrentMusic](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_CurrentMusic) at once. With no music playing it is a fade-in.
+
+```csharp
+public void CrossfadeMusic(MusicHandle music, float volume, float seconds)
+```
+
+#### Parameters
+
+`music` [MusicHandle](MicroEngine.Audio.MusicHandle.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`seconds` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_MixerAudioDevice_Dispose"></a> Dispose\(\)
 
 Stops the sink and releases the streams.
@@ -301,7 +319,7 @@ The bus does not exist.
 
 Plays a loaded sound as a voice of the mixer, exactly as <code class="paramref">parameters</code> say (loop, bus and
 priority included), and returns its handle for the engine's [Stop](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Stop_MicroEngine_Audio_VoiceHandle_System_Double_),
-[Set](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__), [SetPitch](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_) and [Pause](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pause_MicroEngine_Audio_VoiceHandle_System_Boolean_);
+[Set](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Double_), [SetPitch](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_SetPitch_MicroEngine_Audio_VoiceHandle_System_Single_System_Double_) and [Pause](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pause_MicroEngine_Audio_VoiceHandle_System_Boolean_);
 [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when the voice policy refused it.
 
 ```csharp

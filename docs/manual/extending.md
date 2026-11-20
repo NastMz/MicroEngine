@@ -13,6 +13,7 @@ MicroEngine's tests.
 | read another device library at the device level | `IInputSource` | `PlatformRequest.ExtraInput` ([Backends](backends.md#replacing-a-part)) |
 | keep saves somewhere else (memory, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)`, or `host.Storage` in the game's `Configure` |
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
+| process the sound of a group of sounds (a filter, a distortion, a meter) | subclass `AudioEffect` | `Audio.Bus(name).Add(effect)` ([an audio effect](#an-audio-effect)) |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
 | a part of a scene that the engine steps, hashes and stops with it (a store, a world, a scheduler) | subclass `SceneSystem` | `Scene.Systems.Add(system)`, or `Scenes.AddSystem` for every scene ([Scene systems](scenes.md#scene-systems)) |
@@ -115,6 +116,81 @@ public sealed class CurtainTransition(float duration = 0.6f) : Transition(durati
 The base class runs the timing: `Cover` rises from 0 to 1 over the first half of `Duration`, the scene changes, then
 `Cover` falls back to 0. `Draw` paints the cover over the whole screen in screen pixels. The examples' list opens every
 example with this transition.
+
+## An audio effect
+
+An effect processes the mix of a bus in place, one block of samples at a time. The built-in ones
+([Buses and effects](audio.md#buses-and-effects)) are written against the same class.
+
+<!-- code: samples/Examples/Extending.cs#audio-effect -->
+```csharp
+/// <summary>
+/// An audio effect of your own: the volume of a bus wobbles <see cref="Rate"/> times a second. Added to a bus like the
+/// built-in ones: <c>Audio.Bus("sfx").Add(new Tremolo { Rate = 6 })</c>.
+/// </summary>
+public sealed class Tremolo : AudioEffect
+{
+    // The audio thread's own copies: it never reads what the game's thread writes.
+    private float _rate = 5, _depth = 0.5f, _phase, _step;
+    private int _channels = 2;
+
+    public Tremolo() : base(parameters: 2)
+    {
+        SetParameter(0, 5);
+        SetParameter(1, 0.5f);
+    }
+
+    /// <summary>Wobbles per second.</summary>
+    public float Rate { get => GetParameter(0); set => SetParameter(0, Math.Clamp(value, 0.1f, 40)); }
+    /// <summary>How far the volume drops, 0 (not at all) to 1 (to silence).</summary>
+    public float Depth { get => GetParameter(1); set => SetParameter(1, Math.Clamp(value, 0, 1)); }
+
+    // The game's thread, once, when the effect is added to a bus: the place to allocate.
+    protected override void Prepare(int sampleRate, int channels) => (_step, _channels) = (MathF.Tau / sampleRate, channels);
+
+    // The audio thread, at the exact moment in the sound of the update that set the property.
+    protected override void OnParameter(int index, float value)
+    {
+        if (index == 0) _rate = value;
+        else _depth = value;
+    }
+
+    protected override void Reset() => _phase = 0;
+
+    // The audio thread: interleaved samples, changed in place. No allocation, no lock, no exception.
+    protected override void Process(Span<float> buffer)
+    {
+        for (int i = 0; i < buffer.Length; i += _channels)
+        {
+            float gain = 1 - _depth * (0.5f - 0.5f * MathF.Cos(_phase));
+            _phase += _step * _rate;
+            if (_phase >= MathF.Tau) _phase -= MathF.Tau;
+            for (int c = 0; c < _channels; c++) buffer[i + c] *= gain;
+        }
+    }
+}
+```
+
+Two threads touch an effect, and the base class keeps them apart. The game's thread creates it and sets its
+properties; `Process` runs on the thread that renders audio (in a browser, the game's own thread between frames). A
+property setter calls `SetParameter`, which keeps the value for the getter and sends it to the audio thread, where
+`OnParameter` receives it at the moment in the sound of the update that set it. An effect therefore keeps two sets of
+fields: the ones behind its properties and the ones `Process` reads.
+
+| Member | Called on | For |
+| --- | --- | --- |
+| `Prepare(sampleRate, channels)` | the game's thread, once in the effect's life, the first time it is added to a bus of a device that plays | allocating delay lines and tables |
+| `OnParameter(index, value)` | the audio thread | every parameter once when the effect enters a chain, then each change |
+| `Reset()` | the audio thread | forgetting what it heard: entering a chain, leaving `Bypass` |
+| `Process(buffer)` | the audio thread | interleaved samples (`buffer.Length / channels` frames), any block length from one frame |
+| `Process(buffer, sidechain)` | the audio thread | the same, with the mix of the bus named by `SidechainBus` |
+
+`Process` must not allocate, lock, wait or throw. An effect that throws is taken out of the mix for good: `Faulted`
+turns true, `Error` holds the exception, and the bus goes on without it. An effect belongs to one bus at a time; it
+can be removed and added again, or moved to another bus, and starts clean (`Reset`) each time. `Process` never sets
+the effect's own properties. Keep
+`Process` independent of how its blocks are cut (count frames yourself rather than blocks), and the same game run
+gives the same samples on every platform.
 
 ## A platform
 
