@@ -219,6 +219,27 @@ agents of that size.
 nearest wall is two cells away. `grid.Fits(x, y, radius)` tells whether an agent can stand centred in a cell: use it
 to choose where a large unit may be placed or spawned.
 
+## What can be reached
+
+A search to a place that cannot be reached looks at every cell the agent can reach before it gives up. `NavRegions`
+answers the question first, without a search: the cells joined by some route form a region, and two places are
+joined exactly when they are in the same one.
+
+- `regions.Connected(a, b)` tells whether an agent at node `a` can walk to node `b`.
+- `regions.NearestReachable(from, to)` is `to` when it can be reached and otherwise the cell of the agent's region
+  nearest to it in a straight line: where a unit goes when the click lands on an island, in a wall or in a locked
+  room. A search to that cell always finds its goal.
+- `regions.StaysConnected(area, a, b)` tells whether `a` and `b` would still be joined if `area` were blocked, and
+  changes nothing: the rule that lets a player build a tower anywhere except where it would wall the creeps in. It
+  also takes a list of nodes (the gate, the keep and the cell of every creep on the field), all of which must stay
+  joined.
+- `regions.RegionOf(node)`, `regions.Count` and `regions.SizeOf(region)` are the regions themselves: pick spawn
+  points in the player's region, or find the rooms a generated level left sealed.
+
+Regions follow the grid: after a change, the first question measures them again, one pass over the grid. Create one
+`NavRegions` per size of agent (`new NavRegions(grid, radius)`): a gap joins two rooms only for those that fit
+through it. Region numbers change when the grid does, so compare them and do not keep them.
+
 ## Many agents, one goal
 
 When many agents want the same place, one `DistanceField` replaces all their searches. `field.Compute(goal)` gives
