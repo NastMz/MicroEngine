@@ -86,7 +86,7 @@ registering it.
 | `PlayVoice(name, parameters)` | Plays a sound as a voice and returns its `VoiceHandle` ([Sounds that keep playing](#sounds-that-keep-playing)) |
 | `PlayMusicVoice(name, parameters)` | Plays registered music as one more voice, beside the music track |
 | `Set(voice, volume, pan, pitch)`, `Pause(voice, paused)`, `Stop(voice, fadeSeconds)`, `IsPlaying(voice)` | Change, pause, stop or ask about a voice while it plays |
-| `AddBus(name, parent)`, `SetBusVolume(name, volume)`, `BusVolume(name)`, `HasBus(name)` | Groups of sounds with one volume ([Buses](#buses)) |
+| `AddBus(name, parent)`, `SetBusVolume(name, volume)`, `BusVolume(name)`, `HasBus(name)` | Groups of sounds with one volume ([Buses and effects](#buses-and-effects)) |
 
 <!-- sdk-version: history -->
 **Music changes are fade-out then fade-in, not an overlapping crossfade.** With a fade, the current track fades to

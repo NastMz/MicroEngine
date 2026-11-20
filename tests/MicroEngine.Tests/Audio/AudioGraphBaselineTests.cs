@@ -15,7 +15,7 @@ public sealed class AudioGraphBaselineTests
     private const int Rate = 48000, Steps = 60;
 
     /// <summary>Recorded from the mixer without submixes (commit d99ce8c).</summary>
-    internal const string StereoReference = "b0b529ac29b66037", MonoReference = "4deb7b9708c708d7";
+    internal const string StereoReference = "50b914f5d4a3801e", MonoReference = "66d6af7d4d539bab";
 
     [TestMethod]
     [DataRow(2, 64)]
@@ -76,7 +76,12 @@ public sealed class AudioGraphBaselineTests
         var samples = new float[frames * channels];
         for (int f = 0; f < frames; f++)
             for (int c = 0; c < channels; c++)
-                samples[f * channels + c] = 0.04f * MathF.Sin((float)(2 * Math.PI * frequency * f / rate) + c);
+            {
+                // A triangle wave from additions, products and a floor: the same bits on every system, which a sine of the
+                // system's math library is not.
+                double turns = frequency * f / rate + c * 0.25;
+                samples[f * channels + c] = (float)(0.04 * (4 * Math.Abs(turns - Math.Floor(turns) - 0.5) - 1));
+            }
         return new AudioClip(samples, rate, channels);
     }
 
