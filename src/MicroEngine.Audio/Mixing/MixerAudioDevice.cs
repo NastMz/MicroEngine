@@ -24,7 +24,9 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     /// <summary>A device mixing into <paramref name="sink"/>, which starts rendering now.</summary>
     public MixerAudioDevice(IAudioSink sink, AudioEngineSettings? settings = null)
     {
-        Engine = new AudioEngine(sink, settings);
+        settings ??= new AudioEngineSettings();
+        // A game's mix is kept within full scale unless the settings say otherwise.
+        Engine = new AudioEngine(sink, settings with { Limiter = settings.Limiter ?? true });
         _decoders["ogg"] = VorbisStream.Open;
     }
 

@@ -449,65 +449,91 @@ public sealed class AudioMixer
 
     // ---- Buses
 
-    // The bus volumes of a device without the engine's mixer, so the same calls work and read back headless.
-    private Dictionary<string, float>? _silentBuses;
-    private Dictionary<string, float> SilentBuses => _silentBuses ??= new(StringComparer.Ordinal)
+    // The buses of a device without the engine's mixer: they keep what they are told (volumes, effects), so the same
+    // calls work and read back headless, with the same checks.
+    private List<AudioBus>? _silentBuses;
+    private List<AudioBus> SilentBuses
     {
-        [AudioEngine.MasterBus] = 1, [AudioEngine.SfxBus] = 1, [AudioEngine.MusicBus] = 1,
-    };
-
-    /// <summary>Whether a bus is named <paramref name="name"/>. "master", "sfx" (sounds, by default) and "music" always exist.</summary>
-    public bool HasBus(string name)
-    {
-        if (Engine is not { } engine) return SilentBuses.ContainsKey(name);
-        var buses = engine.Buses;
-        for (int i = 0; i < buses.Count; i++) if (buses[i].Name == name) return true;
-        return false;
+        get
+        {
+            if (_silentBuses is not null) return _silentBuses;
+            var buses = _silentBuses = [];
+            buses.Add(new AudioBus(null, buses, 0, AudioEngine.MasterBus, null));
+            buses.Add(new AudioBus(null, buses, 1, AudioEngine.SfxBus, buses[0]));
+            buses.Add(new AudioBus(null, buses, 2, AudioEngine.MusicBus, buses[0]));
+            return buses;
+        }
     }
 
-    private void RequireBus(string name)
+    private AudioBus? FindBus(string name)
     {
-        if (!HasBus(name)) throw new KeyNotFoundException($"No audio bus is named '{name}'.");
+        IReadOnlyList<AudioBus> buses = Engine is { } engine ? engine.Buses : SilentBuses;
+        for (int i = 0; i < buses.Count; i++) if (buses[i].Name == name) return buses[i];
+        return null;
     }
 
     /// <summary>
-    /// Adds a bus playing into <paramref name="parent"/>: a group of sounds with one volume ("ambience", "voices",
-    /// "ui"), named by <see cref="PlayParameters.Bus"/>. At most 32 buses exist.
+    /// Whether sounds play as voices on this device (<see cref="PlayVoice"/>, <see cref="PlayMusicVoice"/>): true for
+    /// every device that plays through the engine's mixer, false for a silent one (headless, muted, no hardware), where
+    /// those calls return <see cref="VoiceHandle.None"/>. Buses and their effects can be set up either way.
+    /// </summary>
+    public bool SupportsVoices => Engine is not null;
+
+    /// <summary>Whether a bus is named <paramref name="name"/>. "master", "sfx" (sounds, by default) and "music" always exist.</summary>
+    public bool HasBus(string name) => FindBus(name) is not null;
+
+    private void RequireBus(string name) => Bus(name);
+
+    /// <summary>
+    /// The bus named <paramref name="name"/>: its <see cref="AudioBus.Volume"/> and <see cref="AudioBus.FadeTo"/>, and
+    /// its effects (<see cref="AudioBus.Add"/>): a filter, a reverb, a compressor that ducks it under another bus.
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">No such bus.</exception>
+    public AudioBus Bus(string name) => FindBus(name) ?? throw new KeyNotFoundException($"No audio bus is named '{name}'.");
+
+    /// <summary>
+    /// The limiter after "master": on a device that plays, a mix louder than full scale is turned down instead of
+    /// clipped. <see cref="AudioEffect.Bypass"/> switches it off.
+    /// </summary>
+    public Effects.Limiter Limiter => Engine?.Limiter ?? (_silentLimiter ??= new Effects.Limiter());
+    private Effects.Limiter? _silentLimiter;
+
+    /// <summary>
+    /// Adds a bus playing into <paramref name="parent"/> and returns it: a group of sounds with one volume and one
+    /// chain of effects ("ambience", "voices", "ui"), named by <see cref="PlayParameters.Bus"/>. At most 32 buses exist.
     /// </summary>
     /// <exception cref="ArgumentException">A bus already has that name, or the name is empty.</exception>
     /// <exception cref="KeyNotFoundException"><paramref name="parent"/> does not exist.</exception>
     /// <exception cref="InvalidOperationException">There are 32 buses already.</exception>
-    public void AddBus(string name, string parent = AudioEngine.MasterBus)
+    public AudioBus AddBus(string name, string parent = AudioEngine.MasterBus)
     {
-        if (Engine is { } engine) { engine.AddBus(name, parent); return; }
+        if (Engine is { } engine) return engine.AddBus(name, parent);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        if (SilentBuses.ContainsKey(name)) throw new ArgumentException($"An audio bus is already named '{name}'.", nameof(name));
-        RequireBus(parent);
-        if (SilentBuses.Count == 32) throw new InvalidOperationException("An audio engine has at most 32 buses.");
-        SilentBuses[name] = 1;
+        if (HasBus(name)) throw new ArgumentException($"An audio bus is already named '{name}'.", nameof(name));
+        var up = Bus(parent);
+        var buses = SilentBuses;
+        if (buses.Count == 32) throw new InvalidOperationException("An audio engine has at most 32 buses.");
+        buses.Add(new AudioBus(null, buses, buses.Count, name, up));
+        return buses[^1];
     }
 
     /// <summary>The volume of bus <paramref name="name"/>.</summary>
     /// <exception cref="KeyNotFoundException">No such bus.</exception>
-    public float BusVolume(string name)
-    {
-        if (Engine is { } engine) return engine.Bus(name).Volume;
-        RequireBus(name);
-        return SilentBuses[name];
-    }
+    public float BusVolume(string name) => Bus(name).Volume;
 
     /// <summary>
     /// Sets the volume of everything playing through bus <paramref name="name"/> and the buses under it, clamped to
     /// 0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of <see cref="Play"/> too,
     /// on top of <see cref="SfxVolume"/>), "music" for the music track and the voices played on it. A value that is
-    /// not a number is ignored.
+    /// not a number is ignored. With <paramref name="fadeSeconds"/> the volume moves there over that time instead of
+    /// at once.
     /// </summary>
     /// <exception cref="KeyNotFoundException">No such bus.</exception>
-    public void SetBusVolume(string name, float volume)
+    public void SetBusVolume(string name, float volume, float fadeSeconds = 0)
     {
-        if (Engine is { } engine) { engine.Bus(name).Volume = volume; return; }
-        RequireBus(name);
-        if (!float.IsNaN(volume)) SilentBuses[name] = Math.Clamp(volume, 0, 4);
+        var bus = Bus(name);
+        if (fadeSeconds > 0) bus.FadeTo(volume, fadeSeconds);
+        else bus.Volume = volume;
     }
 
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>

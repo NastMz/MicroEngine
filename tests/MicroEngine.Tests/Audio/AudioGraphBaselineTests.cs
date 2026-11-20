@@ -15,7 +15,7 @@ public sealed class AudioGraphBaselineTests
     private const int Rate = 48000, Steps = 60;
 
     /// <summary>Recorded from the mixer without submixes (commit d99ce8c).</summary>
-    private const string StereoReference = "b0b529ac29b66037", MonoReference = "4deb7b9708c708d7";
+    internal const string StereoReference = "b0b529ac29b66037", MonoReference = "4deb7b9708c708d7";
 
     [TestMethod]
     [DataRow(2, 64)]
