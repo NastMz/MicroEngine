@@ -131,9 +131,9 @@ public sealed class Compressor : AudioEffect
     public float Threshold { get => _threshold; set { if (!float.IsNaN(value)) SetParameter(0, _threshold = Math.Clamp(value, -80, 0)); } }
     /// <summary>Decibels of level over the threshold for one decibel out, 1..100 (4 by default; 1 changes nothing).</summary>
     public float Ratio { get => _ratio; set { if (!float.IsNaN(value)) SetParameter(1, _ratio = Math.Clamp(value, 1, 100)); } }
-    /// <summary>Seconds to turn down when the level rises, 0.0001..2 (0.01 by default).</summary>
+    /// <summary>Seconds to turn down when the level rises, nine tenths of the way, 0.0001..2 (0.01 by default).</summary>
     public float Attack { get => _attack; set { if (!float.IsNaN(value)) SetParameter(2, _attack = Math.Clamp(value, 0.0001f, 2)); } }
-    /// <summary>Seconds to come back when the level falls, 0.001..5 (0.2 by default).</summary>
+    /// <summary>Seconds to come back when the level falls, nine tenths of the way, 0.001..5 (0.2 by default).</summary>
     public float Release { get => _release; set { if (!float.IsNaN(value)) SetParameter(3, _release = Math.Clamp(value, 0.001f, 5)); } }
     /// <summary>Decibels added after compressing, -24..24 (0 by default).</summary>
     public float Makeup { get => _makeup; set { if (!float.IsNaN(value)) SetParameter(4, _makeup = Math.Clamp(value, -24, 24)); } }
@@ -155,8 +155,9 @@ public sealed class Compressor : AudioEffect
         {
             case 0: _liveThreshold = value; break;
             case 1: _slope = 1 - 1 / value; break;
-            case 2: _attackCoefficient = MathF.Exp(-1f / (value * _rate)); break;
-            case 3: _releaseCoefficient = MathF.Exp(-1f / (value * _rate)); break;
+            // The gain closes nine tenths of the distance in the time given: a factor of ten per that many frames.
+            case 2: _attackCoefficient = MathF.Exp(-MathF.Log(10) / (value * _rate)); break;
+            case 3: _releaseCoefficient = MathF.Exp(-MathF.Log(10) / (value * _rate)); break;
             case 4: _gain.To(MathF.Pow(10, value / 20), _fresh ? 0 : _rate / 50); break;
             case 5: _liveRange = value; break;
         }

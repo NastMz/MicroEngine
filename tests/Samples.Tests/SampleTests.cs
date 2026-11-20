@@ -456,10 +456,14 @@ public sealed class SettingsExampleTests
     }
 
     /// <summary>The examples game on a 960×540 headless window with <paramref name="scene"/> on top, its UI laid out.</summary>
-    internal static (ExamplesGame Game, HeadlessPlatform Platform) Start(Scene scene)
+    /// <param name="scene">The example to open.</param>
+    /// <param name="audio">The audio device to play through (a capture device, to check what is heard); null for the silent one.</param>
+    internal static (ExamplesGame Game, HeadlessPlatform Platform) Start(Scene scene, Func<MicroEngine.Audio.IAudioDevice>? audio = null)
     {
         var game = new ExamplesGame(Directory.CreateTempSubdirectory("examples-").FullName);
-        var platform = HeadlessPlatform.For(game.Settings, rasterize: false);
+        var platform = audio is null
+            ? HeadlessPlatform.For(game.Settings, rasterize: false)
+            : HeadlessPlatform.For(new PlatformRequest(game.Settings) { Audio = audio });
         platform.Resize(960, 540);
         platform.PumpEvents(new NoEvents());
         game.InitializeForTest(platform);

@@ -206,4 +206,10 @@
 4240 click 270,140
 4270 capture 35-mouse.png
 4276 press pause
-4290 quit
+4290 press down
+4300 press confirm
+4340 press action
+4370 press down
+4384 capture 36-mix.png
+4390 press pause
+4404 quit

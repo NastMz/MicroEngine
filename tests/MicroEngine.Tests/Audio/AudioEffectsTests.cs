@@ -176,8 +176,8 @@ public sealed class AudioEffectsTests
         Assert.AreEqual(0.5 * Math.Pow(10, -12 / 20.0), rig.Left((int)(0.9 * Rate)), 0.02 * 0.125, "under the voice: 12 dB down");
         Assert.AreEqual(0.5f, rig.Left((int)(2.2 * Rate)), 1e-3f, "after the voice: back");
         Assert.AreEqual(0.4 / Math.Sqrt(2), rig.Level(0.6, 0.9, right: true), 0.01, "the voice itself is not changed");
-        double during = rig.Left((int)(0.5 * Rate) + (int)(0.02 * Rate));
-        Assert.IsTrue(during is > 0.15 and < 0.45, $"it goes down over the attack, not at once: {during:F3}");
+        double during = rig.Left((int)(0.5 * Rate) + (int)(0.01 * Rate));
+        Assert.IsTrue(during is > 0.15 and < 0.45, $"half way through the attack it is part of the way down: {during:F3}");
     }
 
     [TestMethod]
