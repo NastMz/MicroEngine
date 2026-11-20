@@ -86,3 +86,12 @@ stencil, several colour targets and multisampling (S5: re-evaluated, kept out wi
   levels), `src/MicroEngine.Graphics2D/**` (where the drawing API lives), `src/MicroEngine/Core/GameViews.cs` and
   `HeadlessPlatform.cs`, `tests/Shared/Graphics/DeviceConformance.cs`, `docs/guide/render-targets-and-shaders.md`,
   `docs/manual/assets.md` (one limitation line). The four demo games were not touched.
+- L8 (2026-11-20) Final runs. `dotnet build MicroEngine.slnx -c Release`: 0 warnings, 0 errors.
+  `dotnet test MicroEngine.slnx -c Release`: every project passed (MicroEngine.Tests 1254 + 1 skipped,
+  Samples.Tests 99 + 2, MicroEngine.Graphics.Tests 109, MicroEngine.Desktop.Tests 823 + 17 skipped of 840; the four
+  demo suites unchanged: MeadowRun 75, CourtyardKey 67, NeonRift 73, TrailDuel 132). **One of three full runs of
+  MicroEngine.Desktop.Tests ended with the test host aborted** ("Proceso de host de pruebas bloqueado", 815 of 840
+  counted, none failed); the two runs after it, both with `--blame`, were clean, so the test that was running is not
+  known. It may be the fault the manual already lists (a process that opens many `sdl-gpu` devices on Vulkan with this
+  NVIDIA driver), which this unit makes a little more likely by adding device tests, or something in this unit:
+  not established. `AssetGalleryTests.TheScriptedTourReportsNoHitch` failed once in a full run and passed alone.
