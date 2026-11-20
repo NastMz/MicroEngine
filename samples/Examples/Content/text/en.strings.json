@@ -8,6 +8,7 @@
     "language": "Language: {name}",
     "gems": "{count, plural, =0 {No gems yet} one {# gem} other {# gems}}",
     "hint": "Press {keys} for the next language and {action} to add a gem",
-    "next": "Next language"
+    "next": "Next language",
+    "glyph": "{action} adds a gem"
   }
 }

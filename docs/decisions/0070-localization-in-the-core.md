@@ -70,10 +70,11 @@ build step and a second content path, against ADR 0066.
 - A game in several languages writes tables and keys; it no longer writes lookup, plural selection, interface
   refresh, prompt names, file choice or the missing-key test.
 - The engine owns a message parser, plural rules and two file-name conventions, and must keep reading them.
-- Without a platform implementation of `ISystemLanguages`, browser, phone and packaged builds start in the fallback
-  language: the SDL and browser platforms should offer it (outside this change).
-- Right-to-left support is text direction and label alignment; mirroring layouts, a shaped-font asset kind and
-  prompt glyphs in any font are separate work.
+- The SDL platform offers `ISystemLanguages` over `SDL_GetPreferredLocales`, which SDL implements on desktops,
+  phones and in browsers (from `navigator.languages`): one implementation instead of one per host. The raylib
+  platform offers none.
+- Right-to-left support is text direction, label alignment and the order of a prompt line's pieces (`PromptText`
+  takes any font); mirroring layouts and a shaped-font asset kind are separate work.
 - A source of numbers, dates and currencies per language is not part of it.
 
 ## Verification

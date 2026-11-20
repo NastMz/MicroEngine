@@ -94,6 +94,12 @@ public override void DrawUi(IRenderer ui)
     var end = Game.Views.CanvasToUi(new Vector2(Game.Settings.VirtualWidth, Game.Settings.VirtualHeight));
     var arrow = Game.Assets.Texture(ImagePath);
     ui.Draw(arrow, new Vector2(MathF.Round((frame.X + end.X - arrow.Width) / 2), end.Y - arrow.Height - 6));
+
+    // A hint whose control is a glyph (a key cap, a pad button), drawn with the language's font; the pieces of a
+    // right-to-left line follow each other from the right.
+    var font = Widgets.Font!;
+    PromptText.DrawCentered(ui, font, Game.Prompts, Game.Localization["loc.glyph"], (frame.X + end.X) / 2,
+        end.Y - arrow.Height - 12 - font.LineHeight, UiTheme.Default.Text, rightToLeft: Game.Localization.RightToLeft);
 }
 ```
 
@@ -276,6 +282,14 @@ A language gives only the names it has another word for. Names of several words 
 (`"prompt.Caps Lock"`) or word by word (`"Mouse 4"` uses `prompt.Mouse`). Letter keys follow the player's keyboard
 layout and are never translated. `Prompts.Version` moves with the language, like the device in the player's hands.
 
+A hint that shows the control as a glyph (a key cap, a pad button) is drawn by `PromptText` with the language's font,
+its pieces following each other from the right in a right-to-left language:
+
+```csharp
+PromptText.DrawCentered(ui, Widgets.Font!, Game.Prompts, Game.Localization["hint.gem"], centerX, y, Color.White,
+    rightToLeft: Game.Localization.RightToLeft);
+```
+
 ## Fonts
 
 The built-in pixel font has the ASCII letters only; a language with accents or another alphabet needs a
@@ -359,9 +373,11 @@ available to a game's own tests: `StringTableChecks.Check(tables)`.
 ## On every platform
 
 Tables, messages and plural rules are managed code with no culture data, the same in trimmed and NativeAOT builds, on
-phones and in browsers. The system's language comes from the platform where it says, else from the runtime's culture;
-packaged builds, browsers and phones carry no culture data, and there the game starts in its fallback language until
-the player chooses.
+phones and in browsers. The system's language comes from the platform: the SDL platform, which every packaged game,
+phone and browser build uses, asks the system for the player's languages (the display languages of Windows, the
+preferred languages of macOS and iOS, the locale of Linux and Android, the browser's language list). A platform
+that does not say (raylib) leaves the runtime's culture, which packaged builds do not carry: there the game starts in
+its fallback language until the player chooses.
 
 ## Limits
 
@@ -371,9 +387,9 @@ the player chooses.
   formats; a text using them is refused when it is read.
 - Plural forms follow Unicode's rules for whole numbers; fractions are approximated, and French, Italian,
   Portuguese, Spanish and Catalan have no separate form for whole millions.
-- Right to left: labels start from the right, and shaped fonts lay each line out. Layouts are not mirrored (a row of
-  buttons keeps its order), text fields align to the left, and prompt glyphs drawn by `PromptText` use the built-in
-  font.
+- Right to left: labels start from the right, shaped fonts lay each line out, and `PromptText` lays the pieces of a
+  line from the right when asked. Layouts are not mirrored (a row of buttons keeps its order) and text fields align
+  to the left.
 - Chinese, Japanese and Korean lines have no spaces to wrap at: a wrapped label breaks them between characters, with
   no rule against a line starting with punctuation.
 - Every language of a loaded table stays in memory. A changed table is picked up the next time the game starts.

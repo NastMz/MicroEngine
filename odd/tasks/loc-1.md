@@ -89,3 +89,22 @@ Route: inline, in this worktree. Status: `[ ]` pending, `[x]` done with its evid
 - L9 (2026-11-20) `dotnet build MicroEngine.slnx -c Release`: 0 warnings, 0 errors. `dotnet test MicroEngine.slnx -c
   Release`: every project passes except `AssetGalleryTests.TheScriptedTourReportsNoHitch`, which passes when run
   alone (the timing-sensitive test the brief names).
+- L10 (2026-11-20, second batch) The SDL platform offers `ISystemLanguages` (`SdlLanguages`, over
+  `SDL_GetPreferredLocales`): `SdlLanguagesTests` on this machine (a non-empty list of well-formed tags; the tag
+  from SDL's language and country). It serves desktops, phones and browsers, because SDL implements the call on each
+  (in a browser from `navigator.languages`), so the hosts needed no bridge; the browser, Android and iOS paths were
+  not run. A deterministic run now ignores the platform's languages and honours only those the game's composition
+  declares: with the SDL capability a scripted tour would otherwise have started in this machine's Spanish.
+- L11 (2026-11-20) `PromptText` takes any `IFont` (`PromptTextFontTests`); the example draws a glyph hint with the
+  language's font, captured and looked at in Spanish and Arabic (the cap at the right of the Arabic line).
+- L12 (2026-11-20) The tour's "CONFIRM" and "ACTION": neither the prompts nor the example. A diagnostic line in the
+  example during the full tour printed `device=Keyboard ... keys=[]`: "confirm" had no key. The rebinding example
+  earlier in the tour calls `Input.LoadBindings` on the game's save store, and this machine's store
+  (`%LOCALAPPDATA%/MicroEngine/MicroEngineExamples/input-bindings.json`) holds a file in which every menu action has
+  an empty list of controls, so loading it removed the keys for the rest of the session; the prompts then correctly
+  fall back to the action's name. From a clean store the same sequence keeps the keys (checked with a throwaway
+  test: reset, leave, enter again: `Z,Space,Enter,J` before and after, and the saved file lists them). Where that
+  file came from was not established (it predates this work's runs or was written by one that had already loaded
+  it); it was left in place. L6's explanation (the touch example) was wrong.
+- L13 (2026-11-20) Not done: a shaped-font asset kind. A game writes `ShapedFont.FromBytes(Graphics,
+  Assets.Bytes(fonts[0]))`, an `AddFallback` per further font, and disposes it, as the example does.

@@ -91,6 +91,12 @@ public sealed class LocalizationExample : Scene
         var end = Game.Views.CanvasToUi(new Vector2(Game.Settings.VirtualWidth, Game.Settings.VirtualHeight));
         var arrow = Game.Assets.Texture(ImagePath);
         ui.Draw(arrow, new Vector2(MathF.Round((frame.X + end.X - arrow.Width) / 2), end.Y - arrow.Height - 6));
+
+        // A hint whose control is a glyph (a key cap, a pad button), drawn with the language's font; the pieces of a
+        // right-to-left line follow each other from the right.
+        var font = Widgets.Font!;
+        PromptText.DrawCentered(ui, font, Game.Prompts, Game.Localization["loc.glyph"], (frame.X + end.X) / 2,
+            end.Y - arrow.Height - 12 - font.LineHeight, UiTheme.Default.Text, rightToLeft: Game.Localization.RightToLeft);
     }
     #endregion
 

@@ -23,6 +23,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   ([Text in several languages](../manual/ui.md#text-in-several-languages)).
 - **Prompts in the language.** A table translates the engine's names of keys and controls with `prompt.` keys
   (`"prompt.Space": "Espacio"`); `ActionPrompts.Names` is the hook, and `Prompts.Version` moves with the language.
+  `PromptText` draws prompt glyphs with any font (`IFont`), sized by its line height, and lays a right-to-left
+  line from the right.
+- **The system's language on every SDL build.** The SDL platform reports the player's languages
+  (`ISystemLanguages`), so a packaged desktop game, a phone and a page start in the player's language without
+  culture data.
 - **Files per language.** `Localization.Path("ui/title.png")` returns `ui/title.es.png` when the content has it;
   `Variants` lists them to preload.
 - **Fonts per language.** A table names its language's fonts (`@fonts`); `Localization.Characters()` lists the

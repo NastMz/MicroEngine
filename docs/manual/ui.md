@@ -41,7 +41,9 @@ or passes it to its own drawing code.
 is a glyph instead of a word: a key cap on a keyboard, a round button in its colour on Xbox pads (A green, B red, X
 blue, Y yellow), the shape on PlayStation pads, a ring with the button's label on a touch screen. `Measure` and
 `DrawCentered` lay it out; `DrawGlyph` draws one `ActionPrompt`. `PromptGlyphStyle` sets the caps' colours
-(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); text that
+(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). With the built-in font the glyphs are its nine-pixel
+caps; with any other font (`IFont`: a scalable or shaped font at a size) they are as tall as a line of it and
+labelled with it, and `rightToLeft: true` lays the pieces of the line from the right. Use it for short hints ("{confirm} Talk"); text that
 keeps words goes through `ActionPrompts.Format`. See [Showing controls to the player](input.md#showing-controls-to-the-player).
 
 ## Text in several languages

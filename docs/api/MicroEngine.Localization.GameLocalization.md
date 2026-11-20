@@ -88,9 +88,10 @@ public GameLocalization(Func<IContentSource> source)
 ### <a id="MicroEngine_Localization_GameLocalization_SystemLanguages"></a> SystemLanguages
 
 The player's languages on this system, most wanted first: what the platform says
-([ISystemLanguages](MicroEngine.Localization.ISystemLanguages.md)), else the runtime's interface culture where the build carries culture data.
-Empty in a deterministic run (scripted runs, tests, captures), so those never depend on the machine. A host
-or a test may set it. The first of them the game has text in is the language in use until one is chosen.
+([ISystemLanguages](MicroEngine.Localization.ISystemLanguages.md); the SDL platform does on every system), else the runtime's interface culture
+where the build carries culture data. Empty in a deterministic run (scripted runs, tests, captures), so those
+never depend on the machine, unless the game's own composition declares an [ISystemLanguages](MicroEngine.Localization.ISystemLanguages.md).
+A host or a test may set it. The first of them the game has text in is the language in use until one is chosen.
 
 ```csharp
 public IReadOnlyList<string> SystemLanguages { get; set; }

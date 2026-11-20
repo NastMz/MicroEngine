@@ -9,7 +9,8 @@
     // Arabic counts with six forms.
     "gems": "{count, plural, zero {لا توجد جواهر بعد} one {جوهرة واحدة} two {جوهرتان} few {# جواهر} many {# جوهرة} other {# جوهرة}}",
     "hint": "اضغط {keys} لتغيير اللغة و {action} لإضافة جوهرة",
-    "next": "اللغة التالية"
+    "next": "اللغة التالية",
+    "glyph": "{action} يضيف جوهرة"
   },
 
   "prompt.Space": "مسافة",
