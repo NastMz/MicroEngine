@@ -162,6 +162,43 @@ public sealed class GameLocalizationTests
         finally { System.Globalization.CultureInfo.CurrentUICulture = before; }
     }
 
+    /// <summary>A platform that says which languages the player prefers, as the SDL platform does.</summary>
+    private sealed class SpeakingPlatform(HeadlessPlatform inner, params string[] languages) : IPlatform
+    {
+        private readonly SystemSays _says = new(languages);
+        public IGraphicsDevice Graphics => inner.Graphics;
+        public MicroEngine.Audio.IAudioDevice Audio => inner.Audio;
+        public void ToggleFullscreen() => inner.ToggleFullscreen();
+        public IInputSource Input => inner.Input;
+        public IRenderer BeginFrame() => inner.BeginFrame();
+        public void EndFrame() => inner.EndFrame();
+        public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
+        public Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
+        public MicroEngine.Platform.IMonotonicClock Clock => ((MicroEngine.Platform.IPlatformHost)inner).Clock;
+        public bool PumpEvents(MicroEngine.Platform.IEngineEventSink sink) => inner.PumpEvents(sink);
+        public MicroEngine.Platform.ISurface? MainSurface => ((MicroEngine.Platform.IPlatformHost)inner).MainSurface;
+        public bool CanBlock => inner.CanBlock;
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class
+        {
+            if (typeof(T) == typeof(ISystemLanguages)) { capability = (T)(object)_says; return true; }
+            return inner.TryGetCapability(out capability);
+        }
+        public void Dispose() => inner.Dispose();
+    }
+
+    [TestMethod]
+    public void ThePlatformsLanguagesAreFollowedOnTheWallClockAndNeverInADeterministicRun()
+    {
+        var real = new RealTimeGame(Content());
+        real.InitializeForTest(new SpeakingPlatform(HeadlessPlatform.For(real.Settings, rasterize: false), "es-CO", "en"));
+        Assert.AreEqual("es", real.Localization.Language, "a game a player runs starts in the player's language");
+
+        var scripted = new TextGame(Content());
+        scripted.InitializeForTest(new SpeakingPlatform(HeadlessPlatform.For(scripted.Settings, rasterize: false), "es-CO", "en"));
+        Assert.AreEqual(0, scripted.Localization.SystemLanguages.Count);
+        Assert.AreEqual("en", scripted.Localization.Language, "a scripted run is the same on every machine");
+    }
+
     [TestMethod]
     public void OneFileOrACsvLoadsToo()
     {

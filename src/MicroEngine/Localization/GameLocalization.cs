@@ -48,9 +48,10 @@ public sealed class GameLocalization : Localizer
 
     /// <summary>
     /// The player's languages on this system, most wanted first: what the platform says
-    /// (<see cref="ISystemLanguages"/>), else the runtime's interface culture where the build carries culture data.
-    /// Empty in a deterministic run (scripted runs, tests, captures), so those never depend on the machine. A host
-    /// or a test may set it. The first of them the game has text in is the language in use until one is chosen.
+    /// (<see cref="ISystemLanguages"/>; the SDL platform does on every system), else the runtime's interface culture
+    /// where the build carries culture data. Empty in a deterministic run (scripted runs, tests, captures), so those
+    /// never depend on the machine, unless the game's own composition declares an <see cref="ISystemLanguages"/>.
+    /// A host or a test may set it. The first of them the game has text in is the language in use until one is chosen.
     /// </summary>
     public IReadOnlyList<string> SystemLanguages
     {
@@ -64,8 +65,12 @@ public sealed class GameLocalization : Localizer
 
     private static IReadOnlyList<string> Detect(Game game)
     {
+        if (game.EngineOrNull is not { } engine) return [];
+        // What the game's own composition declares is always honoured (a test, a store's launcher).
+        if (engine.TryGetCapability(out ISystemLanguages? declared)) return declared.PreferredLanguages;
+        // A deterministic run (scripts, tests, captures) never depends on the machine it runs on.
+        if (engine.Time.Mode == TimeMode.Deterministic) return [];
         if (game.TryGetCapability(out ISystemLanguages? system)) return system.PreferredLanguages;
-        if (game.EngineOrNull is not { } engine || engine.Time.Mode == TimeMode.Deterministic) return [];
         // Builds with invariant globalization (browsers, phones, packaged games) have no culture: the name is empty.
         string name = CultureInfo.CurrentUICulture.Name;
         return name.Length == 0 ? [] : [name];
