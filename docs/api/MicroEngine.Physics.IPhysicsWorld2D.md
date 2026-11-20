@@ -36,9 +36,10 @@ overlapping it, when the layers of both accept each other and the visitor has
 [ContactEvents](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactEvents) from the poses at its end (moves made before it count in it); they stay readable until
 the next step, in an order that depends only on the world's history. Contact events only come from pairs with a
 dynamic body. Destroying a shape ends its pairs with an exit or end event at the next step.</li><li><b>No managed callbacks during [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_).</b> Per-shape rules (one-way platforms) are shape flags the
-backend implements itself; games read events after the step.</li><li><b>Stepping.</b> [PhysicsModule](MicroEngine.Physics.PhysicsModule.md) steps registered worlds in the kernel's
-<code>FramePhase.Physics</code>, inside the fixed step, and writes body poses to their owners' transforms; the scene world
-interpolates them for drawing.</li><li><b>Determinism.</b> The same backend build gives identical results on every target for the same calls (native
+backend implements itself; games read events after the step.</li><li><b>Stepping.</b> A scene steps its physics world after its own update, by the step of its world's clock, and
+writes body poses to their owners' transforms, which the scene world interpolates for drawing (the engine's
+<code>ScenePhysics</code>). [PhysicsModule](MicroEngine.Physics.PhysicsModule.md) steps worlds that belong to no scene, in the kernel's
+<code>FramePhase.Physics</code>.</li><li><b>Determinism.</b> The same backend build gives identical results on every target for the same calls (native
 backends are built with floating-point contraction off and step on one thread). Nothing is promised between two
 backends, or between two versions of a backend's physics library: they differ from the first step.</li></ol>
 
@@ -70,6 +71,18 @@ ReadOnlySpan<BodyId> Bodies { get; }
 
  [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[BodyId](MicroEngine.Physics.BodyId.md)\>
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_BrokenJoints"></a> BrokenJoints
+
+The joints that broke in the latest step ([BreakForce](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_BreakForce)); they no longer exist.
+
+```csharp
+ReadOnlySpan<JointId> BrokenJoints { get; }
+```
+
+#### Property Value
+
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[JointId](MicroEngine.Physics.JointId.md)\>
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_Capabilities"></a> Capabilities
 
 What the backend offers beyond the common contract.
@@ -93,6 +106,18 @@ ReadOnlySpan<ContactEvent> ContactEvents { get; }
 #### Property Value
 
  [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ContactEvent](MicroEngine.Physics.ContactEvent.md)\>
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_Joints"></a> Joints
+
+The live joints, in creation order.
+
+```csharp
+ReadOnlySpan<JointId> Joints { get; }
+```
+
+#### Property Value
+
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[JointId](MicroEngine.Physics.JointId.md)\>
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_SensorEvents"></a> SensorEvents
 
@@ -177,6 +202,311 @@ The description is invalid ([Validate](MicroEngine.Physics.ShapeDescription.md#M
 
 The body id is stale.
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_"></a> AddTiles\(BodyId, ICollisionGrid, int, int, ulong, ulong\)
+
+Attaches the tiles of <code class="paramref">grid</code> to a static body as one shape
+([TileGeometry](MicroEngine.Physics.PhysicsCapabilities.md)): cell (x, y) is a square of [TileSize](MicroEngine.World.ICollisionGrid.md#MicroEngine_World_ICollisionGrid_TileSize)
+units, x tiles sideways and y tiles downward (against [Up](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Up)) from the body's origin, so row 0 is the
+top row whichever way the world's y grows. [Solid](MicroEngine.World.TileFlags.md) cells block from every side and
+[OneWay](MicroEngine.World.TileFlags.md) cells are one-way platforms (where the backend declares them); other cells are
+not geometry.
+
+```csharp
+ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = 1, ulong mask = 18446744073709551615)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+A static body.
+
+`grid` [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)
+
+The tiles.
+
+`columns` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+How many columns of the grid hold the level.
+
+`rows` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+How many rows of the grid hold the level.
+
+`category` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+The layers the tiles are in.
+
+`mask` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+The layers they collide with.
+
+#### Returns
+
+ [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Remarks
+
+The tile backend reads the grid at every query, inside and outside that area, so changing a tile changes
+collisions at once. A backend that builds shapes from the tiles reads the area and one tile around it (the border
+a grid closes its level with) when this is called: remove the shape and add the tiles again after changing them.
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [TileGeometry](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The body is stale or not static.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">columns</code> or <code class="paramref">rows</code> is not positive.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_AnchorAOf_MicroEngine_Physics_JointId_"></a> AnchorAOf\(JointId\)
+
+The joint's anchor on body A, a world point, as the body is now.
+
+```csharp
+Vector2 AnchorAOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_AnchorBOf_MicroEngine_Physics_JointId_"></a> AnchorBOf\(JointId\)
+
+The joint's anchor on body B, a world point, as the body is now.
+
+```csharp
+Vector2 AnchorBOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_AngularVelocityOf_MicroEngine_Physics_BodyId_"></a> AngularVelocityOf\(BodyId\)
+
+A body's angular velocity in radians per second; positive turns the way [RotationOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_RotationOf_MicroEngine_Physics_BodyId_) grows.
+
+```csharp
+float AngularVelocityOf(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md) and [Rotation](MicroEngine.Physics.PhysicsCapabilities.md).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyAngularImpulse_MicroEngine_Physics_BodyId_System_Single_System_Boolean_"></a> ApplyAngularImpulse\(BodyId, float, bool\)
+
+Applies an angular impulse (inertia × radians per second) to a dynamic body: its angular velocity changes at once.
+
+```csharp
+void ApplyAngularImpulse(BodyId body, float impulse, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`impulse` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md) and [Rotation](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyForce_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Boolean_"></a> ApplyForce\(BodyId, Vector2, bool\)
+
+Applies <code class="paramref">force</code> (mass × world units per second squared) through a dynamic body's centre of
+mass for the next step only: apply it every step for as long as it acts.
+
+```csharp
+void ApplyForce(BodyId body, Vector2 force, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+A dynamic body.
+
+`force` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+The force.
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether a sleeping body wakes; when false, a sleeping body ignores the force.
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The force is not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyForce_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_System_Boolean_"></a> ApplyForce\(BodyId, Vector2, Vector2, bool\)
+
+Applies <code class="paramref">force</code> at the world point <code class="paramref">point</code> for the next step only: off the centre of mass it also turns the body.
+
+```csharp
+void ApplyForce(BodyId body, Vector2 force, Vector2 point, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`force` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyImpulse_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Boolean_"></a> ApplyImpulse\(BodyId, Vector2, bool\)
+
+Applies <code class="paramref">impulse</code> (mass × world units per second) through a dynamic body's centre of mass: its
+velocity changes at once by the impulse divided by its mass (a jump, a hit, an explosion).
+
+```csharp
+void ApplyImpulse(BodyId body, Vector2 impulse, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`impulse` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The impulse is not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyImpulse_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_System_Boolean_"></a> ApplyImpulse\(BodyId, Vector2, Vector2, bool\)
+
+Applies <code class="paramref">impulse</code> at the world point <code class="paramref">point</code>: off the centre of mass it also spins the body.
+
+```csharp
+void ApplyImpulse(BodyId body, Vector2 impulse, Vector2 point, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`impulse` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ApplyTorque_MicroEngine_Physics_BodyId_System_Single_System_Boolean_"></a> ApplyTorque\(BodyId, float, bool\)
+
+Applies a torque (inertia × radians per second squared) to a dynamic body for the next step only.
+
+```csharp
+void ApplyTorque(BodyId body, float torque, bool wake = true)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`torque` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`wake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md) and [Rotation](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_BodyOf_MicroEngine_Physics_ShapeId_"></a> BodyOf\(ShapeId\)
 
 The body <code class="paramref">shape</code> is attached to.
@@ -198,6 +528,54 @@ BodyId BodyOf(ShapeId shape)
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_BoundsOf_MicroEngine_Physics_ShapeId_"></a> BoundsOf\(ShapeId\)
+
+The world bounds of <code class="paramref">shape</code> as it is now (the area of the level for tile geometry).
+
+```csharp
+RectF BoundsOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [RectF](MicroEngine.RectF.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeInspection](MicroEngine.Physics.PhysicsCapabilities.md).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_CenterOfMassOf_MicroEngine_Physics_BodyId_"></a> CenterOfMassOf\(BodyId\)
+
+A body's centre of mass, a world point (its origin for bodies without mass).
+
+```csharp
+Vector2 CenterOfMassOf(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [MassProperties](MicroEngine.Physics.PhysicsCapabilities.md).
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_CreateBody_MicroEngine_Scenes_EntityId_MicroEngine_Physics_BodyDescription__"></a> CreateBody\(EntityId, in BodyDescription\)
 
@@ -226,6 +604,58 @@ The description needs an undeclared capability.
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
 The description is invalid ([Validate](MicroEngine.Physics.BodyDescription.md#MicroEngine_Physics_BodyDescription_Validate)).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_CreateJoint_MicroEngine_Physics_JointDescription__"></a> CreateJoint\(in JointDescription\)
+
+Creates a joint between two bodies ([Joints](MicroEngine.Physics.PhysicsCapabilities.md)).
+
+```csharp
+JointId CreateJoint(in JointDescription joint)
+```
+
+#### Parameters
+
+`joint` [JointDescription](MicroEngine.Physics.JointDescription.md)
+
+#### Returns
+
+ [JointId](MicroEngine.Physics.JointId.md)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [Joints](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The description is invalid ([Validate](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Validate)).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+A body id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_DescriptionOf_MicroEngine_Physics_JointId_"></a> DescriptionOf\(JointId\)
+
+The description the joint was created with, kept up to date by the setters (anchors and axis are as they were when it was created).
+
+```csharp
+JointDescription DescriptionOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [JointDescription](MicroEngine.Physics.JointDescription.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_DescriptionOf_MicroEngine_Physics_ShapeId_"></a> DescriptionOf\(ShapeId\)
 
@@ -265,6 +695,66 @@ void DestroyBody(BodyId body)
 
 `body` [BodyId](MicroEngine.Physics.BodyId.md)
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_DestroyJoint_MicroEngine_Physics_JointId_"></a> DestroyJoint\(JointId\)
+
+Destroys a joint; nothing for a stale or none id. Destroying a body destroys its joints.
+
+```csharp
+void DestroyJoint(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_DynamicsOf_MicroEngine_Physics_BodyId_"></a> DynamicsOf\(BodyId\)
+
+How the solver treats <code class="paramref">body</code>: damping, gravity scale, fixed rotation, sleep.
+
+```csharp
+BodyDynamics DynamicsOf(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [BodyDynamics](MicroEngine.Physics.BodyDynamics.md)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_InertiaOf_MicroEngine_Physics_BodyId_"></a> InertiaOf\(BodyId\)
+
+A dynamic body's rotational inertia about its centre of mass (mass × world units squared); 0 for other bodies.
+
+```csharp
+float InertiaOf(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [MassProperties](MicroEngine.Physics.PhysicsCapabilities.md).
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_IsAlive_MicroEngine_Physics_BodyId_"></a> IsAlive\(BodyId\)
 
 Whether <code class="paramref">body</code> exists.
@@ -276,6 +766,22 @@ bool IsAlive(BodyId body)
 #### Parameters
 
 `body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_IsAlive_MicroEngine_Physics_JointId_"></a> IsAlive\(JointId\)
+
+Whether <code class="paramref">joint</code> exists.
+
+```csharp
+bool IsAlive(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
 
 #### Returns
 
@@ -296,6 +802,51 @@ bool IsAlive(ShapeId shape)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_IsAwake_MicroEngine_Physics_BodyId_"></a> IsAwake\(BodyId\)
+
+Whether a body is awake (simulated); bodies that rest fall asleep when they may ([AllowSleep](MicroEngine.Physics.BodyDynamics.md#MicroEngine_Physics_BodyDynamics_AllowSleep)).
+
+```csharp
+bool IsAwake(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_JointCoordinateOf_MicroEngine_Physics_JointId_"></a> JointCoordinateOf\(JointId\)
+
+Where the joint is along what it frees: a revolute joint's angle in radians since it was created, a prismatic
+joint's translation, a distance joint's length; 0 for the other kinds.
+
+```csharp
+float JointCoordinateOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_KindOf_MicroEngine_Physics_BodyId_"></a> KindOf\(BodyId\)
 
@@ -318,6 +869,28 @@ BodyKind KindOf(BodyId body)
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_MassOf_MicroEngine_Physics_BodyId_"></a> MassOf\(BodyId\)
+
+A dynamic body's mass, from its shapes' densities; 0 for other bodies.
+
+```csharp
+float MassOf(BodyId body)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [MassProperties](MicroEngine.Physics.PhysicsCapabilities.md).
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__"></a> Move\(BodyId, Vector2, in QueryFilter\)
 
@@ -445,6 +1018,50 @@ bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
 
 A point is not finite.
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ReactionForceOf_MicroEngine_Physics_JointId_"></a> ReactionForceOf\(JointId\)
+
+The force the joint applied in the latest step to hold its bodies together (mass × world units per second squared).
+
+```csharp
+Vector2 ReactionForceOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ReactionTorqueOf_MicroEngine_Physics_JointId_"></a> ReactionTorqueOf\(JointId\)
+
+The torque the joint applied in the latest step.
+
+```csharp
+float ReactionTorqueOf(JointId joint)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_RemoveShape_MicroEngine_Physics_ShapeId_"></a> RemoveShape\(ShapeId\)
 
 Removes a shape; nothing for a stale or none id. Its sensor pairs end at the next step.
@@ -479,6 +1096,194 @@ float RotationOf(BodyId body)
 
 The id is stale.
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetAngularVelocity_MicroEngine_Physics_BodyId_System_Single_"></a> SetAngularVelocity\(BodyId, float\)
+
+Sets a dynamic body's angular velocity, in radians per second.
+
+```csharp
+void SetAngularVelocity(BodyId body, float radiansPerSecond)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`radiansPerSecond` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md) and [Rotation](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale or the body is not dynamic.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetAwake_MicroEngine_Physics_BodyId_System_Boolean_"></a> SetAwake\(BodyId, bool\)
+
+Wakes a body or puts it to sleep (with the bodies it touches).
+
+```csharp
+void SetAwake(BodyId body, bool awake)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`awake` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetDynamics_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyDynamics__"></a> SetDynamics\(BodyId, in BodyDynamics\)
+
+Changes how the solver treats <code class="paramref">body</code>.
+
+```csharp
+void SetDynamics(BodyId body, in BodyDynamics dynamics)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`dynamics` [BodyDynamics](MicroEngine.Physics.BodyDynamics.md)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+A value is out of range ([Validate](MicroEngine.Physics.BodyDynamics.md#MicroEngine_Physics_BodyDynamics_Validate)).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetJointLength_MicroEngine_Physics_JointId_System_Single_"></a> SetJointLength\(JointId, float\)
+
+Sets a distance joint's rest length (a winch).
+
+```csharp
+void SetJointLength(JointId joint, float length)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+`length` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale, or the joint is not a distance joint.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetJointLimit_MicroEngine_Physics_JointId_System_Boolean_System_Single_System_Single_"></a> SetJointLimit\(JointId, bool, float, float\)
+
+Turns a joint's limit on or off and sets its bounds (revolute, prismatic, wheel, distance).
+
+```csharp
+void SetJointLimit(JointId joint, bool enabled, float lower, float upper)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+`enabled` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+`lower` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`upper` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale, or the joint's kind has no limit.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The lower bound is above the upper one.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetJointMotor_MicroEngine_Physics_JointId_System_Boolean_System_Single_System_Single_"></a> SetJointMotor\(JointId, bool, float, float\)
+
+Turns a joint's motor on or off and sets its speed and the most force or torque it applies (revolute, prismatic, wheel, distance).
+
+```csharp
+void SetJointMotor(JointId joint, bool enabled, float speed, float maxForce)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+`enabled` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+`speed` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`maxForce` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale, or the joint's kind has no motor.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetJointSpring_MicroEngine_Physics_JointId_System_Boolean_System_Single_System_Single_"></a> SetJointSpring\(JointId, bool, float, float\)
+
+Turns a joint's spring on or off and sets its frequency and damping ratio.
+
+```csharp
+void SetJointSpring(JointId joint, bool enabled, float hertz, float dampingRatio)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+`enabled` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+`hertz` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`dampingRatio` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetJointTarget_MicroEngine_Physics_JointId_System_Numerics_Vector2_"></a> SetJointTarget\(JointId, Vector2\)
+
+Moves a target joint's world point.
+
+```csharp
+void SetJointTarget(JointId joint, Vector2 target)
+```
+
+#### Parameters
+
+`joint` [JointId](MicroEngine.Physics.JointId.md)
+
+`target` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale, or the joint is not a target joint.
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetPosition_MicroEngine_Physics_BodyId_System_Numerics_Vector2_"></a> SetPosition\(BodyId, Vector2\)
 
 Teleports the body: no collision, no pushing; sensor events follow at the next step.
@@ -502,6 +1307,34 @@ The id is stale.
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 The position is not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetRotation_MicroEngine_Physics_BodyId_System_Single_"></a> SetRotation\(BodyId, float\)
+
+Turns the body to <code class="paramref">radians</code> where it is: no collision, like [SetPosition](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_SetPosition_MicroEngine_Physics_BodyId_System_Numerics_Vector2_).
+
+```csharp
+void SetRotation(BodyId body, float radians)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`radians` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [Rotation](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The angle is not finite.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_SetVelocity_MicroEngine_Physics_BodyId_System_Numerics_Vector2_"></a> SetVelocity\(BodyId, Vector2\)
 
@@ -570,6 +1403,28 @@ void Step(float dt)
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 <code class="paramref">dt</code> is negative or not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_TilesOf_MicroEngine_Physics_ShapeId_"></a> TilesOf\(ShapeId\)
+
+The tiles <code class="paramref">shape</code> stands for when it was added with [AddTiles](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_); null for any other shape.
+
+```csharp
+ICollisionGrid? TilesOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)?
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_VelocityOf_MicroEngine_Physics_BodyId_"></a> VelocityOf\(BodyId\)
 

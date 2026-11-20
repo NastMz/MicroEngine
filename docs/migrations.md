@@ -28,6 +28,27 @@ parameter each (`Rotated`, `Loop`).
 `Assets.Preload("music/theme.ogg")` and other files that are not images, atlases or fonts no longer throw
 `ArgumentException`: they load. A file whose extension no loader reads still throws, naming the file. A preload by
 path of a `.json` file still treats it as an atlas.
+### The physics contract is version 2
+
+`IPhysicsWorld2D` gained members (dynamics control, joints, tile geometry, `BoundsOf`). Every one has a default that
+refuses with `PhysicsCapabilityException`, so a physics backend written outside the engine still compiles; it
+implements the members of the capabilities it declares. Games are affected by three renames and moves:
+
+| Before | Now |
+| --- | --- |
+| `TilePhysicsWorld2D.GridOf(shape)` | `TilesOf(shape)`, a member of `IPhysicsWorld2D` |
+| `Box2DPhysicsWorld2D.MassOf`, `BoundsOf` | the same members, now on `IPhysicsWorld2D` |
+| `ICollisionGrid` and `TileFlags` in `MicroEngine.Physics.Tiles.dll` | the same types and namespace (`MicroEngine.World`), in `MicroEngine.Physics.dll`; recompile |
+
+`Box2DPhysicsWorld2D` now declares `PhysicsCapabilities.Joints`, and the Box2D package's native library is layer
+version 3: the managed assembly and the native library come from the same package version.
+
+A scene that created a world with `new` and registered it with `PhysicsSystem.Add` keeps working. To let the scene
+own it instead, read `Physics.World` (or `Systems.Add(new ScenePhysics(world))` for a world you make) and remove the
+registration, the step and the disposal: do not do both, or the world steps twice.
+
+A scene class that names the `MicroEngine.Physics` namespace as `Physics.Something` now finds the scene's `Physics`
+property first: write `MicroEngine.Physics.Something` or add a `using`.
 
 ### A graphics device of the drawing API creates render targets
 

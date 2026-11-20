@@ -246,6 +246,69 @@ The layers it collides with.
 
 The body is stale or not static.
 
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_"></a> AddTiles\(BodyId, ICollisionGrid, int, int, ulong, ulong\)
+
+Attaches the tiles of <code class="paramref">grid</code> to a static body as one shape
+([TileGeometry](MicroEngine.Physics.PhysicsCapabilities.md)): cell (x, y) is a square of [TileSize](MicroEngine.World.ICollisionGrid.md#MicroEngine_World_ICollisionGrid_TileSize)
+units, x tiles sideways and y tiles downward (against [Up](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Up)) from the body's origin, so row 0 is the
+top row whichever way the world's y grows. [Solid](MicroEngine.World.TileFlags.md) cells block from every side and
+[OneWay](MicroEngine.World.TileFlags.md) cells are one-way platforms (where the backend declares them); other cells are
+not geometry.
+
+```csharp
+public ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = 1, ulong mask = 18446744073709551615)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+A static body.
+
+`grid` [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)
+
+The tiles.
+
+`columns` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+How many columns of the grid hold the level.
+
+`rows` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+How many rows of the grid hold the level.
+
+`category` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+The layers the tiles are in.
+
+`mask` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+The layers they collide with.
+
+#### Returns
+
+ [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Remarks
+
+The tile backend reads the grid at every query, inside and outside that area, so changing a tile changes
+collisions at once. A backend that builds shapes from the tiles reads the area and one tile around it (the border
+a grid closes its level with) when this is called: remove the shape and add the tiles again after changing them.
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [TileGeometry](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The body is stale or not static.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">columns</code> or <code class="paramref">rows</code> is not positive.
+
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_BodyOf_MicroEngine_Physics_ShapeId_"></a> BodyOf\(ShapeId\)
 
 The body <code class="paramref">shape</code> is attached to.
@@ -261,6 +324,28 @@ public BodyId BodyOf(ShapeId shape)
 #### Returns
 
  [BodyId](MicroEngine.Physics.BodyId.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_BoundsOf_MicroEngine_Physics_ShapeId_"></a> BoundsOf\(ShapeId\)
+
+The world bounds of <code class="paramref">shape</code>: a box's rectangle; for tiles, the area they were added with (empty at the body's origin when they were added without one).
+
+```csharp
+public RectF BoundsOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [RectF](MicroEngine.RectF.md)
 
 #### Exceptions
 
@@ -321,28 +406,6 @@ public void DestroyBody(BodyId body)
 #### Parameters
 
 `body` [BodyId](MicroEngine.Physics.BodyId.md)
-
-### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_GridOf_MicroEngine_Physics_ShapeId_"></a> GridOf\(ShapeId\)
-
-The tiles <code class="paramref">shape</code> stands for when it was added with [AddTiles](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md#MicroEngine_Physics_Tiles_TilePhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_UInt64_System_UInt64_); null for any other shape.
-
-```csharp
-public ICollisionGrid? GridOf(ShapeId shape)
-```
-
-#### Parameters
-
-`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
-
-#### Returns
-
- [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)?
-
-#### Exceptions
-
- [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
-
-The id is stale.
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
@@ -629,6 +692,28 @@ public void Step(float dt)
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 <code class="paramref">dt</code> is negative or not finite.
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_TilesOf_MicroEngine_Physics_ShapeId_"></a> TilesOf\(ShapeId\)
+
+The tiles <code class="paramref">shape</code> stands for when it was added with [AddTiles](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_); null for any other shape.
+
+```csharp
+public ICollisionGrid? TilesOf(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+#### Returns
+
+ [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)?
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_VelocityOf_MicroEngine_Physics_BodyId_"></a> VelocityOf\(BodyId\)
 

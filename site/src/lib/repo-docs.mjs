@@ -79,6 +79,7 @@ const guidePages = [
   { source: 'docs/manual/audio.md', slug: 'docs/manual/audio', group: 'manual', label: 'Audio' },
   { source: 'docs/manual/assets.md', slug: 'docs/manual/assets', group: 'manual', label: 'Assets' },
   { source: 'docs/manual/world.md', slug: 'docs/manual/world', group: 'manual', label: 'Tile maps and collision' },
+  { source: 'docs/manual/physics.md', slug: 'docs/manual/physics', group: 'manual', label: 'Physics' },
   { source: 'docs/guide/state-machines.md', slug: 'docs/state-machines', group: 'manual', label: 'State machines' },
   { source: 'docs/guide/navigation.md', slug: 'docs/navigation', group: 'manual', label: 'Navigation' },
   { source: 'docs/guide/large-worlds.md', slug: 'docs/large-worlds', group: 'manual', label: 'Large worlds and nearby objects' },

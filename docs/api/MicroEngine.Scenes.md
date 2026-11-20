@@ -28,6 +28,13 @@ end it with [Finish](MicroEngine.Scenes.md).
 
 Manages the scene stack and the transitions between scenes.
 
+ [ScenePhysics](MicroEngine.Scenes.ScenePhysics.md)
+
+A scene's physics world ([Physics](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Physics)): a scene system that steps the world after the scene's
+[Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), by the same step (the step on the scene world's clock, so slow motion slows physics and
+a frozen or covered scene's physics stands still), writes the pose of every moving body to its owner's transform,
+adds the world to the scene's state hash and disposes it when the scene leaves the stack.
+
  [SceneSystem](MicroEngine.Scenes.SceneSystem.md)
 
 A part of a scene that lives with it: the engine starts it when the scene is on the stack, steps it with the scene

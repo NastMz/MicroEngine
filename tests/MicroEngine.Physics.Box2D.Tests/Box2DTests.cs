@@ -115,6 +115,25 @@ public sealed class Box2DPhysicsWorldTests
     }
 
     [TestMethod]
+    public void The_manuals_capability_table_says_what_the_two_backends_declare()
+    {
+        string? root = AppContext.BaseDirectory;
+        while (root is not null && !File.Exists(Path.Combine(root, "MicroEngine.slnx"))) root = Path.GetDirectoryName(root);
+        if (root is null) Assert.Inconclusive("Not running inside the repository.");
+        var seen = new HashSet<PhysicsCapabilities>();
+        foreach (string line in File.ReadAllLines(Path.Combine(root, "docs", "manual", "physics.md")))
+        {
+            var cells = line.Split('|', StringSplitOptions.TrimEntries);
+            if (cells.Length < 6 || cells[3] is not ("yes" or "no") || !Enum.TryParse<PhysicsCapabilities>(cells[1].Trim('`'), out var flag)) continue;
+            Assert.AreEqual((MicroEngine.Physics.Tiles.TilePhysicsWorld2D.Declared & flag) != 0 ? "yes" : "no", cells[3], $"{flag} on the tile backend");
+            Assert.AreEqual((Box2DPhysicsWorld2D.Declared & flag) != 0 ? "yes" : "no", cells[4], $"{flag} on Box2D");
+            seen.Add(flag);
+        }
+        foreach (var flag in Enum.GetValues<PhysicsCapabilities>())
+            if (flag != PhysicsCapabilities.None) Assert.IsTrue(seen.Contains(flag), $"the table has no row for {flag}");
+    }
+
+    [TestMethod]
     public void A_pixel_world_takes_and_returns_pixels_with_y_down()
     {
         using var world = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);

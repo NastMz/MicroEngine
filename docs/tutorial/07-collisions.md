@@ -7,9 +7,10 @@ Games need two kinds of collision, and MicroEngine handles them differently:
 - **Between objects** (the gardener and a gem, the gardener and a slime): the game compares rectangles with
   `RectF.Intersects` and decides what happens.
 
-There is no physics engine (no forces, masses or rigid bodies): movement is code you write, which keeps it exact and
-easy to tune. This step uses both kinds. ([Physics worlds](../manual/world.md#physics-worlds) add
-bodies, sensors and ray casts over the same tile collision, still without forces; Gem Garden does not need them.)
+Gem Garden needs no physics engine: its movement is a few lines of code you write, which keeps it exact and easy to
+tune. This step uses both kinds. (A game that needs more has [physics](../manual/physics.md): a world per scene with
+bodies, sensors and ray casts over the same tile collision, a character controller for side-view and top-down
+characters, and forces and joints with the optional Box2D backend.)
 
 ## Hedges stop the gardener
 

@@ -2,9 +2,9 @@
 
 The `MicroEngine.World` namespace holds what most 2D games build their levels from: grids of tiles, what each tile
 means for movement, a function that moves a box through the grid without passing through walls, and a list type for
-game objects. It is deliberately small: there are no forces, masses, slopes or rotating bodies and no level editor format.
-Movement rules are game code that calls these pieces. A world of bodies with collision layers, queries and sensors is
-described in [Physics worlds](#physics-worlds).
+game objects. Tile collision is deliberately small and exact: axis-aligned boxes against a grid, with no level editor
+format. A world of bodies with collision layers, queries and sensors, a character controller, and (with the optional
+Box2D backend) forces, rotation and joints are described in [Physics](physics.md).
 
 ## The pieces
 
@@ -85,47 +85,17 @@ How it works, and why it matters:
 - `IsOnGround(box, grid, solids)` is true when one more pixel down would collide: standing on a floor, a one-way
   platform or a solid rectangle.
 
-A side-view player with gravity, jumps, one-way platforms and a moving platform:
+A box that needs no world moves like this:
 
-<!-- code: samples/Examples/Examples/PlatformerExample.cs#update -->
 ```csharp
-public override void Update(float dt)
-{
-    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-
-    // The lift moves first and carries the player when he stands on it.
-    var lift = _lift with { X = 176 + MathF.Sin(Age) * 48 };
-    bool riding = _player.Bottom == _lift.Top && _player.Right > _lift.Left && _player.Left < _lift.Right;
-    if (riding) _player = TileMotion.Move(_player, new Vector2(lift.X - _lift.X, 0), _grid).Bounds;
-    _lift = lift;
-    IReadOnlyList<RectF> solids = [_lift];
-
-    bool grounded = TileMotion.IsOnGround(_player, _grid, solids);
-    _velocity.X = Input.Axis("left", "right") * RunSpeed;
-    _velocity.Y = MathF.Min(_velocity.Y + Gravity * dt, MaxFall);
-    if (grounded && Input.Pressed("confirm"))
-    {
-        if (Input.Down("down")) _dropTime = 0.2f;          // down + jump: drop through a one-way platform
-        else _velocity.Y = -JumpSpeed;
-    }
-    _dropTime = MathF.Max(0, _dropTime - dt);
-
-    // One call resolves walls, floors, ceilings, one-way platforms and the lift.
-    var move = TileMotion.Move(_player, _velocity * dt, _grid, solids, ignoreOneWay: _dropTime > 0);
-    _player = move.Bounds;
-    if (move.HitFloor || move.HitCeiling) _velocity.Y = 0;
-
-    // Objects against the player: the game compares rectangles.
-    foreach (var coin in _coins)
-        if (coin.Bounds.Intersects(_player)) { coin.Collected = true; _collected++; }
-    _coins.RemoveAll(static coin => coin.Collected);      // removed after the walk, never during it
-    foreach (var coin in _coins) coin.Update(dt);
-}
+_velocity.Y = MathF.Min(_velocity.Y + Gravity * dt, MaxFall);
+var move = TileMotion.Move(_box, _velocity * dt, grid);
+_box = move.Bounds;
+if (move.HitFloor || move.HitCeiling) _velocity.Y = 0;
 ```
 
-Everything the engine does not decide is visible here as game code: gravity and jump speed, when a jump is allowed
-(`grounded`), how dropping through works (a short timer), and how a moving platform carries the player (move him by the
-platform's own movement first). Tune those numbers per game; the collision stays exact.
+A character is more than that (jumps, coyote time, one-way platforms, moving platforms): use the
+[character controller](physics.md#a-character) on the scene's physics world, which reads the same grid.
 
 A top-down game uses the same call without gravity: see the gardener and the slimes of the
 [tutorial](../tutorial/07-collisions.md), which turn around on `HitWall`.
@@ -273,8 +243,9 @@ a sensor looks only at the shapes near it; the results are the same as looking a
 
 ## Limits
 
-- Axis-aligned boxes only: no slopes, circles or rotated shapes. `TileMotion` moves one box against rectangles that
-  stand still during the call; a physics world's moving solids push and carry other bodies.
+- Tile collision is axis-aligned boxes only: no slopes, circles or rotated shapes (the optional Box2D
+  [physics backend](physics.md#choosing-a-backend) has them, with forces, rotation and joints). `TileMotion` moves one
+  box against rectangles that stand still during the call; a physics world's moving solids push and carry other bodies.
 - One tile size per grid; no isometric or hexagonal grids.
 - Maps from Tiled load with `MicroEngine.Tiled`, orthogonal ones only. Image layers and text objects are data: the
   game draws them. No other map editor's files are read (LDtk: read them yourself into a `TileLayer`).
@@ -288,144 +259,23 @@ a sensor looks only at the shapes near it; the results are the same as looking a
 
 ## Physics worlds
 
-`IPhysicsWorld2D` (namespace
-`MicroEngine.Physics`) is a world of bodies owned by entities of the [scene world](scenes.md#the-scene-world). Every
-physics backend offers the same core; anything else is a capability the backend declares, and asking for one it does
-not declare throws `PhysicsCapabilityException` instead of being approximated. The engine's backend is
-`TilePhysicsWorld2D` (namespace `MicroEngine.Physics.Tiles`), built on the same swept test as `TileMotion`:
-
-```csharp
-var physics = new TilePhysicsWorld2D();
-var level = physics.CreateBody(levelEntity, BodyDescription.Static());
-physics.AddTiles(level, grid);                                   // the tile grid as static geometry
-
-var player = physics.CreateBody(playerEntity, BodyDescription.Kinematic(new Vector2(40, 120)));
-physics.AddShape(player, ShapeDescription.Box(new Vector2(10, 14)));
-
-// Each step: collide-and-slide, then read what the box touched.
-var move = physics.Move(player, velocity * dt);
-if (move.OnGround) velocity.Y = 0;
-```
-
-The core every backend offers:
-
-| Part | What it does |
-| --- | --- |
-| Bodies | `CreateBody(owner, description)`: `Static` (level geometry) or `Kinematic` (moved only by your code). Ids are generation-checked: a destroyed body's id never reaches the body that reuses its slot. `SetPosition` teleports. |
-| Shapes | `AddShape(body, ShapeDescription.Box(size, offset))`: an axis-aligned box centred on the body's origin plus its offset. |
-| Layers | `Category` (the layers a shape is in) and `Mask` (the layers it collides with), 64 bits; two shapes collide only when each one's mask holds the other's category. `QueryFilter(category, mask)` selects what a move or a query sees. |
-| `Move(body, delta, filter)` | Moves a kinematic body's box, X then Y, and stops it against what is in its way however fast it moves. `MoveResult` has the position, the distance actually moved, `OnGround`, `GroundNormal`, `HitWall`, `HitCeiling` and every contact with its shape, owner and normal. A shape the box already overlaps does not block it. |
-| `RayCast(from, to, filter, out hit)` | The closest shape the segment enters: shape, owner, point, normal and fraction. |
-| `Overlap(area, filter, results)` | The shapes that truly overlap a rectangle (sharing an edge does not count). |
-| Sensors | `ShapeDescription.Sensor(size)`: never blocks; after each `Step`, `SensorEvents` lists the shapes of moving bodies that entered or left it. Queries leave sensors out unless the filter sets `IncludeSensors`. |
-| `Step(dt)` | Computes the step's events; they stay readable until the next step. No game code runs during it. |
-
-What a backend may declare (`physics.Capabilities`):
-
-| Capability | Meaning | Tile backend | Box2D backend |
-| --- | --- | --- | --- |
-| `TileGeometry` | `AddTiles(body, grid)`: solid cells block, one-way cells are platforms, changing a tile changes collisions at once | yes | no: build the level from boxes |
-| `OneWayPlatforms` | `ShapeDescription.OneWay`: stops only bodies coming down onto its top; `QueryFilter.PassOneWay` drops through | yes | yes, for moved and dynamic bodies |
-| `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that moves the whole way, pushes kinematic bodies out of its way and carries those standing on it | yes | no |
-| `DynamicBodies` | `BodyKind.Dynamic`: bodies moved by the solver (gravity, `SetVelocity`, contacts); `ContactEvents` reports when they begin and stop touching | no | yes |
-| `Rotation` | `BodyDescription.Rotation`, and bodies the solver turns (`RotationOf`) | no | yes |
-| `Circles`, `Capsules`, `Polygons` | `ShapeDescription.Circle`, `Capsule` (also as the shape `Move` moves) and `Polygon` (convex) | no | yes (polygons of up to 8 vertices) |
-| `ContinuousCollision` | `BodyDescription.Bullet`: a fast dynamic body never passes through what it hits | no | yes |
-| `FrictionRestitution`, `MassProperties` | `ShapeDescription.Friction`, `Restitution`, `Density` | no | yes |
-| `Joints` | bodies joined together | no | no |
-
-Undeclared capabilities are refused with `PhysicsCapabilityException`.
-
-The tile backend rests boxes exactly on surfaces (`Skin` is 0), uses the engine's Y-down space (`Up` is (0, -1)) and
-gives identical results on every platform. A backend with dynamic bodies may leave a small gap, at most its `Skin`.
+A tile grid is also the level of a physics world: `Physics.World.AddTiles(level, grid, columns, rows)` in a scene makes
+its solid and one-way cells the static geometry that characters, sensors, rays and moving platforms collide with.
+[Physics](physics.md) covers the scene's world, the character controller, the two backends (tiles by default, Box2D
+as an optional package), forces, joints and queries.
 
 ### The Box2D backend
 
-`Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) runs Box2D 3.2 behind the same `IPhysicsWorld2D`, for
-games that need what the tile backend refuses: dynamic bodies, rotation, circles, capsules and polygons, continuous
-collision, friction and mass. It is an optional package; the tile backend needs none:
-
-```xml
-<PackageReference Include="MicroEngine.Physics.Box2D" Version="0.6.0-alpha.1" />
-```
-
-Choose the backend where the world is made; code that uses only the core then runs on either. Keep the tile backend
-for characters moving through tile levels: it rests exactly on surfaces, builds levels from tile grids (`AddTiles`),
-has moving platforms that push and carry (`MovingSolids`) and moves kinematic boxes several times faster. Choose Box2D
-when bodies must fall, stack, roll and push each other.
-
-<!-- code: samples/PhysicsSubstitution/Program.cs#backend -->
-```csharp
-static IPhysicsWorld2D Make(string backend) => backend switch
-{
-    "tiles" => new TilePhysicsWorld2D(),
-    // Box2D in the engine's pixel space: 16 pixels (a tile) to the metre, y down.
-    "box2d" => new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 16, YDown = true }),
-    _ => throw new ArgumentException($"Unknown backend '{backend}': tiles or box2d."),
-};
-```
-
-A crate is a dynamic body with a box; the solver moves and turns it on each `Step`:
-
-<!-- code: samples/PhysicsSubstitution/Crates.cs#crate -->
-```csharp
-private static BodyId Crate(IPhysicsWorld2D world, Vector2 position, float rotation)
-{
-    var body = world.CreateBody(Owner, BodyDescription.Dynamic(position) with { Rotation = rotation });
-    world.AddShape(body, ShapeDescription.Box(new Vector2(16, 16)));
-    return body;
-}
-```
-
-The package carries Box2D's native library for every runtime it supports, and the browser build links it into the
-page:
-
-| Platform | Support |
-| --- | --- |
-| Windows x64, Linux x64, macOS (Apple silicon and Intel), browsers | supported |
-| Android (arm64, x64), iOS (arm64) | experimental: the library is included for these devices |
-
-What differs from the tile backend, within what the core allows:
-
-- `Move` stops a box a little short of the surface in its way: it rests up to `Skin` away (1.5 cm in metres, about half
-  a pixel at 32 pixels a metre), never inside. A capsule moved by `Move` may sink into the floor by up to the same amount.
-- `ContactEvents` only has pairs with a dynamic body: a kinematic character's contacts are in its `MoveResult`.
-- Events of the same step can come in another order than on the tile backend, and a contact can begin one step
-  earlier or later than the tile backend would report the touch.
-- Angles go through Box2D's own sine and cosine: an angle reads back within about 0.002 radians of the one set.
-- Identical results on every platform for the same build; never identical to the tile backend or another Box2D version.
-
-The same platformer, written against the core only, runs on both backends; on Box2D (16 pixels a metre) it rests about
-0.16 pixels higher, and its sensors fire in the same step. Code that creates a dynamic body on the tile backend gets
-`PhysicsCapabilityException` before anything changes, so a game can check `physics.Capabilities` first or catch it.
-- A world owns native memory: dispose it. Box2D keeps at most 128 worlds alive in a process, created and disposed from
-  one thread at a time. A world you forget to dispose is released later, on the thread that next creates or disposes a
-  world, after the garbage collector finds it; when all 128 are in use, creating another first collects and retries,
-  then throws `InvalidOperationException`.
-
-To step worlds with the game, add the physics module and register each world with the scene world whose entities own
-its bodies:
-
-```csharp
-public override void Configure(EngineBuilder builder) => builder.Add(new PhysicsModule());
-
-// In the scene that owns the world:
-physicsSystem.Add(physics, world);       // physicsSystem: the PhysicsSystem service the module registers
-```
-
-The module steps the world in the frame's `Physics` phase, after the scene's update, only in the steps its scene world
-took and by that world's scaled time (so pausing, slow motion and hitstop apply), then writes every moving body's
-position to its owner's `Transform`, which the scene world interpolates for drawing. Owners of moving bodies are root
-entities. `PhysicsSync.Teleport(physics, world, body, position)` moves a body and its entity together and draws it there
-at once.
+`MicroEngine.Physics.Box2D` is the optional backend for bodies that fall, stack, roll and are joined together:
+[choosing a backend](physics.md#choosing-a-backend) and [what differs on Box2D](physics.md#what-differs-on-box2d).
 
 ## Related
 
 - [Tutorial step 6: tile map and camera](../tutorial/06-garden.md), [step 7: collisions](../tutorial/07-collisions.md)
+- [Physics](physics.md): the scene's physics world, characters, forces and joints
 - [Graphics](rendering.md#tile-maps): drawing layers
 - API: [`TileMotion`](../api/MicroEngine.World.TileMotion.md), [`TileGrid`](../api/MicroEngine.World.TileGrid.md),
   [`IWorld`](../api/MicroEngine.Scenes.IWorld.md),
   [`IPhysicsWorld2D`](../api/MicroEngine.Physics.IPhysicsWorld2D.md),
   [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md),
-  [`TiledMap`](../api/MicroEngine.Tiled.TiledMap.md), [`TiledSprites`](../api/MicroEngine.Tiled.TiledSprites.md); `Box2DPhysicsWorld2D` is not in the API
-  reference until its package is published
+  [`TiledMap`](../api/MicroEngine.Tiled.TiledMap.md), [`TiledSprites`](../api/MicroEngine.Tiled.TiledSprites.md)
