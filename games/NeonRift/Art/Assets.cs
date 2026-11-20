@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Art;
 
@@ -32,7 +33,7 @@ internal sealed class Assets : IDisposable
     public Assets(IGraphicsDevice device, AssetCache content)
     {
         // Content/sprites.sheet says how every image is cut: cell sizes, anchors, tile rectangles and the rates strips play at.
-        var b = new SpriteAtlasBuilder().AddSheet(content.Sheet("sprites.sheet"));
+        var b = new SpriteAtlasBuilder().AddSheet(content.Sheet(Names.Path));
         // The aiming poses are derived from authored frames.
         AddRig(b, "shoot0", content.Image("hero/shoot.png"));
         var runShoot = content.Image("hero/run-shoot.png");

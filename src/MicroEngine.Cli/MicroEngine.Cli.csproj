@@ -29,6 +29,8 @@
     <InternalsVisibleTo Include="MicroEngine.Cli.Tests" />
     <!-- PNG reading and writing for icons. -->
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+    <!-- `microengine content` reads Aseprite files as the game does. -->
+    <ProjectReference Include="../MicroEngine.Aseprite/MicroEngine.Aseprite.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- `microengine shaders`: SPIRV-Cross (C API and its native library for every desktop system, through Silk.NET)

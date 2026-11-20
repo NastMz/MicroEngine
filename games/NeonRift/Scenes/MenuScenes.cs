@@ -6,6 +6,7 @@ using MicroEngine.Input;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Scenes;
 
@@ -75,8 +76,8 @@ internal sealed class TitleScene(RiftGame game) : Scene
         _view ??= new StageView(game.Art, Font);
         _view.DrawBackdrop(r, "city", Objects.DrawPosition2D(_skyline), Age, false);
         r.FillGradient(new RectF(0, 150, r.Width, 120), Ui.Ink.WithAlpha(0f), Ui.Ink.WithAlpha(0.9f), 8);
-        r.Draw(game.Art.Clip("hero_idle").FrameAt(Age), new Vector2(70, 250));
-        r.Draw(game.Art.Clip("trooper_idle").FrameAt(Age), new Vector2(410, 250));
+        r.Draw(game.Art.Clip(Names.Clips.HeroIdle).FrameAt(Age), new Vector2(70, 250));
+        r.Draw(game.Art.Clip(Names.Clips.TrooperIdle).FrameAt(Age), new Vector2(410, 250));
         Ui.Neon(r, Font, "NEON RIFT", r.Width / 2f, 48, 5, Ui.Magenta, Age);
         Ui.Centered(r, Font, "A RUN & GUN THROUGH HALCYON CITY", r.Width / 2f, 96, Ui.Cyan);
         if (_controls)
@@ -169,7 +170,7 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
         Ui.Centered(r, Font, StageTitles[stageIndex], r.Width / 2f, 70, Ui.Cyan, 2);
         Ui.Neon(r, Font, def.Name, r.Width / 2f, 96, 3, Ui.Magenta, Age);
         Ui.Centered(r, Font, def.Subtitle, r.Width / 2f, 128, Ui.Muted);
-        r.Draw(game.Art.Clip("hero_run").FrameAt(Age), new Vector2(r.Width / 2f, 214));
+        r.Draw(game.Art.Clip(Names.Clips.HeroRun).FrameAt(Age), new Vector2(r.Width / 2f, 214));
         r.FillRect(new RectF(r.Width / 2f - 60, 214, 120, 1), Ui.Magenta.WithAlpha(0.6f));
         Ui.Centered(r, Font, _rest.Get(game.Session.Lives, game.Session.Score), r.Width / 2f, 232, Ui.Text);
         Ui.Scanlines(r);
