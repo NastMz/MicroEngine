@@ -85,4 +85,41 @@ public sealed class RenderingExampleTests
         Press(game, "pause");
         Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current, "pause goes back to the list");
     }
+
+    private static int Brightness(Color c) => c.R + c.G + c.B;
+
+    [TestMethod]
+    public void TheScenesChainProcessesItsPictureAndSaysWhatTheDeviceLeavesOut()
+    {
+        var (game, platform) = Start(new PostProcessExample());
+        var scene = (PostProcessExample)game.Scenes.Current!;
+        Assert.HasCount(5, scene.PostProcess.Effects);
+        var support = scene.PostProcess.SupportOn(game.Graphics).ToDictionary(e => e.Effect.GetType().Name, e => e.Support);
+        Assert.AreEqual(PostEffectSupport.Reduced, support["Bloom"], "no shaders on the headless platform: the simpler bloom");
+        Assert.AreEqual(PostEffectSupport.None, support["ShaderEffect"], "and the pass through the game's shader is left out");
+        Assert.AreEqual(PostEffectSupport.Full, support["Vignette"]);
+        Assert.AreEqual(PostEffectSupport.Full, support["Scanlines"]);
+
+        var on = Draw(game, platform);
+        Assert.IsTrue(Brightness(on[160, 20]) > Brightness(on[3, 20]) + 12, "the vignette darkens the corners of the scene's picture");
+        Assert.IsTrue(Brightness(on[160, 20]) > Brightness(on[160, 21]), "and the scanlines darken every other row");
+
+        Press(game, "action");                      // the effect written in the game: four-pixel blocks
+        var pixels = Draw(game, platform);
+        Assert.AreEqual(pixels[160, 90], pixels[163, 90], "a block of four pixels is one colour (in the middle, where the vignette changes nothing)");
+        Assert.AreEqual(pixels[164, 90], pixels[167, 90]);
+        Press(game, "action");
+
+        Press(game, "confirm");                     // the chain off: the picture as the scene draws it
+        Assert.IsFalse(scene.PostProcess.Enabled);
+        var off = Draw(game, platform);
+        Assert.AreEqual(off[160, 20], off[3, 20], "the same row of the gradient, edge to edge");
+
+        int live = ((HeadlessGraphicsDevice)platform.Graphics).LiveTextures;
+        Press(game, "confirm");
+        Draw(game, platform);
+        Press(game, "pause");
+        Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current, "pause goes back to the list");
+        Assert.IsTrue(((HeadlessGraphicsDevice)platform.Graphics).LiveTextures <= live, "leaving releases what the chain made");
+    }
 }

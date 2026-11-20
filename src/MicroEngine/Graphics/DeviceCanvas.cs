@@ -23,6 +23,9 @@ public sealed class DeviceGraphics : IGraphicsDevice
     /// <inheritdoc/>
     public TextureFilter DefaultFilter { get; set; }
 
+    /// <inheritdoc/>
+    public bool SupportsShaders => Device.Capabilities.Has(Dev.GraphicsFeatures.Shaders);
+
     /// <summary>Textures created and not disposed yet.</summary>
     public int LiveTextures => _live.Count;
 

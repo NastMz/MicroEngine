@@ -540,6 +540,9 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
     /// <inheritdoc/>
     public Material2D CreateMaterial(Dev.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(null, fragment, fallback);
 
+    /// <summary>False: nothing runs shaders without a graphics device.</summary>
+    public bool SupportsShaders => false;
+
     /// <inheritdoc/>
     public RenderTarget2D CreateRenderTarget(int width, int height) => CreateRenderTarget(width, height, DefaultFilter);
 

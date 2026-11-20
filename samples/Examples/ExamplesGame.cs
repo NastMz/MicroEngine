@@ -53,7 +53,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Light behind walls (targets)", g => new OccludedLightExample()),
         ("Masks (render targets)", g => new MaskExample()),
         ("Water (a shader of your own)", g => new WaterExample()),
-        ("Post-processing (shader passes)", g => new PostProcessExample()),
+        ("Post-processing (a chain of effects)", g => new PostProcessExample()),
         ("Nearby objects (spatial index)", g => new NearbyExample()),
         ("Day and night (a scene system)", g => new SystemsExample()),
         ("A guard (state machine)", g => new StateMachineExample()),
@@ -86,7 +86,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
     {
         // The shader examples' materials, loaded before play: reading a shader and creating it on the device takes
         // longer than a frame. The scenes ask for them again and get these.
-        foreach (var shader in new[] { "water", "glow", "combine" }) Assets.Material($"shaders/{shader}.frag.shader");
+        foreach (var shader in new[] { "water", "fringe" }) Assets.Material($"shaders/{shader}.frag.shader");
         Scenes.Push(new MenuScene());
     }
 }

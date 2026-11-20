@@ -592,11 +592,23 @@ public abstract class Game : IEngineModule, IStateHashed
         finally { Drawing = false; }
     }
 
+    /// <summary>
+    /// The game's post-processing chain for the canvas (<see cref="MicroEngine.Graphics.PostProcess"/>): while it holds an enabled
+    /// effect, everything drawn into the canvas (the background, every visible scene, their transition and
+    /// <see cref="DrawAboveScenes"/>) goes through the effects, at the canvas's resolution. Debug drawing and the
+    /// interface (the UI view) are drawn after it and are not affected.
+    /// Captures of the canvas show the result. The engine releases the chain when the game ends.
+    /// </summary>
+    public PostProcess PostProcess { get; } = new();
+
     private void RenderFrame(IRenderer renderer)
     {
-        renderer.Clear(Settings.Background);
+        // With post-processing the frame is drawn into the chain's picture, which starts as the background.
+        bool processed = PostProcess.Begin(renderer, Graphics, Settings.Background);
+        if (!processed) renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         DrawAboveScenes(renderer);
+        if (processed) PostProcess.End(renderer, opaque: true);
         _debugDraw?.Flush(renderer, Scenes.Current?.WorldCamera, (float)Frame.Delta);
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
         // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
@@ -685,6 +697,7 @@ public abstract class Game : IEngineModule, IStateHashed
         _engine?.Lifecycle.RaiseStopping();
         _achievements?.Flush();
         Unload();
+        PostProcess.Dispose();
         Assets.Dispose();
         Font.Dispose();
     }

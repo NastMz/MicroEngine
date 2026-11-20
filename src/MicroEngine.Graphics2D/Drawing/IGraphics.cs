@@ -287,4 +287,11 @@ public interface IGraphicsDevice
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="fragment"/> is not a fragment shader.</exception>
     Material2D CreateMaterial(Devices.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(null, fragment, fallback);
+    /// <summary>
+    /// Whether materials created here run their shaders (<see cref="Material2D.IsSupported"/>): true on a programmable
+    /// device (<c>sdl-gpu</c>), false on every other (SDL's default device and its software renderer, raylib, browser
+    /// builds, the headless platform), where a material draws with its fallback and a post-processing effect with a
+    /// shader draws its stated simpler form (<see cref="PostEffect.SupportOn"/>).
+    /// </summary>
+    bool SupportsShaders => false;
 }

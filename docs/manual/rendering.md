@@ -185,6 +185,7 @@ Every backend draws by the same rules.
   `InvalidOperationException`.
 - A material draws through its shader on a device that runs shaders (`sdl-gpu`) and with its declared fallback on
   every other, the headless platform included; its parameters are checked by name the same way on all of them.
+  `Game.Graphics.SupportsShaders` says which.
 - Captures are opaque (alpha 255) on every backend.
 - Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
 
@@ -244,6 +245,30 @@ private void DrawWorld(IRenderer r, SortedRenderer? order)
 - Draws that end up next to each other with the same texture and state share a draw call, as always; sorting by depth
   can separate draws that call order kept together. Keep one `SortedRenderer` per scene and reuse it: it keeps its
   memory between frames.
+
+## Post-processing
+
+A `PostProcess` is a chain of full-screen effects over a picture. A scene's (`Scene.PostProcess`) covers what that
+scene draws; the game's (`Game.PostProcess`) covers the whole canvas. Add effects and the engine does the rest: it
+draws into a picture of the canvas's size, runs the effects in order and draws the result.
+
+```csharp
+public override void Enter() =>
+    PostProcess.Add(new Bloom { Threshold = 0.6f, Strength = 1.2f }).Add(new Vignette { Strength = 0.6f });
+```
+
+- The ready effects are `ColorGrade`, `Blur`, `Bloom`, `Vignette`, `Scanlines`, `Crt` and `ShaderEffect` (a pass
+  through a material of the game's own); a game writes others by deriving from `PostEffect`.
+- A chain runs on every platform. Where the device runs no shaders (`Game.Graphics.SupportsShaders` is false: every
+  device but `sdl-gpu`, browser builds included), `Vignette` and `Scanlines` draw the same picture, `ColorGrade`,
+  `Blur`, `Bloom` and `Crt` draw a stated simpler form, and `ShaderEffect` is left out. `effect.SupportOn(Game.Graphics)`
+  answers `Full`, `Reduced` or `None`.
+- A chain with no enabled effect costs nothing. The chain owns the targets its effects need and the engine releases a
+  scene's when the scene leaves the stack and the game's when the game ends.
+- Post-processing only draws: it is not part of a scripted run's state.
+
+[Post-processing](../guide/render-targets-and-shaders.md#post-processing) has the effects' values, what each draws
+without shaders, and how to write an effect.
 
 ## Art in code: `PixelImage` and `Art`
 
@@ -595,11 +620,12 @@ a 3D renderer:
 
 ## Limitations
 
-- Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback. A material is a fragment
-  shader; there is no stencil buffer, no multisampling, and no pass over the finished frame or the window's composition.
+- Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback and a post-processing effect
+  with a shader draws its simpler form or nothing. A material is a fragment shader; there is no stencil buffer and no
+  multisampling.
 - Images load as 32-bit RGBA textures without mipmaps. A device texture in another format (a single channel, a
   compressed format the device declares) can be created on the device and drawn through `DeviceGraphics.Wrap`.
-- No sprite batching control beyond packing art into atlases; draw order is call order.
+- No sprite batching control beyond packing art into atlases. Draw order is call order unless a `SortedRenderer` orders the draws.
 - Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.
 - On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in
   quick succession can, rarely, be ended by a fault inside the driver's own background thread. A game keeps one device

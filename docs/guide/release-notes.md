@@ -12,6 +12,15 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `End` and sends them by layer, then depth, then call order, each with the camera, blending, clip and state it was
   recorded under; objects on the ground sort by the Y of their feet. It is a renderer, so everything that draws into
   one draws into it, on every platform ([Draw order](../manual/rendering.md#draw-order)).
+- **Post-processing chains.** `Scene.PostProcess` runs what a scene draws through a chain of full-screen effects, and
+  `Game.PostProcess` does the same for the whole canvas: `PostProcess.Add(new Bloom()).Add(new Vignette())`. Ready
+  effects: `ColorGrade`, `Blur`, `Bloom`, `Vignette`, `Scanlines`, `Crt`, and `ShaderEffect` for a material of the
+  game's own; `PostEffect` and `PostPass` are for effects written in the game. A chain runs on every platform: where
+  no shader runs each effect draws a stated simpler form or is left out, and `SupportOn` says which
+  ([Post-processing](render-targets-and-shaders.md#post-processing)).
+- `IGraphicsDevice.SupportsShaders` (`Game.Graphics.SupportsShaders`) says whether materials run their shaders on the
+  device in use.
+- The examples' post-processing scene uses the chain; its hand-written passes and their two shaders are gone.
 
 ### Content: sheets, animations, names, validation and packing
 
