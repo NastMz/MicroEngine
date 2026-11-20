@@ -163,7 +163,8 @@ public sealed class Coin
 }
 ```
 
-The tutorial's player and slimes are plain classes too. MicroEngine has no entity-component system.
+The tutorial's player and slimes are plain classes too. A game whose objects are combinations of capabilities that
+come and go can keep them in a component store instead: [Entity Component Systems](../guide/entity-component-systems.md).
 
 ## Drawing tiles
 

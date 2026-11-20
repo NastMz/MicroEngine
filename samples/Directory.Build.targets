@@ -23,6 +23,10 @@
     <_MicroEngineNavigation Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Navigation'))" />
     <PackageReference Remove="MicroEngine.Navigation" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Navigation/MicroEngine.Navigation.csproj" Condition="'@(_MicroEngineNavigation)' != ''" />
+    <!-- The optional Entity Component System package, the same way. -->
+    <_MicroEngineEcs Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Ecs'))" />
+    <PackageReference Remove="MicroEngine.Ecs" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Ecs/MicroEngine.Ecs.csproj" Condition="'@(_MicroEngineEcs)' != ''" />
     <!-- The optional Box2D physics package, the same way. -->
     <_MicroEngineBox2D Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Physics.Box2D'))" />
     <PackageReference Remove="MicroEngine.Physics.Box2D" />
