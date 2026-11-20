@@ -232,8 +232,8 @@ test('release plan: frozen, no state releases, publishes or deploys anything, by
 
 test('packages: a package a published SDK version did not have is never required of that version', () => {
   assert.deepEqual(packagesAt('0.6.0-alpha.2'), packageIds);
-  assert.deepEqual(packagesAt('0.6.0-alpha.1'), packageIds.filter(id => id !== 'MicroEngine.Tiled' && id !== 'MicroEngine.Navigation' && id !== 'MicroEngine.Ecs'));
-  assert.deepEqual(packagesAt('0.5.0-alpha.2'), packageIds.filter(id => id !== 'MicroEngine.Physics.Box2D' && id !== 'MicroEngine.Tiled' && id !== 'MicroEngine.Navigation' && id !== 'MicroEngine.Ecs'));
+  assert.deepEqual(packagesAt('0.6.0-alpha.1'), packageIds.filter(id => id !== 'MicroEngine.Tiled' && id !== 'MicroEngine.Navigation' && id !== 'MicroEngine.Ecs' && id !== 'MicroEngine.Aseprite'));
+  assert.deepEqual(packagesAt('0.5.0-alpha.2'), packageIds.filter(id => id !== 'MicroEngine.Physics.Box2D' && id !== 'MicroEngine.Tiled' && id !== 'MicroEngine.Navigation' && id !== 'MicroEngine.Ecs' && id !== 'MicroEngine.Aseprite'));
   const withoutBox2D = Object.fromEntries(packageIds.map(id => [id, id !== 'MicroEngine.Physics.Box2D']));
   const published = { documented: '0.5.0-alpha.2', prepared: '0.5.0-alpha.2', packages: withoutBox2D, release: { draft: false, target: 'a'.repeat(40) } };
   const plan = releasePlan(state(published));
