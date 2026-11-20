@@ -12,7 +12,7 @@ internal static unsafe partial class Native
 {
     public const string Library = "me_box2d";
     /// <summary>The <c>ME_API_VERSION</c> this assembly is written against.</summary>
-    public const int ApiVersion = 1;
+    public const int ApiVersion = 2;
 
     public const int Static = 0, Kinematic = 1, Dynamic = 2;
     public const int Box = 0, Circle = 1, Capsule = 2, Polygon = 3;
@@ -44,6 +44,15 @@ internal static unsafe partial class Native
     [LibraryImport(Library)] public static partial void me_body_set_position(nint world, int body, float x, float y);
     [LibraryImport(Library)] public static partial void me_body_set_velocity(nint world, int body, float vx, float vy);
     [LibraryImport(Library)] public static partial float me_body_mass(nint world, int body);
+    [LibraryImport(Library)] public static partial void me_body_set_rotation(nint world, int body, float angle);
+    [LibraryImport(Library)] public static partial void me_body_set_angular_velocity(nint world, int body, float angularVelocity);
+    [LibraryImport(Library)] public static partial void me_body_apply(nint world, int body, int kind, float x, float y, float px, float py, int atPoint, int wake);
+    [LibraryImport(Library)] public static partial void me_body_apply_angular(nint world, int body, int kind, float value, int wake);
+    [LibraryImport(Library)] public static partial void me_body_get_dynamics(nint world, int body, float* out5);
+    [LibraryImport(Library)] public static partial void me_body_set_dynamics(nint world, int body, float* in5);
+    [LibraryImport(Library)] public static partial int me_body_is_awake(nint world, int body);
+    [LibraryImport(Library)] public static partial void me_body_set_awake(nint world, int body, int awake);
+    [LibraryImport(Library)] public static partial void me_body_mass_data(nint world, int body, float* out4);
 
     [LibraryImport(Library)]
     public static partial int me_shape_create(nint world, int body, int kind, float* geometry, int pointCount, float radius,

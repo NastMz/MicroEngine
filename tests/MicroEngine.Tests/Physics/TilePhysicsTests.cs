@@ -89,6 +89,28 @@ public sealed class TilePhysicsWorldTests
     }
 
     [TestMethod]
+    public void Dynamics_are_refused_with_a_message_that_names_the_backend_that_has_them()
+    {
+        IPhysicsWorld2D world = new TilePhysicsWorld2D();
+        var body = world.CreateBody(default, BodyDescription.Kinematic(default));
+        var e = Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyImpulse(body, Vector2.One));
+        Assert.AreEqual(PhysicsCapabilities.DynamicBodies, e.Missing);
+        Assert.AreEqual("tiles", e.Backend);
+        StringAssert.Contains(e.Message, "MicroEngine.Physics.Box2D");
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyForce(body, Vector2.One, Vector2.Zero));
+        Assert.AreEqual(PhysicsCapabilities.Rotation, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.SetRotation(body, 1)).Missing);
+        Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyTorque(body, 1)).Missing);
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.AngularVelocityOf(body));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.DynamicsOf(body));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.SetDynamics(body, default));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.IsAwake(body));
+        Assert.AreEqual(PhysicsCapabilities.MassProperties, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.MassOf(body)).Missing);
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.CreateBody(default, BodyDescription.Kinematic(default) with { Dynamics = new BodyDynamics { GravityScale = 0 } }));
+        Assert.AreEqual(1, world.Bodies.Length, "the refused body was never created");
+        StringAssert.Contains(new PhysicsCapabilityException("Move", "box2d", PhysicsCapabilities.MovingSolids).Message, "the tile backend declares it");
+    }
+
+    [TestMethod]
     public void It_declares_tile_geometry_one_way_platforms_and_moving_solids_a_zero_skin_and_y_down()
     {
         var world = new TilePhysicsWorld2D();

@@ -243,6 +243,93 @@ ME_API float me_body_mass( MeWorld* w, int body )
 	return b2Body_GetMass( w->bodies[body].id );
 }
 
+ME_API void me_body_set_rotation( MeWorld* w, int body, float angle )
+{
+	b2BodyId id = w->bodies[body].id;
+	b2Body_SetTransform( id, b2Body_GetPosition( id ), b2MakeRot( angle ) );
+}
+
+ME_API void me_body_set_angular_velocity( MeWorld* w, int body, float angularVelocity )
+{
+	b2Body_SetAngularVelocity( w->bodies[body].id, angularVelocity );
+}
+
+ME_API void me_body_apply( MeWorld* w, int body, int kind, float x, float y, float px, float py, int atPoint, int wake )
+{
+	b2BodyId id = w->bodies[body].id;
+	b2Vec2 v = { x, y };
+	b2Pos point = { px, py };
+	if ( kind == 0 )
+	{
+		if ( atPoint )
+			b2Body_ApplyForce( id, v, point, wake != 0 );
+		else
+			b2Body_ApplyForceToCenter( id, v, wake != 0 );
+	}
+	else
+	{
+		if ( atPoint )
+			b2Body_ApplyLinearImpulse( id, v, point, wake != 0 );
+		else
+			b2Body_ApplyLinearImpulseToCenter( id, v, wake != 0 );
+	}
+}
+
+ME_API void me_body_apply_angular( MeWorld* w, int body, int kind, float value, int wake )
+{
+	b2BodyId id = w->bodies[body].id;
+	if ( kind == 0 )
+		b2Body_ApplyTorque( id, value, wake != 0 );
+	else
+		b2Body_ApplyAngularImpulse( id, value, wake != 0 );
+}
+
+ME_API void me_body_get_dynamics( MeWorld* w, int body, float* out5 )
+{
+	b2BodyId id = w->bodies[body].id;
+	out5[0] = b2Body_GetLinearDamping( id );
+	out5[1] = b2Body_GetAngularDamping( id );
+	out5[2] = b2Body_GetGravityScale( id );
+	out5[3] = b2Body_GetMotionLocks( id ).angularZ ? 1.0f : 0.0f;
+	out5[4] = b2Body_IsSleepingEnabled( id ) ? 1.0f : 0.0f;
+}
+
+ME_API void me_body_set_dynamics( MeWorld* w, int body, const float* in5 )
+{
+	b2BodyId id = w->bodies[body].id;
+	b2Body_SetLinearDamping( id, in5[0] );
+	b2Body_SetAngularDamping( id, in5[1] );
+	b2Body_SetGravityScale( id, in5[2] );
+	b2MotionLocks locks = b2Body_GetMotionLocks( id );
+	if ( locks.angularZ != ( in5[3] != 0.0f ) )
+	{
+		locks.angularZ = in5[3] != 0.0f;
+		b2Body_SetMotionLocks( id, locks );
+	}
+	if ( b2Body_IsSleepingEnabled( id ) != ( in5[4] != 0.0f ) )
+		b2Body_EnableSleeping( id, in5[4] != 0.0f );
+}
+
+ME_API int me_body_is_awake( MeWorld* w, int body )
+{
+	return b2Body_IsAwake( w->bodies[body].id ) ? 1 : 0;
+}
+
+ME_API void me_body_set_awake( MeWorld* w, int body, int awake )
+{
+	b2Body_SetAwake( w->bodies[body].id, awake != 0 );
+}
+
+ME_API void me_body_mass_data( MeWorld* w, int body, float* out4 )
+{
+	b2BodyId id = w->bodies[body].id;
+	b2Pos c = b2Body_GetWorldCenter( id );
+	out4[0] = b2Body_GetMass( id );
+	out4[1] = (float)c.x;
+	out4[2] = (float)c.y;
+	out4[3] = b2Body_GetRotationalInertia( id );
+}
+
 // ---------------------------------------------------------------------------------------------------- shapes
 
 ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int pointCount, float radius,

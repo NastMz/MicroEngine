@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 1
+#define ME_API_VERSION 2
 
 typedef struct MeWorld MeWorld;
 
@@ -88,6 +88,22 @@ ME_API void me_body_state( MeWorld* world, int body, float* out6 );
 ME_API void me_body_set_position( MeWorld* world, int body, float x, float y );
 ME_API void me_body_set_velocity( MeWorld* world, int body, float vx, float vy );
 ME_API float me_body_mass( MeWorld* world, int body );
+// Turns the body to angle radians where it is (no collision), like me_body_set_position.
+ME_API void me_body_set_rotation( MeWorld* world, int body, float angle );
+ME_API void me_body_set_angular_velocity( MeWorld* world, int body, float angularVelocity );
+// Applies (x, y) to a dynamic body: a force (kind 0, newtons, for the next step only) or a linear impulse (kind 1,
+// newton seconds, at once); through the centre of mass, or at the world point (px, py) when atPoint is not 0. wake
+// wakes a sleeping body; without it a sleeping body ignores the call.
+ME_API void me_body_apply( MeWorld* world, int body, int kind, float x, float y, float px, float py, int atPoint, int wake );
+// A torque (kind 0, newton metres, for the next step only) or an angular impulse (kind 1, at once).
+ME_API void me_body_apply_angular( MeWorld* world, int body, int kind, float value, int wake );
+// linear damping, angular damping, gravity scale, fixed rotation (0 or 1), sleep allowed (0 or 1).
+ME_API void me_body_get_dynamics( MeWorld* world, int body, float* out5 );
+ME_API void me_body_set_dynamics( MeWorld* world, int body, const float* in5 );
+ME_API int me_body_is_awake( MeWorld* world, int body );
+ME_API void me_body_set_awake( MeWorld* world, int body, int awake );
+// mass (kg), world centre of mass x, y, rotational inertia about it (kg m²).
+ME_API void me_body_mass_data( MeWorld* world, int body, float* out4 );
 
 // Attaches a shape (MeShapeKind, geometry as described there) with collision layers, MeShapeFlags, density (kg/m²),
 // friction and restitution; returns its handle, or -1 when the geometry is not a valid shape (a degenerate polygon).

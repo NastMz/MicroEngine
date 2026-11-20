@@ -64,6 +64,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         public int Body;
         public ShapeDescription Description;
         public ICollisionGrid? Grid;
+        public int Columns, Rows; // the level's area, when the tiles were added with one
     }
 
     private readonly record struct Pair(ShapeId Sensor, ShapeId Visitor, EntityId SensorOwner, EntityId VisitorOwner) : IComparable<Pair>
@@ -237,7 +238,10 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
-        return AddTiles(body, grid, category, mask);
+        var id = AddTiles(body, grid, category, mask);
+        _shapeSlots[(int)id.Index].Columns = columns;
+        _shapeSlots[(int)id.Index].Rows = rows;
+        return id;
     }
 
     private ShapeId NewShape(int bodySlot, Body b, in ShapeDescription description, ICollisionGrid? grid)
@@ -255,6 +259,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         s.Body = bodySlot;
         s.Description = description;
         s.Grid = grid;
+        s.Columns = s.Rows = 0;
         b.Shapes.Add(slot);
         if (grid is not null)
         {
@@ -342,6 +347,16 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
         return _shapeSlots[(int)shape.Index].Grid;
+    }
+
+    /// <summary>The world bounds of <paramref name="shape"/>: a box's rectangle; for tiles, the area they were added with (empty at the body's origin when they were added without one).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    public RectF BoundsOf(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        var s = _shapeSlots[(int)shape.Index];
+        var origin = _bodySlots[s.Body].Position;
+        return s.Grid is null ? BoxOf(origin, s.Description) : new RectF(origin.X, origin.Y, s.Columns * s.Grid.TileSize, s.Rows * s.Grid.TileSize);
     }
 
     /// <inheritdoc/>

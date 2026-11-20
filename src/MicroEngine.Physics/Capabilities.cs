@@ -59,12 +59,24 @@ public sealed class PhysicsCapabilityException : NotSupportedException
     /// <param name="backend">The backend name (<see cref="IPhysicsWorld2D.Backend"/>).</param>
     /// <param name="missing">The undeclared capabilities the request needs.</param>
     public PhysicsCapabilityException(string operation, string backend, PhysicsCapabilities missing)
-        : base($"{operation} on '{backend}' needs the physics capability {missing}, which this backend does not declare")
+        : base($"{operation} on '{backend}' needs the physics capability {missing}, which this backend does not declare{Provider(missing)}")
     {
         Operation = operation;
         Backend = backend;
         Missing = missing;
     }
+
+    /// <summary>The capabilities only the optional Box2D backend declares, and the ones only the tile backend declares.</summary>
+    private const PhysicsCapabilities Box2DOnly = PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Joints
+            | PhysicsCapabilities.Capsules | PhysicsCapabilities.Circles | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision
+            | PhysicsCapabilities.FrictionRestitution | PhysicsCapabilities.MassProperties,
+        TilesOnly = PhysicsCapabilities.MovingSolids;
+
+    /// <summary>Which of the engine's backends declares what is missing, for the message.</summary>
+    private static string Provider(PhysicsCapabilities missing) =>
+        (missing & Box2DOnly) != 0 ? "; the Box2D backend (the optional MicroEngine.Physics.Box2D package) declares it"
+        : (missing & TilesOnly) != 0 ? "; the tile backend declares it"
+        : "";
 
     /// <summary>The refused operation.</summary>
     public string Operation { get; }

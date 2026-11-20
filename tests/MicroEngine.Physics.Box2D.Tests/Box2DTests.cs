@@ -76,6 +76,8 @@ public sealed class Box2DPixelConformance : PhysicsConformance
 [TestClass] public sealed class Box2DFrictionRestitutionConformance : FrictionRestitutionConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DMassPropertiesConformance : MassPropertiesConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 
+[TestClass] public sealed class Box2DDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 [TestClass] public sealed class Box2DCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DPixelCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 

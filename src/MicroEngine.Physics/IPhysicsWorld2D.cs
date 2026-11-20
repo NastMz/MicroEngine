@@ -7,8 +7,14 @@ namespace MicroEngine.Physics;
 /// <summary>The version of the 2D physics contract (<see cref="IPhysicsWorld2D"/>); a change to its rules raises it.</summary>
 public static class PhysicsContract
 {
-    /// <summary>1: the common core and capabilities of the first two backends (tiles; Box2D v3).</summary>
-    public const int Version = 1;
+    /// <summary>
+    /// 2: version 1 (the common core and capabilities of the first two backends) plus tile geometry as a contract member
+    /// (<see cref="IPhysicsWorld2D.AddTiles"/>), dynamics control (forces, impulses, torque, angular velocity,
+    /// <see cref="BodyDynamics"/>, sleep, mass data), joints, shape casts, point and circle queries, all-hits rays and
+    /// contact details. Every member added since version 1 has a default that refuses with the capability it needs, so
+    /// a backend written for version 1 still compiles and declares what it implements.
+    /// </summary>
+    public const int Version = 2;
 }
 
 /// <summary>
@@ -103,6 +109,89 @@ public interface IPhysicsWorld2D
     /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
     void SetVelocity(BodyId body, Vector2 velocity);
 
+    // ------------------------------------------------------------------ dynamics
+
+    /// <summary>The error of a member the backend does not implement: the capabilities it lacks among <paramref name="needed"/>.</summary>
+    private PhysicsCapabilityException Refused(string operation, PhysicsCapabilities needed)
+    {
+        var missing = needed & ~Capabilities;
+        return new PhysicsCapabilityException(operation, Backend, missing != PhysicsCapabilities.None ? missing : needed);
+    }
+
+    /// <summary>Turns the body to <paramref name="radians"/> where it is: no collision, like <see cref="SetPosition"/>.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.Rotation"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The angle is not finite.</exception>
+    void SetRotation(BodyId body, float radians) => throw Refused(nameof(SetRotation), PhysicsCapabilities.Rotation);
+    /// <summary>A body's angular velocity in radians per second; positive turns the way <see cref="RotationOf"/> grows.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/> and <see cref="PhysicsCapabilities.Rotation"/>.</exception>
+    float AngularVelocityOf(BodyId body) => throw Refused(nameof(AngularVelocityOf), PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation);
+    /// <summary>Sets a dynamic body's angular velocity, in radians per second.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/> and <see cref="PhysicsCapabilities.Rotation"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    void SetAngularVelocity(BodyId body, float radiansPerSecond) => throw Refused(nameof(SetAngularVelocity), PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation);
+    /// <summary>
+    /// Applies <paramref name="force"/> (mass × world units per second squared) through a dynamic body's centre of
+    /// mass for the next step only: apply it every step for as long as it acts.
+    /// </summary>
+    /// <param name="body">A dynamic body.</param>
+    /// <param name="force">The force.</param>
+    /// <param name="wake">Whether a sleeping body wakes; when false, a sleeping body ignores the force.</param>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The force is not finite.</exception>
+    void ApplyForce(BodyId body, Vector2 force, bool wake = true) => throw Refused(nameof(ApplyForce), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Applies <paramref name="force"/> at the world point <paramref name="point"/> for the next step only: off the centre of mass it also turns the body.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    void ApplyForce(BodyId body, Vector2 force, Vector2 point, bool wake = true) => throw Refused(nameof(ApplyForce), PhysicsCapabilities.DynamicBodies);
+    /// <summary>
+    /// Applies <paramref name="impulse"/> (mass × world units per second) through a dynamic body's centre of mass: its
+    /// velocity changes at once by the impulse divided by its mass (a jump, a hit, an explosion).
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The impulse is not finite.</exception>
+    void ApplyImpulse(BodyId body, Vector2 impulse, bool wake = true) => throw Refused(nameof(ApplyImpulse), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Applies <paramref name="impulse"/> at the world point <paramref name="point"/>: off the centre of mass it also spins the body.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    void ApplyImpulse(BodyId body, Vector2 impulse, Vector2 point, bool wake = true) => throw Refused(nameof(ApplyImpulse), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Applies a torque (inertia × radians per second squared) to a dynamic body for the next step only.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/> and <see cref="PhysicsCapabilities.Rotation"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    void ApplyTorque(BodyId body, float torque, bool wake = true) => throw Refused(nameof(ApplyTorque), PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation);
+    /// <summary>Applies an angular impulse (inertia × radians per second) to a dynamic body: its angular velocity changes at once.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/> and <see cref="PhysicsCapabilities.Rotation"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale or the body is not dynamic.</exception>
+    void ApplyAngularImpulse(BodyId body, float impulse, bool wake = true) => throw Refused(nameof(ApplyAngularImpulse), PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation);
+    /// <summary>How the solver treats <paramref name="body"/>: damping, gravity scale, fixed rotation, sleep.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    BodyDynamics DynamicsOf(BodyId body) => throw Refused(nameof(DynamicsOf), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Changes how the solver treats <paramref name="body"/>.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A value is out of range (<see cref="BodyDynamics.Validate"/>).</exception>
+    void SetDynamics(BodyId body, in BodyDynamics dynamics) => throw Refused(nameof(SetDynamics), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Whether a body is awake (simulated); bodies that rest fall asleep when they may (<see cref="BodyDynamics.AllowSleep"/>).</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    bool IsAwake(BodyId body) => throw Refused(nameof(IsAwake), PhysicsCapabilities.DynamicBodies);
+    /// <summary>Wakes a body or puts it to sleep (with the bodies it touches).</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.DynamicBodies"/>.</exception>
+    void SetAwake(BodyId body, bool awake) => throw Refused(nameof(SetAwake), PhysicsCapabilities.DynamicBodies);
+    /// <summary>A dynamic body's mass, from its shapes' densities; 0 for other bodies.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.MassProperties"/>.</exception>
+    float MassOf(BodyId body) => throw Refused(nameof(MassOf), PhysicsCapabilities.MassProperties);
+    /// <summary>A body's centre of mass, a world point (its origin for bodies without mass).</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.MassProperties"/>.</exception>
+    Vector2 CenterOfMassOf(BodyId body) => throw Refused(nameof(CenterOfMassOf), PhysicsCapabilities.MassProperties);
+    /// <summary>A dynamic body's rotational inertia about its centre of mass (mass × world units squared); 0 for other bodies.</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.MassProperties"/>.</exception>
+    float InertiaOf(BodyId body) => throw Refused(nameof(InertiaOf), PhysicsCapabilities.MassProperties);
+
+    // ------------------------------------------------------------------ shapes
+
     /// <summary>Attaches a shape to <paramref name="body"/>.</summary>
     /// <exception cref="PhysicsCapabilityException">The description needs an undeclared capability.</exception>
     /// <exception cref="ArgumentException">The description is invalid (<see cref="ShapeDescription.Validate"/>).</exception>
@@ -129,6 +218,10 @@ public interface IPhysicsWorld2D
     ShapeDescription DescriptionOf(ShapeId shape) =>
         throw new PhysicsCapabilityException(nameof(DescriptionOf), Backend, PhysicsCapabilities.ShapeInspection);
 
+    /// <summary>The world bounds of <paramref name="shape"/> as it is now (the area of the level for tile geometry).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeInspection"/>.</exception>
+    RectF BoundsOf(ShapeId shape) => throw new PhysicsCapabilityException(nameof(BoundsOf), Backend, PhysicsCapabilities.ShapeInspection);
     /// <summary>
     /// Attaches the tiles of <paramref name="grid"/> to a static body as one shape
     /// (<see cref="PhysicsCapabilities.TileGeometry"/>): cell (x, y) is a square of <see cref="ICollisionGrid.TileSize"/>

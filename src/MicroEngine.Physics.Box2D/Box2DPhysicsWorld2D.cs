@@ -53,6 +53,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         public EntityId Owner;
         public BodyKind Kind;
         public int Native;
+        public bool Tuned; // its dynamics were set: they are hashed
         public readonly List<int> Shapes = [];
     }
 
@@ -212,7 +213,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         b.Owner = owner;
         b.Kind = body.Kind;
         b.Native = native;
+        b.Tuned = false;
         b.Shapes.Clear();
+        if (body.Dynamics != default) Apply(b, body.Dynamics);
         var id = new BodyId((uint)slot, b.Generation);
         if (_liveCount == _live.Length) Array.Resize(ref _live, _live.Length * 2);
         _live[_liveCount++] = id;
@@ -291,9 +294,130 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         Native.me_body_set_velocity(World, b.Native, v.X, v.Y);
     }
 
+    // ------------------------------------------------------------------ dynamics
+
+    private Body Dynamic(BodyId body, string what)
+    {
+        var b = Resolve(body);
+        if (b.Kind != BodyKind.Dynamic) throw new InvalidOperationException($"Only dynamic bodies take {what}: {body} is {b.Kind}.");
+        return b;
+    }
+
+    private static void Finite(Vector2 value, string name)
+    {
+        if (!float.IsFinite(value.X) || !float.IsFinite(value.Y)) throw new ArgumentOutOfRangeException(name, value, "The value must be finite.");
+    }
+
+    private static void Finite(float value, string name)
+    {
+        if (!float.IsFinite(value)) throw new ArgumentOutOfRangeException(name, value, "The value must be finite.");
+    }
+
+    /// <inheritdoc/>
+    public void SetRotation(BodyId body, float radians)
+    {
+        Finite(radians, nameof(radians));
+        Native.me_body_set_rotation(World, Resolve(body).Native, radians * _ySign);
+    }
+
+    /// <inheritdoc/>
+    public float AngularVelocityOf(BodyId body)
+    {
+        float* s = stackalloc float[6];
+        State(Resolve(body), s);
+        return s[5] * _ySign;
+    }
+
+    /// <inheritdoc/>
+    public void SetAngularVelocity(BodyId body, float radiansPerSecond)
+    {
+        Finite(radiansPerSecond, nameof(radiansPerSecond));
+        Native.me_body_set_angular_velocity(World, Dynamic(body, "an angular velocity").Native, radiansPerSecond * _ySign);
+    }
+
+    /// <inheritdoc/>
+    public void ApplyForce(BodyId body, Vector2 force, bool wake = true) => Apply(body, 0, force, default, false, wake, "forces");
+    /// <inheritdoc/>
+    public void ApplyForce(BodyId body, Vector2 force, Vector2 point, bool wake = true) => Apply(body, 0, force, point, true, wake, "forces");
+    /// <inheritdoc/>
+    public void ApplyImpulse(BodyId body, Vector2 impulse, bool wake = true) => Apply(body, 1, impulse, default, false, wake, "impulses");
+    /// <inheritdoc/>
+    public void ApplyImpulse(BodyId body, Vector2 impulse, Vector2 point, bool wake = true) => Apply(body, 1, impulse, point, true, wake, "impulses");
+
+    private void Apply(BodyId body, int kind, Vector2 value, Vector2 point, bool atPoint, bool wake, string what)
+    {
+        var b = Dynamic(body, what);
+        Finite(value, nameof(value));
+        Finite(point, nameof(point));
+        var v = ToMeters(value);
+        var p = ToMeters(point);
+        Native.me_body_apply(World, b.Native, kind, v.X, v.Y, p.X, p.Y, atPoint ? 1 : 0, wake ? 1 : 0);
+    }
+
+    /// <inheritdoc/>
+    public void ApplyTorque(BodyId body, float torque, bool wake = true) => ApplyAngular(body, 0, torque, wake, "torque");
+    /// <inheritdoc/>
+    public void ApplyAngularImpulse(BodyId body, float impulse, bool wake = true) => ApplyAngular(body, 1, impulse, wake, "angular impulses");
+
+    private void ApplyAngular(BodyId body, int kind, float value, bool wake, string what)
+    {
+        var b = Dynamic(body, what);
+        Finite(value, nameof(value));
+        Native.me_body_apply_angular(World, b.Native, kind, value * _ySign / (_unitsPerMeter * _unitsPerMeter), wake ? 1 : 0);
+    }
+
+    /// <inheritdoc/>
+    public BodyDynamics DynamicsOf(BodyId body)
+    {
+        float* d = stackalloc float[5];
+        Native.me_body_get_dynamics(World, Resolve(body).Native, d);
+        return new BodyDynamics { LinearDamping = d[0], AngularDamping = d[1], GravityScale = d[2], FixedRotation = d[3] != 0, AllowSleep = d[4] != 0 };
+    }
+
+    /// <inheritdoc/>
+    public void SetDynamics(BodyId body, in BodyDynamics dynamics)
+    {
+        dynamics.Validate();
+        Apply(Resolve(body), dynamics);
+    }
+
+    private void Apply(Body b, in BodyDynamics dynamics)
+    {
+        float* d = stackalloc float[5];
+        d[0] = dynamics.LinearDamping;
+        d[1] = dynamics.AngularDamping;
+        d[2] = dynamics.GravityScale;
+        d[3] = dynamics.FixedRotation ? 1 : 0;
+        d[4] = dynamics.AllowSleep ? 1 : 0;
+        Native.me_body_set_dynamics(World, b.Native, d);
+        b.Tuned = true;
+    }
+
+    /// <inheritdoc/>
+    public bool IsAwake(BodyId body) => Native.me_body_is_awake(World, Resolve(body).Native) != 0;
+    /// <inheritdoc/>
+    public void SetAwake(BodyId body, bool awake) => Native.me_body_set_awake(World, Resolve(body).Native, awake ? 1 : 0);
+
     /// <summary>A dynamic body's mass in kilograms, from its shapes' densities (kilograms per square metre); 0 for other bodies.</summary>
     /// <exception cref="InvalidOperationException">The id is stale.</exception>
     public float MassOf(BodyId body) => Native.me_body_mass(World, Resolve(body).Native);
+
+    /// <inheritdoc/>
+    public Vector2 CenterOfMassOf(BodyId body)
+    {
+        float* m = stackalloc float[4];
+        Native.me_body_mass_data(World, Resolve(body).Native, m);
+        return FromMeters(m[1], m[2]);
+    }
+
+    /// <summary>A dynamic body's rotational inertia about its centre of mass, in kilograms × world units squared; 0 for other bodies.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    public float InertiaOf(BodyId body)
+    {
+        float* m = stackalloc float[4];
+        Native.me_body_mass_data(World, Resolve(body).Native, m);
+        return m[3] * _unitsPerMeter * _unitsPerMeter;
+    }
 
     private Body Resolve(BodyId body)
     {
@@ -430,8 +554,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         return new BodyId((uint)b, _bodySlots[b].Generation);
     }
 
-    /// <summary>The world bounds of <paramref name="shape"/> as it is now.</summary>
-    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <inheritdoc/>
     public RectF BoundsOf(ShapeId shape)
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
@@ -653,7 +776,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
 
     // ------------------------------------------------------------------ state
 
-    /// <summary>Adds the world's simulation state: the step count and every live body (id, kind, position, angle, velocity, shapes).</summary>
+    /// <summary>Adds the world's simulation state: the step count and every live body (id, kind, position, angle, velocity, shapes, and its dynamics once they were set).</summary>
     public void HashState(StateHasher hash)
     {
         ArgumentNullException.ThrowIfNull(hash);
@@ -669,6 +792,12 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             hash.Add((int)b.Kind);
             for (int i = 0; i < 6; i++) hash.Add(s[i]);
             hash.Add(b.Shapes.Count);
+            if (b.Tuned)
+            {
+                // Bodies left with the default dynamics hash as they did before dynamics could be set.
+                Native.me_body_get_dynamics(_world, b.Native, s);
+                for (int i = 0; i < 5; i++) hash.Add(s[i]);
+            }
         }
         hash.Add(_sensorPairs.Count);
         hash.Add(_contactPairs.Count);
