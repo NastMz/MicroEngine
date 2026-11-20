@@ -48,7 +48,8 @@ modelled as components and systems.
 - Fades ([Fades and crossfades](../manual/audio.md#fades-and-crossfades)): `Audio.Set(voice, ..., seconds:)` moves a
   voice's volume, pan and pitch over a time, `PlayParameters.FadeIn` raises a sound from silence,
   `AudioBus.FadeTo` and `Audio.SetBusVolume(name, volume, fadeSeconds)` fade a bus, and
-  `Audio.PlayMusic(name, crossfade:)` overlaps the new track with the old one.
+  `Audio.PlayMusic(name, crossfade:)` overlaps the new track with the old one. A fade or ramp lasts at most
+  `int.MaxValue` output frames (over twelve hours); a longer or endless time is that long.
 - `Audio.SupportsVoices` tells whether `PlayVoice` returns voices on the current device (false headless, muted or
   without audio hardware). The Examples sample has "Effects on buses".
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,

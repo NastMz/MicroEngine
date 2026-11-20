@@ -104,8 +104,10 @@ public abstract class AudioEffect
     /// Sets parameter <paramref name="index"/> from a property setter (the game's thread): the rendering thread
     /// receives it in <see cref="OnParameter"/> at the current step's frame. A value that is not a number is ignored.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Called from <see cref="Process(Span{float})"/>: the effect is taken out of the mix (<see cref="Faulted"/>).</exception>
     protected void SetParameter(int index, float value)
     {
+        if (t_processing) throw new InvalidOperationException("An effect's properties are set from the game's thread: inside Process, change the effect's own fields.");
         if (float.IsNaN(value)) return;
         _parameters[index] = value;
         Bus?.Engine?.PostParameter(this, index, value);
@@ -171,6 +173,21 @@ public abstract class AudioEffect
     internal void PrepareFor(int sampleRate, int channels) => Prepare(sampleRate, channels);
     internal void Deliver(int index, float value) => OnParameter(index, value);
     internal void Clear() => Reset();
-    internal void Run(Span<float> buffer) => Process(buffer);
-    internal void Run(Span<float> buffer, ReadOnlySpan<float> sidechain) => Process(buffer, sidechain);
+    internal void Run(Span<float> buffer)
+    {
+        t_processing = true;
+        try { Process(buffer); }
+        finally { t_processing = false; }
+    }
+
+    internal void Run(Span<float> buffer, ReadOnlySpan<float> sidechain)
+    {
+        t_processing = true;
+        try { Process(buffer, sidechain); }
+        finally { t_processing = false; }
+    }
+
+    // True on the thread that is inside an effect's Process: a property set from there would be a second writer of
+    // the queue that carries the game's changes to the mixer.
+    [ThreadStatic] private static bool t_processing;
 }

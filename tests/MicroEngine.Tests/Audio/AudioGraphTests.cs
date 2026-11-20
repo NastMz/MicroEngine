@@ -504,4 +504,22 @@ public sealed class AudioGraphTests
         Assert.AreEqual(2, effect.Resets, "the render function never saw it leave, but it is cleared where it enters the other bus's chain");
         Assert.AreEqual(1, effect.Prepares);
     }
+
+    private sealed class Meddler : AudioEffect
+    {
+        public Meddler() : base(parameters: 1) { }
+        protected override void Process(Span<float> buffer) => SetParameter(0, 2);
+    }
+
+    [TestMethod]
+    public void An_effect_that_sets_its_own_property_while_processing_is_taken_out_of_the_mix()
+    {
+        var (engine, sink) = Open();
+        var meddler = new Meddler();
+        engine.Bus(AudioEngine.SfxBus).Add(meddler);
+        engine.Play(Constant(0.4f, StepFrames * 3), new PlayParameters());
+        Step(engine, 3);
+        Assert.IsTrue(meddler.Faulted, "a property is set from the game's thread only");
+        Assert.AreEqual(0.4f, Left(sink, StepFrames + 5), "the mix goes on without it");
+    }
 }

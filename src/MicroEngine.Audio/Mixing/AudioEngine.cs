@@ -470,7 +470,7 @@ public sealed class AudioEngine : IDisposable
     internal void SetBusVolume(int bus, float volume, float seconds)
     {
         Anchor();
-        long frames = seconds > 0 ? Math.Max(1, (long)Math.Round((double)seconds * _rate)) : 0;
+        long frames = Frames(seconds);
         if (frames > 0 && !_busFaded[bus])
         {
             // A fade is rendered in the bus's own buffer, gain by gain: the render function gets the buffer first.
@@ -736,8 +736,11 @@ public sealed class AudioEngine : IDisposable
         return _logical[victim].Priority <= priority ? victim : -1;
     }
 
-    /// <summary>The frames of a time in seconds, at least one for any time above zero; 0 for none, or for a value that is not a number.</summary>
-    private long Frames(double seconds) => seconds > 0 ? Math.Max(1, (long)Math.Round(seconds * _rate)) : 0;
+    /// <summary>The longest ramp or fade, in frames (over twelve hours at 48 kHz): a longer or endless time is this long, so frame counts never overflow.</summary>
+    private const long LongestRamp = int.MaxValue;
+
+    /// <summary>The frames of a time in seconds, at least one for any time above zero and at most <see cref="LongestRamp"/>; 0 for none, or for a value that is not a number.</summary>
+    private long Frames(double seconds) => seconds > 0 ? Math.Clamp((long)Math.Round(seconds * _rate), 1, LongestRamp) : 0;
 
     /// <summary>
     /// Brings the timeline's view of a sound (where it is in its clip, and its speed) to frame <paramref name="now"/>:
@@ -801,7 +804,7 @@ public sealed class AudioEngine : IDisposable
     {
         Anchor();
         if (!IsPlaying(voice)) return false;
-        long fade = Math.Max(0, (long)Math.Round(fadeSeconds * _rate));
+        long fade = Frames(fadeSeconds);
         ref var l = ref _logical[voice.Index];
         l.Limit = Math.Min(l.Limit, Now + fade);
         l.End = Math.Min(l.End, l.Limit);

@@ -295,6 +295,10 @@ all: every sample leaves the mixer exactly as it was mixed. `Audio.Limiter.Bypas
 An effect is a class that derives from `AudioEffect` and processes a block of samples in place; a game or a package
 adds it to a bus like the built-in ones. See [an audio effect](extending.md#an-audio-effect).
 
+The game's thread sets an effect's properties and the audio thread runs its `Process`; the values cross between them
+through `SetParameter` and `OnParameter`. An effect that sets one of its own properties inside `Process` is taken out
+of the mix and reported by `Faulted`, like one that throws.
+
 ## Fades and crossfades
 
 Volume, pan and pitch can move to a new value over a time instead of jumping to it. The mixer moves them a little at

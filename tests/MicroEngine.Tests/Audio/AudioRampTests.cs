@@ -259,4 +259,30 @@ public sealed class AudioRampTests
         Assert.AreEqual(0.75f * 0.5f, samples[(12 * StepFrames + 2400 - 1) * 2 + 1], 1e-4f, "while the right side falls as the pan goes left");
         Assert.AreEqual(0f, samples[(24 * StepFrames - 1) * 2 + 1]);
     }
+
+    [TestMethod]
+    public void A_fade_of_any_length_never_breaks_the_render_function()
+    {
+        foreach (float seconds in new[] { float.PositiveInfinity, float.MaxValue, 1e16f })
+        {
+            var (engine, sink) = Open();
+            engine.Play(Constant(1f, 1), new PlayParameters { Volume = 1 });
+            Step(engine);
+            engine.Bus(AudioEngine.MasterBus).FadeTo(0, seconds);
+            Step(engine, 3);
+            Assert.AreEqual(1f, Left(sink, StepFrames * 3), 1e-3f, $"a fade of {seconds} s has barely begun");
+            engine.Bus(AudioEngine.MasterBus).FadeTo(0.5f, 0);
+            Step(engine, 2);
+            Assert.AreEqual(0.5f, Left(sink, StepFrames * 5 + 10), Tolerance, "and a new volume replaces it");
+        }
+    }
+
+    [TestMethod]
+    public void A_fade_in_longer_than_the_mixer_counts_still_starts_from_silence()
+    {
+        var (engine, sink) = Open();
+        engine.Play(Constant(1f, 1), new PlayParameters { Volume = 1, FadeIn = float.PositiveInfinity });
+        Step(engine, 3);
+        Assert.AreEqual(0f, Left(sink, StepFrames * 2), 1e-3f);
+    }
 }
