@@ -200,14 +200,32 @@ public sealed class AssetCache : IDisposable
 
     /// <summary>
     /// The atlas a packing tool described at <paramref name="path"/> (TexturePacker or Aseprite JSON, Starling XML) with the
-    /// image it names next to it.
+    /// image it names next to it; or the sprite sheets a <c>.sheet</c> file describes (<see cref="SpriteSheet"/>), sliced
+    /// and packed into one atlas with their clips.
     /// </summary>
-    /// <param name="path">The atlas file.</param>
+    /// <param name="path">The atlas or sheet file.</param>
     /// <param name="options">Default pivot and naming; null for <see cref="AtlasOptions.Default"/>.</param>
     /// <param name="filter">The texture's filter; null for the game's default.</param>
     /// <exception cref="AssetLoadException">The file or its image is missing or invalid.</exception>
     public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null) =>
         _scope.Acquire<SpriteAtlas>(new AssetKey(GraphicsAssetLoaders.Atlas, AssetPath.Normalize(path), options ?? AtlasOptions.Default, (long)(filter ?? _device.DefaultFilter)));
+
+    /// <summary>
+    /// The frames and clips of the sheet at <paramref name="path"/> as pixels, new each call (not cached: the game may
+    /// change them): a <c>.sheet</c> description, or an artist's file a registered loader reads as a sprite sheet. Pack
+    /// them with others through <see cref="SpriteAtlasBuilder.AddSheet"/>; <see cref="Atlas"/> loads the same file
+    /// straight into an atlas.
+    /// </summary>
+    /// <param name="path">The sheet file.</param>
+    /// <param name="options">The pivot of frames the file gives none; null for <see cref="AtlasOptions.Default"/>.</param>
+    /// <exception cref="AssetLoadException">The file or an image it names is missing or invalid, or no loader reads that kind of file as a sheet.</exception>
+    public SpriteSheet Sheet(string path, AtlasOptions? options = null)
+    {
+        string normalized = AssetPath.Normalize(path);
+        var loader = GraphicsAssetLoaders.SheetLoader(Loaders, normalized)
+            ?? throw new AssetLoadException(normalized, GraphicsAssetLoaders.Sheet, $"no loader reads '{System.IO.Path.GetExtension(normalized)}' files as sprite sheets (a .sheet description does; other formats come with their package).");
+        return Store.Read<SpriteSheet>(new AssetKey(loader.Kind, normalized, options ?? AtlasOptions.Default));
+    }
 
     /// <summary>
     /// Every image directly inside <paramref name="folder"/> packed into one atlas at load, named by file name without its

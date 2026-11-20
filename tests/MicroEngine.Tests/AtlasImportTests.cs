@@ -109,8 +109,11 @@ public sealed class AtlasImportTests
     {
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse("hello")).Message, "Not an atlas");
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse("{\"meta\":{}}")).Message, "frames");
-        StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse(
-            """{"frames":[{"filename":"a","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":true}]}""")).Message, "rotat");
+        var turning = new HeadlessGraphicsDevice();
+        using var texture = turning.CreateTexture(new PixelImage(8, 8));
+        StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => SpriteAtlas.Create(texture, AtlasData.Parse(
+            """{"frames":[{"filename":"a","frame":{"x":0,"y":0,"w":4,"h":4},"rotated":true}]}"""), ownsTexture: false)).Message, "Assets.Atlas",
+            "a texture alone cannot be turned: the message says which calls turn rotated frames upright");
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse(
             """<TextureAtlas imagePath="a.png"><SubTexture name="x" x="0" y="0" width="4" height="4" rotated="true"/></TextureAtlas>""")).Message, "rotat");
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse("<root/>")).Message, "TextureAtlas");
@@ -168,5 +171,45 @@ public sealed class AtlasImportTests
         var fixedRate = new AnimationClip([sprite, sprite], 4);
         CollectionAssert.AreEqual(new[] { 0.25f, 0.25f }, fixedRate.FrameDurations.ToArray());
         Assert.AreEqual(0.5f, fixedRate.Duration);
+    }
+
+    [TestMethod]
+    public void Frames_a_packing_tool_stored_rotated_load_upright()
+    {
+        // A 2x4 sprite whose pixel (x, y) is red = x, green = y, stored turned 90 degrees clockwise as the 4x2 region at
+        // (1, 1) of the image, the way TexturePacker and Free Texture Packer store it ("frame" keeps the upright size).
+        var image = new PixelImage(8, 4);
+        for (int y = 0; y < 4; y++)
+            for (int x = 0; x < 2; x++)
+                image[1 + (3 - y), 1 + x] = new Color((byte)(x * 100), (byte)(y * 50), 9);
+        const string json = """
+            {"frames": {"tall.png": {"frame": {"x":1,"y":1,"w":2,"h":4}, "rotated": true, "trimmed": false,
+                                     "spriteSourceSize": {"x":0,"y":0,"w":2,"h":4}, "sourceSize": {"w":2,"h":4}, "pivot": {"x":0.5,"y":1}}},
+             "meta": {"image": "tall.png"}}
+            """;
+        var data = AtlasData.Parse(json);
+        Assert.IsTrue(data.Regions[0].Rotated);
+        Assert.AreEqual(new RectF(1, 1, 4, 2), data.Regions[0].Source, "the rectangle as it lies in the image");
+        var frame = data.ToSheet(image).Frames.Single();
+        Assert.AreEqual("tall", frame.Name);
+        Assert.AreEqual((2, 4), (frame.Image.Width, frame.Image.Height));
+        for (int y = 0; y < 4; y++)
+            for (int x = 0; x < 2; x++)
+                Assert.AreEqual(new Color((byte)(x * 100), (byte)(y * 50), 9), frame.Image[x, y], $"pixel ({x}, {y})");
+        Assert.AreEqual(new Vector2(1, 4), frame.Origin, "the pivot of the upright frame");
+
+        string root = Directory.CreateTempSubdirectory("me-rotated-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root, "tall.png"), PngEncoder.Encode(image.ToRgba(), image.Width, image.Height));
+            File.WriteAllText(Path.Combine(root, "tall.json"), json);
+            var device = new HeadlessGraphicsDevice();
+            using var assets = new AssetCache(device, root);
+            var tall = assets.Atlas("tall.json")["tall"];
+            Assert.AreEqual((2, 4), (tall.Width, tall.Height), "Assets.Atlas turns it upright: it draws like any sprite");
+            using var loaded = SpriteAtlas.Load(device, Path.Combine(root, "tall.json"));
+            Assert.AreEqual(new Vector2(1, 4), loaded["tall"].Origin);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 }

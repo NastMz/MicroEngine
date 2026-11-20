@@ -92,6 +92,27 @@ public sealed class AssetStore : IAssetStore, IDisposable
         throw new InvalidOperationException($"The handle {asset} is stale: its asset was released by every scope that held it, or it belongs to another store.");
     }
 
+    /// <summary>
+    /// Makes the asset of <paramref name="key"/> with its kind's loader without storing it: nothing is cached or held,
+    /// and the result is the caller's to change and to dispose. For data a game reworks before use, such as the frames
+    /// of a sprite sheet it packs with others.
+    /// </summary>
+    /// <exception cref="AssetLoadException">The file is missing, wrongly cased or cannot be read as that kind.</exception>
+    /// <exception cref="InvalidOperationException">No loader of that kind is registered, or it makes something other than a <typeparamref name="T"/>.</exception>
+    public T Read<T>(in AssetKey key) where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key.Kind);
+        var normalized = key with { Path = AssetPath.Normalize(key.Path) };
+        var loader = Loaders.Get(normalized.Kind);
+        if (!typeof(T).IsAssignableFrom(loader.AssetType))
+            throw new InvalidOperationException($"The '{normalized.Kind}' loader makes {loader.AssetType.Name} assets, not {typeof(T).Name}.");
+        try { return (T)((IAssetLoader<object>)loader).Load(new AssetLoadContext(normalized, this)); }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            throw new AssetLoadException(normalized.Path, normalized.Kind, e.Message, e);
+        }
+    }
+
     /// <summary>The asset of <paramref name="asset"/>, if it is still loaded and of type <typeparamref name="T"/>.</summary>
     public bool TryGet<T>(Asset<T> asset, [NotNullWhen(true)] out T? value) where T : class
     {

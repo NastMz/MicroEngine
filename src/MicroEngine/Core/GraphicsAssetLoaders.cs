@@ -18,6 +18,8 @@ namespace MicroEngine.Core;
 internal static class GraphicsAssetLoaders
 {
     public const string Texture = "texture", Atlas = "atlas", FolderAtlas = "folder atlas", Font = FontLoader.Kind;
+    /// <summary>The frames and clips of a sheet description (a <see cref="SpriteSheet"/>): pixels, not a texture.</summary>
+    public const string Sheet = "sheet";
     public const string Shader = "shader", Material = "material", RenderTarget = "render target";
 
     /// <summary>Whether <paramref name="kind"/> is one of these loaders' kinds, whose sizes are texture memory.</summary>
@@ -28,8 +30,13 @@ internal static class GraphicsAssetLoaders
         loaders.Add(new AssetLoader<Texture>(Texture,
             c => device.CreateTexture(DecodeImage(c.Source, c.Path, c.Key.Kind), (TextureFilter)c.Key.Variant),
             [.. ImageDecoder.Extensions.Order(StringComparer.Ordinal)], t => t.IsDisposed ? 0 : t.SizeInBytes));
+        loaders.Add(new AssetLoader<SpriteSheet>(Sheet, ReadSheet, [".sheet"]));
         loaders.Add(new AssetLoader<SpriteAtlas>(Atlas, c =>
         {
+            // A file some loader reads as a sprite sheet (a .sheet description, an artist's file a package reads) is packed here.
+            if (SheetLoader(loaders, c.Path) is { } sheets) return PackSheet(device, sheets.Load(c), (TextureFilter)c.Key.Variant);
+            if (Path.GetExtension(c.Path).ToLowerInvariant() is ".aseprite" or ".ase")
+                throw new AssetLoadException(c.Path, c.Key.Kind, "Aseprite files are read by the optional MicroEngine.Aseprite package: reference it and load the file with Assets.Aseprite(path), or register it once with Assets.Loaders.AddAseprite().");
             var (data, image) = DecodeAtlas(c.Source, c.Path, (AtlasOptions?)c.Options ?? AtlasOptions.Default);
             return BuildAtlas(device, c.Path, data, image, (TextureFilter)c.Key.Variant);
         }, [".json", ".xml"], AtlasBytes));
@@ -74,6 +81,21 @@ internal static class GraphicsAssetLoaders
 
     private static long AtlasBytes(SpriteAtlas a) => a.Texture.IsDisposed ? 0 : a.Texture.SizeInBytes;
 
+    /// <summary>The loader that reads <paramref name="path"/> as a <see cref="SpriteSheet"/> (chosen by its extension), or null.</summary>
+    public static IAssetLoader<SpriteSheet>? SheetLoader(AssetLoaderRegistry loaders, string path) =>
+        loaders.KindOf(path) is { } kind && loaders.TryGet(kind, out var loader) ? loader as IAssetLoader<SpriteSheet> : null;
+
+    /// <summary>A <c>.sheet</c> description and the images it names, next to it (any thread).</summary>
+    private static SpriteSheet ReadSheet(AssetLoadContext c)
+    {
+        string folder = Path.GetDirectoryName(c.Path)?.Replace('\\', '/') ?? "";
+        return SpriteSheet.Parse(System.Text.Encoding.UTF8.GetString(c.ReadBytes()),
+            image => PixelImage.Decode(c.ReadBytes(folder.Length == 0 ? image : folder + "/" + image)), c.Options as AtlasOptions);
+    }
+
+    public static SpriteAtlas PackSheet(IGraphicsDevice device, SpriteSheet sheet, TextureFilter filter) =>
+        new SpriteAtlasBuilder().AddSheet(sheet).Build(device, filter);
+
     /// <summary>The bytes of <paramref name="path"/>; a failure names the asset (any thread).</summary>
     public static byte[] Read(IContentSource source, string path, string kind)
     {
@@ -105,6 +127,12 @@ internal static class GraphicsAssetLoaders
 
     public static SpriteAtlas BuildAtlas(IGraphicsDevice device, string path, AtlasData data, PixelImage image, TextureFilter filter)
     {
+        // Frames a tool stored rotated are turned upright and packed again: the renderers draw upright rectangles only.
+        if (data.HasRotatedFrames)
+        {
+            try { return PackSheet(device, data.ToSheet(image), filter); }
+            catch (InvalidDataException e) { throw new AssetLoadException(path, Atlas, e.Message, e); }
+        }
         var texture = device.CreateTexture(image, filter);
         try { return SpriteAtlas.Create(texture, data); }
         catch (InvalidDataException e)
