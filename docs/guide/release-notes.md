@@ -52,6 +52,8 @@ modelled as components and systems.
     joints, with limits, motors, springs, anchors, reaction forces and a break force.
   - `AddTiles` and `TilesOf` are members of `IPhysicsWorld2D`, so debug drawing shows tile geometry on any backend.
   - A capability error names the backend that declares what is missing.
+  - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
+    could end the process).
   - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene

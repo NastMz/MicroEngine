@@ -406,3 +406,38 @@ public sealed class Box2DCharacterSlopeTests
         Assert.IsTrue(Walk(hopping, -1, 150) > 0, "without ground snap it leaves the slope as it walks down");
     }
 }
+
+/// <summary>Worlds of different threads: Box2D keeps one table of worlds, which the backend guards.</summary>
+[TestClass]
+public sealed class Box2DWorldTableTests
+{
+    [TestMethod]
+    public void Worlds_are_created_stepped_and_disposed_from_several_threads_at_once()
+    {
+        Box2DTesting.RequireNatives();
+        if (OperatingSystem.IsBrowser()) Assert.Inconclusive("One thread in the browser.");
+        var errors = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
+        var threads = new Thread[8];
+        for (int t = 0; t < threads.Length; t++)
+        {
+            threads[t] = new Thread(() =>
+            {
+                try
+                {
+                    for (int round = 0; round < 40; round++)
+                    {
+                        using var world = new Box2DPhysicsWorld2D();
+                        var body = world.CreateBody(default, BodyDescription.Dynamic(Vector2.Zero));
+                        world.AddShape(body, ShapeDescription.Box(new Vector2(1, 1)));
+                        world.Step(1 / 60f);
+                        Assert.IsTrue(world.PositionOf(body).Y < 0, "its own gravity moved its own body");
+                    }
+                }
+                catch (Exception e) { errors.Enqueue(e); }
+            });
+        }
+        foreach (var thread in threads) thread.Start();
+        foreach (var thread in threads) thread.Join();
+        Assert.IsTrue(errors.IsEmpty, errors.TryPeek(out var first) ? first.ToString() : "");
+    }
+}

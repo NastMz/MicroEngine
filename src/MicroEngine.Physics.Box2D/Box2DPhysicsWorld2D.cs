@@ -80,6 +80,10 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     // Worlds the garbage collector found undisposed: destroyed on the next creation or disposal, on the game's thread.
     private static readonly ConcurrentQueue<nint> s_abandoned = new();
 
+    // Box2D keeps its worlds in one table that it does not guard: creating or destroying two worlds at the same time
+    // from different threads corrupts it. Everything else belongs to one world.
+    private static readonly Lock s_table = new();
+
     private nint _world;
     private readonly float _unitsPerMeter;
     private readonly float _ySign;
@@ -120,15 +124,13 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         Up = new Vector2(0, _ySign);
         Skin = Native.me_move_skin() * _unitsPerMeter;
         var gravity = options.Gravity is { } g ? ToMeters(g) : new Vector2(0, -9.81f);
-        DestroyAbandoned();
-        _world = Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+        _world = Create(gravity, options);
         if (_world == 0)
         {
             // Box2D's table is full: release the worlds nobody disposed, then try once more.
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            DestroyAbandoned();
-            _world = Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+            _world = Create(gravity, options);
         }
         if (_world == 0) throw new InvalidOperationException("Box2D already holds its maximum of 128 worlds: dispose the worlds you no longer use.");
     }
@@ -139,6 +141,16 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (_world != 0) s_abandoned.Enqueue(_world);
     }
 
+    private static nint Create(Vector2 gravity, Box2DWorldOptions options)
+    {
+        lock (s_table)
+        {
+            DestroyAbandoned();
+            return Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+        }
+    }
+
+    // Called with s_table held.
     private static void DestroyAbandoned()
     {
         while (s_abandoned.TryDequeue(out var world)) Native.me_world_destroy(world);
@@ -1066,12 +1078,15 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     /// <summary>Destroys the native world. Every later call except <see cref="Dispose"/> throws <see cref="ObjectDisposedException"/>.</summary>
     public void Dispose()
     {
-        if (_world != 0)
+        lock (s_table)
         {
-            Native.me_world_destroy(_world);
-            _world = 0;
+            if (_world != 0)
+            {
+                Native.me_world_destroy(_world);
+                _world = 0;
+            }
+            DestroyAbandoned();
         }
-        DestroyAbandoned();
         GC.SuppressFinalize(this);
     }
 }
