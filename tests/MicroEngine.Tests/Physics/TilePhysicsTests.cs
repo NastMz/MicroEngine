@@ -108,6 +108,11 @@ public sealed class TilePhysicsWorldTests
         Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.CreateBody(default, BodyDescription.Kinematic(default) with { Dynamics = new BodyDynamics { GravityScale = 0 } }));
         Assert.AreEqual(1, world.Bodies.Length, "the refused body was never created");
         StringAssert.Contains(new PhysicsCapabilityException("Move", "box2d", PhysicsCapabilities.MovingSolids).Message, "the tile backend declares it");
+        var joint = Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.CreateJoint(JointDescription.Revolute(body, body, default)));
+        Assert.AreEqual(PhysicsCapabilities.Joints, joint.Missing);
+        StringAssert.Contains(joint.Message, "MicroEngine.Physics.Box2D");
+        Assert.AreEqual(0, world.Joints.Length);
+        Assert.IsFalse(world.IsAlive(JointId.None));
     }
 
     [TestMethod]

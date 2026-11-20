@@ -12,7 +12,7 @@ internal static unsafe partial class Native
 {
     public const string Library = "me_box2d";
     /// <summary>The <c>ME_API_VERSION</c> this assembly is written against.</summary>
-    public const int ApiVersion = 2;
+    public const int ApiVersion = 3;
 
     public const int Static = 0, Kinematic = 1, Dynamic = 2;
     public const int Box = 0, Circle = 1, Capsule = 2, Polygon = 3;
@@ -59,6 +59,15 @@ internal static unsafe partial class Native
         ulong category, ulong mask, int flags, float density, float friction, float restitution);
     [LibraryImport(Library)] public static partial void me_shape_destroy(nint world, int shape);
     [LibraryImport(Library)] public static partial void me_shape_bounds(nint world, int shape, float* out4);
+
+    [LibraryImport(Library)] public static partial int me_joint_create(nint world, int kind, int bodyA, int bodyB, float* p17, int flags);
+    [LibraryImport(Library)] public static partial void me_joint_destroy(nint world, int joint);
+    [LibraryImport(Library)] public static partial void me_joint_state(nint world, int joint, float* out8);
+    [LibraryImport(Library)] public static partial void me_joint_set_limit(nint world, int joint, int enable, float lower, float upper);
+    [LibraryImport(Library)] public static partial void me_joint_set_motor(nint world, int joint, int enable, float speed, float maxForce);
+    [LibraryImport(Library)] public static partial void me_joint_set_spring(nint world, int joint, int enable, float hertz, float dampingRatio);
+    [LibraryImport(Library)] public static partial void me_joint_set_target(nint world, int joint, float x, float y);
+    [LibraryImport(Library)] public static partial void me_joint_set_length(nint world, int joint, float length);
 
     [LibraryImport(Library)]
     public static partial int me_ray_cast(nint world, float x, float y, float dx, float dy, ulong category, ulong mask, int queryFlags, float* out5);

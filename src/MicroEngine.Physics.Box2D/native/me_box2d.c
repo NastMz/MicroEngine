@@ -41,6 +41,14 @@ typedef struct
 	int flags;
 } MeShape;
 
+typedef struct
+{
+	b2JointId id;
+	int alive;
+	int kind;
+	int bodyA, bodyB; // bodyA is -1 for a target joint
+} MeJoint;
+
 struct MeWorld
 {
 	b2WorldId id;
@@ -52,6 +60,10 @@ struct MeWorld
 	int* scratch;
 	int scratchCapacity;
 	int hasOneWay;
+	MeJoint* joints;
+	int jointCount, jointCapacity;
+	b2BodyId ground; // the static body target joints pull from, created with the first one
+	int hasGround;
 };
 
 static void* grow( void* p, int* capacity, int needed, size_t size )
@@ -168,6 +180,7 @@ ME_API void me_world_destroy( MeWorld* w )
 	free( w->bodies );
 	free( w->shapes );
 	free( w->scratch );
+	free( w->joints );
 	free( w );
 }
 
@@ -210,6 +223,9 @@ ME_API void me_body_destroy( MeWorld* w, int body )
 	for ( int i = 0; i < w->shapeCount; ++i )
 		if ( w->shapes[i].alive && w->shapes[i].body == body )
 			w->shapes[i].alive = 0;
+	for ( int i = 0; i < w->jointCount; ++i )
+		if ( w->joints[i].alive && ( w->joints[i].bodyA == body || w->joints[i].bodyB == body ) )
+			w->joints[i].alive = 0; // Box2D destroys a body's joints with it
 	b2DestroyBody( w->bodies[body].id );
 	w->bodies[body].alive = 0;
 }
@@ -472,6 +488,324 @@ ME_API void me_shape_bounds( MeWorld* w, int shape, float* out4 )
 	out4[1] = box.lowerBound.y;
 	out4[2] = box.upperBound.x;
 	out4[3] = box.upperBound.y;
+}
+
+// ---------------------------------------------------------------------------------------------------- joints
+
+static int is_live_joint( MeWorld* w, int joint )
+{
+	return joint >= 0 && joint < w->jointCount && w->joints[joint].alive;
+}
+
+// The frames of a joint: the anchors in each body, both turned to the same world rotation (body A's, or the axis's),
+// so that the joint's angle and translation are 0 where it is created.
+static void joint_frames( b2JointDef* base, b2BodyId a, b2BodyId b, const float* p, int flags, int axis )
+{
+	b2Rot qa = b2Body_GetRotation( a ), qb = b2Body_GetRotation( b );
+	b2Rot frame = qa;
+	if ( axis )
+	{
+		float length = sqrtf( p[4] * p[4] + p[5] * p[5] );
+		b2Vec2 d = length > 0.0f ? ( b2Vec2 ){ p[4] / length, p[5] / length } : ( b2Vec2 ){ 1.0f, 0.0f };
+		frame = b2MakeRotFromUnitVector( d );
+	}
+	base->bodyIdA = a;
+	base->bodyIdB = b;
+	base->localFrameA.p = b2Body_GetLocalPoint( a, ( b2Pos ){ p[0], p[1] } );
+	base->localFrameA.q = b2InvMulRot( qa, frame );
+	base->localFrameB.p = b2Body_GetLocalPoint( b, ( b2Pos ){ p[2], p[3] } );
+	base->localFrameB.q = b2InvMulRot( qb, frame );
+	base->collideConnected = ( flags & 1 ) != 0;
+}
+
+ME_API int me_joint_create( MeWorld* w, int kind, int bodyA, int bodyB, const float* p, int flags )
+{
+	if ( is_live_body( w, bodyB ) == 0 || ( kind != ME_TARGET && is_live_body( w, bodyA ) == 0 ) )
+		return -1;
+	b2BodyId b = w->bodies[bodyB].id, a;
+	if ( kind == ME_TARGET )
+	{
+		if ( w->hasGround == 0 )
+		{
+			b2BodyDef def = b2DefaultBodyDef();
+			w->ground = b2CreateBody( w->id, &def );
+			w->hasGround = 1;
+		}
+		a = w->ground;
+		bodyA = -1;
+	}
+	else
+		a = w->bodies[bodyA].id;
+
+	b2JointId id;
+	switch ( kind )
+	{
+		case ME_REVOLUTE:
+		{
+			b2RevoluteJointDef d = b2DefaultRevoluteJointDef();
+			joint_frames( &d.base, a, b, p, flags, 0 );
+			d.enableLimit = p[6] != 0.0f;
+			d.lowerAngle = p[7];
+			d.upperAngle = p[8];
+			d.enableMotor = p[9] != 0.0f;
+			d.motorSpeed = p[10];
+			d.maxMotorTorque = p[11];
+			d.enableSpring = p[12] != 0.0f;
+			d.hertz = p[13];
+			d.dampingRatio = p[14];
+			id = b2CreateRevoluteJoint( w->id, &d );
+			break;
+		}
+		case ME_DISTANCE:
+		{
+			b2DistanceJointDef d = b2DefaultDistanceJointDef();
+			joint_frames( &d.base, a, b, p, flags, 0 );
+			float dx = p[2] - p[0], dy = p[3] - p[1];
+			d.length = p[15] >= 0.0f ? p[15] : sqrtf( dx * dx + dy * dy );
+			if ( d.length < ME_SLOP )
+				d.length = ME_SLOP;
+			d.enableLimit = p[6] != 0.0f;
+			d.minLength = p[7];
+			d.maxLength = p[8];
+			d.enableMotor = p[9] != 0.0f;
+			d.motorSpeed = p[10];
+			d.maxMotorForce = p[11];
+			d.enableSpring = p[12] != 0.0f;
+			d.hertz = p[13];
+			d.dampingRatio = p[14];
+			id = b2CreateDistanceJoint( w->id, &d );
+			break;
+		}
+		case ME_PRISMATIC:
+		{
+			b2PrismaticJointDef d = b2DefaultPrismaticJointDef();
+			joint_frames( &d.base, a, b, p, flags, 1 );
+			d.enableLimit = p[6] != 0.0f;
+			d.lowerTranslation = p[7];
+			d.upperTranslation = p[8];
+			d.enableMotor = p[9] != 0.0f;
+			d.motorSpeed = p[10];
+			d.maxMotorForce = p[11];
+			d.enableSpring = p[12] != 0.0f;
+			d.hertz = p[13];
+			d.dampingRatio = p[14];
+			id = b2CreatePrismaticJoint( w->id, &d );
+			break;
+		}
+		case ME_WELD:
+		{
+			b2WeldJointDef d = b2DefaultWeldJointDef();
+			joint_frames( &d.base, a, b, p, flags, 0 );
+			float hertz = p[12] != 0.0f ? p[13] : 0.0f;
+			d.linearHertz = hertz;
+			d.angularHertz = hertz;
+			d.linearDampingRatio = p[14];
+			d.angularDampingRatio = p[14];
+			id = b2CreateWeldJoint( w->id, &d );
+			break;
+		}
+		case ME_WHEEL:
+		{
+			b2WheelJointDef d = b2DefaultWheelJointDef();
+			joint_frames( &d.base, a, b, p, flags, 1 );
+			d.enableLimit = p[6] != 0.0f;
+			d.lowerTranslation = p[7];
+			d.upperTranslation = p[8];
+			d.enableMotor = p[9] != 0.0f;
+			d.motorSpeed = p[10];
+			d.maxMotorTorque = p[11];
+			d.enableSpring = p[12] != 0.0f;
+			d.hertz = p[13];
+			d.dampingRatio = p[14];
+			id = b2CreateWheelJoint( w->id, &d );
+			break;
+		}
+		case ME_TARGET:
+		{
+			// The ground body is at the origin, not turned: its local frame is the world.
+			b2MotorJointDef d = b2DefaultMotorJointDef();
+			d.base.bodyIdA = a;
+			d.base.bodyIdB = b;
+			d.base.localFrameA.p = ( b2Vec2 ){ p[0], p[1] };
+			d.base.localFrameB.p = b2Body_GetLocalPoint( b, ( b2Pos ){ p[2], p[3] } );
+			d.linearHertz = p[12] != 0.0f ? p[13] : 0.0f;
+			d.linearDampingRatio = p[14];
+			d.maxSpringForce = p[16];
+			d.angularHertz = 0.0f;
+			d.maxSpringTorque = 0.0f;
+			d.maxVelocityForce = 0.0f;
+			d.maxVelocityTorque = 0.0f;
+			id = b2CreateMotorJoint( w->id, &d );
+			break;
+		}
+		default:
+			return -1;
+	}
+
+	w->joints = (MeJoint*)grow( w->joints, &w->jointCapacity, w->jointCount + 1, sizeof( MeJoint ) );
+	MeJoint* j = w->joints + w->jointCount;
+	j->id = id;
+	j->alive = 1;
+	j->kind = kind;
+	j->bodyA = bodyA;
+	j->bodyB = bodyB;
+	return w->jointCount++;
+}
+
+ME_API void me_joint_destroy( MeWorld* w, int joint )
+{
+	if ( is_live_joint( w, joint ) == 0 )
+		return;
+	b2DestroyJoint( w->joints[joint].id );
+	w->joints[joint].alive = 0;
+}
+
+ME_API void me_joint_state( MeWorld* w, int joint, float* out8 )
+{
+	memset( out8, 0, 8 * sizeof( float ) );
+	if ( is_live_joint( w, joint ) == 0 )
+		return;
+	MeJoint* j = w->joints + joint;
+	b2Pos pa = b2Body_GetWorldPoint( b2Joint_GetBodyA( j->id ), b2Joint_GetLocalFrameA( j->id ).p );
+	b2Pos pb = b2Body_GetWorldPoint( b2Joint_GetBodyB( j->id ), b2Joint_GetLocalFrameB( j->id ).p );
+	b2Vec2 force = b2Joint_GetConstraintForce( j->id );
+	out8[0] = (float)pa.x;
+	out8[1] = (float)pa.y;
+	out8[2] = (float)pb.x;
+	out8[3] = (float)pb.y;
+	out8[4] = force.x;
+	out8[5] = force.y;
+	out8[6] = b2Joint_GetConstraintTorque( j->id );
+	if ( j->kind == ME_REVOLUTE )
+		out8[7] = b2RevoluteJoint_GetCurrentAngle( j->id );
+	else if ( j->kind == ME_DISTANCE )
+		out8[7] = b2DistanceJoint_GetCurrentLength( j->id );
+	else if ( j->kind == ME_PRISMATIC )
+		out8[7] = b2PrismaticJoint_GetCurrentTranslation( j->id );
+}
+
+ME_API void me_joint_set_limit( MeWorld* w, int joint, int enable, float lower, float upper )
+{
+	if ( is_live_joint( w, joint ) == 0 )
+		return;
+	b2JointId id = w->joints[joint].id;
+	switch ( w->joints[joint].kind )
+	{
+		case ME_REVOLUTE:
+			b2RevoluteJoint_SetLimits( id, lower, upper );
+			b2RevoluteJoint_EnableLimit( id, enable != 0 );
+			break;
+		case ME_DISTANCE:
+			b2DistanceJoint_SetLimits( id, lower, upper );
+			b2DistanceJoint_EnableLimit( id, enable != 0 );
+			break;
+		case ME_PRISMATIC:
+			b2PrismaticJoint_SetLimits( id, lower, upper );
+			b2PrismaticJoint_EnableLimit( id, enable != 0 );
+			break;
+		case ME_WHEEL:
+			b2WheelJoint_SetLimits( id, lower, upper );
+			b2WheelJoint_EnableLimit( id, enable != 0 );
+			break;
+		default:
+			return;
+	}
+	b2Joint_WakeBodies( id );
+}
+
+ME_API void me_joint_set_motor( MeWorld* w, int joint, int enable, float speed, float maxForce )
+{
+	if ( is_live_joint( w, joint ) == 0 )
+		return;
+	b2JointId id = w->joints[joint].id;
+	switch ( w->joints[joint].kind )
+	{
+		case ME_REVOLUTE:
+			b2RevoluteJoint_SetTargetMotorSpeed( id, speed );
+			b2RevoluteJoint_SetMaxMotorTorque( id, maxForce );
+			b2RevoluteJoint_EnableMotor( id, enable != 0 );
+			break;
+		case ME_DISTANCE:
+			b2DistanceJoint_SetTargetMotorSpeed( id, speed );
+			b2DistanceJoint_SetMaxMotorForce( id, maxForce );
+			b2DistanceJoint_EnableMotor( id, enable != 0 );
+			break;
+		case ME_PRISMATIC:
+			b2PrismaticJoint_SetTargetMotorSpeed( id, speed );
+			b2PrismaticJoint_SetMaxMotorForce( id, maxForce );
+			b2PrismaticJoint_EnableMotor( id, enable != 0 );
+			break;
+		case ME_WHEEL:
+			b2WheelJoint_SetTargetMotorSpeed( id, speed );
+			b2WheelJoint_SetMaxMotorTorque( id, maxForce );
+			b2WheelJoint_EnableMotor( id, enable != 0 );
+			break;
+		default:
+			return;
+	}
+	b2Joint_WakeBodies( id );
+}
+
+ME_API void me_joint_set_spring( MeWorld* w, int joint, int enable, float hertz, float dampingRatio )
+{
+	if ( is_live_joint( w, joint ) == 0 )
+		return;
+	b2JointId id = w->joints[joint].id;
+	switch ( w->joints[joint].kind )
+	{
+		case ME_REVOLUTE:
+			b2RevoluteJoint_SetSpringHertz( id, hertz );
+			b2RevoluteJoint_SetSpringDampingRatio( id, dampingRatio );
+			b2RevoluteJoint_EnableSpring( id, enable != 0 );
+			break;
+		case ME_DISTANCE:
+			b2DistanceJoint_SetSpringHertz( id, hertz );
+			b2DistanceJoint_SetSpringDampingRatio( id, dampingRatio );
+			b2DistanceJoint_EnableSpring( id, enable != 0 );
+			break;
+		case ME_PRISMATIC:
+			b2PrismaticJoint_SetSpringHertz( id, hertz );
+			b2PrismaticJoint_SetSpringDampingRatio( id, dampingRatio );
+			b2PrismaticJoint_EnableSpring( id, enable != 0 );
+			break;
+		case ME_WELD:
+			b2WeldJoint_SetLinearHertz( id, enable ? hertz : 0.0f );
+			b2WeldJoint_SetAngularHertz( id, enable ? hertz : 0.0f );
+			b2WeldJoint_SetLinearDampingRatio( id, dampingRatio );
+			b2WeldJoint_SetAngularDampingRatio( id, dampingRatio );
+			break;
+		case ME_WHEEL:
+			b2WheelJoint_SetSpringHertz( id, hertz );
+			b2WheelJoint_SetSpringDampingRatio( id, dampingRatio );
+			b2WheelJoint_EnableSpring( id, enable != 0 );
+			break;
+		case ME_TARGET:
+			b2MotorJoint_SetLinearHertz( id, enable ? hertz : 0.0f );
+			b2MotorJoint_SetLinearDampingRatio( id, dampingRatio );
+			break;
+		default:
+			return;
+	}
+	b2Joint_WakeBodies( id );
+}
+
+ME_API void me_joint_set_target( MeWorld* w, int joint, float x, float y )
+{
+	if ( is_live_joint( w, joint ) == 0 || w->joints[joint].kind != ME_TARGET )
+		return;
+	b2JointId id = w->joints[joint].id;
+	b2Transform frame = b2Joint_GetLocalFrameA( id );
+	frame.p = ( b2Vec2 ){ x, y };
+	b2Joint_SetLocalFrameA( id, frame );
+	b2Joint_WakeBodies( id );
+}
+
+ME_API void me_joint_set_length( MeWorld* w, int joint, float length )
+{
+	if ( is_live_joint( w, joint ) == 0 || w->joints[joint].kind != ME_DISTANCE )
+		return;
+	b2DistanceJoint_SetRestLength( w->joints[joint].id, length );
+	b2Joint_WakeBodies( w->joints[joint].id );
 }
 
 // ---------------------------------------------------------------------------------------------------- queries

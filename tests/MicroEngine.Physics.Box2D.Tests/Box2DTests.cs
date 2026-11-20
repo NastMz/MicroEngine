@@ -78,6 +78,8 @@ public sealed class Box2DPixelConformance : PhysicsConformance
 
 [TestClass] public sealed class Box2DDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DPixelDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+[TestClass] public sealed class Box2DJointConformance : JointConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelJointConformance : JointConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 [TestClass] public sealed class Box2DCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DPixelCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 
@@ -104,8 +106,9 @@ public sealed class Box2DPhysicsWorldTests
         Assert.AreEqual("box2d", world.Backend);
         Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules
             | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
-            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection, world.Capabilities);
-        Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids | PhysicsCapabilities.Joints)));
+            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
+            | PhysicsCapabilities.Joints, world.Capabilities);
+        Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids)));
         Assert.AreEqual(0.015f, world.Skin, 1e-6f);
         Assert.AreEqual(new Vector2(0, 1), world.Up);
         Assert.AreEqual("3.2.0", Box2DPhysicsWorld2D.Box2DVersion);

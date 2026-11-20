@@ -190,6 +190,59 @@ public interface IPhysicsWorld2D
     /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.MassProperties"/>.</exception>
     float InertiaOf(BodyId body) => throw Refused(nameof(InertiaOf), PhysicsCapabilities.MassProperties);
 
+    // ------------------------------------------------------------------ joints
+
+    /// <summary>Creates a joint between two bodies (<see cref="PhysicsCapabilities.Joints"/>).</summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.Joints"/>.</exception>
+    /// <exception cref="ArgumentException">The description is invalid (<see cref="JointDescription.Validate"/>).</exception>
+    /// <exception cref="InvalidOperationException">A body id is stale.</exception>
+    JointId CreateJoint(in JointDescription joint) => throw Refused(nameof(CreateJoint), PhysicsCapabilities.Joints);
+    /// <summary>Destroys a joint; nothing for a stale or none id. Destroying a body destroys its joints.</summary>
+    void DestroyJoint(JointId joint) { }
+    /// <summary>Whether <paramref name="joint"/> exists.</summary>
+    bool IsAlive(JointId joint) => false;
+    /// <summary>The live joints, in creation order.</summary>
+    ReadOnlySpan<JointId> Joints => [];
+    /// <summary>The joints that broke in the latest step (<see cref="JointDescription.BreakForce"/>); they no longer exist.</summary>
+    ReadOnlySpan<JointId> BrokenJoints => [];
+    /// <summary>The description the joint was created with, kept up to date by the setters (anchors and axis are as they were when it was created).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    JointDescription DescriptionOf(JointId joint) => throw Refused(nameof(DescriptionOf), PhysicsCapabilities.Joints);
+    /// <summary>The joint's anchor on body A, a world point, as the body is now.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    Vector2 AnchorAOf(JointId joint) => throw Refused(nameof(AnchorAOf), PhysicsCapabilities.Joints);
+    /// <summary>The joint's anchor on body B, a world point, as the body is now.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    Vector2 AnchorBOf(JointId joint) => throw Refused(nameof(AnchorBOf), PhysicsCapabilities.Joints);
+    /// <summary>The force the joint applied in the latest step to hold its bodies together (mass × world units per second squared).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    Vector2 ReactionForceOf(JointId joint) => throw Refused(nameof(ReactionForceOf), PhysicsCapabilities.Joints);
+    /// <summary>The torque the joint applied in the latest step.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    float ReactionTorqueOf(JointId joint) => throw Refused(nameof(ReactionTorqueOf), PhysicsCapabilities.Joints);
+    /// <summary>
+    /// Where the joint is along what it frees: a revolute joint's angle in radians since it was created, a prismatic
+    /// joint's translation, a distance joint's length; 0 for the other kinds.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    float JointCoordinateOf(JointId joint) => throw Refused(nameof(JointCoordinateOf), PhysicsCapabilities.Joints);
+    /// <summary>Turns a joint's limit on or off and sets its bounds (revolute, prismatic, wheel, distance).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale, or the joint's kind has no limit.</exception>
+    /// <exception cref="ArgumentException">The lower bound is above the upper one.</exception>
+    void SetJointLimit(JointId joint, bool enabled, float lower, float upper) => throw Refused(nameof(SetJointLimit), PhysicsCapabilities.Joints);
+    /// <summary>Turns a joint's motor on or off and sets its speed and the most force or torque it applies (revolute, prismatic, wheel, distance).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale, or the joint's kind has no motor.</exception>
+    void SetJointMotor(JointId joint, bool enabled, float speed, float maxForce) => throw Refused(nameof(SetJointMotor), PhysicsCapabilities.Joints);
+    /// <summary>Turns a joint's spring on or off and sets its frequency and damping ratio.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    void SetJointSpring(JointId joint, bool enabled, float hertz, float dampingRatio) => throw Refused(nameof(SetJointSpring), PhysicsCapabilities.Joints);
+    /// <summary>Moves a target joint's world point.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale, or the joint is not a target joint.</exception>
+    void SetJointTarget(JointId joint, Vector2 target) => throw Refused(nameof(SetJointTarget), PhysicsCapabilities.Joints);
+    /// <summary>Sets a distance joint's rest length (a winch).</summary>
+    /// <exception cref="InvalidOperationException">The id is stale, or the joint is not a distance joint.</exception>
+    void SetJointLength(JointId joint, float length) => throw Refused(nameof(SetJointLength), PhysicsCapabilities.Joints);
+
     // ------------------------------------------------------------------ shapes
 
     /// <summary>Attaches a shape to <paramref name="body"/>.</summary>

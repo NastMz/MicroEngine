@@ -22,7 +22,7 @@ public enum PhysicsCapabilities
     DynamicBodies = 1 << 2,
     /// <summary>Rotated bodies (<see cref="BodyDescription.Rotation"/> other than 0) and bodies that rotate.</summary>
     Rotation = 1 << 3,
-    /// <summary>Joints between bodies.</summary>
+    /// <summary>Joints between bodies (<see cref="IPhysicsWorld2D.CreateJoint"/>): revolute, distance, prismatic, weld, wheel and target joints.</summary>
     Joints = 1 << 4,
     /// <summary>Capsule shapes (<see cref="ShapeKind.Capsule"/>), including a capsule as the shape <see cref="IPhysicsWorld2D.Move"/> moves.</summary>
     Capsules = 1 << 5,
@@ -42,7 +42,7 @@ public enum PhysicsCapabilities
     /// </summary>
     MovingSolids = 1 << 11,
     /// <summary>
-    /// Reading shapes back (<see cref="IPhysicsWorld2D.ShapesOf"/>, <see cref="IPhysicsWorld2D.DescriptionOf"/>): what a
+    /// Reading shapes back (<see cref="IPhysicsWorld2D.ShapesOf"/>, <see cref="IPhysicsWorld2D.DescriptionOf(ShapeId)"/>): what a
     /// debug view needs to draw the world. Both built-in backends declare it.
     /// </summary>
     ShapeInspection = 1 << 12,
