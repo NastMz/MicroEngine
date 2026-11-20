@@ -51,7 +51,7 @@ The player also gains a knock-back and a hurt timer, used by the slimes below. I
 ```csharp title="World/Player.cs"
 private const float WalkSpeed = 70, RunSpeed = 115;   // pixels per second
 
-private readonly Animator _animator = new();
+private readonly Animator _animator;
 private RectF _bounds;          // a small box at the feet: what collides with hedges, gems and slimes
 private bool _facingLeft;
 private float _hurtTime;        // seconds of blinking after a slime touched the hero
@@ -59,10 +59,7 @@ private Vector2 _knockback;
 
 public Player(SpriteAtlas sprites, Vector2 start)
 {
-    _animator
-        .Add("idle", new AnimationClip([sprites["hero0"]], 1))
-        .Add("walk", new AnimationClip(sprites.Frames("hero"), 8));
-    _animator.Play("idle");
+    _animator = sprites.CreateAnimator("idle");
     _bounds = RectF.FromCenter(start, 10, 8);
 }
 

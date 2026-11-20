@@ -154,6 +154,23 @@ The source cannot be opened (a missing folder or archive); its kind is "content 
 
 ## Methods
 
+### <a id="MicroEngine_Content_AssetStore_CreateContext_MicroEngine_Content_AssetKey__"></a> CreateContext\(in AssetKey\)
+
+What a loader is given to load <code class="paramref">key</code> from this store, for code that runs a loader's stages
+itself ([IStagedAssetLoader](MicroEngine.Content.IStagedAssetLoader.md)) and then stores the result with [Add``1](MicroEngine.Content.AssetScope.md#MicroEngine_Content_AssetScope_Add__1_MicroEngine_Content_AssetKey____0_System_Double_System_Nullable_System_Double__).
+
+```csharp
+public AssetLoadContext CreateContext(in AssetKey key)
+```
+
+#### Parameters
+
+`key` [AssetKey](MicroEngine.Content.AssetKey.md)
+
+#### Returns
+
+ [AssetLoadContext](MicroEngine.Content.AssetLoadContext.md)
+
 ### <a id="MicroEngine_Content_AssetStore_Dispose"></a> Dispose\(\)
 
 Releases every scope's assets, disposing them. The source is not disposed: whoever made it owns it.
@@ -207,6 +224,38 @@ public bool IsLoaded<T>(Asset<T> asset) where T : class
 #### Type Parameters
 
 `T` 
+
+### <a id="MicroEngine_Content_AssetStore_Read__1_MicroEngine_Content_AssetKey__"></a> Read<T\>\(in AssetKey\)
+
+Makes the asset of <code class="paramref">key</code> with its kind's loader without storing it: nothing is cached or held,
+and the result is the caller's to change and to dispose. For data a game reworks before use, such as the frames
+of a sprite sheet it packs with others.
+
+```csharp
+public T Read<T>(in AssetKey key) where T : class
+```
+
+#### Parameters
+
+`key` [AssetKey](MicroEngine.Content.AssetKey.md)
+
+#### Returns
+
+ T
+
+#### Type Parameters
+
+`T` 
+
+#### Exceptions
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+The file is missing, wrongly cased or cannot be read as that kind.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+No loader of that kind is registered, or it makes something other than a <code class="typeparamref">T</code>.
 
 ### <a id="MicroEngine_Content_AssetStore_TryGet__1_MicroEngine_Content_Asset___0____0__"></a> TryGet<T\>\(Asset<T\>, out T?\)
 

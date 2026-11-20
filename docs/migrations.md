@@ -6,6 +6,29 @@ it. Newest first.
 
 ## Next release
 
+### An atlas clip repeats as its data says
+
+`SpriteAtlas.Clip(string name, bool loop = true)` is now `Clip(string name, bool? loop = null)`: without the argument
+the clip repeats as its file says. Only an Aseprite tag with a repeat count (and a `.sheet` clip with
+`"loop": false`) differs from before: it now plays once. Pass `loop: true` to keep it repeating. Code compiled against
+the earlier SDK must be recompiled.
+
+`SpriteAtlas.Animations` lists the clips in the file's order (it was unordered).
+
+### Rotated atlas frames load; `AtlasData.Parse` no longer refuses them
+
+`AtlasData.Parse` used to throw for a JSON frame with `"rotated": true`. It now returns the frame with
+`AtlasRegion.Rotated` set, and `Assets.Atlas` and `SpriteAtlas.Load` turn it upright. `SpriteAtlas.Create(texture, data)`
+throws for such data, because a texture cannot be turned: load through `Assets.Atlas`, or build with
+`new SpriteAtlasBuilder().AddSheet(data.ToSheet(image))`. `AtlasRegion` and `AtlasAnimation` gained an optional last
+parameter each (`Rotated`, `Loop`).
+
+### `Preload` accepts what it used to refuse
+
+`Assets.Preload("music/theme.ogg")` and other files that are not images, atlases or fonts no longer throw
+`ArgumentException`: they load. A file whose extension no loader reads still throws, naming the file. A preload by
+path of a `.json` file still treats it as an atlas.
+
 ### A graphics device of the drawing API creates render targets
 
 `MicroEngine.Graphics.IGraphicsDevice` (what `Game.Graphics` is) has a new member without a default,

@@ -34,7 +34,8 @@ A named run of frames (an Aseprite frame tag).
 The description of an atlas image written by a packing tool, read without any graphics device: the JSON of
 TexturePacker, Free Texture Packer and Aseprite (hash or array of frames; Aseprite's frame durations and tags), and the
 Starling/Sparrow XML of TexturePacker, ShoeBox and Kenney's packs. Trimmed frames keep their place in the untrimmed
-frame; rotated frames are refused (turn rotation off in the tool).
+frame; frames the JSON says are rotated are marked ([Rotated](MicroEngine.Graphics.AtlasRegion.md#MicroEngine_Graphics_AtlasRegion_Rotated)) and turned upright when the
+atlas is loaded with its image; rotated frames of the XML format are refused (turn rotation off in the tool).
 
  [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)
 
@@ -116,6 +117,12 @@ gets one from its assets (<code>Assets.Material("shaders/water.frag.shader")</co
 ([SpriteVertexShader](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_SpriteVertexShader)), so a material needs only the fragment shader, compiled ahead of time by
 <code>microengine shaders</code>.
 
+ [PackedAtlas](MicroEngine.Graphics.PackedAtlas.md)
+
+Sprites packed into one picture by [Pack](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Pack_System_Boolean_System_Boolean_), without a graphics device: the picture,
+where each sprite lies in it, and the clips. [ToJson](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_ToJson_System_String_) writes the description packing tools write, so the
+pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>.
+
  [ParallaxLayer](MicroEngine.Graphics.ParallaxLayer.md)
 
 A background image that scrolls slower (or faster) than the camera and repeats horizontally.
@@ -184,6 +191,14 @@ forms, Indic conjuncts, ligatures), marks sit where the font places them, and ri
 run right to left. HarfBuzz chooses the glyphs and their positions; each glyph is rasterized the first time it is
 drawn at a size and kept in glyph pages (textures), so later frames only draw quads.
 
+ [SheetClip](MicroEngine.Graphics.SheetClip.md)
+
+A named animation of a sprite sheet: frames by name, how long each shows, and how they play.
+
+ [SheetFrame](MicroEngine.Graphics.SheetFrame.md)
+
+One frame of a sprite sheet as pixels, before it is packed into an atlas.
+
  [SizedFont](MicroEngine.Graphics.SizedFont.md)
 
 A [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
@@ -197,6 +212,13 @@ exposes them by name. Keeps draw calls batched and art code independent of layou
 
 Named sprites packed into one texture, built by [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__). The atlas owns the texture:
 dispose the atlas (usually in <code>Game.Unload</code>) when its sprites are no longer drawn.
+
+ [SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)
+
+Frames and clips read from a description of sprite sheets, as pixels: what an artist's tool or a <code>.sheet</code> file
+says about one or more images (cell size, named strips, pivots, animation timing), ready to be packed into a
+[SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md) with [AddSheet](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddSheet_MicroEngine_Graphics_SpriteSheet_). <code>Assets.Atlas("art/enemies.sheet")</code>
+does both steps; <code>Assets.Sheet(path)</code> gives the frames to change or to pack with others.
 
  [Sprite](MicroEngine.Graphics.Sprite.md)
 
@@ -214,6 +236,10 @@ device itself. The headless platform keeps textures without a device.
  [AtlasRegion](MicroEngine.Graphics.AtlasRegion.md)
 
 One named rectangle of an atlas image, as a packing tool described it.
+
+ [AtlasTrim](MicroEngine.Graphics.AtlasTrim.md)
+
+What trimming cut from a sprite: where the kept pixels lay in the whole image, and both sizes.
 
  [BatchSettings](MicroEngine.Graphics.BatchSettings.md)
 

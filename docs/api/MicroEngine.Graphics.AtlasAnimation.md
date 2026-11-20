@@ -23,12 +23,12 @@ public sealed record AtlasAnimation : IEquatable<AtlasAnimation>
 
 ## Constructors
 
-### <a id="MicroEngine_Graphics_AtlasAnimation__ctor_System_String_System_Int32_System_Int32_MicroEngine_Graphics_AnimationDirection_"></a> AtlasAnimation\(string, int, int, AnimationDirection\)
+### <a id="MicroEngine_Graphics_AtlasAnimation__ctor_System_String_System_Int32_System_Int32_MicroEngine_Graphics_AnimationDirection_System_Boolean_"></a> AtlasAnimation\(string, int, int, AnimationDirection, bool\)
 
 A named run of frames (an Aseprite frame tag).
 
 ```csharp
-public AtlasAnimation(string Name, int From, int To, AnimationDirection Direction)
+public AtlasAnimation(string Name, int From, int To, AnimationDirection Direction, bool Loop = true)
 ```
 
 #### Parameters
@@ -48,6 +48,10 @@ Index of the last frame, inclusive.
 `Direction` [AnimationDirection](MicroEngine.Graphics.AnimationDirection.md)
 
 How the frames play.
+
+`Loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it repeats (true unless the tag says it plays a number of times: Aseprite's "repeat").
 
 ## Properties
 
@@ -74,6 +78,18 @@ public int From { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Graphics_AtlasAnimation_Loop"></a> Loop
+
+Whether it repeats (true unless the tag says it plays a number of times: Aseprite's "repeat").
+
+```csharp
+public bool Loop { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Graphics_AtlasAnimation_Name"></a> Name
 
@@ -111,10 +127,10 @@ public AtlasAnimation <Clone>$()
 
  [AtlasAnimation](MicroEngine.Graphics.AtlasAnimation.md)
 
-### <a id="MicroEngine_Graphics_AtlasAnimation_Deconstruct_System_String__System_Int32__System_Int32__MicroEngine_Graphics_AnimationDirection__"></a> Deconstruct\(out string, out int, out int, out AnimationDirection\)
+### <a id="MicroEngine_Graphics_AtlasAnimation_Deconstruct_System_String__System_Int32__System_Int32__MicroEngine_Graphics_AnimationDirection__System_Boolean__"></a> Deconstruct\(out string, out int, out int, out AnimationDirection, out bool\)
 
 ```csharp
-public void Deconstruct(out string Name, out int From, out int To, out AnimationDirection Direction)
+public void Deconstruct(out string Name, out int From, out int To, out AnimationDirection Direction, out bool Loop)
 ```
 
 #### Parameters
@@ -126,6 +142,8 @@ public void Deconstruct(out string Name, out int From, out int To, out Animation
 `To` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `Direction` [AnimationDirection](MicroEngine.Graphics.AnimationDirection.md)
+
+`Loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Graphics_AtlasAnimation_Equals_System_Object_"></a> Equals\(object?\)
 

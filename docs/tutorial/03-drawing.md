@@ -59,9 +59,8 @@ In `MainGame.cs`, add a property for the atlas and build it in `Load`:
 ```csharp title="MainGame.cs"
 protected override void Load()
 {
-    var content = new ContentFolder();
     Sprites = new SpriteAtlasBuilder()
-        .AddGrid("hero", content.Image("hero.png"), 16, 16, origin: new Vector2(8, 16))
+        .AddSheet(Assets.Sheet("hero.sheet"))
         .Add("grass", GardenArt.Grass())
         .Build(Graphics);
 
@@ -77,10 +76,24 @@ with the property next to `Settings`:
 public SpriteAtlas Sprites { get; private set; } = null!;
 ```
 
-- `new ContentFolder()` points at the `Content` folder next to the executable; `content.Image("hero.png")` decodes the
-  PNG into a `PixelImage`. A missing file fails here with its full path in the message.
-- `AddGrid("hero", sheet, 16, 16, ...)` cuts the sheet into 16x16 cells, left to right and top to bottom, named
-  `hero0`, `hero1`, `hero2`, `hero3`.
+The hero's sheet is described by a small file next to the image. Save this as `Content/hero.sheet`:
+
+```json
+// hero.png is a strip of four 16x16 frames of the gardener walking, anchored between the feet.
+{
+  "sheets": [ { "image": "hero.png", "name": "hero", "cell": [16, 16], "origin": [8, 16] } ],
+  "clips": {
+    "idle": { "frames": ["hero0"], "fps": 1 },
+    "walk": { "strip": "hero", "fps": 8 }
+  }
+}
+```
+
+- `Assets.Sheet("hero.sheet")` reads the description and the image it names from the `Content` folder next to the
+  executable. A missing file, or a cell that lies outside the image, fails here with the file's name in the message.
+- `"cell": [16, 16]` cuts the image into 16x16 cells, left to right and top to bottom, named `hero0`, `hero1`,
+  `hero2`, `hero3`. The `clips` name two animations of those frames; step 5 plays them.
+- `AddSheet` adds those sprites and clips to the atlas, next to the art drawn in code.
 - The **origin** is the point of the sprite placed at the position you draw it at. `(8, 16)` is the middle of the
   bottom edge: the gardener's feet. Drawing him at a position means "his feet are here", which makes sorting, shadows
   and collisions at the feet natural.

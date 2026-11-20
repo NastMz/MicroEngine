@@ -12,6 +12,7 @@ microengine package <target> [--project P] [--out DIR] [options]
 microengine info [--project P]
 microengine doctor [target]
 microengine shaders [--project P] [--source DIR] [--out DIR] [--check]
+microengine content check|names|pack [options]
 microengine version
 ```
 
@@ -103,6 +104,51 @@ Compiling needs Windows: the HLSL compiler (DXC) is Microsoft's `Microsoft.Direc
 licence terms, and it has Windows binaries only. The tool does not ship it: on first use it restores that exact version
 into your NuGet packages folder (`MICROENGINE_DXC` names another `dxc.exe`). Elsewhere the command stops with exit code 3
 and says so; commit the `.shader` files, which load on every platform. MSL is generated but has not been run on a Mac.
+
+## content
+
+`microengine content` holds three optional steps over a game's content folder (`Content/` next to the project, or
+`--content DIR`). A game needs none of them: files load as they are.
+
+```text
+microengine content check [--project P] [--content DIR] [--max-texture N]
+microengine content names [--project P] [--content DIR] [--out FILE] [--namespace NS] [--class NAME] [--check]
+microengine content pack <folder> [--out PATH] [--pivot X,Y] [--trim] [--extrude] [--check]
+```
+
+**check** reads every file the way the engine will and reports what would otherwise fail while the game runs. Each
+line names the file and says what to do; the command exits with 1 when there are errors.
+
+| Reported as an error | Reported as a warning |
+| --- | --- |
+| An image, WAV, font or compiled shader the engine cannot read | A source file that would ship (`.psd`, `.xcf`, `.kra`, `.tps`, `.hlsl`...) or a file the system left behind |
+| A sheet or atlas whose image is missing, misspelled in letter case, or smaller than its frames | An image above 4096 pixels on a side (an error above `--max-texture N` when given) |
+| A clip that names a frame the sheet does not have; two frames or clips of one name | MP3 music, which one platform decodes |
+| Two files or folders that differ only in letter case | |
+| An image or sound format no platform reads (`.webp`, `.tiff`, `.flac`...) | |
+
+**names** writes a C# file of constants (`GameContent.g.cs` next to the project, or `--out`): a class per folder, a
+constant per file holding its path, and for each sheet, Aseprite file and atlas a class with its `Path` and the names
+of its `Sprites`, `Strips` and `Clips`. A renamed tag or a deleted file then fails to compile instead of failing when
+the game reaches it:
+
+```csharp
+var enemies = Assets.Atlas(GameContent.Enemies.EnemiesSheet.Path);
+var clip = enemies.Clip(GameContent.Enemies.EnemiesSheet.Clips.Dive);
+var sky = Assets.Texture(GameContent.Backgrounds.Sky);
+```
+
+Run it again after adding, renaming or removing content, and commit the file.
+
+**pack** packs the images, `.sheet` files, Aseprite files and atlases directly inside a folder into one atlas:
+`<out>.png` and `<out>.json` (by default `Content/atlases/<folder name>`), in the JSON format packing tools write, so
+`Assets.Atlas` loads it like any other. Loose images are named by file name, as `Assets.AtlasFromFolder` names them, so
+a game switches between the two without changing what it draws. `--pivot 0.5,1` anchors loose images, `--trim` leaves
+transparent margins out (sprites still draw at the same place), `--extrude` repeats each sprite's edge pixels around
+it for linear filtering and scaling. The same input always gives the same description and the same pixels.
+
+`--check` (names and pack) writes nothing and fails when the file on disk is not what the command would write now, so
+a CI job catches content changed without running the command.
 
 ## Errors
 

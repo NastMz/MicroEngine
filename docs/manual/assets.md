@@ -1,8 +1,21 @@
 # Assets and content
 
-A game can draw everything from code (`PixelImage`, `Synth`, `Song`) or load files: images, atlases made by packing
-tools, TrueType and OpenType fonts, sounds and music. Files live in the game's `Content/` folder, ship with every
-package, and are loaded, shared and released through `Game.Assets`. Both approaches can be mixed per element.
+A game can draw everything from code (`PixelImage`, `Synth`, `Song`) or load files: images, sprite sheets and their
+animations, atlases made by packing tools, TrueType and OpenType fonts, sounds and music. Files live in the game's
+`Content/` folder, ship with every package, and are loaded, shared and released through `Game.Assets`. Both approaches
+can be mixed per element.
+
+Files load as they are: no build step stands between saving a file and running the game. Around that default, this
+page follows the work of a game with many assets:
+
+| To do this | Use | Section |
+| --- | --- | --- |
+| Cut a sprite sheet into frames and time its animations without code | a `.sheet` description, or the Aseprite file itself | [Sheets and animations](#sheets-and-animations) |
+| Use an atlas a packing tool made | `Assets.Atlas` | [Atlases from packing tools](#atlases-from-packing-tools) |
+| Have a renamed file, sprite or clip fail when compiling, not while playing | `microengine content names` | [Names checked by the compiler](#names-checked-by-the-compiler) |
+| Find broken content before the game runs, and in CI | `microengine content check` | [Checking content](#checking-content) |
+| Show a loading screen for any mix of assets | `Assets.Preload` | [Loading screens](#loading-screens-preload) |
+| Ship one packed atlas instead of loose images | `microengine content pack`, or packing at load | [Packing](#packing) |
 
 ## Choosing an approach
 
@@ -42,7 +55,9 @@ engine refuses the wrong spelling everywhere, Windows and macOS included, and na
 fails (error ME0010) when two files differ only in letter case.
 
 Nothing is converted at build time: images, atlases and fonts are decoded when the game loads them, in managed code, the
-same way on every platform and in headless tests. Decoding a game-sized image takes milliseconds.
+same way on every platform and in headless tests. Decoding a game-sized image takes milliseconds. The offline steps of
+the [`microengine content`](../guide/cli.md#content) command are optional, and what they write (a packed atlas, a file
+of names) is an ordinary file of the project.
 
 ## `Game.Assets`
 
@@ -55,6 +70,7 @@ protected override void Load()
 {
     var sky = Assets.Texture("backgrounds/sky.jpg");                 // any image: PNG, JPEG, BMP, TGA, GIF, PSD
     var hero = Assets.Atlas("atlases/hero.json");                    // TexturePacker or Aseprite JSON, Starling XML
+    var enemies = Assets.Atlas("enemies/enemies.sheet");             // sheets cut and timed by a description
     var items = Assets.AtlasFromFolder("items");                     // loose images packed into one atlas
     var ui = Assets.Font("fonts/Inter-Regular.ttf");                 // TTF or OTF, drawn at any size
     var level = Assets.Text("levels/1.txt");                         // raw bytes or text of any file
@@ -66,7 +82,8 @@ protected override void Load()
 | --- | --- |
 | `Texture(path, filter?)` | the image as a texture; cached per path and filter |
 | `Image(path)` | the image as a new `PixelImage` each call (not cached), to recolour or crop before packing |
-| `Atlas(path, options?, filter?)` | a `SpriteAtlas` from a packing tool's file and the image it names |
+| `Atlas(path, options?, filter?)` | a `SpriteAtlas` from a packing tool's file and the image it names, or from a `.sheet` description and its images, with their clips |
+| `Sheet(path, options?)` | the frames and clips of a sheet as pixels, new each call (not cached), to change or to pack with others (`SpriteAtlasBuilder.AddSheet`) |
 | `AtlasFromFolder(folder, pivot?, filter?)` | every image of a folder packed into one atlas, named by file name |
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
 | `Material(path, fallback?)` | a `Material2D` from a compiled fragment shader (`.frag.shader`), to draw through with `renderer.PushState` ([Render targets and shaders](../guide/render-targets-and-shaders.md)); cached per path and fallback |
@@ -77,7 +94,7 @@ protected override void Load()
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
 | `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`), load times, loads during play |
 | `CreateScope(name?)` | a child cache that releases what it holds when disposed |
-| `Preload(paths...)` | loads files in the background, returning an `AssetBatch` |
+| `Preload(paths...)`, `Preload(load => ...)` | loads assets of any kind in the background, returning an `AssetBatch` |
 
 Paths are relative to `Content/` with `/` separators. Everything `Game.Assets` loaded is disposed after `Game.Unload`;
 do not dispose those objects yourself. Looking up an asset that is already loaded allocates nothing, so it can be done
@@ -109,23 +126,43 @@ public override void Exit() => _level.Dispose();
 ### Loading screens: `Preload`
 
 Loading a large image in the middle of play takes longer than a frame. `Preload` reads and decodes files on worker
-threads and uploads them a few per frame (`FrameBudgetMilliseconds`, 4 ms by default); afterwards `Texture`, `Atlas`
-and `Font` return them at once:
+threads and finishes them a few per frame (`FrameBudgetMilliseconds`, 4 ms by default); afterwards the usual calls
+return them at once. It takes every kind of asset, so a loading screen holds no code per kind:
 
 ```csharp
-_batch = Assets.Preload("backgrounds/castle.png", "atlases/boss.json", "fonts/Title.otf");
+_batch = Assets.Preload("backgrounds/castle.png", "enemies/enemies.sheet", "fonts/Title.otf", "sfx/door.wav", "music/boss.ogg");
 
 public override void Update(float dt)
 {
     if (_batch.IsDone) Game.Scenes.Replace(new BossScene());   // Errors lists what failed
 }
 
-public override void Draw(IRenderer r) => DrawProgressBar(r, _batch.Progress);
+public override void Draw(IRenderer r)
+{
+    DrawProgressBar(r, _batch.Progress);
+    Font.Draw(r, _batch.Current ?? "", new Vector2(20, 160), Color.White);   // the file being loaded
+}
 ```
 
-Images become textures, `.json` and `.xml` files atlases, `.ttf` and `.otf` files fonts, all with default options. In a
-browser, where .NET runs on one thread, decoding also happens within the frame budget. `AssetBatch.Wait()` finishes a
-batch at once.
+By path, each file is loaded as the kind its extension chooses, with default options: images as textures, `.sheet`,
+`.json` and `.xml` files as atlases, `.ttf` and `.otf` files as fonts, `.wav` files as sounds, `.ogg` and `.mp3`
+files as music, `.frag.shader` files as materials, and the extensions of a loader the game registered as that
+loader's kind. A file no loader reads is refused at once, naming it. To preload with options, name each asset the way
+the direct call does:
+
+```csharp
+_batch = Assets.Preload(load =>
+{
+    load.Atlas("characters/hero.sheet", new AtlasOptions(Pivot: new Vector2(0.5f, 1)));
+    load.Texture("backgrounds/castle.png", TextureFilter.Linear);
+    load.Music("music/intro.wav");                      // a WAV as music
+    load.Asset("level", "levels/castle.lvl");           // a kind the game registered
+    load.Files("sfx/door.wav", "sfx/key.wav");          // by path, as above
+});
+```
+
+In a browser, where .NET runs on one thread, decoding also happens within the frame budget. `AssetBatch.Wait()`
+finishes a batch at once.
 
 ### When something is wrong
 
@@ -142,6 +179,122 @@ assets: atlas 'atlases/tiles.xml' was loaded during play and took 30.8 ms (a vis
 `Statistics` gives the number of assets, their texture memory, load time and loads during play; `--profile FILE` records
 the same numbers in the profile's environment (`assets.loaded`, `assets.textureMB`, `assets.loadMs`,
 `assets.loadsDuringPlay`).
+
+## Sheets and animations
+
+A sprite sheet is one image holding many frames. What the frames are (their size, their names, where each is
+anchored) and how they animate is data that belongs next to the image, not in the game's code.
+
+### Sheet descriptions
+
+A `.sheet` file is a small JSON file (comments and trailing commas allowed) that describes one or more images.
+`Assets.Atlas` cuts them and packs every frame into one atlas:
+
+```json
+{
+  "pivot": [0.5, 1],
+  "sheets": [
+    { "image": "drone.png", "name": "drone", "cell": [55, 52], "origin": [27, 26], "fps": 12 },
+    { "image": "palm.png", "name": "prop_palm" },
+    { "image": "tiles.png", "cell": [16, 16], "margin": 0, "spacing": 0,
+      "strips": { "walk": { "from": 8, "count": 6, "durations": [100, 100, 200, 100, 100, 200] },
+                  "ledge": { "at": [6, 11], "count": 4 },
+                  "fill": { "cells": [[4, 1], [1, 1]] },
+                  "odd": { "rects": [[504, 80, 16, 16]] } },
+      "sprites": { "gem": [2, 3], "logo": [0, 64, 48, 16], "key": { "cell": [3, 1], "origin": [8, 15] } } }
+  ],
+  "clips": { "hop": { "frames": ["drone1", "drone3", "drone1"], "fps": 6, "loop": false },
+             "patrol": { "strip": "drone", "fps": 8, "direction": "pingpong" } }
+}
+```
+
+| Entry | Meaning |
+| --- | --- |
+| `image` | The image, relative to the file |
+| `name` with `cell` | The whole image is one strip: frames `name0`, `name1`... row by row. Fully transparent cells at the end are left out unless `count` says how many |
+| `name` without `cell` | The whole image is one sprite |
+| `margin`, `spacing` | Pixels around the grid and between cells (one number, or `[x, y]`) |
+| `strips` | Named runs of frames of one image: `from` a cell index or `at` a column and row, with `count` (to the end of the row by default); or `cells`, a list of `[column, row]`; or `rects`, a list of `[x, y, width, height]` in pixels |
+| `sprites` | Named single sprites: `[column, row]`, `[x, y, width, height]`, or an object with `cell` or `rect` and its own anchor |
+| `origin` or `pivot` | The anchor: pixels from the frame's top-left, or a fraction of the frame (`[0.5, 1]` is the feet). On the file, a sheet, a strip or a sprite; the nearest one applies. Without any, `AtlasOptions.Pivot` |
+| `fps` or `durations` | Makes a strip a clip of the same name: a rate, or milliseconds per frame |
+| `direction`, `loop` | `forward`, `reverse`, `pingpong` or `pingpong_reverse`; `false` plays the clip once |
+| `clips` | More clips: `frames` listed by name (a frame may repeat) or a whole `strip`, with the same timing entries |
+
+A mistake names what is wrong and where: `strip 's' of 'a.png': the cell at column 4, row 0 lies outside the 16x8
+image`, an unknown property with the list of known ones, a clip naming a frame the file does not have.
+
+```csharp
+var enemies = Assets.Atlas("enemies/enemies.sheet");
+r.DrawPivoted(enemies.Clip("drone").FrameAt(Age), position);    // the strip, at the rate the file gives
+var animator = enemies.CreateAnimator("patrol");                // every clip of the file, by name
+```
+
+A game that also derives sprites in code takes the frames instead and packs them with its own:
+
+```csharp
+var atlas = new SpriteAtlasBuilder()
+    .AddSheet(Assets.Sheet("sprites.sheet"))      // every frame and clip the file describes
+    .Add("gem", GardenArt.Gem(), new Vector2(4, 4))
+    .Build(Graphics);
+```
+
+Source: [`games/NeonRift/Content/sprites.sheet`](../../games/NeonRift/Content/sprites.sheet) describes that game's
+sprite images; [`Art/Assets.cs`](../../games/NeonRift/Art/Assets.cs) adds the poses it derives from them.
+
+### Aseprite files
+
+The optional `MicroEngine.Aseprite` package reads `.aseprite` and `.ase` files as the artist saved them, with no
+export step:
+
+```csharp
+var hero = Assets.Aseprite("characters/hero.aseprite");     // an ordinary SpriteAtlas
+var animator = hero.CreateAnimator("idle");                 // every frame tag is a clip
+```
+
+| In the file | In the atlas |
+| --- | --- |
+| Frames | Sprites `hero 0`, `hero 1`... (the names Aseprite's own sheet export gives), each the picture Aseprite shows: visible layers flattened with their blend modes and opacity |
+| Frame tags | Clips with each frame's duration, the tag's direction and its repeat count (a tag that repeats a number of times plays once) |
+| Slices | A sprite per slice, named after it, anchored at the slice's pivot |
+| The first slice with a pivot | The anchor of every frame (the slice's corner plus its pivot), so the feet are set once in the editor; without one, `AtlasOptions.Pivot` |
+
+`Assets.Aseprite` registers the format on first use; `Assets.Loaders.AddAseprite()` registers it up front, after which
+`Assets.Atlas`, `Assets.Sheet` and `Assets.Preload` take Aseprite files like any other. Without the package,
+loading one fails saying which package reads it.
+
+## Names checked by the compiler
+
+Paths, sprite names and clip names are strings: a renamed file fails when the game reaches it. `microengine content
+names` writes them as constants, so the compiler finds the mistake:
+
+```bash
+microengine content names
+```
+
+```csharp
+var atlas = Assets.Atlas(GameContent.Enemies.EnemiesSheet.Path);
+r.Draw(atlas.Clip(GameContent.Enemies.EnemiesSheet.Clips.Drone).FrameAt(Age), position);
+var sky = Assets.Texture(GameContent.Backgrounds.Sky);
+```
+
+The file (`GameContent.g.cs` next to the project) has a class per folder and a constant per file; a sheet, an
+Aseprite file or an atlas is a class with its `Path`, `Sprites`, `Strips` (the names `atlas.Frames` takes) and `Clips`.
+Run the command again after changing content and commit the file; `microengine content names --check` fails in CI
+when it is out of date. The step is optional: strings keep working. See [the tool](../guide/cli.md#content).
+
+## Checking content
+
+`microengine content check` reads every file of the content folder the way the engine will and lists what would fail
+or mislead: unreadable images, sounds, fonts and shaders, sheets and atlases whose image is missing or too small for
+their frames, clips naming missing frames, names that differ only in letter case, source files that would ship,
+oversized textures, music only one platform decodes. It exits with 1 on errors, so it runs in CI as it is.
+
+```text
+error: enemies/lost.sheet: The image 'gone.png' cannot be read: 'enemies/gone.png' does not exist in the content folder. Fix the description or the image it names.
+warning: art/hero.psd: a source file (.psd) ships with the game: every file under the content folder is packaged. Keep sources outside it (for example in an Art folder next to the project).
+content: 85 files, 1 errors, 1 warnings
+```
 
 ## Images
 
@@ -166,8 +319,9 @@ How textures are sampled (nearest for pixel art, linear for HD art) is described
 The image is the one the file names, next to it. Frame names lose image endings (`hero_run_0.png` is `hero_run_0`,
 Aseprite's `slime 0.aseprite` is `slime 0`). Trimmed frames keep their place: a sprite's origin is the top-left of the
 untrimmed frame, so trimmed and untrimmed frames line up; `new AtlasOptions(Pivot: new Vector2(0.5f, 1))` anchors every
-frame without a pivot of its own at the middle of its bottom edge (feet). Rotated frames are refused with a message:
-turn rotation off in the tool.
+frame without a pivot of its own at the middle of its bottom edge (feet). Frames the JSON formats store rotated are
+turned upright when the atlas loads; rotated frames of the XML format are refused with a message: turn rotation off
+in the tool.
 
 ```csharp
 var enemies = Assets.Atlas("atlases/enemies.json", new AtlasOptions(Pivot: new Vector2(0.5f, 1)));
@@ -176,15 +330,29 @@ r.DrawPivoted(fly.FrameAt(Age), new Vector2(640, 400));
 var walk = enemies.Frames("enemyWalking_");           // numbered frames, starting at 0 or 1
 ```
 
-`SpriteAtlas.Animations` lists the tags; `Clip(tag, loop)` builds the clip once and shares it; ping-pong tags play
-`0 1 2 1 0 ...`. `AnimationClip` also accepts a duration per frame directly
+`SpriteAtlas.Animations` lists the tags; `Clip(tag)` builds the clip once and shares it, repeating as the tag says
+(`Clip(tag, loop: false)` decides otherwise); ping-pong tags play `0 1 2 1 0 ...`; `CreateAnimator()` gives an
+`Animator` holding every tag. `AnimationClip` also accepts a duration per frame directly
 (`new AnimationClip(frames, durations, loop)`). `AtlasData.Parse` reads the same files without a graphics device, for
 tools and tests.
+
+## Packing
+
+Loose images can be packed when the game loads them or ahead of time; the game draws the same either way.
+
+`Assets.AtlasFromFolder("items")` packs every image of a folder at load, named by file name: nothing to run, a little
+load time on every launch. `microengine content pack Art/items` packs the same folder once, offline, into
+`Content/atlases/items.png` and `items.json`, which `Assets.Atlas("atlases/items.json")` loads like any tool's atlas:
+the same sprite names and anchors, so only the loading line changes. The folder may also hold `.sheet` files, Aseprite
+files and atlases, whose frames and clips go into the same atlas. `--trim` leaves transparent margins out,
+`--extrude` protects linear filtering, and `--check` fails in CI when the packed files are stale
+([the tool](../guide/cli.md#content)).
 
 ### Packing at run time
 
 `SpriteAtlasBuilder` packs `PixelImage`s into one texture; `Assets.AtlasFromFolder("items")` does that for every image
-of a folder. Atlases sampled linearly repeat each image's edge pixels into a one-pixel border, so scaled sprites and
+of a folder. `builder.Pack()` gives the packed picture and its description without a graphics device, and
+`PackedAtlas.ToJson` writes the description in the format above. Atlases sampled linearly repeat each image's edge pixels into a one-pixel border, so scaled sprites and
 tiles never show their neighbours' colours.
 
 #### Grid sheets
@@ -193,12 +361,10 @@ tiles never show their neighbours' colours.
 frames `name0`, `name1`, ...; without `count`, fully transparent trailing cells of the last row are dropped.
 
 ```csharp
-// Hero (Warped City): every strip shares the 71×67 canvas and the feet pivot.
-foreach (var name in new[] { "idle", "run", "run-shoot", "jump", "back-jump", "crouch", "shoot", "hurt" })
-    b.AddGrid("hero_" + name, content.Image($"hero/{name}.png"), 71, 67, origin: HeroOrigin);
+builder.AddGrid("hero", content.Image("hero.png"), 16, 16, origin: new Vector2(8, 16));   // hero0..hero3
 ```
 
-Source: [`games/NeonRift/Art/Assets.cs`](../../games/NeonRift/Art/Assets.cs)
+For sheets that are files, a [sheet description](#sheet-descriptions) says the same without code.
 
 #### Repainting imported art
 
@@ -230,7 +396,7 @@ var jump = Assets.Scope.Load<AudioClip>("sound", "sfx/jump.wav");   // decoded o
 Audio.AddSound("jump", Assets.Store.Get(jump));
 ```
 
-**Loaders.** Each kind of asset has one loader in `Assets.Loaders`: `texture`, `atlas`, `folder atlas`, `font`,
+**Loaders.** Each kind of asset has one loader in `Assets.Loaders`: `texture`, `atlas`, `sheet` (the frames and clips of a `.sheet` description, as pixels), `folder atlas`, `font`,
 `shader`, `material`, `render target` (created from its options, a `RenderTargetSize`, and its name: a loader need not
 read a file, and the content folder is opened only when one does), `sound` (a PCM WAV decoded into an `AudioClip`) and
 `music` (a music file's bytes as `EncodedAudio`, decoded while it plays). A game adds a kind of its own, or replaces one, by registering an `IAssetLoader<T>` (or an
@@ -242,7 +408,13 @@ var forest = Assets.Scope.Load<LevelData>("level", "levels/forest.lvl");
 ```
 
 A loader reads through its context (`ReadBytes`, `Files`); a failure becomes an `AssetLoadException` naming the asset.
-`IAssetImporter` is reserved for a build-time conversion step and is not called yet: loaders read source files.
+A loader of data that touches only the content can run on a worker thread during a preload:
+`AssetLoader.Background<LevelData>("level", c => LevelData.Parse(c.ReadBytes()), [".lvl"])`. One that also creates a
+device resource splits in two, `new StagedAssetLoader<TPrepared, T>(kind, prepare, complete)`: `prepare` decodes on
+any thread, `complete` runs on the game's thread. A loader that makes a `SpriteSheet` for an extension (as the
+Aseprite package's does) makes files of that extension loadable through `Assets.Atlas`. `Assets.Store.Read<T>(key)`
+runs a loader without storing the result. `IAssetImporter` is reserved for a build-time conversion step and is not
+called: loaders read source files.
 
 **Content sources.** Content comes from any `IContentSource`, chosen by the composition (`host.Content`): a folder
 (`FolderContentSource`), a zip archive (`ZipContentSource`), or files a host lists and opens itself
@@ -293,11 +465,15 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
 
 ## Limitations
 
-- No build-time conversion: no compressed GPU texture formats (BCn, ASTC, ETC2), no mipmaps, no hot reload.
-  `IAssetImporter` only reserves the place of that step.
+- No compressed GPU texture formats (BCn, ASTC, ETC2) and no mipmaps through `Assets.Texture`.
+- A changed file is picked up the next time the game starts: assets are not reloaded while the game runs.
+- One content folder serves every platform: there are no per-platform variants of a file.
 - Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a
   browser page still copies the package's files into memory before the game starts.
-- Atlases with rotated frames, Aseprite slices, libGDX `.atlas` and Spine files are not read. Tiled maps are read by the
+- Rotated frames of Starling XML atlases, slices in Aseprite's exported JSON (the `.aseprite` file's slices are
+  read), Aseprite tilemap layers as tile maps, libGDX `.atlas` and Spine files are not read.
+- A packed atlas is one page: `microengine content pack` and `SpriteAtlasBuilder` grow the picture instead of
+  starting a second one. Tiled maps are read by the
   optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)).
 - Animated GIFs load their first frame only; there is no video.
 - Fonts: see [Text](text.md#limits).

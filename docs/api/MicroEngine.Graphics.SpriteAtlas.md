@@ -40,7 +40,7 @@ public const float DefaultFrameDuration = 0.1
 
 ### <a id="MicroEngine_Graphics_SpriteAtlas_Animations"></a> Animations
 
-Names of the animations the atlas file tagged (Aseprite frame tags).
+Names of the animations the atlas's data gives (Aseprite frame tags, the clips of a sheet description), in its order.
 
 ```csharp
 public IReadOnlyCollection<string> Animations { get; }
@@ -94,20 +94,25 @@ No sprite has that name; check with [Contains](MicroEngine.Graphics.SpriteAtlas.
 
 ## Methods
 
-### <a id="MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Boolean_"></a> Clip\(string, bool\)
+### <a id="MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Nullable_System_Boolean__"></a> Clip\(string, bool?\)
 
-The clip of the frame tag <code class="paramref">name</code>, with each frame's duration from the file and its direction
-(forward, reverse, ping-pong) applied. Built once per tag and loop setting, then shared.
+The clip named <code class="paramref">name</code> in the atlas's data (an Aseprite frame tag, a clip of a sheet description),
+with its timing (a duration per frame or a rate) and its direction (forward, reverse, ping-pong) applied. Built
+once per name and loop setting, then shared.
 
 ```csharp
-public AnimationClip Clip(string name, bool loop = true)
+public AnimationClip Clip(string name, bool? loop = null)
 ```
 
 #### Parameters
 
 `name` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+The clip's name ([Animations](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Animations)).
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)?
+
+Whether it repeats; null for what the data says (a tag loops unless it says it plays a number of times).
 
 #### Returns
 
@@ -117,7 +122,7 @@ public AnimationClip Clip(string name, bool loop = true)
 
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
-The atlas has no tag of that name.
+The atlas has no animation of that name.
 
 ### <a id="MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Single_System_Boolean_"></a> Clip\(string, float, bool\)
 
@@ -193,6 +198,35 @@ Whether disposing the atlas disposes the texture (true by default).
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 
 A frame lies outside the texture, or two frames share a name.
+
+### <a id="MicroEngine_Graphics_SpriteAtlas_CreateAnimator_System_String_"></a> CreateAnimator\(string?\)
+
+An [Animator](MicroEngine.Graphics.Animator.md) holding every animation of the atlas under its name ([Animations](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Animations)), playing
+<code class="paramref">play</code> or the first one: a character's animations with no clip built by hand.
+
+```csharp
+public Animator CreateAnimator(string? play = null)
+```
+
+#### Parameters
+
+`play` [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
+The clip to start with; null for the first of the data.
+
+#### Returns
+
+ [Animator](MicroEngine.Graphics.Animator.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The atlas has no animation.
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The atlas has no animation named <code class="paramref">play</code>.
 
 ### <a id="MicroEngine_Graphics_SpriteAtlas_Dispose"></a> Dispose\(\)
 

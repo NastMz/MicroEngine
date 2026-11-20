@@ -12,22 +12,19 @@ MicroEngine's animation has two types:
 - `Animator`: plays one named clip at a time. `Add(name, clip)` registers clips, `Play(name)` switches to one,
   `Update(dt)` advances it, `Frame` is the sprite to draw.
 
-The player's constructor, from the previous step, registers two clips:
+The player's constructor, from the previous step, takes its animator from the atlas:
 
 <!-- code: samples/GemGarden/part2-hero/World/Player.cs#fields -->
 ```csharp title="World/Player.cs"
 private const float WalkSpeed = 70, RunSpeed = 115;   // pixels per second
 
-private readonly Animator _animator = new();
+private readonly Animator _animator;
 private RectF _bounds;          // a small box at the feet: what will collide with the world
 private bool _facingLeft;
 
 public Player(SpriteAtlas sprites, Vector2 start)
 {
-    _animator
-        .Add("idle", new AnimationClip([sprites["hero0"]], 1))
-        .Add("walk", new AnimationClip(sprites.Frames("hero"), 8));
-    _animator.Play("idle");
+    _animator = sprites.CreateAnimator("idle");
     _bounds = RectF.FromCenter(start, 10, 8);
 }
 
@@ -36,9 +33,11 @@ public Vector2 Position => new(_bounds.Center.X, _bounds.Bottom);
 public RectF Bounds => _bounds;
 ```
 
-- `sprites.Frames("hero")` returns `hero0`, `hero1`, `hero2`, `hero3`: the frames `AddGrid` cut in step 3, in order.
-  `walk` plays them at 8 frames per second, looping.
-- `idle` is a clip of one frame: standing still.
+- `sprites.CreateAnimator("idle")` makes an animator holding every clip `hero.sheet` names (step 3) and starts
+  `idle`. Which frames a clip plays and how fast are data: changing `"fps": 8` in the file changes the walk without
+  touching the code.
+- `walk` plays `hero0` to `hero3` at 8 frames per second, looping. `idle` is a clip of one frame: standing still.
+- A clip can also be made in code, `new AnimationClip(sprites.Frames("hero"), 8)`, for frames that are generated.
 
 ## Playing the right clip
 

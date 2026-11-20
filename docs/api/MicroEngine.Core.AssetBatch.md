@@ -43,6 +43,18 @@ public int Count { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_AssetBatch_Current"></a> Current
+
+The path of the first asset still loading, for a loading screen to name; null when the batch is done.
+
+```csharp
+public string? Current { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_AssetBatch_Errors"></a> Errors
 
 The assets that could not be loaded.
