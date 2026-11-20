@@ -208,7 +208,8 @@ are independent: VSync waits for the display, the limit caps frames per second, 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
 A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
-creations, uploads and live textures are counted.
+creations, uploads and live textures are counted. Render targets are textures too; materials are created without a
+shader to run, so they draw with their fallback ([IsSupported](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_IsSupported) is false).
 
  [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
 
@@ -232,7 +233,8 @@ run or a game overrides. Nothing the platform does depends on the time mode.
 
 Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
 device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
-[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly. Render
+targets are rasterized the same way; a material draws with its fallback, since nothing here runs shaders.
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
@@ -267,7 +269,10 @@ A deterministic input script, keyed by update number. Text format, one command p
 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
 450 pad 2 remove
 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
-470 wheel 1               # the wheel turns one notch away from the player
+462 mouse 160,90 down secondary  # another button: primary, secondary, middle, back or forward
+464 click 160,90 secondary       # the mouse moves there and the button goes down, then up 2 updates later
+470 wheel 1               # the wheel turns one notch away from the player (negative: towards them)
+472 wheel 0 1             # a second number turns it sideways: one notch to the right
 480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```
@@ -398,6 +403,10 @@ Percentiles of one frame measurement, in milliseconds.
  [RecordingOverlayCanvas.Shape](MicroEngine.Core.RecordingOverlayCanvas.Shape.md)
 
 One recorded drawing call.
+
+ [RenderTargetSize](MicroEngine.Core.RenderTargetSize.md)
+
+The size of a render target of the assets (the options of a "render target" asset key).
 
  [SaveLoadResult<T\>](MicroEngine.Core.SaveLoadResult\-1.md)
 
