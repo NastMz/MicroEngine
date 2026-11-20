@@ -103,6 +103,55 @@ public sealed class ContentTests
         void Warning(string path, string says) => Assert.IsTrue(report.Warnings.Any(e => e.Path == path && e.Message.Contains(says, StringComparison.Ordinal)), $"expected a warning for {path} saying '{says}' in:\n{all}");
     }
 
+    private static byte[] ExampleFont(string name) =>
+        File.ReadAllBytes(System.IO.Path.Combine(Repository(), "samples", "Examples", "Content", "fonts", name));
+
+    [TestMethod]
+    public void String_tables_that_agree_pass_with_their_fonts_and_variants()
+    {
+        using var content = Good()
+            .Text("text/en.strings.json", """{ "@name": "English", "@fonts": ["fonts/Inter.ttf"], "play": "Play", "gems": "{n, plural, one {# gem} other {# gems}}" }""")
+            .Text("text/es.strings.json", """{ "@name": "Español", "@fonts": ["fonts/Inter.ttf"], "play": "Jugar", "gems": "{n, plural, one {# gema} other {# gemas}}" }""")
+            .Text("text/ar.strings.json", """{ "@name": "العربية", "@fonts": ["fonts/Inter.ttf", "fonts/Arabic.ttf"], "play": "العب", "gems": "{n, plural, zero {#} one {#} two {#} few {#} many {#} other {#}}" }""")
+            .Bytes("fonts/Inter.ttf", ExampleFont("Inter-Regular.ttf"))
+            .Bytes("fonts/Arabic.ttf", ExampleFont("NotoSansArabic-Regular.ttf"))
+            .Bytes("ui/hud.es.png", Png(Solid(16, 8, 40)));
+        var report = ContentTool.Check(content.Root);
+        Assert.AreEqual(0, report.Issues.Count, string.Join("\n", report.Issues));
+        Assert.AreEqual(0, Cli.RunAsync(["content", "check", "--content", content.Root]).Result);
+    }
+
+    [TestMethod]
+    public void String_table_problems_name_the_table_and_the_key()
+    {
+        using var content = Good()
+            .Text("text/en.strings.json", """{ "@fonts": ["fonts/Inter.ttf", "fonts/gone.ttf"], "play": "Play", "quit": "Quit", "found": "{who} found it", "gems": "{n, plural, one {# gem} other {# gems}}" }""")
+            .Text("text/es.strings.json", """{ "play": "Jugar", "found": "{quien} lo encontró", "gems": "{n, plural, one {# gema}}" }""")
+            .Text("text/ja.strings.json", """{ "@fonts": ["fonts/Inter.ttf"], "play": "プレイ", "quit": "終了", "found": "{who}", "gems": "{n, plural, other {#}}" }""")
+            .Text("text/fr.strings.json", "{ \"play\": 3 }")
+            .Text("more/extra.strings.csv", "key,en,es\nextra,More,\n")
+            .Bytes("fonts/Inter.ttf", ExampleFont("Inter-Regular.ttf"))
+            .Bytes("ui/banner.es.png", Png(Solid(4, 4, 1)))
+            .Bytes("ui/hud.JA.png", Png(Solid(16, 8, 40)));
+        var report = ContentTool.Check(content.Root);
+        string all = string.Join("\n", report.Issues.Select(i => i.ToString()));
+
+        Error("text/es.strings.json", "'quit'");
+        Error("text/es.strings.json", "'extra'");
+        Error("text/es.strings.json", "{quien}");
+        Error("text/es.strings.json", "'gems'");
+        Error("text/fr.strings.json", "line 1");
+        Error("text/en.strings.json", "fonts/gone.ttf");
+        Error("ui/hud.JA.png", "'ja'");
+        Warning("text/ja.strings.json", "プレイ終了");
+        Warning("ui/banner.es.png", "ui/banner.png");
+        Assert.IsFalse(report.Issues.Any(i => i.Path == "more/extra.strings.csv"), "the CSV's own language has the key:\n" + all);
+        Assert.AreEqual(1, Cli.RunAsync(["content", "check", "--content", content.Root]).Result, "a missing key fails the command");
+
+        void Error(string path, string says) => Assert.IsTrue(report.Errors.Any(e => e.Path == path && e.Message.Contains(says, StringComparison.Ordinal)), $"expected an error for {path} saying '{says}' in:\n{all}");
+        void Warning(string path, string says) => Assert.IsTrue(report.Warnings.Any(e => e.Path == path && e.Message.Contains(says, StringComparison.Ordinal)), $"expected a warning for {path} saying '{says}' in:\n{all}");
+    }
+
     [TestMethod]
     public void Names_that_differ_only_in_letter_case_are_reported()
     {
