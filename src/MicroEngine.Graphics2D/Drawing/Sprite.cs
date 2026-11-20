@@ -124,7 +124,7 @@ public sealed class SpriteAtlasBuilder
     {
         ArgumentNullException.ThrowIfNull(device);
         var sampling = filter ?? device.DefaultFilter;
-        var packed = Pack(extrude: sampling == TextureFilter.Linear);
+        var packed = Pack(extrude: sampling != TextureFilter.Nearest);
         var texture = device.CreateTexture(packed.Image, sampling);
         var sprites = new Dictionary<string, Sprite>(StringComparer.Ordinal);
         foreach (var region in packed.Regions) sprites[region.Name] = new Sprite(texture, region.Source, region.Origin);

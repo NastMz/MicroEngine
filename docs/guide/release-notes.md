@@ -23,6 +23,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   everything. Captures of such a frame are the window as presented. Platforms offer it as the `IScreenEffects`
   capability; `DeviceCanvas.Compose` and `CanvasPresenter.Present` take the chain or a destination target
   ([The window stage](../manual/rendering.md#the-window-stage)).
+- **Mip levels.** `TextureFilter.LinearMipmap` creates a texture with smaller copies of itself, sampled when it is
+  drawn below its size, so minified art neither shimmers nor loses thin details:
+  `Assets.Texture("big.png", TextureFilter.LinearMipmap)`. `Texture.MipLevels` reports them. The `sdl-gpu` device and
+  raylib on desktop have them (the `Mipmaps` device feature, `CommandList.GenerateMipmaps`); elsewhere the texture
+  has one level and is sampled as linear ([Mip levels](../manual/rendering.md#mip-levels)).
 - `IGraphicsDevice.SupportsShaders` (`Game.Graphics.SupportsShaders`) says whether materials run their shaders on the
   device in use.
 - The examples' post-processing scene uses the chain; its hand-written passes and their two shaders are gone.

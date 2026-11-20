@@ -804,6 +804,44 @@ public abstract class RendererConformance
         if (shaders) Assert.IsTrue(c.R == c.G && c.G == c.B && c.R is > 20 and < 240, $"the picture through the game's shader: {Rgb(c)}");
         else AssertColour(frame, 8, 8, Red, "the picture as it was, whatever the material's fallback");
     }
+
+    // ---- Mip levels ----------------------------------------------------------------------------------------------------
+
+    /// <summary>Whether this backend's device keeps mip levels for a texture created with <see cref="TextureFilter.LinearMipmap"/>; null does not check.</summary>
+    protected virtual bool? HasMipLevels => null;
+
+    [TestMethod]
+    public void ATextureWithMipLevelsIsSmoothWhenItIsDrawnSmallWhereTheDeviceHasThemAndLinearElsewhere()
+    {
+        // A 64 × 64 checkerboard of single pixels drawn at an eighth of its size, placed so that every canvas pixel's
+        // centre falls on the centre of a texel of the same colour: without levels the picture is that one colour.
+        var board = new PixelImage(64, 64);
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++) board[x, y] = ((x + y) & 1) == 0 ? Color.White : Color.Black;
+        Texture? levels = null, linear = null;
+        var frame = Render(24, 8, (r, graphics) =>
+        {
+            levels ??= graphics.CreateTexture(board, TextureFilter.LinearMipmap);
+            linear ??= graphics.CreateTexture(board, TextureFilter.Linear);
+            r.DrawStretched(levels, levels.Bounds, new RectF(-5 / 16f, -5 / 16f, 8, 8), Color.White);
+            r.DrawStretched(linear, linear.Bounds, new RectF(12 - 5 / 16f, -5 / 16f, 8, 8), Color.White);
+        });
+        Keep(frame, "mip-levels");
+        Assert.AreEqual(1, linear!.MipLevels, "a linear texture has the picture alone");
+        if (HasMipLevels is { } has) Assert.AreEqual(has, levels!.MipLevels > 1, $"whether this backend's device keeps mip levels ({levels.MipLevels})");
+        Assert.IsTrue(levels!.MipLevels is 1 or 7, $"a 64-pixel texture has seven levels or one: {levels.MipLevels}");
+        Assert.AreEqual(TextureFilter.LinearMipmap, levels.Filter);
+        Assert.IsTrue(levels.SizeInBytes >= linear.SizeInBytes, "the levels are counted in the texture's memory");
+        if (levels.MipLevels > 1)
+        {
+            Assert.IsTrue(levels.SizeInBytes > linear.SizeInBytes);
+            for (int x = 1; x < 7; x++)
+                Assert.IsTrue(Math.Abs(frame[x, 4].R - 128) <= 8, $"with levels: the average of black and white at x={x}, got {frame[x, 4].R}");
+        }
+        else if (!Allowed.HasFlag(Variation.ShapeCoverage))    // the software renderer shrinks with an averaging scaler
+            for (int x = 1; x < 7; x++)
+                Assert.AreEqual(frame[12 + x, 4], frame[x, 4], $"without levels: the same picture as a linear texture (x={x})");
+    }
 }
 
 /// <summary>The blend equations of the contract on 8-bit colours (straight alpha, results rounded to nearest).</summary>

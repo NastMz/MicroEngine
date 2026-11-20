@@ -221,4 +221,8 @@
 4550 press confirm
 4610 capture 38-screen-effects.png
 4616 press pause
-4630 quit
+4630 press down
+4640 press confirm
+4700 capture 39-mip-levels.png
+4706 press pause
+4720 quit

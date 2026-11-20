@@ -50,6 +50,7 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
     internal const float SurfaceTieShift = 1f / 128;
 
     // OpenGL enumerations rlgl passes through unchanged.
+    private const int GlLinearMipmapNearest = 0x2701, GlLinearMipmapLinear = 0x2703;
     private const int GlTextureMagFilter = 0x2800, GlTextureMinFilter = 0x2801, GlTextureWrapS = 0x2802, GlTextureWrapT = 0x2803;
     private const int GlNearest = 0x2600, GlLinear = 0x2601, GlRepeat = 0x2901, GlClampToEdge = 0x812F, GlMirroredRepeat = 0x8370;
     private const int GlTriangles = 0x0004;
@@ -72,7 +73,8 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
         PresentMode = options.PresentMode;
         bool web = OperatingSystem.IsBrowser();
         var features = GraphicsFeatures.RenderTargets
-            | (web ? GraphicsFeatures.None : GraphicsFeatures.AddressRepeat | GraphicsFeatures.AddressMirror | GraphicsFeatures.SeparateFilters | GraphicsFeatures.CustomBlend);
+            | (web ? GraphicsFeatures.None : GraphicsFeatures.AddressRepeat | GraphicsFeatures.AddressMirror | GraphicsFeatures.SeparateFilters | GraphicsFeatures.CustomBlend
+                | GraphicsFeatures.Mipmaps);
         var both = TextureUsage.Sampled | TextureUsage.RenderTarget;
         Capabilities = new GraphicsCapabilities(BackendName, GraphicsTier.Tier0, features, ShaderFormat.None,
             new Dictionary<TextureFormat, TextureUsage> { [TextureFormat.Rgba8Unorm] = both, [TextureFormat.Bgra8Unorm] = both },
@@ -200,6 +202,15 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
                         fixed (byte* data = rgba)
                             Rlgl.UpdateTexture(texture.Id, c.Rect.X, c.Rect.Y, c.Rect.Width, c.Rect.Height, Raylib_cs.PixelFormat.UncompressedR8G8B8A8, data);
                         break;
+                    case CommandKind.GenerateMipmaps:
+                    {
+                        var mipped = (RaylibDeviceTexture)c.Resource!;
+                        Rlgl.DrawRenderBatchActive(); // draws recorded before it sample the levels as they were
+                        int levels = 1;
+                        Rlgl.GenTextureMipmaps(mipped.Id, mipped.Width, mipped.Height, Raylib_cs.PixelFormat.UncompressedR8G8B8A8, &levels);
+                        mipped.HasMipLevels = levels > 1;
+                        break;
+                    }
                     case CommandKind.SetUniforms:
                         throw new InvalidOperationException("tier 0 has no uniforms"); // unreachable: the built-in pipeline declares none
                     default:
@@ -342,7 +353,9 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
             Rlgl.DrawRenderBatchActive(); // texture parameters apply when the batch is drawn
             var s = state.Sampler;
             Rlgl.TextureParameters(texture.Id, GlTextureMagFilter, s.Mag == Filter.Linear ? GlLinear : GlNearest);
-            Rlgl.TextureParameters(texture.Id, GlTextureMinFilter, s.Min == Filter.Linear ? GlLinear : GlNearest);
+            // A texture with mip levels is minified through them when it is sampled linearly; nearest reads level 0.
+            int min = s.Min != Filter.Linear ? GlNearest : !texture.HasMipLevels ? GlLinear : s.Mip == Filter.Linear ? GlLinearMipmapLinear : GlLinearMipmapNearest;
+            Rlgl.TextureParameters(texture.Id, GlTextureMinFilter, min);
             Rlgl.TextureParameters(texture.Id, GlTextureWrapS, Wrap(s.U));
             Rlgl.TextureParameters(texture.Id, GlTextureWrapT, Wrap(s.V));
             state.BoundTexture = texture;
@@ -440,6 +453,9 @@ internal sealed class RaylibDeviceTexture : Texture
 {
     private readonly RaylibDeviceTarget? _owner;
     private bool _destroyed;
+
+    /// <summary>Whether the levels below 0 were made (<see cref="CommandList.GenerateMipmaps"/>), so minification may use them.</summary>
+    public bool HasMipLevels { get; set; }
 
     public RaylibDeviceTexture(RaylibDevice device, in TextureDescription description, uint id, RaylibDeviceTarget? owner) : base(device, description)
     {

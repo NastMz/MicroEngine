@@ -35,7 +35,7 @@ public readonly record struct DrawState(BlendState? Blend = null, SamplerDescrip
 
     /// <summary>This state sampling every texture with <paramref name="filter"/>, clamped at the edges, whatever the texture's own filter.</summary>
     public DrawState Filtered(TextureFilter filter) =>
-        this with { Sampler = filter == TextureFilter.Linear ? SamplerDescription.LinearClamp : SamplerDescription.PointClamp };
+        this with { Sampler = filter == TextureFilter.Nearest ? SamplerDescription.PointClamp : SamplerDescription.LinearClamp };
 }
 
 /// <summary>

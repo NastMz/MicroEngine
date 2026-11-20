@@ -152,4 +152,20 @@ public sealed class RenderingExampleTests
         Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current);
         Assert.HasCount(0, game.ScreenPostProcess.Effects, "the scene took its effects out of the game's chain");
     }
+
+    [TestMethod]
+    public void TheSmallPicturesExampleCreatesATextureWithMipLevelsWhereTheDeviceHasThem()
+    {
+        var (game, platform) = Start(new MipLevelsExample());
+        var scene = (MipLevelsExample)game.Scenes.Current!;
+        Assert.AreEqual(TextureFilter.LinearMipmap, scene.Levels.Filter);
+        Assert.AreEqual(1, scene.Levels.MipLevels, "the headless platform has no mip levels: the texture is sampled as linear");
+        var frame = Draw(game, platform);
+        // Both pictures are drawn, 64 pixels wide around (80, 96) and (240, 96), and are the same without levels.
+        Assert.AreNotEqual(Color.Hex("1a1c2c"), frame[80, 96]);
+        for (int x = -20; x <= 20; x += 5) Assert.AreEqual(frame[80 + x, 96], frame[240 + x, 96], $"the same picture on both sides at {x}");
+        Press(game, "pause");
+        Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current);
+        Assert.IsTrue(scene.Levels.IsDisposed, "the scene released its textures");
+    }
 }

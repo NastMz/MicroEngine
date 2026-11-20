@@ -32,7 +32,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | No visual editor, level editor or asset tool: content is code, or files loaded through `Game.Assets` | [Assets](../manual/assets.md) |
 | Objects are plain entities with attachments by default. An Entity Component System is an optional package (`MicroEngine.Ecs`), without events, relations between rows or saving of its own | [Entity Component Systems](../guide/entity-component-systems.md) |
 | No visual editor or level editor: content is code, or files loaded through `Game.Assets`; the optional `microengine content` command checks, names and packs them | [Assets](../manual/assets.md) |
-| Assets are not reloaded while the game runs, there are no per-platform variants of a file, and textures are neither block-compressed nor mipmapped | [Assets](../manual/assets.md#limitations) |
+| Assets are not reloaded while the game runs, there are no per-platform variants of a file, textures are not block-compressed, and mip levels (`TextureFilter.LinearMipmap`) exist on `sdl-gpu` and desktop raylib only | [Assets](../manual/assets.md#limitations) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
 | Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |

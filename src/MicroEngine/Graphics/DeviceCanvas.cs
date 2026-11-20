@@ -38,7 +38,11 @@ public sealed class DeviceGraphics : IGraphicsDevice
         ArgumentNullException.ThrowIfNull(image);
         var rgba = image.ToRgba();
         Dev.PremultipliedColor.PremultiplyInPlace(rgba);
-        var native = Device.CreateTexture(new Dev.TextureDescription(image.Width, image.Height), rgba);
+        // Mip levels where the filter asks for them and the device has them; elsewhere the texture is sampled as linear.
+        bool mipmapped = filter == TextureFilter.LinearMipmap && Device.Capabilities.Has(Dev.GraphicsFeatures.Mipmaps);
+        int levels = mipmapped ? 1 + (int)Math.Floor(Math.Log2(Math.Max(image.Width, image.Height))) : 1;
+        var native = Device.CreateTexture(new Dev.TextureDescription(image.Width, image.Height, MipLevels: levels), rgba);
+        if (levels > 1) GenerateMipmaps(native);
         return Track(new DeviceTexture(this, native, null, filter, true));
     }
 
@@ -115,6 +119,15 @@ public sealed class DeviceGraphics : IGraphicsDevice
         Dev.PremultipliedColor.PremultiplyInPlace(rgba);
         var commands = Device.BeginCommands();
         commands.UpdateTexture(texture.Native, new Dev.RectI(x, y, width, height), rgba);
+        // The smaller levels follow the picture.
+        if (texture.Native.Description.MipLevels > 1) commands.GenerateMipmaps(texture.Native);
+        Device.Submit(commands);
+    }
+
+    private void GenerateMipmaps(Dev.Texture native)
+    {
+        var commands = Device.BeginCommands();
+        commands.GenerateMipmaps(native);
         Device.Submit(commands);
     }
 
@@ -149,6 +162,9 @@ public sealed class DeviceTexture : Texture
     /// <inheritdoc/>
     public override bool IsRenderTarget => Target is not null;
 
+    /// <inheritdoc/>
+    public override int MipLevels => Math.Max(1, Native.Description.MipLevels);
+
     /// <summary>The memory of every mip level in the device texture's format.</summary>
     public override long SizeInBytes
     {
@@ -166,7 +182,7 @@ public sealed class DeviceTexture : Texture
     }
 
     /// <summary>The sampler the texture's filter draws with (clamped at the edges).</summary>
-    public Dev.SamplerDescription Sampler => Filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp;
+    public Dev.SamplerDescription Sampler => Filter == TextureFilter.Nearest ? Dev.SamplerDescription.PointClamp : Dev.SamplerDescription.LinearClamp;
 
     /// <inheritdoc/>
     protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)

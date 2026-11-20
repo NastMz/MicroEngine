@@ -118,11 +118,11 @@ With no enabled effect the window is composed exactly as without the chain. Whil
 window as it was presented. The stage is a capability of the platform (`IScreenEffects`: SDL, raylib and the headless
 platform have it); on a platform without it the chain runs on the canvas.
 
-### Filtering: nearest or linear
+### Filtering: nearest, linear or with mip levels
 
 Every texture has a `TextureFilter`:
 `Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
-pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
+pixels, and `LinearMipmap` is linear with [mip levels](#mip-levels) for pictures drawn smaller than their size. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
 to every texture and atlas created without a filter of its own; each one can choose:
 
 ```csharp
@@ -135,12 +135,50 @@ var page = Graphics.CreateTexture(image, TextureFilter.Linear);
 Glyph pages of TTF/OTF fonts take their filter from `FontOptions.Filter`; when that is null, they follow the game's
 default like every other texture (the presentation's `DefaultSampler`), and `FontOptions.Pixel` chooses nearest itself. `ScalableFont.Filter`
 changes it later. The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
-neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
-at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
-the size it is drawn at.
+neighbouring sprites never bleed into each other.
+
+#### Mip levels
+
+A linear texture drawn much smaller than its pixels reads only four texels per pixel and skips the rest: thin details
+break up, and the picture shimmers as it moves. A texture created with `TextureFilter.LinearMipmap` also keeps smaller
+copies of itself (each half the size of the one before, down to one pixel: a third more memory in all), and a draw
+that shrinks it samples the copies nearest to the size it is drawn at.
+
+<!-- code: samples/Examples/Examples/MipLevelsExample.cs#textures -->
+```csharp
+public override void Enter()
+{
+    var picture = Picture();
+    _linear = Game.Graphics.CreateTexture(picture, TextureFilter.Linear);
+    // The same call with another filter; from a file it is Assets.Texture("big.png", TextureFilter.LinearMipmap).
+    _levels = Game.Graphics.CreateTexture(picture, TextureFilter.LinearMipmap);
+}
+
+public override void Exit()
+{
+    _linear.Dispose();
+    _levels.Dispose();
+}
+```
+
+- Use it for art drawn well below its size: a camera that zooms out, a large picture on a small canvas, one set of
+  HD art for several canvas sizes. Art drawn at its own size or larger gains nothing from it.
+- The levels are made when the texture is created with that filter, and again whenever its pixels are updated.
+  `Texture.MipLevels` says how many there are (1: the picture alone); `SizeInBytes` counts them. A texture created
+  with another filter has none, and setting `Filter = TextureFilter.LinearMipmap` on it later does not make them.
+- Mip levels need a graphics device that has them: `sdl-gpu`, and raylib on desktop. On SDL's default device and its
+  software renderer, in browser builds and on the headless platform the texture has one level and is sampled as
+  `Linear`: the same code, the picture of a linear texture. There the advice for linear art holds: keep it within
+  about twice the size it is drawn at.
+- On a device with mip levels, a texture that has them is minified through them by every linear draw, including one
+  made under a state with its own sampler; on `sdl-gpu` a nearest draw of it picks the nearest level as well.
+- In an atlas the smallest levels mix neighbouring sprites, since the atlas keeps one pixel of border around each:
+  mip levels suit single pictures and atlases drawn down to about half their size.
 
 `Texture.Update(x, y, width, height, pixels)` replaces a rectangle of a texture (glyph pages use it), and
 `Texture.SizeInBytes` gives its device memory.
+
+
 
 ## `IRenderer`
 
@@ -641,7 +679,7 @@ a 3D renderer:
 - Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback and a post-processing effect
   with a shader draws its simpler form or nothing. A material is a fragment shader; there is no stencil buffer and no
   multisampling.
-- Images load as 32-bit RGBA textures without mipmaps. A device texture in another format (a single channel, a
+- Images load as 32-bit RGBA textures; mip levels exist on `sdl-gpu` and on raylib on desktop only. A device texture in another format (a single channel, a
   compressed format the device declares) can be created on the device and drawn through `DeviceGraphics.Wrap`.
 - No sprite batching control beyond packing art into atlases. Draw order is call order unless a `SortedRenderer` orders the draws.
 - Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.

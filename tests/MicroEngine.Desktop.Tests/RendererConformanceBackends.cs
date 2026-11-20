@@ -9,6 +9,7 @@ namespace MicroEngine.Desktop.Tests;
 public sealed class HeadlessReferenceRendererConformance : RendererConformance
 {
     protected override bool? RunsShaders => false;
+    protected override bool? HasMipLevels => false;
     protected override IPlatform? Open(Game game, PlatformRequest request) => HeadlessPlatform.For(request.Settings, rasterize: true);
 }
 
@@ -62,6 +63,7 @@ public sealed class SdlRendererConformance : NativeRendererConformance
 {
     protected override PlatformProfile Profile => SdlPlatform.Profile;
     protected override bool? RunsShaders => false;
+    protected override bool? HasMipLevels => false;
 }
 
 /// <summary>
@@ -77,6 +79,7 @@ public sealed class SdlGpuDeviceRendererConformance : NativeRendererConformance
     protected override bool Required => false;
     protected override string? GraphicsDevice => SdlPlatform.GpuDevice;
     protected override bool? RunsShaders => true;
+    protected override bool? HasMipLevels => true;
 }
 
 [TestClass]
@@ -116,4 +119,5 @@ public sealed class RaylibRendererConformance : NativeRendererConformance
 {
     protected override PlatformProfile Profile => RaylibPlatform.Profile;
     protected override bool? RunsShaders => false;
+    protected override bool? HasMipLevels => true;
 }

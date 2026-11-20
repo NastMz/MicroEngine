@@ -776,7 +776,7 @@ public sealed class HeadlessRenderer : IRenderer
     }
 
     private Dev.SamplerDescription Sampler(Texture texture) =>
-        _drawing.Sampler ?? (texture.Filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp);
+        _drawing.Sampler ?? (texture.Filter == TextureFilter.Nearest ? Dev.SamplerDescription.PointClamp : Dev.SamplerDescription.LinearClamp);
 
     /// <summary>The texture as this device's own when rasterizing (null when only counting), after the checks every renderer makes.</summary>
     private HeadlessGraphicsDevice.HeadlessTexture? Check(Texture texture)

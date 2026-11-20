@@ -6,6 +6,31 @@ it. Newest first.
 
 ## Next release
 
+### `TextureFilter` has a third value, and two devices declare mip levels
+
+`TextureFilter.LinearMipmap` joins `Nearest` and `Linear`. Code that decides between two samplers with
+`filter == TextureFilter.Linear` treats the new value as nearest: compare with `TextureFilter.Nearest` instead, as the
+engine now does, and add the case to any `switch` over the enum.
+
+For authors of a graphics device: `CommandKind` gained `GenerateMipmaps` (`CommandList.GenerateMipmaps`). A device that
+declares `GraphicsFeatures.Mipmaps` executes it; one that does not never receives it, because a texture with more
+than one level cannot be created there. `sdl-gpu` and raylib on desktop now declare the feature, so
+`GraphicsCapabilities.Features` differs from before on them.
+
+### The examples' post-processing shaders are gone; a chain replaces hand-written passes
+
+Nothing in the SDK was removed, but a game that copied `PostProcessExample`'s `Pass` helper and its `glow` and
+`combine` shaders can replace them with `Scene.PostProcess` and the ready effects (`Bloom`, `Vignette`, `Scanlines`):
+see [Post-processing](guide/render-targets-and-shaders.md#post-processing). The hand-written passes keep working.
+
+### `CanvasPresenter` and `DeviceCanvas` for platform authors
+
+`DeviceCanvas.Compose` has an overload that takes the screen's post-processing chain, and
+`CanvasPresenter.Present` one that draws into a target instead of the window. A platform built on `DeviceCanvas`
+offers the window stage by implementing `IScreenEffects` and passing its chain to `Compose`; one that does not keeps
+working, and `Game.ScreenPostProcess` then runs on the canvas. A frame presented through the chain is captured with
+`DeviceCanvas.CapturePresented`.
+
 ### An atlas clip repeats as its data says
 
 `SpriteAtlas.Clip(string name, bool loop = true)` is now `Clip(string name, bool? loop = null)`: without the argument

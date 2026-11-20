@@ -465,7 +465,9 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
 
 ## Limitations
 
-- No compressed GPU texture formats (BCn, ASTC, ETC2) and no mipmaps through `Assets.Texture`.
+- No compressed GPU texture formats (BCn, ASTC, ETC2) through `Assets.Texture`. Mip levels are a filter:
+  `Assets.Texture(path, TextureFilter.LinearMipmap)`, on the devices that have them
+  ([Mip levels](rendering.md#mip-levels)).
 - A changed file is picked up the next time the game starts: assets are not reloaded while the game runs.
 - One content folder serves every platform: there are no per-platform variants of a file.
 - Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a

@@ -230,7 +230,7 @@ public sealed class Material2D : IDisposable
         if (slot.Slot == 0)
             throw new ArgumentException($"'{name}' is the first texture of {_label}: it is the texture of each draw, so it is not set on the material.", nameof(name));
         ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
-        var chosen = sampler ?? (texture.Filter == TextureFilter.Linear ? SamplerDescription.LinearClamp : SamplerDescription.PointClamp);
+        var chosen = sampler ?? (texture.Filter == TextureFilter.Nearest ? SamplerDescription.PointClamp : SamplerDescription.LinearClamp);
         if (IsSupported)
         {
             var native = texture.Native;
