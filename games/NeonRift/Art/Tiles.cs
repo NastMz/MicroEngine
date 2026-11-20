@@ -11,40 +11,12 @@ internal static class TileId
 }
 
 /// <summary>
-/// Cuts 16×16 tiles out of each stage's tileset and chooses which one a cell shows from its
-/// neighbours: surface rows get the ledge/brick/deck top, the row below gets a face, the rest fill.
+/// Chooses which 16×16 tile a cell shows from its neighbours: surface rows get the ledge/brick/deck top, the row
+/// below gets a face, the rest fill. <c>Content/sprites.sheet</c> cuts the tiles out of each stage's tileset.
 /// </summary>
 internal static class Tiles
 {
     public const int Size = 16;
-
-    private static readonly Dictionary<string, (string File, (int X, int Y)[] Cells)> Sets = new()
-    {
-        // Warped City rooftop: balcony ledge (L, M, M, R), dark wall, lit window column.
-        ["city_top"] = ("stages/city/tileset.png", [(96, 176), (112, 176), (128, 176), (144, 176)]),
-        ["city_fill"] = ("stages/city/tileset.png", [(64, 16), (64, 16), (64, 16), (16, 16)]),
-        ["city_window"] = ("stages/city/tileset.png", [(48, 16), (64, 16), (80, 16), (48, 32), (64, 32), (80, 32), (48, 48), (64, 48), (80, 48), (48, 64), (64, 64), (80, 64)]),
-        // Super Grotto Escape: brick crust, crust underside, mossy fill, small bricks, lava.
-        ["grotto_top"] = ("stages/grotto/tileset.png", [(16, 64), (32, 64), (48, 64), (64, 64)]),
-        ["grotto_face"] = ("stages/grotto/tileset.png", [(16, 80), (32, 80), (48, 80), (64, 80)]),
-        ["grotto_fill"] = ("stages/grotto/tileset.png", [(16, 112), (32, 112), (16, 128), (32, 128)]),
-        ["grotto_ledge"] = ("stages/grotto/tileset.png", [(64, 112), (80, 112), (96, 112)]),
-        ["grotto_lava"] = ("stages/grotto/tileset.png", [(96, 64), (96, 80)]),
-        // Warped City 2 deck and block pieces for the lab.
-        ["lab_top"] = ("stages/lab/tileset.png", [(0, 16), (16, 16), (32, 16), (48, 16)]),
-        ["lab_face"] = ("stages/lab/tileset.png", [(0, 32), (16, 32), (32, 32), (48, 32)]),
-        ["lab_fill"] = ("stages/lab/tileset.png", [(504, 80), (520, 80), (504, 96), (520, 96)]),
-    };
-
-    public static void AddAll(SpriteAtlasBuilder b, AssetCache content)
-    {
-        var cache = new Dictionary<string, PixelImage>();
-        foreach (var (name, (file, cells)) in Sets)
-        {
-            if (!cache.TryGetValue(file, out var sheet)) cache[file] = sheet = content.Image(file);
-            for (int i = 0; i < cells.Length; i++) b.Add($"tile_{name}{i}", sheet.Crop(cells[i].X, cells[i].Y, Size, Size));
-        }
-    }
 
     /// <summary>Picks the sprite for cell (x, y) of a stage layer, or null for empty cells.</summary>
     public static Sprite? For(Assets art, string theme, TileLayer layer, int x, int y)

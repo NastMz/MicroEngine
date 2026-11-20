@@ -1,0 +1,72 @@
+// Every sprite of Neon Rift that comes straight from a file: which image, how it is cut, where its anchor is and,
+// for the strips the game plays as they are, at what rate. Assets.cs adds the poses it derives from these in code.
+{
+  "sheets": [
+    // Hero (Warped City): every strip shares the 71x67 canvas and the feet anchor.
+    { "image": "hero/idle.png", "name": "hero_idle", "cell": [71, 67], "origin": [31, 66], "fps": 6 },
+    { "image": "hero/run.png", "name": "hero_run", "cell": [71, 67], "origin": [31, 66], "fps": 12 },
+    { "image": "hero/run-shoot.png", "name": "hero_run-shoot", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/jump.png", "name": "hero_jump", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/back-jump.png", "name": "hero_back-jump", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/crouch.png", "name": "hero_crouch", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/shoot.png", "name": "hero_shoot", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/hurt.png", "name": "hero_hurt", "cell": [71, 67], "origin": [31, 66] },
+    // Enemies, shots and effects.
+    { "image": "enemies/drone.png", "name": "drone", "cell": [55, 52], "origin": [27, 26], "fps": 12 },
+    { "image": "enemies/turret.png", "name": "turret", "cell": [25, 23], "origin": [12, 22] },
+    { "image": "enemies/trooper-idle.png", "name": "trooper_idle", "cell": [61, 64], "origin": [30, 63], "fps": 5 },
+    { "image": "enemies/trooper-run.png", "name": "trooper_run", "cell": [61, 64], "origin": [30, 63], "fps": 14 },
+    { "image": "enemies/egg-idle.png", "name": "egg_idle", "cell": [44, 62], "origin": [22, 61], "fps": 3 },
+    { "image": "enemies/egg-shoot.png", "name": "egg_shoot", "cell": [44, 62], "origin": [22, 61] },
+    { "image": "enemies/skiff.png", "name": "skiff", "cell": [29, 29], "origin": [14, 14], "fps": 10 },
+    { "image": "fx/enemy-bullet.png", "name": "enemy_bullet", "cell": [12, 12], "origin": [6, 6] },
+    { "image": "fx/explosion.png", "name": "explosion", "cell": [48, 48], "origin": [24, 24] },
+    { "image": "fx/explosion-big.png", "name": "explosion_big", "cell": [55, 52], "origin": [27, 26] },
+    { "image": "fx/shot.png", "name": "shot", "cell": [15, 11], "origin": [7, 5] },
+    { "image": "fx/shot-hit.png", "name": "shot_hit", "cell": [15, 11], "origin": [7, 5] },
+    { "image": "fx/bolt.png", "name": "bolt", "cell": [48, 32], "origin": [24, 16] },
+    { "image": "fx/charged.png", "name": "charged", "cell": [63, 48], "origin": [31, 24], "fps": 14 },
+    { "image": "fx/crossed.png", "name": "crossed", "cell": [32, 32], "origin": [16, 16] },
+    { "image": "fx/waveform.png", "name": "waveform", "cell": [95, 32], "origin": [47, 16] },
+    { "image": "fx/hit1.png", "name": "hit1", "cell": [32, 32], "origin": [16, 16] },
+    { "image": "fx/hit2.png", "name": "hit2", "cell": [32, 32], "origin": [16, 16] },
+    { "image": "fx/hit3.png", "name": "hit3", "cell": [32, 32], "origin": [16, 16] },
+    { "image": "fx/hit4.png", "name": "hit4", "cell": [32, 32], "origin": [16, 16] },
+    { "image": "fx/hit5.png", "name": "hit5", "cell": [32, 32], "origin": [16, 16] },
+    // Bosses.
+    { "image": "bosses/gunship.png", "name": "gunship", "cell": [176, 96], "origin": [88, 48], "fps": 10 },
+    { "image": "bosses/gunship-thrust.png", "name": "gunship_thrust", "cell": [48, 48], "origin": [24, 24], "fps": 14 },
+    { "image": "bosses/interceptor.png", "name": "interceptor", "cell": [176, 125], "origin": [88, 62], "fps": 10 },
+    { "image": "bosses/interceptor-thrust.png", "name": "interceptor_thrust", "cell": [81, 58], "origin": [40, 29], "fps": 14 },
+    { "image": "bosses/dreadnought.png", "name": "dreadnought", "cell": [329, 160], "origin": [164, 80], "fps": 8 },
+    { "image": "bosses/dreadnought-thrust-back.png", "name": "dread_thrust_back", "cell": [32, 47], "origin": [16, 23], "fps": 14 },
+    // Stage props stand on their bottom edge.
+    { "image": "stages/grotto/palm.png", "name": "prop_palm", "pivot": [0.5, 1] },
+    { "image": "stages/grotto/plant.png", "name": "prop_plant", "pivot": [0.5, 1] },
+    { "image": "stages/grotto/plant-big.png", "name": "prop_plant-big", "pivot": [0.5, 1] },
+    { "image": "stages/lab/tank-1.png", "name": "prop_tank-1", "pivot": [0.5, 1] },
+    { "image": "stages/lab/tank-2.png", "name": "prop_tank-2", "pivot": [0.5, 1] },
+    { "image": "stages/lab/tank-3.png", "name": "prop_tank-3", "pivot": [0.5, 1] },
+    { "image": "stages/lab/support.png", "name": "prop_support", "pivot": [0.5, 1] },
+    // Warped City rooftop: balcony ledge (L, M, M, R), dark wall, lit window column.
+    { "image": "stages/city/tileset.png", "strips": {
+      "tile_city_top": { "rects": [[96, 176, 16, 16], [112, 176, 16, 16], [128, 176, 16, 16], [144, 176, 16, 16]] },
+      "tile_city_fill": { "rects": [[64, 16, 16, 16], [64, 16, 16, 16], [64, 16, 16, 16], [16, 16, 16, 16]] },
+      "tile_city_window": { "rects": [[48, 16, 16, 16], [64, 16, 16, 16], [80, 16, 16, 16], [48, 32, 16, 16], [64, 32, 16, 16], [80, 32, 16, 16], [48, 48, 16, 16], [64, 48, 16, 16], [80, 48, 16, 16], [48, 64, 16, 16], [64, 64, 16, 16], [80, 64, 16, 16]] }
+    } },
+    // Super Grotto Escape: brick crust, crust underside, mossy fill, small bricks, lava.
+    { "image": "stages/grotto/tileset.png", "strips": {
+      "tile_grotto_top": { "rects": [[16, 64, 16, 16], [32, 64, 16, 16], [48, 64, 16, 16], [64, 64, 16, 16]] },
+      "tile_grotto_face": { "rects": [[16, 80, 16, 16], [32, 80, 16, 16], [48, 80, 16, 16], [64, 80, 16, 16]] },
+      "tile_grotto_fill": { "rects": [[16, 112, 16, 16], [32, 112, 16, 16], [16, 128, 16, 16], [32, 128, 16, 16]] },
+      "tile_grotto_ledge": { "rects": [[64, 112, 16, 16], [80, 112, 16, 16], [96, 112, 16, 16]] },
+      "tile_grotto_lava": { "rects": [[96, 64, 16, 16], [96, 80, 16, 16]] }
+    } },
+    // Warped City 2 deck and block pieces for the lab.
+    { "image": "stages/lab/tileset.png", "strips": {
+      "tile_lab_top": { "rects": [[0, 16, 16, 16], [16, 16, 16, 16], [32, 16, 16, 16], [48, 16, 16, 16]] },
+      "tile_lab_face": { "rects": [[0, 32, 16, 16], [16, 32, 16, 16], [32, 32, 16, 16], [48, 32, 16, 16]] },
+      "tile_lab_fill": { "rects": [[504, 80, 16, 16], [520, 80, 16, 16], [504, 96, 16, 16], [520, 96, 16, 16]] }
+    } }
+  ]
+}

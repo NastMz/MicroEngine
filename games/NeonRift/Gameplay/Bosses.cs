@@ -125,9 +125,9 @@ public sealed class Gunship : Boss
     {
         var at = Vector2.Round(DrawPosition);
         r.SetBlendMode(BlendMode.Additive);
-        r.DrawPivoted(art.Frames("gunship_thrust")[(int)(Age * 14) % 3], at + new Vector2(84, -6), 0, flipX: true);
+        r.DrawPivoted(art.Clip("gunship_thrust").FrameAt(Age), at + new Vector2(84, -6), 0, flipX: true);
         r.SetBlendMode(BlendMode.Alpha);
-        DrawFlashing(r, art.Frames("gunship")[(int)(Age * 10) % 3], at, true, Flash);
+        DrawFlashing(r, art.Clip("gunship").FrameAt(Age), at, true, Flash);
     }
 }
 
@@ -210,9 +210,9 @@ public sealed class Interceptor : Boss
         var at = Vector2.Round(DrawPosition);
         bool flip = _facing > 0;
         r.SetBlendMode(BlendMode.Additive);
-        r.DrawPivoted(art.Frames("interceptor_thrust")[(int)(Age * 14) % 3], at + new Vector2(flip ? -78 : 78, -2), 0, flipX: !flip);
+        r.DrawPivoted(art.Clip("interceptor_thrust").FrameAt(Age), at + new Vector2(flip ? -78 : 78, -2), 0, flipX: !flip);
         r.SetBlendMode(BlendMode.Alpha);
-        DrawFlashing(r, art.Frames("interceptor")[(int)(Age * 10) % 3], at, !flip, Flash);
+        DrawFlashing(r, art.Clip("interceptor").FrameAt(Age), at, !flip, Flash);
     }
 }
 
@@ -312,9 +312,9 @@ public sealed class Dreadnought : Boss
     {
         var at = Vector2.Round(DrawPosition);
         r.SetBlendMode(BlendMode.Additive);
-        r.DrawPivoted(art.Frames("dread_thrust_back")[(int)(Age * 14) % 3], at + new Vector2(170, -30), 0, flipX: true);
+        r.DrawPivoted(art.Clip("dread_thrust_back").FrameAt(Age), at + new Vector2(170, -30), 0, flipX: true);
         r.SetBlendMode(BlendMode.Alpha);
-        DrawFlashing(r, art.Frames("dreadnought")[(int)(Age * 8) % 3], at, true, Flash);
+        DrawFlashing(r, art.Clip("dreadnought").FrameAt(Age), at, true, Flash);
         if (CoreOpen)
         {
             // The exposed core pulses red so the new weak point is unmistakable.

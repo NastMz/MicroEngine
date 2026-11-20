@@ -38,9 +38,8 @@ public sealed class MainGame : Game
     #region load
     protected override void Load()
     {
-        var content = new ContentFolder();
         Sprites = new SpriteAtlasBuilder()
-            .AddGrid("hero", content.Image("hero.png"), 16, 16, origin: new Vector2(8, 16))
+            .AddSheet(Assets.Sheet("hero.sheet"))
             .Add("grass", GardenArt.Grass())
             .Build(Graphics);
 

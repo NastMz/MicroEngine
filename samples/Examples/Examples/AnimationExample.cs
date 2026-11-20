@@ -10,22 +10,17 @@ namespace Examples;
 public sealed class AnimationExample : Scene
 {
     #region setup
-    private SpriteAtlas _atlas = null!;
-    private readonly Animator _animator = new();
+    private AssetCache _assets = null!;
+    private Animator _animator = null!;
 
     public override void Enter()
     {
-        _atlas = new SpriteAtlasBuilder()
-            .AddGrid("hero", new ContentFolder().Image("hero.png"), 16, 16, origin: new Vector2(8, 16))
-            .Build(Game.Graphics);
-        var frames = _atlas.Frames("hero");
-        _animator
-            .Add("walk", new AnimationClip(frames, framesPerSecond: 8))                   // loops
-            .Add("hop", new AnimationClip([frames[1], frames[3], frames[1]], 6, loop: false)); // plays once
-        _animator.Play("walk");
+        // Content/animation.sheet cuts hero.png into frames and names two clips: "walk" loops, "hop" plays once.
+        _assets = Assets.CreateScope("animation");
+        _animator = _assets.Atlas("animation.sheet").CreateAnimator("walk");
     }
 
-    public override void Exit() => _atlas.Dispose();
+    public override void Exit() => _assets.Dispose();
     #endregion
 
     #region update
