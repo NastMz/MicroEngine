@@ -77,7 +77,8 @@ public sealed class ArchitectureTests
         // The 3D path: the graphics contract, content (the mesh asset kind) and the scene world it draws.
         ["MicroEngine.Graphics3D"] = [Graphics, Content, Scene, Kernel, Platform],
         [Desktop] = [Core, Sdl, Raylib, Hosting, Kernel, Platform],
-        [Cli] = [Core, Kernel],
+        // The tool reads content as a game does (`microengine content`), Aseprite files included.
+        [Cli] = [Core, Kernel, Aseprite],
     };
 
     private static string Repository()
