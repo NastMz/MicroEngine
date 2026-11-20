@@ -269,7 +269,7 @@ async function platform(browser, label, game) {
   check(`${name}: plays again without reloading`, restarted > 30 && (await run.page.evaluate(() => window.microengine.state)) !== 'failed', `${restarted} updates`);
   check(`${name}: no page errors`, errors.length + run.errors.length === 0, [...errors, ...run.errors].join(' | ').slice(0, 300));
   const keys = await run.page.evaluate(() => Object.keys(localStorage));
-  check(`${name}: saves stay in the game's own namespace`, keys.every(k => k.startsWith(`microengine/${game}/`)), keys.join(', '));
+  check(`${name}: saves stay in the game's own namespace`, keys.every(k => k.startsWith(`microengine/${game}/`) || k.startsWith(`microengine.time/${game}/`)), keys.join(', '));
   await context.close();
 }
 
