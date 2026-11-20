@@ -32,6 +32,12 @@ public readonly record struct BodyDescription(BodyKind Kind, Vector2 Position)
     /// </summary>
     public bool PushesBodies { get; init; }
 
+    /// <summary>
+    /// How the solver treats a dynamic body: damping, gravity scale, fixed rotation, sleep. Anything but the defaults
+    /// needs <see cref="PhysicsCapabilities.DynamicBodies"/>.
+    /// </summary>
+    public BodyDynamics Dynamics { get; init; }
+
     /// <summary>A static body at <paramref name="position"/>.</summary>
     public static BodyDescription Static(Vector2 position = default) => new(BodyKind.Static, position);
     /// <summary>A kinematic body at <paramref name="position"/>.</summary>
@@ -44,7 +50,8 @@ public readonly record struct BodyDescription(BodyKind Kind, Vector2 Position)
         (Kind == BodyKind.Dynamic ? PhysicsCapabilities.DynamicBodies : 0)
         | (Rotation != 0 ? PhysicsCapabilities.Rotation : 0)
         | (Bullet ? PhysicsCapabilities.ContinuousCollision : 0)
-        | (PushesBodies ? PhysicsCapabilities.MovingSolids : 0);
+        | (PushesBodies ? PhysicsCapabilities.MovingSolids : 0)
+        | (Dynamics != default ? PhysicsCapabilities.DynamicBodies : 0);
 
     /// <summary>Throws when the description is invalid whatever the backend declares.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The kind is undefined, or the position or rotation is not finite.</exception>
@@ -55,6 +62,47 @@ public readonly record struct BodyDescription(BodyKind Kind, Vector2 Position)
         if (!float.IsFinite(Position.X) || !float.IsFinite(Position.Y)) throw new ArgumentOutOfRangeException(nameof(Position), Position, "The position must be finite.");
         if (!float.IsFinite(Rotation)) throw new ArgumentOutOfRangeException(nameof(Rotation), Rotation, "The rotation must be finite.");
         if (PushesBodies && Kind != BodyKind.Kinematic) throw new ArgumentException("Only a kinematic body can push bodies.", nameof(PushesBodies));
+        Dynamics.Validate();
+    }
+}
+
+/// <summary>
+/// How the solver treats a dynamic body (<see cref="BodyDescription.Dynamics"/>,
+/// <see cref="IPhysicsWorld2D.SetDynamics"/>). <c>default</c> is the default body: no damping, full gravity, free to
+/// rotate, allowed to sleep.
+/// </summary>
+public readonly record struct BodyDynamics
+{
+    // Stored relative to the defaults, so default(BodyDynamics) is the default body.
+    private readonly float _gravityScale;
+    private readonly bool _noSleep;
+
+    /// <summary>How fast the linear velocity decays, per second (0: never); for drag and top-down bodies.</summary>
+    public float LinearDamping { get; init; }
+    /// <summary>How fast the angular velocity decays, per second (0: never).</summary>
+    public float AngularDamping { get; init; }
+    /// <summary>The share of the world's gravity the body feels: 1 by default, 0 floats, negative rises.</summary>
+    public float GravityScale
+    {
+        get => _gravityScale + 1;
+        init => _gravityScale = value - 1;
+    }
+    /// <summary>Whether the body never rotates (a character made of a dynamic body, a crate that must stay upright).</summary>
+    public bool FixedRotation { get; init; }
+    /// <summary>Whether the body may fall asleep when it rests (true by default); a sleeping body costs nothing until something touches it.</summary>
+    public bool AllowSleep
+    {
+        get => !_noSleep;
+        init => _noSleep = !value;
+    }
+
+    /// <summary>Throws when a value is out of range.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A damping that is negative or not finite, or a gravity scale that is not finite.</exception>
+    public void Validate()
+    {
+        if (!(LinearDamping >= 0) || float.IsInfinity(LinearDamping)) throw new ArgumentOutOfRangeException(nameof(LinearDamping), LinearDamping, "Damping must be finite and zero or more.");
+        if (!(AngularDamping >= 0) || float.IsInfinity(AngularDamping)) throw new ArgumentOutOfRangeException(nameof(AngularDamping), AngularDamping, "Damping must be finite and zero or more.");
+        if (!float.IsFinite(GravityScale)) throw new ArgumentOutOfRangeException(nameof(GravityScale), GravityScale, "The gravity scale must be finite.");
     }
 }
 

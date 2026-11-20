@@ -82,6 +82,7 @@ export const rules = [
   // The physics substitution sample: its gameplay code is what the Box2D check's scenario tests run on both backends.
   // Also copied and run from the packages by sdk/tests/external.mjs (evidence.mjs: sdkSamples).
   { pattern: /^samples\/PhysicsSubstitution\//, checks: ['dotnet', 'sdk', 'box2d'], why: 'physics substitution sample (Box2D scenario tests, SDK external project)' },
+  { pattern: /^samples\/PhysicsPlayground\//, checks: ['dotnet', 'box2d'], why: 'physics playground sample (joints and dynamics on Box2D)' },
   // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
   { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },

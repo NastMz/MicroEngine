@@ -7,8 +7,9 @@ namespace PhysicsSubstitution;
 
 /// <summary>
 /// The gameplay code of the sample: a platformer hero over a tile level, written against the common contract of
-/// <see cref="IPhysicsWorld2D"/> only (static and kinematic bodies, boxes, layers, one-way platforms, collide-and-slide,
-/// sensors). It never asks which backend it runs on: that is decided where the world is made.
+/// <see cref="IPhysicsWorld2D"/> only (static and kinematic bodies, boxes, layers, one-way platforms, sensors) and
+/// moved by the engine's <see cref="CharacterController2D"/>. It never asks which backend it runs on: that is decided
+/// where the world is made.
 /// </summary>
 public sealed class Platformer
 {
@@ -36,7 +37,7 @@ public sealed class Platformer
     public static readonly EntityId LevelOwner = new(1, 1), HeroOwner = new(2, 1), CoinOwner = new(3, 1), GoalOwner = new(4, 1);
 
     private readonly IPhysicsWorld2D _world;
-    private Vector2 _velocity;
+    private readonly CharacterController2D _hero;
 
     /// <summary>Builds the level and the hero in <paramref name="world"/>.</summary>
     public Platformer(IPhysicsWorld2D world)
@@ -63,8 +64,15 @@ public sealed class Platformer
                     break;
             }
         }
+        #region hero
+        // The hero is in its own layer: sensors of the pickup layer see it, and only the level blocks it.
         Hero = world.CreateBody(HeroOwner, BodyDescription.Kinematic(Start));
         HeroShape = world.AddShape(Hero, ShapeDescription.Box(HeroSize).InLayers(HeroLayer, LevelLayer | PickupLayer));
+        _hero = new CharacterController2D(world, Hero, new CharacterMotion { Gravity = Gravity, MaxFallSpeed = MaxFall, MoveSpeed = RunSpeed, JumpSpeed = JumpSpeed })
+        {
+            Filter = new QueryFilter(HeroLayer, LevelLayer),
+        };
+        #endregion
     }
 
     /// <summary>
@@ -111,16 +119,11 @@ public sealed class Platformer
     public long GoalStep { get; private set; } = -1;
     public Vector2 Position => _world.PositionOf(Hero);
 
-    /// <summary>One fixed step of play: run (-1, 0 or 1), jump when on ground, drop through one-way platforms.</summary>
+    #region step
+    /// <summary>One fixed step of play: run (-1, 0 or 1), jump, drop through one-way platforms; then the world steps and reports its sensors.</summary>
     public void Step(float dt, int run, bool jump = false, bool drop = false)
     {
-        var up = _world.Up;
-        float rise = MathF.Max(Vector2.Dot(_velocity, up) - Gravity * dt, -MaxFall);
-        if (jump && Last.OnGround) rise = JumpSpeed;
-        _velocity = new Vector2(run * RunSpeed, 0) + up * rise;
-        Last = _world.Move(Hero, _velocity * dt, new QueryFilter(HeroLayer, LevelLayer) { PassOneWay = drop });
-        float vertical = Vector2.Dot(_velocity, up);
-        if ((Last.OnGround && vertical < 0) || (Last.HitCeiling && vertical > 0)) _velocity = new Vector2(_velocity.X, 0);
+        Last = _hero.Step(dt, new CharacterInput(run, JumpPressed: jump, JumpHeld: true, Drop: drop));
         _world.Step(dt);
         foreach (var e in _world.SensorEvents)
         {
@@ -129,6 +132,7 @@ public sealed class Platformer
             else if (!Collected.Exists(c => c.Coin == e.Sensor)) Collected.Add((e.Sensor, _world.StepCount));
         }
     }
+    #endregion
 
     /// <summary>What the hero did in each part of <see cref="Play"/>: where it ended and its last move.</summary>
     public List<(string Part, Vector2 Position, MoveResult Move)> Parts { get; } = [];

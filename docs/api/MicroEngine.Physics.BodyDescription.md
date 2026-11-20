@@ -50,6 +50,19 @@ public bool Bullet { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Physics_BodyDescription_Dynamics"></a> Dynamics
+
+How the solver treats a dynamic body: damping, gravity scale, fixed rotation, sleep. Anything but the defaults
+needs [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+```csharp
+public BodyDynamics Dynamics { get; init; }
+```
+
+#### Property Value
+
+ [BodyDynamics](MicroEngine.Physics.BodyDynamics.md)
+
 ### <a id="MicroEngine_Physics_BodyDescription_Kind"></a> Kind
 
 How the body moves.

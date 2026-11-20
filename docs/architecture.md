@@ -187,16 +187,20 @@ references it (the architecture test checks both).
 Physics is two more assemblies of the
 `MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies
 owned by entities, box shapes with collision layers, collide-and-slide moves that return their contacts, exact ray and
-overlap queries, sensors with buffered events, declared `PhysicsCapabilities` with a typed error for anything a backend
-does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase and writes body poses to transforms.
+overlap queries, sensors with buffered events, forces and impulses, joints, declared `PhysicsCapabilities` with a typed
+error for anything a backend does not declare, the character controllers (`CharacterController2D`,
+`TopDownController2D`) written over the contract so they run on every backend, and `PhysicsModule`, which steps
+worlds outside scenes. A scene's own world is `Scene.Physics`, a scene system of the core: created on first use from
+the game's backend, stepped after the scene's update on its clock, hashed and disposed with it.
 `MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D` (its broad phase files box shapes in a
 `SpatialIndex2D` of the scene assembly), and now holds the tile types (`TileLayer`,
-`TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
-`TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
+`TileGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace (`TileFlags` and `ICollisionGrid`,
+which the contract's tile geometry names, are in the contract assembly);
+`TileRenderer` stays in the core because it draws ([Physics](manual/physics.md)).
 `MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; an optional package of its own) is the
 second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
 across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
-its package ([The Box2D backend](manual/world.md#the-box2d-backend)).
+its package ([Choosing a backend](manual/physics.md#choosing-a-backend)).
 
 Saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds

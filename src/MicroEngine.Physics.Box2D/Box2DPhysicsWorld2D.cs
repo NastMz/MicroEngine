@@ -10,9 +10,9 @@ namespace MicroEngine.Physics.Box2D;
 /// The Box2D v3 backend of <see cref="IPhysicsWorld2D"/>: native Box2D (the release its native layer pins) behind the
 /// engine's flat C layer, so no Box2D type reaches the game. It passes the common contract and declares
 /// <see cref="Declared"/>: dynamic bodies, rotation, circles, capsules, convex polygons, continuous collision,
-/// friction and restitution, mass properties and one-way platforms. It declares neither
+/// friction and restitution, mass properties, one-way platforms and joints. It declares neither
 /// <see cref="PhysicsCapabilities.TileGeometry"/> (build tile levels from boxes) nor
-/// <see cref="PhysicsCapabilities.MovingSolids"/> nor <see cref="PhysicsCapabilities.Joints"/>.
+/// <see cref="PhysicsCapabilities.MovingSolids"/>.
 /// </summary>
 /// <remarks>
 /// <para>Units: Box2D works in metres with y up; <see cref="Box2DWorldOptions"/> maps the game's units onto them
@@ -38,7 +38,8 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     public const PhysicsCapabilities Declared = PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation
         | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules | PhysicsCapabilities.Polygons
         | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
-        | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection;
+        | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
+        | PhysicsCapabilities.Joints;
 
     /// <summary>The most vertices a polygon may have (Box2D's limit).</summary>
     public const int MaxPolygonVertices = 8;
@@ -53,6 +54,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         public EntityId Owner;
         public BodyKind Kind;
         public int Native;
+        public bool Tuned; // its dynamics were set: they are hashed
         public readonly List<int> Shapes = [];
     }
 
@@ -65,10 +67,22 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         public int Native;
     }
 
+    private sealed class Joint
+    {
+        public uint Generation;
+        public bool Alive;
+        public int Native;
+        public JointDescription Description;
+    }
+
     private readonly record struct Pair(ShapeId A, ShapeId B, EntityId OwnerA, EntityId OwnerB);
 
     // Worlds the garbage collector found undisposed: destroyed on the next creation or disposal, on the game's thread.
     private static readonly ConcurrentQueue<nint> s_abandoned = new();
+
+    // Box2D keeps its worlds in one table that it does not guard: creating or destroying two worlds at the same time
+    // from different threads corrupts it. Everything else belongs to one world.
+    private static readonly Lock s_table = new();
 
     private nint _world;
     private readonly float _unitsPerMeter;
@@ -87,6 +101,11 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private readonly List<SensorEvent> _sensorEvents = [];
     private readonly List<ContactEvent> _contactEvents = [];
     private int[] _overlap = new int[64];
+    private readonly List<Joint> _jointSlots = [];
+    private readonly Stack<int> _freeJoints = new();
+    private JointId[] _liveJoints = new JointId[8];
+    private int _liveJointCount;
+    private readonly List<JointId> _brokenJoints = [];
 
     /// <summary>Creates an empty world.</summary>
     /// <exception cref="ArgumentOutOfRangeException">An option is out of range (<see cref="Box2DWorldOptions.Validate"/>).</exception>
@@ -105,15 +124,13 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         Up = new Vector2(0, _ySign);
         Skin = Native.me_move_skin() * _unitsPerMeter;
         var gravity = options.Gravity is { } g ? ToMeters(g) : new Vector2(0, -9.81f);
-        DestroyAbandoned();
-        _world = Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+        _world = Create(gravity, options);
         if (_world == 0)
         {
             // Box2D's table is full: release the worlds nobody disposed, then try once more.
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            DestroyAbandoned();
-            _world = Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+            _world = Create(gravity, options);
         }
         if (_world == 0) throw new InvalidOperationException("Box2D already holds its maximum of 128 worlds: dispose the worlds you no longer use.");
     }
@@ -124,6 +141,16 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (_world != 0) s_abandoned.Enqueue(_world);
     }
 
+    private static nint Create(Vector2 gravity, Box2DWorldOptions options)
+    {
+        lock (s_table)
+        {
+            DestroyAbandoned();
+            return Native.me_world_create(gravity.X, gravity.Y, options.SubSteps, options.EnableSleep ? 1 : 0);
+        }
+    }
+
+    // Called with s_table held.
     private static void DestroyAbandoned()
     {
         while (s_abandoned.TryDequeue(out var world)) Native.me_world_destroy(world);
@@ -212,7 +239,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         b.Owner = owner;
         b.Kind = body.Kind;
         b.Native = native;
+        b.Tuned = false;
         b.Shapes.Clear();
+        if (body.Dynamics != default) Apply(b, body.Dynamics);
         var id = new BodyId((uint)slot, b.Generation);
         if (_liveCount == _live.Length) Array.Resize(ref _live, _live.Length * 2);
         _live[_liveCount++] = id;
@@ -226,6 +255,12 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         var b = _bodySlots[(int)body.Index];
         foreach (int s in b.Shapes) Forget(s);
         b.Shapes.Clear();
+        // The body's joints go with it (the native layer destroys them with the body).
+        for (int i = _liveJointCount - 1; i >= 0; i--)
+        {
+            var d = _jointSlots[(int)_liveJoints[i].Index].Description;
+            if (d.BodyB == body || (d.Kind != JointKind.Target && d.BodyA == body)) Forget(_liveJoints[i]);
+        }
         Native.me_body_destroy(World, b.Native);
         b.Alive = false;
         int at = Array.IndexOf(_live, body, 0, _liveCount);
@@ -291,14 +326,358 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         Native.me_body_set_velocity(World, b.Native, v.X, v.Y);
     }
 
+    // ------------------------------------------------------------------ dynamics
+
+    private Body Dynamic(BodyId body, string what)
+    {
+        var b = Resolve(body);
+        if (b.Kind != BodyKind.Dynamic) throw new InvalidOperationException($"Only dynamic bodies take {what}: {body} is {b.Kind}.");
+        return b;
+    }
+
+    private static void Finite(Vector2 value, string name)
+    {
+        if (!float.IsFinite(value.X) || !float.IsFinite(value.Y)) throw new ArgumentOutOfRangeException(name, value, "The value must be finite.");
+    }
+
+    private static void Finite(float value, string name)
+    {
+        if (!float.IsFinite(value)) throw new ArgumentOutOfRangeException(name, value, "The value must be finite.");
+    }
+
+    /// <inheritdoc/>
+    public void SetRotation(BodyId body, float radians)
+    {
+        Finite(radians, nameof(radians));
+        Native.me_body_set_rotation(World, Resolve(body).Native, radians * _ySign);
+    }
+
+    /// <inheritdoc/>
+    public float AngularVelocityOf(BodyId body)
+    {
+        float* s = stackalloc float[6];
+        State(Resolve(body), s);
+        return s[5] * _ySign;
+    }
+
+    /// <inheritdoc/>
+    public void SetAngularVelocity(BodyId body, float radiansPerSecond)
+    {
+        Finite(radiansPerSecond, nameof(radiansPerSecond));
+        Native.me_body_set_angular_velocity(World, Dynamic(body, "an angular velocity").Native, radiansPerSecond * _ySign);
+    }
+
+    /// <inheritdoc/>
+    public void ApplyForce(BodyId body, Vector2 force, bool wake = true) => Apply(body, 0, force, default, false, wake, "forces");
+    /// <inheritdoc/>
+    public void ApplyForce(BodyId body, Vector2 force, Vector2 point, bool wake = true) => Apply(body, 0, force, point, true, wake, "forces");
+    /// <inheritdoc/>
+    public void ApplyImpulse(BodyId body, Vector2 impulse, bool wake = true) => Apply(body, 1, impulse, default, false, wake, "impulses");
+    /// <inheritdoc/>
+    public void ApplyImpulse(BodyId body, Vector2 impulse, Vector2 point, bool wake = true) => Apply(body, 1, impulse, point, true, wake, "impulses");
+
+    private void Apply(BodyId body, int kind, Vector2 value, Vector2 point, bool atPoint, bool wake, string what)
+    {
+        var b = Dynamic(body, what);
+        Finite(value, nameof(value));
+        Finite(point, nameof(point));
+        var v = ToMeters(value);
+        var p = ToMeters(point);
+        Native.me_body_apply(World, b.Native, kind, v.X, v.Y, p.X, p.Y, atPoint ? 1 : 0, wake ? 1 : 0);
+    }
+
+    /// <inheritdoc/>
+    public void ApplyTorque(BodyId body, float torque, bool wake = true) => ApplyAngular(body, 0, torque, wake, "torque");
+    /// <inheritdoc/>
+    public void ApplyAngularImpulse(BodyId body, float impulse, bool wake = true) => ApplyAngular(body, 1, impulse, wake, "angular impulses");
+
+    private void ApplyAngular(BodyId body, int kind, float value, bool wake, string what)
+    {
+        var b = Dynamic(body, what);
+        Finite(value, nameof(value));
+        Native.me_body_apply_angular(World, b.Native, kind, value * _ySign / (_unitsPerMeter * _unitsPerMeter), wake ? 1 : 0);
+    }
+
+    /// <inheritdoc/>
+    public BodyDynamics DynamicsOf(BodyId body)
+    {
+        float* d = stackalloc float[5];
+        Native.me_body_get_dynamics(World, Resolve(body).Native, d);
+        return new BodyDynamics { LinearDamping = d[0], AngularDamping = d[1], GravityScale = d[2], FixedRotation = d[3] != 0, AllowSleep = d[4] != 0 };
+    }
+
+    /// <inheritdoc/>
+    public void SetDynamics(BodyId body, in BodyDynamics dynamics)
+    {
+        dynamics.Validate();
+        Apply(Resolve(body), dynamics);
+    }
+
+    private void Apply(Body b, in BodyDynamics dynamics)
+    {
+        float* d = stackalloc float[5];
+        d[0] = dynamics.LinearDamping;
+        d[1] = dynamics.AngularDamping;
+        d[2] = dynamics.GravityScale;
+        d[3] = dynamics.FixedRotation ? 1 : 0;
+        d[4] = dynamics.AllowSleep ? 1 : 0;
+        Native.me_body_set_dynamics(World, b.Native, d);
+        b.Tuned = true;
+    }
+
+    /// <inheritdoc/>
+    public bool IsAwake(BodyId body) => Native.me_body_is_awake(World, Resolve(body).Native) != 0;
+    /// <inheritdoc/>
+    public void SetAwake(BodyId body, bool awake) => Native.me_body_set_awake(World, Resolve(body).Native, awake ? 1 : 0);
+
     /// <summary>A dynamic body's mass in kilograms, from its shapes' densities (kilograms per square metre); 0 for other bodies.</summary>
     /// <exception cref="InvalidOperationException">The id is stale.</exception>
     public float MassOf(BodyId body) => Native.me_body_mass(World, Resolve(body).Native);
+
+    /// <inheritdoc/>
+    public Vector2 CenterOfMassOf(BodyId body)
+    {
+        float* m = stackalloc float[4];
+        Native.me_body_mass_data(World, Resolve(body).Native, m);
+        return FromMeters(m[1], m[2]);
+    }
+
+    /// <summary>A dynamic body's rotational inertia about its centre of mass, in kilograms × world units squared; 0 for other bodies.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    public float InertiaOf(BodyId body)
+    {
+        float* m = stackalloc float[4];
+        Native.me_body_mass_data(World, Resolve(body).Native, m);
+        return m[3] * _unitsPerMeter * _unitsPerMeter;
+    }
 
     private Body Resolve(BodyId body)
     {
         if (!IsAlive(body)) throw new InvalidOperationException($"{body} is not a live body of this world (destroyed, stale or none).");
         return _bodySlots[(int)body.Index];
+    }
+
+    // ------------------------------------------------------------------ joints
+
+    /// <inheritdoc/>
+    public ReadOnlySpan<JointId> Joints => _liveJoints.AsSpan(0, _liveJointCount);
+    /// <inheritdoc/>
+    public ReadOnlySpan<JointId> BrokenJoints => CollectionsMarshal.AsSpan(_brokenJoints);
+
+    /// <inheritdoc/>
+    public bool IsAlive(JointId joint) =>
+        joint.Generation != 0 && joint.Index < (uint)_jointSlots.Count && _jointSlots[(int)joint.Index] is { Alive: true } j && j.Generation == joint.Generation;
+
+    private Joint Resolve(JointId joint)
+    {
+        if (!IsAlive(joint)) throw new InvalidOperationException($"{joint} is not a live joint of this world (destroyed, broken, stale or none).");
+        return _jointSlots[(int)joint.Index];
+    }
+
+    /// <summary>Whether the joint's limit and coordinate are angles (and so turn with the world's y direction).</summary>
+    private static bool AngularLimit(JointKind kind) => kind == JointKind.Revolute;
+    /// <summary>Whether the joint's motor is a torque that turns at radians per second.</summary>
+    private static bool AngularMotor(JointKind kind) => kind is JointKind.Revolute or JointKind.Wheel;
+
+    private void NativeLimit(JointKind kind, float lower, float upper, out float nativeLower, out float nativeUpper)
+    {
+        if (!AngularLimit(kind)) (nativeLower, nativeUpper) = (Meters(lower), Meters(upper));
+        else if (_ySign < 0) (nativeLower, nativeUpper) = (-upper, -lower);
+        else (nativeLower, nativeUpper) = (lower, upper);
+    }
+
+    private float NativeMotorSpeed(JointKind kind, float speed) => AngularMotor(kind) ? speed * _ySign : Meters(speed);
+    private float NativeMotorForce(JointKind kind, float force) => AngularMotor(kind) ? force / (_unitsPerMeter * _unitsPerMeter) : force / _unitsPerMeter;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Lengths, speeds, forces and torques are in world units (<see cref="Box2DWorldOptions.UnitsPerMeter"/>); a target
+    /// joint is Box2D's motor joint with a linear spring.
+    /// </remarks>
+    public JointId CreateJoint(in JointDescription joint)
+    {
+        joint.Validate();
+        var world = World;
+        var b = Resolve(joint.BodyB);
+        int nativeA = joint.Kind == JointKind.Target ? -1 : Resolve(joint.BodyA).Native;
+        float* p = stackalloc float[17];
+        var anchorA = ToMeters(joint.Kind == JointKind.Target ? joint.TargetPoint : joint.AnchorA);
+        var anchorB = ToMeters(joint.AnchorB);
+        var axis = Direction(joint.Axis.X, joint.Axis.Y);
+        NativeLimit(joint.Kind, joint.Lower, joint.Upper, out float lower, out float upper);
+        p[0] = anchorA.X; p[1] = anchorA.Y; p[2] = anchorB.X; p[3] = anchorB.Y;
+        p[4] = axis.X; p[5] = axis.Y;
+        p[6] = joint.EnableLimit ? 1 : 0; p[7] = lower; p[8] = upper;
+        p[9] = joint.EnableMotor ? 1 : 0; p[10] = NativeMotorSpeed(joint.Kind, joint.MotorSpeed); p[11] = NativeMotorForce(joint.Kind, joint.MaxMotorForce);
+        p[12] = joint.EnableSpring ? 1 : 0; p[13] = joint.Hertz; p[14] = joint.DampingRatio;
+        p[15] = joint.Length < 0 ? -1 : Meters(joint.Length);
+        p[16] = joint.MaxForce / _unitsPerMeter;
+        int native = Native.me_joint_create(world, (int)joint.Kind, nativeA, b.Native, p, joint.CollideConnected ? 1 : 0);
+        if (native < 0) throw new InvalidOperationException("Box2D could not create the joint.");
+        var description = joint;
+        if (joint.Kind == JointKind.Distance && joint.Length < 0)
+        {
+            float* state = stackalloc float[8];
+            Native.me_joint_state(world, native, state);
+            description = joint with { Length = state[7] * _unitsPerMeter };
+        }
+        int slot;
+        if (_freeJoints.Count > 0) slot = _freeJoints.Pop();
+        else
+        {
+            slot = _jointSlots.Count;
+            _jointSlots.Add(new Joint());
+        }
+        var j = _jointSlots[slot];
+        j.Generation++;
+        j.Alive = true;
+        j.Native = native;
+        j.Description = description;
+        var id = new JointId((uint)slot, j.Generation);
+        if (_liveJointCount == _liveJoints.Length) Array.Resize(ref _liveJoints, _liveJoints.Length * 2);
+        _liveJoints[_liveJointCount++] = id;
+        return id;
+    }
+
+    /// <inheritdoc/>
+    public void DestroyJoint(JointId joint)
+    {
+        if (!IsAlive(joint)) return;
+        Native.me_joint_destroy(World, _jointSlots[(int)joint.Index].Native);
+        Forget(joint);
+    }
+
+    /// <summary>Marks a joint dead and gives its slot back.</summary>
+    private void Forget(JointId joint)
+    {
+        _jointSlots[(int)joint.Index].Alive = false;
+        int at = Array.IndexOf(_liveJoints, joint, 0, _liveJointCount);
+        Array.Copy(_liveJoints, at + 1, _liveJoints, at, _liveJointCount - at - 1);
+        _liveJointCount--;
+        _freeJoints.Push((int)joint.Index);
+    }
+
+    /// <inheritdoc/>
+    public JointDescription DescriptionOf(JointId joint) => Resolve(joint).Description;
+
+    /// <inheritdoc/>
+    public Vector2 AnchorAOf(JointId joint)
+    {
+        float* s = stackalloc float[8];
+        Native.me_joint_state(World, Resolve(joint).Native, s);
+        return FromMeters(s[0], s[1]);
+    }
+
+    /// <inheritdoc/>
+    public Vector2 AnchorBOf(JointId joint)
+    {
+        float* s = stackalloc float[8];
+        Native.me_joint_state(World, Resolve(joint).Native, s);
+        return FromMeters(s[2], s[3]);
+    }
+
+    /// <inheritdoc/>
+    public Vector2 ReactionForceOf(JointId joint)
+    {
+        float* s = stackalloc float[8];
+        Native.me_joint_state(World, Resolve(joint).Native, s);
+        return FromMeters(s[4], s[5]);
+    }
+
+    /// <inheritdoc/>
+    public float ReactionTorqueOf(JointId joint)
+    {
+        float* s = stackalloc float[8];
+        Native.me_joint_state(World, Resolve(joint).Native, s);
+        return s[6] * _ySign * _unitsPerMeter * _unitsPerMeter;
+    }
+
+    /// <inheritdoc/>
+    public float JointCoordinateOf(JointId joint)
+    {
+        var j = Resolve(joint);
+        float* s = stackalloc float[8];
+        Native.me_joint_state(World, j.Native, s);
+        return j.Description.Kind switch
+        {
+            JointKind.Revolute => s[7] * _ySign,
+            JointKind.Distance or JointKind.Prismatic => s[7] * _unitsPerMeter,
+            _ => 0,
+        };
+    }
+
+    /// <inheritdoc/>
+    public void SetJointLimit(JointId joint, bool enabled, float lower, float upper)
+    {
+        var j = Resolve(joint);
+        var kind = j.Description.Kind;
+        if (kind is JointKind.Weld or JointKind.Target) throw new InvalidOperationException($"A {kind} joint has no limit.");
+        JointDescription.ValidateLimit(lower, upper);
+        NativeLimit(kind, lower, upper, out float nativeLower, out float nativeUpper);
+        Native.me_joint_set_limit(World, j.Native, enabled ? 1 : 0, nativeLower, nativeUpper);
+        j.Description = j.Description with { EnableLimit = enabled, Lower = lower, Upper = upper };
+    }
+
+    /// <inheritdoc/>
+    public void SetJointMotor(JointId joint, bool enabled, float speed, float maxForce)
+    {
+        var j = Resolve(joint);
+        var kind = j.Description.Kind;
+        if (kind is JointKind.Weld or JointKind.Target) throw new InvalidOperationException($"A {kind} joint has no motor.");
+        Finite(speed, nameof(speed));
+        if (!(maxForce >= 0)) throw new ArgumentOutOfRangeException(nameof(maxForce), maxForce, "The value must be zero or more.");
+        Native.me_joint_set_motor(World, j.Native, enabled ? 1 : 0, NativeMotorSpeed(kind, speed), NativeMotorForce(kind, maxForce));
+        j.Description = j.Description with { EnableMotor = enabled, MotorSpeed = speed, MaxMotorForce = maxForce };
+    }
+
+    /// <inheritdoc/>
+    public void SetJointSpring(JointId joint, bool enabled, float hertz, float dampingRatio)
+    {
+        var j = Resolve(joint);
+        if (!(hertz >= 0)) throw new ArgumentOutOfRangeException(nameof(hertz), hertz, "The value must be zero or more.");
+        if (!(dampingRatio >= 0)) throw new ArgumentOutOfRangeException(nameof(dampingRatio), dampingRatio, "The value must be zero or more.");
+        Native.me_joint_set_spring(World, j.Native, enabled ? 1 : 0, hertz, dampingRatio);
+        j.Description = j.Description with { EnableSpring = enabled, Hertz = hertz, DampingRatio = dampingRatio };
+    }
+
+    /// <inheritdoc/>
+    public void SetJointTarget(JointId joint, Vector2 target)
+    {
+        var j = Resolve(joint);
+        if (j.Description.Kind != JointKind.Target) throw new InvalidOperationException($"Only a target joint has a target: {joint} is a {j.Description.Kind} joint.");
+        Finite(target, nameof(target));
+        var t = ToMeters(target);
+        Native.me_joint_set_target(World, j.Native, t.X, t.Y);
+        j.Description = j.Description with { TargetPoint = target };
+    }
+
+    /// <inheritdoc/>
+    public void SetJointLength(JointId joint, float length)
+    {
+        var j = Resolve(joint);
+        if (j.Description.Kind != JointKind.Distance) throw new InvalidOperationException($"Only a distance joint has a length: {joint} is a {j.Description.Kind} joint.");
+        if (!(length >= 0) || float.IsInfinity(length)) throw new ArgumentOutOfRangeException(nameof(length), length, "The length must be finite and zero or more.");
+        Native.me_joint_set_length(World, j.Native, Meters(length));
+        j.Description = j.Description with { Length = length };
+    }
+
+    /// <summary>Destroys the joints whose reaction force passed their break force in the step that just ran.</summary>
+    private void BreakJoints(nint world)
+    {
+        _brokenJoints.Clear();
+        float* s = stackalloc float[8];
+        for (int i = _liveJointCount - 1; i >= 0; i--)
+        {
+            var id = _liveJoints[i];
+            var j = _jointSlots[(int)id.Index];
+            if (!(j.Description.BreakForce > 0)) continue;
+            Native.me_joint_state(world, j.Native, s);
+            if (MathF.Sqrt(s[4] * s[4] + s[5] * s[5]) * _unitsPerMeter <= j.Description.BreakForce) continue;
+            Native.me_joint_destroy(world, j.Native);
+            Forget(id);
+            _brokenJoints.Add(id);
+        }
+        _brokenJoints.Reverse();
     }
 
     // ------------------------------------------------------------------ shapes
@@ -430,8 +809,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         return new BodyId((uint)b, _bodySlots[b].Generation);
     }
 
-    /// <summary>The world bounds of <paramref name="shape"/> as it is now.</summary>
-    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    /// <inheritdoc/>
     public RectF BoundsOf(ShapeId shape)
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
@@ -552,6 +930,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         StepCount++;
         ReadSensorEvents(world);
         ReadContactEvents(world);
+        BreakJoints(world);
     }
 
     private void ReadSensorEvents(nint world)
@@ -653,7 +1032,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
 
     // ------------------------------------------------------------------ state
 
-    /// <summary>Adds the world's simulation state: the step count and every live body (id, kind, position, angle, velocity, shapes).</summary>
+    /// <summary>Adds the world's simulation state: the step count and every live body (id, kind, position, angle, velocity, shapes, and its dynamics once they were set).</summary>
     public void HashState(StateHasher hash)
     {
         ArgumentNullException.ThrowIfNull(hash);
@@ -669,20 +1048,45 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             hash.Add((int)b.Kind);
             for (int i = 0; i < 6; i++) hash.Add(s[i]);
             hash.Add(b.Shapes.Count);
+            if (b.Tuned)
+            {
+                // Bodies left with the default dynamics hash as they did before dynamics could be set.
+                Native.me_body_get_dynamics(_world, b.Native, s);
+                for (int i = 0; i < 5; i++) hash.Add(s[i]);
+            }
         }
         hash.Add(_sensorPairs.Count);
         hash.Add(_contactPairs.Count);
+        // A world that never had a joint hashes as it did before joints existed.
+        if (_jointSlots.Count == 0) return;
+        hash.Add(_liveJointCount);
+        foreach (var id in Joints)
+        {
+            var d = _jointSlots[(int)id.Index].Description;
+            hash.Add((long)id.Index);
+            hash.Add((long)id.Generation);
+            hash.Add((int)d.Kind);
+            hash.Add((long)d.BodyA.Index);
+            hash.Add((long)d.BodyB.Index);
+            hash.Add(d.EnableLimit); hash.Add(d.Lower); hash.Add(d.Upper);
+            hash.Add(d.EnableMotor); hash.Add(d.MotorSpeed); hash.Add(d.MaxMotorForce);
+            hash.Add(d.EnableSpring); hash.Add(d.Hertz); hash.Add(d.DampingRatio);
+            hash.Add(d.Length); hash.Add(d.TargetPoint); hash.Add(d.MaxForce); hash.Add(d.BreakForce);
+        }
     }
 
     /// <summary>Destroys the native world. Every later call except <see cref="Dispose"/> throws <see cref="ObjectDisposedException"/>.</summary>
     public void Dispose()
     {
-        if (_world != 0)
+        lock (s_table)
         {
-            Native.me_world_destroy(_world);
-            _world = 0;
+            if (_world != 0)
+            {
+                Native.me_world_destroy(_world);
+                _world = 0;
+            }
+            DestroyAbandoned();
         }
-        DestroyAbandoned();
         GC.SuppressFinalize(this);
     }
 }

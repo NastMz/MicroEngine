@@ -47,7 +47,8 @@ What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_
 
  [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)
 
-Answers collision queries for [TileMotion](MicroEngine.World.TileMotion.md).
+A grid of square tiles with collision flags: what tile geometry is made of
+([AddTiles](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_)) and what the tile helpers read.
 
 ### Enums
 

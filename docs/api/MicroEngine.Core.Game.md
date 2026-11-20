@@ -266,6 +266,20 @@ public ILog Log { get; }
 
  [ILog](MicroEngine.Kernel.ILog.md)
 
+### <a id="MicroEngine_Core_Game_PhysicsBackend"></a> PhysicsBackend
+
+Makes the physics world of each scene that uses physics ([Physics](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Physics)): the tile backend by
+default. The one place a game names another backend, for example
+<code>PhysicsBackend = () =&gt; new Box2DPhysicsWorld2D(options)</code> in its constructor or <code>Load</code>.
+
+```csharp
+public Func<IPhysicsWorld2D> PhysicsBackend { get; set; }
+```
+
+#### Property Value
+
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md)\>
+
 ### <a id="MicroEngine_Core_Game_Platform"></a> Platform
 
 The platform running the game (window, audio, input). Throws `InvalidOperationException` before the game starts.

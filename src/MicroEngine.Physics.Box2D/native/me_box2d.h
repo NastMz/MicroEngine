@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 1
+#define ME_API_VERSION 3
 
 typedef struct MeWorld MeWorld;
 
@@ -52,6 +52,16 @@ enum MeShapeFlags
 	ME_SENSOR = 1,		  // a sensor: never collides, reports overlaps
 	ME_SENSOR_EVENTS = 2, // sensors see this shape (needed on the visitor too)
 	ME_ONE_WAY = 4,		  // a one-way platform: stops only what comes down onto its top (+y)
+};
+
+enum MeJointKind
+{
+	ME_REVOLUTE = 0,  // a pin; limit and coordinate in radians, motor torque
+	ME_DISTANCE = 1,  // two points at a distance; limit and coordinate are lengths, motor force
+	ME_PRISMATIC = 2, // a slider along the axis; limit and coordinate are translations, motor force
+	ME_WELD = 3,	  // glue; the spring makes it soft
+	ME_WHEEL = 4,	  // slides along the axis (suspension spring) and spins (motor torque)
+	ME_TARGET = 5,	  // a spring of bounded force that pulls a point of body B to a world point (Box2D's motor joint)
 };
 
 enum MeQueryFlags
@@ -88,6 +98,22 @@ ME_API void me_body_state( MeWorld* world, int body, float* out6 );
 ME_API void me_body_set_position( MeWorld* world, int body, float x, float y );
 ME_API void me_body_set_velocity( MeWorld* world, int body, float vx, float vy );
 ME_API float me_body_mass( MeWorld* world, int body );
+// Turns the body to angle radians where it is (no collision), like me_body_set_position.
+ME_API void me_body_set_rotation( MeWorld* world, int body, float angle );
+ME_API void me_body_set_angular_velocity( MeWorld* world, int body, float angularVelocity );
+// Applies (x, y) to a dynamic body: a force (kind 0, newtons, for the next step only) or a linear impulse (kind 1,
+// newton seconds, at once); through the centre of mass, or at the world point (px, py) when atPoint is not 0. wake
+// wakes a sleeping body; without it a sleeping body ignores the call.
+ME_API void me_body_apply( MeWorld* world, int body, int kind, float x, float y, float px, float py, int atPoint, int wake );
+// A torque (kind 0, newton metres, for the next step only) or an angular impulse (kind 1, at once).
+ME_API void me_body_apply_angular( MeWorld* world, int body, int kind, float value, int wake );
+// linear damping, angular damping, gravity scale, fixed rotation (0 or 1), sleep allowed (0 or 1).
+ME_API void me_body_get_dynamics( MeWorld* world, int body, float* out5 );
+ME_API void me_body_set_dynamics( MeWorld* world, int body, const float* in5 );
+ME_API int me_body_is_awake( MeWorld* world, int body );
+ME_API void me_body_set_awake( MeWorld* world, int body, int awake );
+// mass (kg), world centre of mass x, y, rotational inertia about it (kg m²).
+ME_API void me_body_mass_data( MeWorld* world, int body, float* out4 );
 
 // Attaches a shape (MeShapeKind, geometry as described there) with collision layers, MeShapeFlags, density (kg/m²),
 // friction and restitution; returns its handle, or -1 when the geometry is not a valid shape (a degenerate polygon).
@@ -96,6 +122,29 @@ ME_API int me_shape_create( MeWorld* world, int body, int kind, const float* geo
 ME_API void me_shape_destroy( MeWorld* world, int shape );
 // The shape's world bounds: min x, min y, max x, max y.
 ME_API void me_shape_bounds( MeWorld* world, int shape, float* out4 );
+
+// Creates a joint (MeJointKind) between bodies a and b (a is ignored by ME_TARGET) and returns its handle, or -1 when a
+// body is not alive. Joint handles are issued like body handles. p17, in world space as the bodies are now:
+//   0, 1   anchor on body A (ME_TARGET: the target point)        2, 3   anchor on body B
+//   4, 5   axis direction (ME_PRISMATIC, ME_WHEEL), any length
+//   6      limit enabled      7, 8   lower, upper (ME_DISTANCE: shortest and longest length)
+//   9      motor enabled     10      motor speed       11   the most motor force or torque
+//  12      spring enabled    13      spring hertz      14   spring damping ratio
+//  15      rest length (ME_DISTANCE; negative: the distance between the anchors)
+//  16      the most spring force (ME_TARGET)
+// A revolute joint's angle and a prismatic joint's translation are 0 where the joint is created. flags: 1 lets the two
+// bodies collide. Destroying a body destroys its joints.
+ME_API int me_joint_create( MeWorld* world, int kind, int bodyA, int bodyB, const float* p17, int flags );
+ME_API void me_joint_destroy( MeWorld* world, int joint );
+// World anchor on A x, y, on B x, y, constraint force x, y, constraint torque, coordinate (angle, translation or
+// length; 0 for the other kinds).
+ME_API void me_joint_state( MeWorld* world, int joint, float* out8 );
+// These wake the joint's bodies; a kind without the feature ignores the call.
+ME_API void me_joint_set_limit( MeWorld* world, int joint, int enable, float lower, float upper );
+ME_API void me_joint_set_motor( MeWorld* world, int joint, int enable, float speed, float maxForce );
+ME_API void me_joint_set_spring( MeWorld* world, int joint, int enable, float hertz, float dampingRatio );
+ME_API void me_joint_set_target( MeWorld* world, int joint, float x, float y );
+ME_API void me_joint_set_length( MeWorld* world, int joint, float length );
 
 // The closest shape the segment from (x, y) to (x + dx, y + dy) enters, among the shapes whose layers accept the
 // query's (category, mask) and MeQueryFlags; returns its handle or -1. out5: point x, y, normal x, y, fraction. A shape

@@ -120,3 +120,10 @@ change (`PhysicsContract.Version` stays 1).
 - **Tile backend broad phase.** `TilePhysicsWorld2D` files its box shapes in a 64-unit grid; candidates are taken in
   creation-slot order so every result is the full scan's (PhysicsBench: 200 bodies from about 0.75 ms to 0.30 ms a
   step, 800 bodies from 10 ms to under 2 ms).
+
+## Amendment (2026-11-19): contract version 2
+
+[ADR 0068](0068-physics-contract-version-2.md) raises the contract to version 2. "The contract has no joint API" no
+longer holds: joints, dynamics control, tile geometry and `BoundsOf` are contract members with defaults that refuse
+with the capability they need. Stepping: a scene steps its own world through `ScenePhysics`; `PhysicsModule` remains
+for worlds that belong to no scene. The capability error names the backend that declares what is missing.

@@ -1,14 +1,16 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Physics;
 using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace Examples;
 
 /// <summary>
-/// Side-view movement through tiles: gravity, jumping, solid walls, one-way platforms you can drop through, a moving
-/// platform that carries the player, and coins: plain classes the scene keeps in a list.
+/// Side-view movement through tiles on the scene's physics world: a character controller (gravity, jumping, solid
+/// walls, one-way platforms you can drop through), a moving platform that carries the player, and coins: plain classes
+/// the scene keeps in a list.
 /// </summary>
 public sealed class PlatformerExample : Scene
 {
@@ -38,20 +40,28 @@ public sealed class PlatformerExample : Scene
     #endregion
 
     #region state
-    private const float Gravity = 700, JumpSpeed = 280, RunSpeed = 90, MaxFall = 400;
-    private RectF _player = new(40, 120, 10, 14);
-    private Vector2 _velocity;
-    private float _dropTime;                         // while > 0, one-way platforms let the player fall through
-    private RectF _lift = new(176, 96, 32, 6);       // a moving platform: an extra solid rectangle, not a tile
+    private static readonly Vector2 Size = new(10, 14);
+    private CharacterController2D _hero = null!;
+    private BodyId _lift;                            // a moving platform: a kinematic body the game moves
     private readonly List<Coin> _coins = [];
     private int _collected;
 
-    public RectF Player => _player;
+    public RectF Player => new(_hero.Position.X - Size.X / 2, _hero.Position.Y - Size.Y / 2, Size.X, Size.Y);
     public int Collected => _collected;
     public int CoinsLeft => _coins.Count;
 
     public override void Enter()
     {
+        // The scene's physics world: the scene steps it after Update, hashes it and disposes it.
+        var world = Physics.World;
+        var level = world.CreateBody(default, BodyDescription.Static());
+        world.AddTiles(level, _grid, _grid.Layer.Width, _grid.Layer.Height);
+        _lift = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(192, 99)));
+        world.AddShape(_lift, ShapeDescription.Box(new Vector2(32, 6)));
+        // A character: a kinematic box and the rules that move it. JumpReleaseGravityScale 1 gives every jump the
+        // same height; the default cuts a jump short when the button is released.
+        _hero = Physics.Track(CharacterController2D.Create(world, default, new Vector2(45, 127), Size,
+            new CharacterMotion { Gravity = 700, MaxFallSpeed = 400, MoveSpeed = 90, JumpSpeed = 280, JumpReleaseGravityScale = 1 }));
         foreach (var (x, y) in TileLayer.Find(Rows, 'c'))
             _coins.Add(new Coin { Position = new Vector2(x * Tile + 4, y * Tile + 4) });
     }
@@ -62,31 +72,21 @@ public sealed class PlatformerExample : Scene
     {
         if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
 
-        // The lift moves first and carries the player when he stands on it.
-        var lift = _lift with { X = 176 + MathF.Sin(Age) * 48 };
-        bool riding = _player.Bottom == _lift.Top && _player.Right > _lift.Left && _player.Left < _lift.Right;
-        if (riding) _player = TileMotion.Move(_player, new Vector2(lift.X - _lift.X, 0), _grid).Bounds;
-        _lift = lift;
-        IReadOnlyList<RectF> solids = [_lift];
+        // The lift moves first; the character standing on it is carried along in its own step.
+        var world = Physics.World;
+        world.SetPosition(_lift, new Vector2(192 + MathF.Sin(Age) * 48, 99));
 
-        bool grounded = TileMotion.IsOnGround(_player, _grid, solids);
-        _velocity.X = Input.Axis("left", "right") * RunSpeed;
-        _velocity.Y = MathF.Min(_velocity.Y + Gravity * dt, MaxFall);
-        if (grounded && Input.Pressed("confirm"))
-        {
-            if (Input.Down("down")) _dropTime = 0.2f;          // down + jump: drop through a one-way platform
-            else _velocity.Y = -JumpSpeed;
-        }
-        _dropTime = MathF.Max(0, _dropTime - dt);
-
-        // One call resolves walls, floors, ceilings, one-way platforms and the lift.
-        var move = TileMotion.Move(_player, _velocity * dt, _grid, solids, ignoreOneWay: _dropTime > 0);
-        _player = move.Bounds;
-        if (move.HitFloor || move.HitCeiling) _velocity.Y = 0;
+        // The controller takes intent, not input: walls, floors, ceilings, one-way platforms and the lift are its job.
+        _hero.Step(dt, new CharacterInput(
+            Input.Axis("left", "right"),
+            JumpPressed: Input.Pressed("confirm"),
+            JumpHeld: Input.Down("confirm"),
+            Drop: Input.Down("down") && Input.Pressed("confirm")));      // down + jump: drop through a one-way platform
 
         // Objects against the player: the game compares rectangles.
+        var player = Player;
         foreach (var coin in _coins)
-            if (coin.Bounds.Intersects(_player)) { coin.Collected = true; _collected++; }
+            if (coin.Bounds.Intersects(player)) { coin.Collected = true; _collected++; }
         _coins.RemoveAll(static coin => coin.Collected);      // removed after the walk, never during it
         foreach (var coin in _coins) coin.Update(dt);
     }
@@ -101,9 +101,10 @@ public sealed class PlatformerExample : Scene
             if (_grid.Layer[x, y] == Wall) r.FillRect(cell, Color.Hex("566c86"));
             else if (_grid.Layer[x, y] == Ledge) r.FillRect(cell with { Height = 4 }, Color.Hex("a7f070"));
         }
-        r.FillRect(_lift, Color.Hex("ffcd75"));
+        var lift = Physics.World.PositionOf(_lift);
+        r.FillRect(new RectF(lift.X - 16, lift.Y - 3, 32, 6), Color.Hex("ffcd75"));
         foreach (var coin in _coins) coin.Draw(r);
-        r.FillRect(_player, Color.Hex("41a6f6"));
+        r.FillRect(Player, Color.Hex("41a6f6"));
         Font.Draw(r, $"COINS {_collected}   JUMP: Z   DROP: DOWN+Z", new Vector2(20, 18), Color.White);
         Heading.Draw(r, Font, "PLATFORMER");
     }

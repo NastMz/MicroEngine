@@ -71,7 +71,7 @@ Each game has five achievements and saves its progress, and is packaged for desk
   name and icon ([Packaging](packaging.md)).
 
 Two more parts live in the engine's repository and in no published package: a minimal
-[3D path](../manual/rendering.md#the-3d-path) and a [Box2D physics backend](../manual/world.md#the-box2d-backend).
+[3D path](../manual/rendering.md#the-3d-path) and a [Box2D physics backend](../manual/physics.md#choosing-a-backend).
 
 ## Planned work
 

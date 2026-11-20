@@ -445,6 +445,13 @@ if (Input.Pointer.Present)
 }
 ```
 
+## Platformer character
+
+`PlatformerExample` moves its player with the engine's character controller on the scene's physics world: gravity,
+jumps, one-way platforms to drop through and a moving platform that carries the player, in a dozen lines of game code.
+The code and the rules are in [Physics](../manual/physics.md#a-character); the level is in
+[Tile maps and collision](../manual/world.md#maps-as-text).
+
 ## Particles and light
 
 A particle fountain and bursts with additive blending, under a light map that darkens the scene around two lights.
