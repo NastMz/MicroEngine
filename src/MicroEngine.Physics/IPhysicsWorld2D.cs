@@ -1,5 +1,6 @@
 using System.Numerics;
 using MicroEngine.Scenes;
+using MicroEngine.World;
 
 namespace MicroEngine.Physics;
 
@@ -43,9 +44,10 @@ public static class PhysicsContract
 /// dynamic body. Destroying a shape ends its pairs with an exit or end event at the next step.</item>
 /// <item><b>No managed callbacks during <see cref="Step"/>.</b> Per-shape rules (one-way platforms) are shape flags the
 /// backend implements itself; games read events after the step.</item>
-/// <item><b>Stepping.</b> <see cref="PhysicsModule"/> steps registered worlds in the kernel's
-/// <c>FramePhase.Physics</c>, inside the fixed step, and writes body poses to their owners' transforms; the scene world
-/// interpolates them for drawing.</item>
+/// <item><b>Stepping.</b> A scene steps its physics world after its own update, by the step of its world's clock, and
+/// writes body poses to their owners' transforms, which the scene world interpolates for drawing (the engine's
+/// <c>ScenePhysics</c>). <see cref="PhysicsModule"/> steps worlds that belong to no scene, in the kernel's
+/// <c>FramePhase.Physics</c>.</item>
 /// <item><b>Determinism.</b> The same backend build gives identical results on every target for the same calls (native
 /// backends are built with floating-point contraction off and step on one thread). Nothing is promised between two
 /// backends, or between two versions of a backend's physics library: they differ from the first step.</item>
@@ -126,6 +128,34 @@ public interface IPhysicsWorld2D
     /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeInspection"/>.</exception>
     ShapeDescription DescriptionOf(ShapeId shape) =>
         throw new PhysicsCapabilityException(nameof(DescriptionOf), Backend, PhysicsCapabilities.ShapeInspection);
+
+    /// <summary>
+    /// Attaches the tiles of <paramref name="grid"/> to a static body as one shape
+    /// (<see cref="PhysicsCapabilities.TileGeometry"/>): cell (x, y) is a square of <see cref="ICollisionGrid.TileSize"/>
+    /// units, x tiles sideways and y tiles downward (against <see cref="Up"/>) from the body's origin, so row 0 is the
+    /// top row whichever way the world's y grows. <see cref="TileFlags.Solid"/> cells block from every side and
+    /// <see cref="TileFlags.OneWay"/> cells are one-way platforms (where the backend declares them); other cells are
+    /// not geometry.
+    /// </summary>
+    /// <param name="body">A static body.</param>
+    /// <param name="grid">The tiles.</param>
+    /// <param name="columns">How many columns of the grid hold the level.</param>
+    /// <param name="rows">How many rows of the grid hold the level.</param>
+    /// <param name="category">The layers the tiles are in.</param>
+    /// <param name="mask">The layers they collide with.</param>
+    /// <remarks>
+    /// The tile backend reads the grid at every query, inside and outside that area, so changing a tile changes
+    /// collisions at once. A backend that builds shapes from the tiles reads the area and one tile around it (the border
+    /// a grid closes its level with) when this is called: remove the shape and add the tiles again after changing them.
+    /// </remarks>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.TileGeometry"/>.</exception>
+    /// <exception cref="InvalidOperationException">The body is stale or not static.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="columns"/> or <paramref name="rows"/> is not positive.</exception>
+    ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All) =>
+        throw new PhysicsCapabilityException(nameof(AddTiles), Backend, PhysicsCapabilities.TileGeometry);
+    /// <summary>The tiles <paramref name="shape"/> stands for when it was added with <see cref="AddTiles"/>; null for any other shape.</summary>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    ICollisionGrid? TilesOf(ShapeId shape) => IsAlive(shape) ? null : throw new InvalidOperationException($"{shape} is not a live shape of this world.");
 
     /// <summary>
     /// Moves a kinematic body by <paramref name="delta"/> with collide-and-slide against the shapes

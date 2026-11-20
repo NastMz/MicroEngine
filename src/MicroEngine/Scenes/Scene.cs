@@ -102,6 +102,12 @@ public abstract class Scene : IStateHashed
     /// added to it is stepped before <see cref="Update"/> and hashed with the scene. Read it first outside drawing.
     /// </summary>
     public StateMachines Machines => Systems.GetOrAdd<StateMachines>();
+    /// <summary>
+    /// The scene's physics (<see cref="ScenePhysics"/>), a system added the first time it is read, with a world made by
+    /// <see cref="Core.Game.PhysicsBackend"/> (the tile backend unless the game names another): the scene steps it after
+    /// <see cref="Update"/>, hashes it and disposes it. Read it first outside drawing, from <see cref="Enter"/> on.
+    /// </summary>
+    public ScenePhysics Physics => Systems.TryGet<ScenePhysics>(out var physics) ? physics : Systems.Add(new ScenePhysics(Game.PhysicsBackend()));
     /// <summary>Whether the scene is on the stack: from just before <see cref="Enter"/> until its systems stopped after <see cref="Exit"/>.</summary>
     public bool OnStack { get; private set; }
     private long _tickedAt = -1;

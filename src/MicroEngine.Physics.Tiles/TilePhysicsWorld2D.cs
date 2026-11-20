@@ -7,7 +7,7 @@ namespace MicroEngine.Physics.Tiles;
 
 /// <summary>
 /// The tile backend of <see cref="IPhysicsWorld2D"/>: static and kinematic bodies with axis-aligned box shapes, tile grids
-/// as static geometry (<see cref="AddTiles"/>), and an exact swept mover. It declares
+/// as static geometry (<see cref="AddTiles(BodyId, ICollisionGrid, ulong, ulong)"/>), and an exact swept mover. It declares
 /// <see cref="PhysicsCapabilities.TileGeometry"/>, <see cref="PhysicsCapabilities.OneWayPlatforms"/> and
 /// <see cref="PhysicsCapabilities.MovingSolids"/>; it has no dynamic bodies, so <see cref="ContactEvents"/> is always
 /// empty, and every other capability throws <see cref="PhysicsCapabilityException"/>.
@@ -231,6 +231,15 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         return NewShape((int)body.Index, b, description, grid);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>The grid is read at every query, inside and outside <paramref name="columns"/> × <paramref name="rows"/>.</remarks>
+    public ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+        return AddTiles(body, grid, category, mask);
+    }
+
     private ShapeId NewShape(int bodySlot, Body b, in ShapeDescription description, ICollisionGrid? grid)
     {
         int slot;
@@ -328,9 +337,8 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         return _shapeSlots[(int)shape.Index].Description;
     }
 
-    /// <summary>The tiles <paramref name="shape"/> stands for when it was added with <see cref="AddTiles"/>; null for any other shape.</summary>
-    /// <exception cref="InvalidOperationException">The id is stale.</exception>
-    public ICollisionGrid? GridOf(ShapeId shape)
+    /// <inheritdoc/>
+    public ICollisionGrid? TilesOf(ShapeId shape)
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
         return _shapeSlots[(int)shape.Index].Grid;
