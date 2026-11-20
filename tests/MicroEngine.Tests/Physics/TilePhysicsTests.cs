@@ -37,6 +37,46 @@ public sealed class TileGeometryBackendConformance : TileGeometryConformance
     protected override ShapeId AddTiles(IPhysicsWorld2D world, BodyId body, ICollisionGrid grid) => ((TilePhysicsWorld2D)world).AddTiles(body, grid);
 }
 
+/// <summary>The character controllers run on the tile backend.</summary>
+[TestClass]
+public sealed class TileCharacterControllerConformance : CharacterControllerConformance
+{
+    protected override IPhysicsWorld2D CreateWorld() => new TilePhysicsWorld2D();
+}
+
+/// <summary>The character controller with what only the tile backend has: solids that carry their riders.</summary>
+[TestClass]
+public sealed class TileCharacterTests
+{
+    [TestMethod]
+    public void A_pushing_platform_carries_the_character_once()
+    {
+        var world = new TilePhysicsWorld2D();
+        var floor = world.CreateBody(default, BodyDescription.Static(new Vector2(0, 108)));
+        world.AddShape(floor, ShapeDescription.Box(new Vector2(600, 16)));
+        var platform = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(0, 62)) with { PushesBodies = true });
+        world.AddShape(platform, ShapeDescription.Box(new Vector2(40, 4)));
+        var hero = CharacterController2D.Create(world, default, new Vector2(0, 50), new Vector2(12, 14));
+        for (int i = 0; i < 30; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.AreEqual(53, hero.Position.Y, 1e-3f, "standing on the platform");
+        for (int i = 0; i < 60; i++)
+        {
+            world.Move(platform, new Vector2(1, 0));
+            hero.Step(1 / 60f, default);
+            Assert.IsTrue(hero.IsGrounded, $"step {i}");
+        }
+        Assert.AreEqual(60, hero.Position.X, 1e-3f, "the solid carried it; the controller added nothing");
+        for (int i = 0; i < 20; i++)
+        {
+            world.Move(platform, new Vector2(0, -1));
+            hero.Step(1 / 60f, default);
+            Assert.IsTrue(hero.IsGrounded, $"rising, step {i}");
+        }
+        Assert.AreEqual(33, hero.Position.Y, 1e-3f, "lifted with the platform");
+    }
+}
+
 /// <summary>What the tile backend promises beyond the common suite: exact resting, its declared capabilities, the fixed mover (D6), state hashing.</summary>
 [TestClass]
 public sealed class TilePhysicsWorldTests
@@ -46,6 +86,33 @@ public sealed class TilePhysicsWorldTests
         var id = world.CreateBody(default, body with { Position = rect.Center });
         world.AddShape(id, ShapeDescription.Box(rect.Size));
         return id;
+    }
+
+    [TestMethod]
+    public void Dynamics_are_refused_with_a_message_that_names_the_backend_that_has_them()
+    {
+        IPhysicsWorld2D world = new TilePhysicsWorld2D();
+        var body = world.CreateBody(default, BodyDescription.Kinematic(default));
+        var e = Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyImpulse(body, Vector2.One));
+        Assert.AreEqual(PhysicsCapabilities.DynamicBodies, e.Missing);
+        Assert.AreEqual("tiles", e.Backend);
+        StringAssert.Contains(e.Message, "MicroEngine.Physics.Box2D");
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyForce(body, Vector2.One, Vector2.Zero));
+        Assert.AreEqual(PhysicsCapabilities.Rotation, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.SetRotation(body, 1)).Missing);
+        Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.ApplyTorque(body, 1)).Missing);
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.AngularVelocityOf(body));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.DynamicsOf(body));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.SetDynamics(body, default));
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.IsAwake(body));
+        Assert.AreEqual(PhysicsCapabilities.MassProperties, Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.MassOf(body)).Missing);
+        Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.CreateBody(default, BodyDescription.Kinematic(default) with { Dynamics = new BodyDynamics { GravityScale = 0 } }));
+        Assert.AreEqual(1, world.Bodies.Length, "the refused body was never created");
+        StringAssert.Contains(new PhysicsCapabilityException("Move", "box2d", PhysicsCapabilities.MovingSolids).Message, "the tile backend declares it");
+        var joint = Assert.ThrowsExactly<PhysicsCapabilityException>(() => world.CreateJoint(JointDescription.Revolute(body, body, default)));
+        Assert.AreEqual(PhysicsCapabilities.Joints, joint.Missing);
+        StringAssert.Contains(joint.Message, "MicroEngine.Physics.Box2D");
+        Assert.AreEqual(0, world.Joints.Length);
+        Assert.IsFalse(world.IsAlive(JointId.None));
     }
 
     [TestMethod]

@@ -46,3 +46,10 @@ kinematic tile scenario every demo plays 3 to 4.6 times slower than the tile bac
   (the host already builds native WebAssembly for SDL).
 - Every Box2D native runtime the package carries must be built before a release; a release cannot ship a package
   that lacks a runtime it declares.
+
+## Amendment (2026-11-19): joints and dynamics
+
+[ADR 0068](0068-physics-contract-version-2.md): the package declares `PhysicsCapabilities.Joints` and implements the
+contract's dynamics members. Its native layer is version 3; the managed assembly refuses a library of another
+version, so both always come from the same package version. It still declares neither `TileGeometry` nor
+`MovingSolids`.

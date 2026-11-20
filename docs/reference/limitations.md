@@ -37,6 +37,15 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
+## Physics
+
+| Limitation | More |
+| --- | --- |
+| The default tile backend has axis-aligned boxes only: no slopes, dynamic bodies, rotation or joints. They need the optional `MicroEngine.Physics.Box2D` package | [Physics](../manual/physics.md#choosing-a-backend) |
+| The Box2D backend has no tile geometry (build levels from boxes) and no solids that push kinematic bodies | [Physics](../manual/physics.md#tile-levels) |
+| Queries are a closest-hit ray and a rectangle overlap: no shape casts, point queries or all-hits rays; contact events carry a normal, not points or impulses | [Physics](../manual/physics.md#queries-and-contacts) |
+| Box2D on Android and iOS is experimental | [Physics](../manual/physics.md#what-differs-on-box2d) |
+
 ## Input
 
 | Limitation | More |

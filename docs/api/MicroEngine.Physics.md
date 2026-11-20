@@ -12,6 +12,19 @@ Guide: [Physics worlds](../manual/world.md#physics-worlds)
 
 ### Classes
 
+ [CharacterController2D](MicroEngine.Physics.CharacterController2D.md)
+
+A side-view character: one kinematic body moved with [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__) under gravity, with
+variable jump height, coyote time, jump buffering, drops through one-way platforms, optional air jumps, wall slides
+and wall jumps, and the ground, wall and ceiling state a game reads. It works on every backend, since it uses only
+the common contract (and one-way platforms where the backend declares them); it takes intent
+([CharacterInput](MicroEngine.Physics.CharacterInput.md)) instead of reading input, so a player and an AI drive it the same way.
+
+ [CharacterMotion](MicroEngine.Physics.CharacterMotion.md)
+
+How a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) moves, in the physics world's units and seconds. The defaults suit a
+pixel-art game with 16-pixel tiles; a world in metres sets its own numbers.
+
  [CollisionLayers](MicroEngine.Physics.CollisionLayers.md)
 
 The collision layers of the contract: 64 bits, any meaning the game gives them. A shape is in the layers of its
@@ -44,11 +57,27 @@ so a paused, frozen or covered scene's physics stands still too; after the step,
 dynamic body is written to its owner's transform ([WriteTransforms](MicroEngine.Physics.PhysicsSync.md#MicroEngine_Physics_PhysicsSync_WriteTransforms_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_Scenes_IWorld_)), which the scene world
 interpolates for drawing. An unbound world steps by the engine's fixed step.
 
+ [TopDownController2D](MicroEngine.Physics.TopDownController2D.md)
+
+A top-down character: one kinematic body that moves in any direction and slides along what it touches
+([Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__)), with no gravity. It takes a direction instead of reading input, like
+[CharacterController2D](MicroEngine.Physics.CharacterController2D.md), and works on every backend.
+
+ [TopDownMotion](MicroEngine.Physics.TopDownMotion.md)
+
+How a [TopDownController2D](MicroEngine.Physics.TopDownController2D.md) moves, in the physics world's units and seconds.
+
 ### Structs
 
  [BodyDescription](MicroEngine.Physics.BodyDescription.md)
 
 What [CreateBody](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_CreateBody_MicroEngine_Scenes_EntityId_MicroEngine_Physics_BodyDescription__) creates.
+
+ [BodyDynamics](MicroEngine.Physics.BodyDynamics.md)
+
+How the solver treats a dynamic body ([Dynamics](MicroEngine.Physics.BodyDescription.md#MicroEngine_Physics_BodyDescription_Dynamics),
+[SetDynamics](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_SetDynamics_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyDynamics__)). <code>default</code> is the default body: no damping, full gravity, free to
+rotate, allowed to sleep.
 
  [BodyId](MicroEngine.Physics.BodyId.md)
 
@@ -56,10 +85,27 @@ A body of an [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md): a slot i
 id was made. A destroyed body's slot is reused with a new generation, so an old id never reaches the new body.
 <code>default</code> is [None](MicroEngine.Physics.BodyId.md#MicroEngine_Physics_BodyId_None) (generation 0 is never issued).
 
+ [CharacterInput](MicroEngine.Physics.CharacterInput.md)
+
+What a character wants to do in one step: the game fills it from input, an AI from its plan. The controller never
+reads input devices.
+
  [ContactEvent](MicroEngine.Physics.ContactEvent.md)
 
 Two shapes began or stopped touching during the latest [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_); only pairs with at least
 one dynamic body report them (a kinematic body's contacts come from [MoveResult](MicroEngine.Physics.MoveResult.md)).
+
+ [JointDescription](MicroEngine.Physics.JointDescription.md)
+
+What [CreateJoint](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_CreateJoint_MicroEngine_Physics_JointDescription__) creates. Build one with a factory ([Revolute](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Revolute_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_),
+[Distance](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Distance_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_), [Rope](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Rope_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_System_Single_), [Prismatic](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Prismatic_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_), [Weld](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Weld_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_), [Wheel](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Wheel_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyId_System_Numerics_Vector2_System_Numerics_Vector2_),
+[Target](MicroEngine.Physics.JointDescription.md#MicroEngine_Physics_JointDescription_Target_MicroEngine_Physics_BodyId_System_Numerics_Vector2_)) and set limits, motors and springs with <code>with</code>. Anchors and axes are given in world
+space as the bodies are when the joint is created; the joint then keeps them fixed in each body.
+
+ [JointId](MicroEngine.Physics.JointId.md)
+
+A joint of an [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md) ([Joints](MicroEngine.Physics.PhysicsCapabilities.md)). Generation-checked like
+[BodyId](MicroEngine.Physics.BodyId.md); <code>default</code> is [None](MicroEngine.Physics.JointId.md#MicroEngine_Physics_JointId_None).
 
  [MoveContactBuffer](MicroEngine.Physics.MoveContactBuffer.md)
 
@@ -115,9 +161,17 @@ an undeclared one throws [PhysicsCapabilityException](MicroEngine.Physics.Physic
 
 How a body moves.
 
+ [CharacterEvents](MicroEngine.Physics.CharacterEvents.md)
+
+What happened to a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) during its latest step.
+
  [ContactEventKind](MicroEngine.Physics.ContactEventKind.md)
 
 Whether a contact event is a begin or an end.
+
+ [JointKind](MicroEngine.Physics.JointKind.md)
+
+What a joint constrains.
 
  [PhysicsCapabilities](MicroEngine.Physics.PhysicsCapabilities.md)
 

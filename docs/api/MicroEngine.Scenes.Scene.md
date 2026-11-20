@@ -237,6 +237,20 @@ public bool OnStack { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Scenes_Scene_Physics"></a> Physics
+
+The scene's physics ([ScenePhysics](MicroEngine.Scenes.ScenePhysics.md)), a system added the first time it is read, with a world made by
+[PhysicsBackend](MicroEngine.Core.Game.md#MicroEngine_Core_Game_PhysicsBackend) (the tile backend unless the game names another): the scene steps it after
+[Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), hashes it and disposes it. Read it first outside drawing, from [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) on.
+
+```csharp
+public ScenePhysics Physics { get; }
+```
+
+#### Property Value
+
+ [ScenePhysics](MicroEngine.Scenes.ScenePhysics.md)
+
 ### <a id="MicroEngine_Scenes_Scene_Systems"></a> Systems
 
 The scene's systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), created the first time it is read: parts of the scene that the

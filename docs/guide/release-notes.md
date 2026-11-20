@@ -37,6 +37,24 @@ modelled as components and systems.
 
 **Added**
 
+- [Physics](../manual/physics.md) for more kinds of game:
+  - A scene has a physics world: `Scene.Physics` (`ScenePhysics`) is made on first use, stepped after the scene's
+    `Update` on its world's clock, written to the owners' transforms, part of the state hash and disposed with the
+    scene. `Game.PhysicsBackend` names the backend once: the tile backend by default.
+  - Character controllers on either backend: `CharacterController2D` (gravity with a fall clamp, variable jump height,
+    coyote time, jump buffering, drops through one-way platforms, air jumps, wall slide and wall jump, slopes on Box2D,
+    carried by moving platforms, events such as `Landed` and `HitCeiling`) and `TopDownController2D`. They take intent,
+    not input.
+  - Dynamics on the physics contract: `ApplyForce`, `ApplyImpulse`, `ApplyTorque`, `ApplyAngularImpulse` (at the centre
+    or at a point), `AngularVelocityOf`, `SetAngularVelocity`, `SetRotation`, `BodyDynamics` (damping, gravity scale,
+    fixed rotation, sleep), `IsAwake`, `SetAwake`, `MassOf`, `CenterOfMassOf`, `InertiaOf`, `BoundsOf`.
+  - Joints (`PhysicsCapabilities.Joints`, on Box2D): revolute, distance and rope, prismatic, weld, wheel and target
+    joints, with limits, motors, springs, anchors, reaction forces and a break force.
+  - `AddTiles` and `TilesOf` are members of `IPhysicsWorld2D`, so debug drawing shows tile geometry on any backend.
+  - A capability error names the backend that declares what is missing.
+  - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
+    could end the process).
+  - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene
   ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and

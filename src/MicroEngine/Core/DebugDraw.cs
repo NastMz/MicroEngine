@@ -1,7 +1,6 @@
 using System.Numerics;
 using MicroEngine.Graphics;
 using MicroEngine.Physics;
-using MicroEngine.Physics.Tiles;
 using MicroEngine.World;
 
 namespace MicroEngine.Core;
@@ -128,9 +127,9 @@ public sealed class DebugDraw
             foreach (var shape in list)
             {
                 var d = world.DescriptionOf(shape);
-                if (world is TilePhysicsWorld2D tiles && tiles.GridOf(shape) is { } grid)
+                if (world.TilesOf(shape) is { } grid)
                 {
-                    Tiles(grid, origin, tileArea ?? VisibleArea());
+                    Tiles(grid, origin, tileArea ?? VisibleArea(), world.Up.Y > 0);
                     continue;
                 }
                 var color = d.IsSensor ? PhysicsColors.Sensor
@@ -182,19 +181,22 @@ public sealed class DebugDraw
         for (int i = 0; i < points.Length; i++) Line(points[i], points[(i + 1) % points.Length], color);
     }
 
-    private void Tiles(ICollisionGrid grid, Vector2 origin, RectF area)
+    // Row 0 is the top row: rows go down the screen in the engine's space, and down the world's y when it grows upward.
+    private void Tiles(ICollisionGrid grid, Vector2 origin, RectF area, bool yUp)
     {
         int size = grid.TileSize;
-        int x0 = (int)MathF.Floor((area.X - origin.X) / size), y0 = (int)MathF.Floor((area.Y - origin.Y) / size);
-        int x1 = (int)MathF.Ceiling((area.X + area.Width - origin.X) / size), y1 = (int)MathF.Ceiling((area.Y + area.Height - origin.Y) / size);
+        float top = yUp ? origin.Y - (area.Y + area.Height) : area.Y - origin.Y;
+        int x0 = (int)MathF.Floor((area.X - origin.X) / size), y0 = (int)MathF.Floor(top / size);
+        int x1 = (int)MathF.Ceiling((area.X + area.Width - origin.X) / size), y1 = (int)MathF.Ceiling((top + area.Height) / size);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++)
             {
                 var flags = grid.FlagsAt(x, y);
-                if (flags == TileFlags.None) continue;
-                var cell = new RectF(origin.X + x * size, origin.Y + y * size, size, size);
+                if ((flags & (TileFlags.Solid | TileFlags.OneWay)) == 0) continue;
+                var cell = new RectF(origin.X + x * size, yUp ? origin.Y - (y + 1) * size : origin.Y + y * size, size, size);
+                float edge = yUp ? cell.Y + size : cell.Y;
                 if ((flags & TileFlags.Solid) != 0) Rect(cell, PhysicsColors.Static);
-                else Line(new Vector2(cell.X, cell.Y), new Vector2(cell.X + size, cell.Y), PhysicsColors.OneWay);
+                else Line(new Vector2(cell.X, edge), new Vector2(cell.X + size, edge), PhysicsColors.OneWay);
             }
     }
 

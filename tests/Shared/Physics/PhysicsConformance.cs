@@ -509,6 +509,24 @@ public abstract class PhysicsConformance
     }
 
     [TestMethod]
+    public void BoundsOf_gives_a_shapes_world_bounds_as_it_is_now()
+    {
+        var level = Build();
+        var world = level.World;
+        if ((world.Capabilities & PhysicsCapabilities.ShapeInspection) == 0) Assert.Inconclusive($"{world.Backend} does not read shapes back");
+        var wall = world.BoundsOf(level.Wall);
+        Assert.AreEqual(100 * Scale, wall.Left, Rounding * Scale, "the wall spans x 100..116");
+        Assert.AreEqual(16 * Scale, wall.Width, Rounding * Scale);
+        Assert.AreEqual(64 * Scale, wall.Height, Rounding * Scale);
+        world.Move(level.Player, By(world, 20, 0), Level.PlayerFilter);
+        var player = world.BoundsOf(level.PlayerShape);
+        Assert.IsTrue(Vector2.Distance(player.Center, world.PositionOf(level.Player)) <= Rounding * Scale, "the bounds follow the body");
+        Assert.AreEqual(12 * Scale, player.Width, Rounding * Scale);
+        world.RemoveShape(level.PlayerShape);
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.BoundsOf(level.PlayerShape));
+    }
+
+    [TestMethod]
     public void Step_counts_steps_and_refuses_negative_or_non_finite_lengths()
     {
         var world = CreateWorld();

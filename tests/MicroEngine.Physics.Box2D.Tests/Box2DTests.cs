@@ -76,6 +76,13 @@ public sealed class Box2DPixelConformance : PhysicsConformance
 [TestClass] public sealed class Box2DFrictionRestitutionConformance : FrictionRestitutionConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DMassPropertiesConformance : MassPropertiesConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 
+[TestClass] public sealed class Box2DDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelDynamicsConformance : DynamicsConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+[TestClass] public sealed class Box2DJointConformance : JointConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelJointConformance : JointConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+[TestClass] public sealed class Box2DCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+
 // ------------------------------------------------------------------ what this backend promises beyond the suites
 
 /// <summary>The Box2D backend's own rules: what it declares, its units, its limits, its native library.</summary>
@@ -99,11 +106,31 @@ public sealed class Box2DPhysicsWorldTests
         Assert.AreEqual("box2d", world.Backend);
         Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules
             | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
-            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection, world.Capabilities);
-        Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids | PhysicsCapabilities.Joints)));
+            | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
+            | PhysicsCapabilities.Joints, world.Capabilities);
+        Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids)));
         Assert.AreEqual(0.015f, world.Skin, 1e-6f);
         Assert.AreEqual(new Vector2(0, 1), world.Up);
         Assert.AreEqual("3.2.0", Box2DPhysicsWorld2D.Box2DVersion);
+    }
+
+    [TestMethod]
+    public void The_manuals_capability_table_says_what_the_two_backends_declare()
+    {
+        string? root = AppContext.BaseDirectory;
+        while (root is not null && !File.Exists(Path.Combine(root, "MicroEngine.slnx"))) root = Path.GetDirectoryName(root);
+        if (root is null) Assert.Inconclusive("Not running inside the repository.");
+        var seen = new HashSet<PhysicsCapabilities>();
+        foreach (string line in File.ReadAllLines(Path.Combine(root, "docs", "manual", "physics.md")))
+        {
+            var cells = line.Split('|', StringSplitOptions.TrimEntries);
+            if (cells.Length < 6 || cells[3] is not ("yes" or "no") || !Enum.TryParse<PhysicsCapabilities>(cells[1].Trim('`'), out var flag)) continue;
+            Assert.AreEqual((MicroEngine.Physics.Tiles.TilePhysicsWorld2D.Declared & flag) != 0 ? "yes" : "no", cells[3], $"{flag} on the tile backend");
+            Assert.AreEqual((Box2DPhysicsWorld2D.Declared & flag) != 0 ? "yes" : "no", cells[4], $"{flag} on Box2D");
+            seen.Add(flag);
+        }
+        foreach (var flag in Enum.GetValues<PhysicsCapabilities>())
+            if (flag != PhysicsCapabilities.None) Assert.IsTrue(seen.Contains(flag), $"the table has no row for {flag}");
     }
 
     [TestMethod]
@@ -306,5 +333,111 @@ public sealed class Box2DPhysicsWorldTests
         {
             Native.me_world_destroy(w);
         }
+    }
+}
+
+/// <summary>The character controller with what only this backend has: slopes under a capsule.</summary>
+[TestClass]
+public sealed class Box2DCharacterSlopeTests
+{
+    [TestInitialize]
+    public void Natives() => Box2DTesting.RequireNatives();
+
+    /// <summary>A floor (top at y 0), a ramp rising 32 pixels over x 100..164 and a plateau beyond it, with a capsule character at x 60.</summary>
+    private static CharacterController2D Scene(Box2DPhysicsWorld2D world, float groundSnap)
+    {
+        var level = world.CreateBody(default, BodyDescription.Static());
+        world.AddShape(level, ShapeDescription.Box(new Vector2(800, 16), new Vector2(0, 8)));
+        world.AddShape(level, ShapeDescription.Polygon(new[] { new Vector2(100, 0), new Vector2(164, 0), new Vector2(164, -32) }));
+        world.AddShape(level, ShapeDescription.Box(new Vector2(200, 32), new Vector2(264, -16)));
+        var body = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(60, -9)));
+        world.AddShape(body, ShapeDescription.Capsule(6, 14));
+        var hero = new CharacterController2D(world, body, new CharacterMotion { GroundSnap = groundSnap });
+        for (int i = 0; i < 30; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded, $"standing on the floor at {hero.Position}");
+        return hero;
+    }
+
+    private static int Walk(CharacterController2D hero, float move, int steps)
+    {
+        int left = 0;
+        for (int i = 0; i < steps; i++)
+        {
+            hero.Step(1 / 60f, new CharacterInput(move));
+            if ((hero.Events & CharacterEvents.LeftGround) != 0) left++;
+        }
+        return left;
+    }
+
+    [TestMethod]
+    public void A_capsule_walks_up_a_slope_and_stands_on_it_without_creeping()
+    {
+        using var world = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hero = Scene(world, groundSnap: 4);
+        Walk(hero, 1, 50);
+        Assert.IsTrue(hero.Position.X is > 110 and < 160, $"on the ramp: {hero.Position}");
+        Assert.IsTrue(hero.Position.Y < -12, $"it climbed: {hero.Position}");
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.IsTrue(Vector2.Dot(hero.LastMove.GroundNormal, world.Up) is > 0.8f and < 0.95f, $"the ground is the slope: {hero.LastMove.GroundNormal}");
+        hero.Step(1 / 60f, default);
+        var at = hero.Position;
+        for (int i = 0; i < 120; i++) hero.Step(1 / 60f, default);
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.IsTrue(Vector2.Distance(at, hero.Position) < 0.01f, $"standing still on the slope: {at} -> {hero.Position}");
+        Walk(hero, 1, 100);
+        Assert.IsTrue(hero.IsGrounded && hero.Position.X > 200, $"on the plateau: {hero.Position}");
+        Assert.AreEqual(-32 - 7, hero.Position.Y, world.Skin + 0.01f, "standing on the plateau");
+    }
+
+    [TestMethod]
+    public void Ground_snap_keeps_a_character_on_a_slope_it_walks_down()
+    {
+        using var world = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hero = Scene(world, groundSnap: 4);
+        Walk(hero, 1, 150);
+        Assert.IsTrue(hero.Position.X > 200, "on the plateau");
+        Assert.AreEqual(0, Walk(hero, -1, 150), "it never leaves the ground on the way down");
+        Assert.IsTrue(hero.IsGrounded && hero.Position.X < 90, $"back on the floor: {hero.Position}");
+        Assert.AreEqual(-7, hero.Position.Y, world.Skin + 0.01f);
+
+        using var plain = new Box2DPhysicsWorld2D(Box2DTesting.Pixels);
+        var hopping = Scene(plain, groundSnap: 0);
+        Walk(hopping, 1, 150);
+        Assert.IsTrue(Walk(hopping, -1, 150) > 0, "without ground snap it leaves the slope as it walks down");
+    }
+}
+
+/// <summary>Worlds of different threads: Box2D keeps one table of worlds, which the backend guards.</summary>
+[TestClass]
+public sealed class Box2DWorldTableTests
+{
+    [TestMethod]
+    public void Worlds_are_created_stepped_and_disposed_from_several_threads_at_once()
+    {
+        Box2DTesting.RequireNatives();
+        if (OperatingSystem.IsBrowser()) Assert.Inconclusive("One thread in the browser.");
+        var errors = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
+        var threads = new Thread[8];
+        for (int t = 0; t < threads.Length; t++)
+        {
+            threads[t] = new Thread(() =>
+            {
+                try
+                {
+                    for (int round = 0; round < 40; round++)
+                    {
+                        using var world = new Box2DPhysicsWorld2D();
+                        var body = world.CreateBody(default, BodyDescription.Dynamic(Vector2.Zero));
+                        world.AddShape(body, ShapeDescription.Box(new Vector2(1, 1)));
+                        world.Step(1 / 60f);
+                        Assert.IsTrue(world.PositionOf(body).Y < 0, "its own gravity moved its own body");
+                    }
+                }
+                catch (Exception e) { errors.Enqueue(e); }
+            });
+        }
+        foreach (var thread in threads) thread.Start();
+        foreach (var thread in threads) thread.Join();
+        Assert.IsTrue(errors.IsEmpty, errors.TryPeek(out var first) ? first.ToString() : "");
     }
 }

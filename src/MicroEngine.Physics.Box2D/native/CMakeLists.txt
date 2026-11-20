@@ -60,6 +60,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN AND NOT ME_STATIC)
 	# Linux and Android: strip symbols the layer does not export, and keep the library free of build paths.
 	target_link_options(me_box2d PRIVATE -s -Wl,--exclude-libs,ALL)
 	target_link_libraries(me_box2d PRIVATE m)
+	target_link_libraries(me_box2d_selftest PRIVATE m) # the self-test calls the math library itself
 endif()
 if(APPLE AND NOT IOS)
 	set_target_properties(me_box2d PROPERTIES MACOSX_RPATH ON INSTALL_NAME_DIR "@rpath")

@@ -56,6 +56,7 @@
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
     <Project Path="samples/Slice3D/Slice3D.csproj" />
     <Project Path="samples/PhysicsSubstitution/PhysicsSubstitution.csproj" />
+    <Project Path="samples/PhysicsPlayground/PhysicsPlayground.csproj" />
     <Project Path="samples/TiledLevel/TiledLevel.csproj" />
     <Project Path="samples/Pathfinding/Pathfinding.csproj" />
   </Folder>

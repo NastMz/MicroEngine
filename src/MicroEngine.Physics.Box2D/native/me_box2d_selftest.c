@@ -282,12 +282,69 @@ static uint64_t bench( int count, int steps, double* msPerStep )
 	return h;
 }
 
+// Dynamics control and joints: an impulse, the body's dynamics, a pendulum on a revolute joint, a rope, and a joint
+// that ends with its body.
+static void dynamics_and_joint_checks( void )
+{
+	MeWorld* w = me_world_create( 0.0f, -10.0f, 4, 1 );
+	box( w, ME_STATIC, -0.1f, 0.1f, 2.9f, 3.1f, STATIC_LAYER, ALL, 0 );	  // body 0: the anchor at (0, 3)
+	box( w, ME_DYNAMIC, 0.75f, 1.25f, 2.75f, 3.25f, STATIC_LAYER, ALL, 0 ); // body 1: a bob at (1, 3)
+	float m[4], s[6], d[5] = { 0.5f, 0.25f, 0.0f, 1.0f, 0.0f }, got[5];
+	me_body_mass_data( w, 1, m );
+	me_body_apply( w, 1, 1, m[0] * 2.0f, 0.0f, 0.0f, 0.0f, 0, 1 );
+	me_body_state( w, 1, s );
+	check( "body.impulse", fabsf( s[3] - 2.0f ) < 1e-4f && fabsf( m[1] - 1.0f ) < 1e-4f && m[3] > 0.0f, DETAIL( "vx %.4f, inertia %.5f", s[3], m[3] ) );
+	me_body_set_dynamics( w, 1, d );
+	me_body_get_dynamics( w, 1, got );
+	check( "body.dynamics", memcmp( d, got, sizeof( d ) ) == 0 && me_body_is_awake( w, 1 ), "" );
+	float reset[5] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f };
+	me_body_set_dynamics( w, 1, reset );
+	me_body_set_velocity( w, 1, 0.0f, 0.0f );
+	me_body_set_angular_velocity( w, 1, 0.0f );
+
+	float p[17] = { 0.0f, 3.0f, 0.0f, 3.0f };
+	int pin = me_joint_create( w, ME_REVOLUTE, 0, 1, p, 0 );
+	float lowest = 3.0f, worst = 0.0f, j[8];
+	for ( int i = 0; i < 120; ++i )
+	{
+		me_world_step( w, 1.0f / 60.0f );
+		me_body_state( w, 1, s );
+		float arm = sqrtf( s[0] * s[0] + ( s[1] - 3.0f ) * ( s[1] - 3.0f ) );
+		worst = fmaxf( worst, fabsf( arm - 1.0f ) );
+		lowest = fminf( lowest, s[1] );
+	}
+	me_joint_state( w, pin, j );
+	check( "joint.revolute", pin == 0 && worst < 0.02f && lowest < 2.2f && fabsf( j[0] - j[2] ) < 0.02f && fabsf( j[1] - j[3] ) < 0.02f,
+		DETAIL( "arm off by %.4f, lowest y %.3f, angle %.3f", worst, lowest, j[7] ) );
+
+	box( w, ME_DYNAMIC, 4.75f, 5.25f, 2.25f, 2.75f, STATIC_LAYER, ALL, 0 ); // body 2: hangs from a rope at (5, 3)
+	box( w, ME_STATIC, 4.9f, 5.1f, 2.9f, 3.1f, STATIC_LAYER, ALL, 0 );	  // body 3
+	float r[17] = { 5.0f, 3.0f, 5.0f, 2.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f };
+	int rope = me_joint_create( w, ME_DISTANCE, 3, 2, r, 0 );
+	float longest = 0.0f;
+	for ( int i = 0; i < 180; ++i )
+	{
+		me_world_step( w, 1.0f / 60.0f );
+		me_joint_state( w, rope, j );
+		longest = fmaxf( longest, j[7] );
+	}
+	check( "joint.rope", rope == 1 && longest > 1.45f && longest < 1.55f && j[5] != 0.0f, DETAIL( "longest %.4f, force y %.3f", longest, j[5] ) );
+
+	me_body_destroy( w, 1 );
+	me_joint_state( w, pin, j );
+	me_joint_destroy( w, pin );
+	me_joint_set_motor( w, pin, 1, 1.0f, 1.0f );
+	check( "joint.ends-with-body", j[0] == 0.0f && j[7] == 0.0f && me_joint_create( w, ME_REVOLUTE, 0, 1, p, 0 ) == -1, "" );
+	me_world_destroy( w );
+}
+
 int main( int argc, char** argv )
 {
 	printf( "me_box2d api %d, Box2D %d, skin %.4f m\n", me_api_version(), me_box2d_version(), me_move_skin() );
 	check( "version", me_api_version() == ME_API_VERSION && me_box2d_version() == 30200, DETAIL( "%d", me_box2d_version() ) );
 	contract_checks();
 	capability_checks();
+	dynamics_and_joint_checks();
 	double ms;
 	uint64_t h = bench( 500, 600, &ms );
 	printf( "determinism %016llx (500 boxes, 600 steps)\n", (unsigned long long)h );

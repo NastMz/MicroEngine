@@ -147,6 +147,17 @@ public abstract class Game : IEngineModule, IStateHashed
     /// per-step state hash (<see cref="ComputeStateHash"/>).
     /// </summary>
     public Random Random { get; private set; } = new(1);
+    private Func<Physics.IPhysicsWorld2D> _physicsBackend = static () => new Physics.Tiles.TilePhysicsWorld2D();
+    /// <summary>
+    /// Makes the physics world of each scene that uses physics (<see cref="Scenes.Scene.Physics"/>): the tile backend by
+    /// default. The one place a game names another backend, for example
+    /// <c>PhysicsBackend = () =&gt; new Box2DPhysicsWorld2D(options)</c> in its constructor or <c>Load</c>.
+    /// </summary>
+    public Func<Physics.IPhysicsWorld2D> PhysicsBackend
+    {
+        get => _physicsBackend;
+        set => _physicsBackend = value ?? throw new ArgumentNullException(nameof(value));
+    }
     /// <summary>True after <see cref="Quit"/>; the loop stops at the end of the current frame.</summary>
     public bool QuitRequested { get; private set; }
     /// <summary>Width of the virtual canvas in pixels (<see cref="GameSettings.VirtualWidth"/>).</summary>
