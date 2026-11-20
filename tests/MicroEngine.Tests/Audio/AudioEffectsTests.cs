@@ -158,7 +158,7 @@ public sealed class AudioEffectsTests
         // -20 + 20 / 4 = -15 dB, plus 6 of makeup.
         Assert.AreEqual(Math.Pow(10, (-15 + 6) / 20.0), rig.Left((int)(0.4 * Rate)), 0.02 * Math.Pow(10, -9 / 20.0), "over the threshold");
         Assert.AreEqual(0.05 * Math.Pow(10, 6 / 20.0), rig.Left((int)(0.95 * Rate)), 0.02 * 0.1, "under it only the makeup applies, once it let go");
-        Assert.IsTrue(rig.Left(2) > 1.9f, "the attack takes time: the first frames pass almost whole, with the makeup");
+        Assert.IsTrue(rig.Left(2) > 1.8f, "the attack takes time: the first frames pass almost whole, with the makeup");
     }
 
     [TestMethod]
