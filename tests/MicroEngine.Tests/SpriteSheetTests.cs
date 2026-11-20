@@ -283,4 +283,25 @@ public sealed class SpriteSheetTests
         Assert.IsTrue(loaded.Contains("hop#1"), "a clip a frame tag cannot describe gets entries of its own, on the same pixels");
         Assert.AreEqual(loaded["hero3"].Source, loaded["hop#1"].Source);
     }
+
+    [TestMethod]
+    public void Packing_can_trim_the_transparent_margins_and_the_sprites_keep_their_anchors()
+    {
+        // A 16x16 frame whose only opaque pixels are the 4x6 block at (5, 8), anchored at its feet (8, 16).
+        var frame = new PixelImage(16, 16);
+        frame.FillRect(5, 8, 4, 6, Color.White);
+        var builder = new SpriteAtlasBuilder().Add("hero", frame, new Vector2(8, 16)).Add("empty", new PixelImage(8, 8)).Add("full", new PixelImage(4, 4).Clear(Color.White), new Vector2(2, 2));
+        var packed = builder.Pack(trim: true);
+        var hero = packed.Regions[0];
+        Assert.AreEqual((4f, 6f), (hero.Source.Width, hero.Source.Height), "only the opaque pixels take room");
+        Assert.AreEqual(new Vector2(3, 8), hero.Origin, "the anchor, measured from the trimmed corner: drawn at the same place");
+        Assert.AreEqual((1f, 1f), (packed.Regions[1].Source.Width, packed.Regions[1].Source.Height), "a fully transparent image keeps one pixel");
+        Assert.AreEqual(new Vector2(2, 2), packed.Regions[2].Origin, "nothing to trim, nothing changes");
+        Assert.IsTrue(packed.Image.Width * packed.Image.Height <= builder.Pack().Image.Width * builder.Pack().Image.Height);
+
+        var data = AtlasData.Parse(packed.ToJson("p.png"));
+        Assert.AreEqual(hero.Source, data.Regions[0].Source);
+        Assert.AreEqual(new Vector2(3, 8), data.Regions[0].Origin, "the file records the trimming, so the loaded sprite is anchored the same");
+        StringAssert.Contains(packed.ToJson("p.png"), "\"trimmed\": true");
+    }
 }

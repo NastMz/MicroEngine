@@ -15,6 +15,12 @@ namespace MicroEngine.Graphics;
 public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Regions, IReadOnlyList<SheetClip> Clips)
 {
     /// <summary>
+    /// For an atlas packed with trimming, what was cut from each sprite, in the order of <see cref="Regions"/>: where its
+    /// kept pixels lay in the whole image and that image's size. Null when nothing was trimmed.
+    /// </summary>
+    public IReadOnlyList<AtlasTrim>? Untrimmed { get; init; }
+
+    /// <summary>
     /// The atlas as the JSON of packing tools (an array of frames with Aseprite's frame durations and tags), which
     /// <see cref="AtlasData.Parse"/> and <c>Assets.Atlas</c> read. The same atlas always gives the same text.
     /// </summary>
@@ -31,12 +37,13 @@ public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Re
         // What the file lists: every sprite, then one more entry per frame of a clip that a frame tag cannot describe
         // as it stands (frames that are not consecutive, or a frame two clips time differently). Such entries are
         // named "clip#0", "clip#1"... and lie on the same pixels.
-        var entries = new List<(string Name, AtlasRegion Region)>(Regions.Count);
+        var entries = new List<(string Name, AtlasRegion Region, AtlasTrim Trim)>(Regions.Count);
         var index = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var region in Regions)
+        for (int i = 0; i < Regions.Count; i++)
         {
+            var region = Regions[i];
             index[region.Name] = entries.Count;
-            entries.Add((region.Name, region));
+            entries.Add((region.Name, region, Untrimmed is { } cut ? cut[i] : new AtlasTrim(0, 0, (int)region.Source.Width, (int)region.Source.Height, (int)region.Source.Width, (int)region.Source.Height)));
         }
         var durations = new List<double?>(new double?[entries.Count]);
         var tags = new List<(SheetClip Clip, int From, int To)>();
@@ -62,7 +69,7 @@ public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Re
                     string alias = $"{clip.Name}#{i}";
                     if (index.ContainsKey(alias)) throw new InvalidOperationException($"Clip '{clip.Name}' cannot be written: the atlas already has a sprite named '{alias}'.");
                     index[alias] = entries.Count;
-                    entries.Add((alias, entries[at[i]].Region));
+                    entries.Add((alias, entries[at[i]].Region, entries[at[i]].Trim));
                     durations.Add(ms[i]);
                 }
             }
@@ -75,21 +82,22 @@ public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Re
             json.WriteStartArray("frames");
             for (int i = 0; i < entries.Count; i++)
             {
-                var (name, region) = entries[i];
+                var (name, region, trim) = entries[i];
                 int w = (int)region.Source.Width, h = (int)region.Source.Height;
                 json.WriteStartObject();
                 json.WriteString("filename", name);
                 Rect(json, "frame", (int)region.Source.X, (int)region.Source.Y, w, h);
                 json.WriteBoolean("rotated", false);
-                json.WriteBoolean("trimmed", false);
-                Rect(json, "spriteSourceSize", 0, 0, w, h);
+                json.WriteBoolean("trimmed", trim.X != 0 || trim.Y != 0 || trim.SourceWidth != w || trim.SourceHeight != h);
+                Rect(json, "spriteSourceSize", trim.X, trim.Y, w, h);
                 json.WriteStartObject("sourceSize");
-                json.WriteNumber("w", w);
-                json.WriteNumber("h", h);
+                json.WriteNumber("w", trim.SourceWidth);
+                json.WriteNumber("h", trim.SourceHeight);
                 json.WriteEndObject();
+                // The anchor as a fraction of the whole (untrimmed) frame, as packing tools write it.
                 json.WriteStartObject("pivot");
-                json.WriteNumber("x", (double)region.Origin.X / w);
-                json.WriteNumber("y", (double)region.Origin.Y / h);
+                json.WriteNumber("x", ((double)region.Origin.X + trim.X) / trim.SourceWidth);
+                json.WriteNumber("y", ((double)region.Origin.Y + trim.Y) / trim.SourceHeight);
                 json.WriteEndObject();
                 if (durations[i] is { } ms) json.WriteNumber("duration", ms);
                 json.WriteEndObject();
@@ -137,3 +145,12 @@ public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Re
         json.WriteEndObject();
     }
 }
+
+/// <summary>What trimming cut from a sprite: where the kept pixels lay in the whole image, and both sizes.</summary>
+/// <param name="X">Left edge of the kept pixels in the whole image.</param>
+/// <param name="Y">Top edge of the kept pixels in the whole image.</param>
+/// <param name="SourceWidth">Width of the whole image.</param>
+/// <param name="SourceHeight">Height of the whole image.</param>
+/// <param name="Width">Width of the kept pixels.</param>
+/// <param name="Height">Height of the kept pixels.</param>
+public readonly record struct AtlasTrim(int X, int Y, int SourceWidth, int SourceHeight, int Width, int Height);

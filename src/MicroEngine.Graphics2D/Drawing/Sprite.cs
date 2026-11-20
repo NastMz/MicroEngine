@@ -141,13 +141,19 @@ public sealed class SpriteAtlasBuilder
     /// that write an atlas to disk (<see cref="PackedAtlas.ToJson"/>) and for tests. <see cref="Build"/> packs the same way.
     /// </summary>
     /// <param name="extrude">Whether each image gets a 1-pixel border repeating its edge pixels, so linear sampling and scaling never show a neighbour.</param>
+    /// <param name="trim">
+    /// Whether the fully transparent margins of each image are left out of the picture. A sprite then covers only its
+    /// opaque pixels, anchored so that it draws where the whole image would; <see cref="PackedAtlas.Untrimmed"/> keeps
+    /// what was cut.
+    /// </param>
     /// <exception cref="InvalidOperationException">Nothing was added, or a clip names a sprite that was not.</exception>
-    public PackedAtlas Pack(bool extrude = false)
+    public PackedAtlas Pack(bool extrude = false, bool trim = false)
     {
         if (_entries.Count == 0) throw new InvalidOperationException("Atlas has no sprites.");
         foreach (var clip in _clips)
             foreach (var frame in clip.Frames)
                 if (!_names.Contains(frame)) throw new InvalidOperationException($"Clip '{clip.Name}' names the sprite '{frame}', which was not added.");
+        if (trim) return Trimmed().Pack(extrude) with { Untrimmed = [.. _entries.Select(TrimOf)] };
         int border = extrude ? 1 : 0, pad = 1 + 2 * border;
         var order = _entries.Select((e, i) => (e, i)).OrderByDescending(p => p.e.Image.Height).ThenBy(p => p.i).ToList();
         long area = _entries.Sum(e => (long)(e.Image.Width + pad) * (e.Image.Height + pad));
@@ -174,6 +180,26 @@ public sealed class SpriteAtlasBuilder
             regions[i] = new AtlasRegion(name, new RectF(places[i].X, places[i].Y, image.Width, image.Height), origin, null);
         }
         return new PackedAtlas(sheet, regions, [.. _clips]);
+    }
+
+    /// <summary>Where the opaque pixels of an entry lie in it, and its whole size (a fully transparent image keeps its first pixel).</summary>
+    private static AtlasTrim TrimOf((string Name, PixelImage Image, Vector2 Origin) entry)
+    {
+        var (x, y, w, h) = entry.Image.OpaqueBounds() ?? (0, 0, 1, 1);
+        return new AtlasTrim(x, y, entry.Image.Width, entry.Image.Height, w, h);
+    }
+
+    /// <summary>A builder of the same sprites and clips, each image cut down to its opaque pixels and anchored at the same point.</summary>
+    private SpriteAtlasBuilder Trimmed()
+    {
+        var trimmed = new SpriteAtlasBuilder();
+        foreach (var entry in _entries)
+        {
+            var t = TrimOf(entry);
+            trimmed.Add(entry.Name, entry.Image.Crop(t.X, t.Y, t.Width, t.Height), entry.Origin - new Vector2(t.X, t.Y));
+        }
+        foreach (var clip in _clips) trimmed.AddClip(clip);
+        return trimmed;
     }
 
     /// <summary>Copies the outermost pixels of <paramref name="image"/>, placed at (x, y), one pixel outwards (corners included).</summary>
