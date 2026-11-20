@@ -26,8 +26,22 @@ action prompts unchanged.</li><li><code>{n, plural, ...}</code> chooses by numbe
 ([PluralRules](MicroEngine.Localization.PluralRules.md)), else <code>other</code>, which every plural must have. <code>#</code> inside a branch is the number.</li><li><code>{x, select, a {...} b {...} other {...}}</code> chooses by text.</li><li><code>{n, number}</code> is <code>{n}</code>. Numbers are written without grouping, with up to three decimals.</li><li>An apostrophe before <code>{</code>, <code>}</code> or <code>#</code> quotes text up to the next apostrophe (<code>'{'</code> is a
 brace), two apostrophes are one, and any other apostrophe is itself (<code>don't</code>).</li></ul>
 
-Not read, and refused when parsing: <code>selectordinal</code>, <code>offset:</code>, and the date, time, duration and
-spell-out formats.
+Not read, and refused when parsing: <code>selectordinal</code>, <code>offset:</code>, the date, time, duration and
+spell-out formats, and arguments nested deeper than [MaxDepth](MicroEngine.Localization.Message.md#MicroEngine_Localization_Message_MaxDepth) levels.
+
+## Fields
+
+### <a id="MicroEngine_Localization_Message_MaxDepth"></a> MaxDepth
+
+How deep arguments may nest inside the branches of others (32): a message nested deeper is refused when parsed.
+
+```csharp
+public const int MaxDepth = 32
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Properties
 

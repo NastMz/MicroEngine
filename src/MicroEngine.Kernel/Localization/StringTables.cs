@@ -34,14 +34,22 @@ public static class StringTables
     /// </summary>
     public const string PromptPrefix = "prompt.";
 
-    /// <summary>Whether a file name is a string table's.</summary>
+    /// <summary>
+    /// Whether a file name is a string table's: it ends in <see cref="JsonExtension"/> or <see cref="CsvExtension"/>. A
+    /// JSON table must also be named by its language (<see cref="LanguageOf"/>); one that is not is refused when
+    /// loaded and reported by the content check, never skipped.
+    /// </summary>
     public static bool IsTable(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
-        return path.EndsWith(CsvExtension, StringComparison.OrdinalIgnoreCase) || LanguageOf(path) is not null;
+        return path.EndsWith(CsvExtension, StringComparison.OrdinalIgnoreCase) || path.EndsWith(JsonExtension, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>The language of a JSON table from its file name (<c>text/pt-BR.strings.json</c> is <c>pt-BR</c>), or null when the name is not a JSON table's.</summary>
+    /// <summary>
+    /// The language of a JSON table from its file name (<c>text/pt-BR.strings.json</c> is <c>pt-BR</c>), or null when
+    /// the file is not a JSON table or its name is not a language tag (<c>menu.strings.json</c>). Any name with the
+    /// shape of a tag counts: two or three letters, then parts of letters or digits.
+    /// </summary>
     public static string? LanguageOf(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -182,7 +190,8 @@ public static class StringTables
         foreach (var (line, cells) in rows.Skip(1))
         {
             string key = cells[0].Trim();
-            if (key.Length == 0 && cells.All(c => c.Length == 0)) continue;
+            // A line of nothing but spaces (or of empty cells) is an empty line.
+            if (key.Length == 0 && cells.All(string.IsNullOrWhiteSpace)) continue;
             if (key.StartsWith('#')) continue;
             if (key.Length == 0) throw At(line, $"the row has texts but no key in its first cell");
             if (cells.Count > header.Count) throw At(line, $"the row of '{key}' has {cells.Count} cells but the table has {header.Count} columns; put a text that holds commas between quotes");

@@ -36,8 +36,8 @@ public sealed record MessageArgument(string Name, MessageArgumentKind Kind, IRea
 /// <item>An apostrophe before <c>{</c>, <c>}</c> or <c>#</c> quotes text up to the next apostrophe (<c>'{'</c> is a
 /// brace), two apostrophes are one, and any other apostrophe is itself (<c>don't</c>).</item>
 /// </list>
-/// Not read, and refused when parsing: <c>selectordinal</c>, <c>offset:</c>, and the date, time, duration and
-/// spell-out formats.
+/// Not read, and refused when parsing: <c>selectordinal</c>, <c>offset:</c>, the date, time, duration and
+/// spell-out formats, and arguments nested deeper than <see cref="MaxDepth"/> levels.
 /// </remarks>
 public sealed class Message
 {
@@ -67,6 +67,9 @@ public sealed class Message
         Arguments = arguments;
         if (nodes.All(n => n is TextNode)) _plain = string.Concat(nodes.Select(n => ((TextNode)n).Text));
     }
+
+    /// <summary>How deep arguments may nest inside the branches of others (32): a message nested deeper is refused when parsed.</summary>
+    public const int MaxDepth = 32;
 
     /// <summary>The message as written.</summary>
     public string Pattern { get; }
@@ -169,7 +172,7 @@ public sealed class Message
     private sealed class Parser(string source)
     {
         public readonly List<MessageArgument> Arguments = [];
-        private int _at;
+        private int _at, _depth;
 
         private FormatException Error(string message, int at) => new($"{message} (at character {at + 1} of \"{source}\").");
 
@@ -244,11 +247,11 @@ public sealed class Message
         private Node? Argument(string? pluralName)
         {
             int open = _at, i = _at + 1;
-            while (i < source.Length && source[i] == ' ') i++;
+            while (i < source.Length && (source[i] is ' ' or '\t' or '\r' or '\n')) i++;
             int nameStart = i;
-            while (i < source.Length && source[i] is not ('{' or '}' or ',' or ' ' or '\'' or '\n')) i++;
+            while (i < source.Length && source[i] is not ('{' or '}' or ',' or ' ' or '\'' or '\n' or '\r' or '\t')) i++;
             string name = source[nameStart..i];
-            while (i < source.Length && source[i] == ' ') i++;
+            while (i < source.Length && (source[i] is ' ' or '\t' or '\r' or '\n')) i++;
             // Not the shape of an argument ("{{", "{ }", "{two words}"): the brace is text.
             if (name.Length == 0 || i >= source.Length || source[i] is not ('}' or ',')) return null;
             if (source[i] == '}')
@@ -259,11 +262,11 @@ public sealed class Message
             }
 
             i++;
-            while (i < source.Length && source[i] is ' ' or '\n') i++;
+            while (i < source.Length && (source[i] is ' ' or '\t' or '\r' or '\n')) i++;
             int typeStart = i;
             while (i < source.Length && char.IsAsciiLetter(source[i])) i++;
             string type = source[typeStart..i];
-            while (i < source.Length && source[i] is ' ' or '\n') i++;
+            while (i < source.Length && (source[i] is ' ' or '\t' or '\r' or '\n')) i++;
             switch (type)
             {
                 case "number":
@@ -304,7 +307,9 @@ public sealed class Message
                 if (i >= source.Length || source[i] != '{') throw Error($"The branch '{key}' of '{name}' needs its text between braces", keyStart);
                 if (branches.Contains(key)) throw Error($"The branch '{key}' of '{name}' appears twice", keyStart);
                 branches.Add(key);
+                if (++_depth > MaxDepth) throw Error($"Arguments nest deeper than {MaxDepth} levels, the most a message may have", open);
                 var body = Body(i + 1, top: false, plural ? name : null);
+                _depth--;
                 i = _at + 1;
                 if (key == "other") { node.Other = body; other = true; }
                 else if (!plural) node.Cases.Add((key, body));

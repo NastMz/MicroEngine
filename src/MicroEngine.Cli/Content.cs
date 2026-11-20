@@ -213,7 +213,9 @@ public static class ContentTool
             try
             {
                 string text = File.ReadAllText(System.IO.Path.Combine(contentDir, path));
-                if (StringTables.LanguageOf(path) is { } language) tables.Add((path, StringTables.ParseJson(language, text)));
+                if (path.EndsWith(StringTables.JsonExtension, StringComparison.OrdinalIgnoreCase) && StringTables.LanguageOf(path) is null)
+                    issues.Add(new ContentIssue(true, path, $"a JSON string table is named by its language tag (en{StringTables.JsonExtension}, pt-BR{StringTables.JsonExtension}), and this name is not one: the game refuses to load it. Rename it, or put texts shared by several languages in a {StringTables.CsvExtension} file."));
+                else if (StringTables.LanguageOf(path) is { } language) tables.Add((path, StringTables.ParseJson(language, text)));
                 else foreach (var table in StringTables.ParseCsv(text)) tables.Add((path, table));
             }
             catch (FormatException e) { issues.Add(new ContentIssue(true, path, $"not a string table the engine reads: {e.Message}")); }

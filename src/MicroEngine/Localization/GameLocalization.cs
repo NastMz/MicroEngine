@@ -107,6 +107,8 @@ public sealed class GameLocalization : Localizer
             string text;
             try { text = System.Text.Encoding.UTF8.GetString(source.ReadAllBytes(file)); }
             catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException) { throw new AssetLoadException(file, "strings", e.Message, e); }
+            if (file.EndsWith(StringTables.JsonExtension, StringComparison.OrdinalIgnoreCase) && StringTables.LanguageOf(file) is null)
+                throw new AssetLoadException(file, "strings", $"a JSON string table is named by its language tag (en{StringTables.JsonExtension}, pt-BR{StringTables.JsonExtension}), and this name is not one. Rename it, or put texts shared by several languages in a {StringTables.CsvExtension} file.");
             try
             {
                 if (StringTables.LanguageOf(file) is { } language) Add(StringTables.ParseJson(language, text));

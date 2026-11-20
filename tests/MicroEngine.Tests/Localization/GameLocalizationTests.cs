@@ -225,6 +225,12 @@ public sealed class GameLocalizationTests
         Assert.AreEqual("text/fr.strings.json", broken.AssetPath);
         StringAssert.Contains(broken.Message, "line 2");
 
+        // A table whose name is not a language is refused, never skipped.
+        var named = Assert.ThrowsExactly<AssetLoadException>(() => Start(content: root =>
+            File.WriteAllText(Path.Combine(root, "text", "menu.strings.json"), "{ \"a\": \"b\" }")));
+        Assert.AreEqual("text/menu.strings.json", named.AssetPath);
+        StringAssert.Contains(named.Message, "language tag");
+
         var empty = Assert.ThrowsExactly<AssetLoadException>(() => Start(g => g.Localization.Load("ui")));
         StringAssert.Contains(empty.Message, ".strings.json");
         Assert.ThrowsExactly<AssetLoadException>(() => Start(g => g.Localization.Load("nowhere")));

@@ -56,6 +56,7 @@ public readonly struct TextArgument : IEquatable<TextArgument>
 
     internal static void AppendNumber(StringBuilder text, double number)
     {
+        number = Shown(number);
         if (number == Math.Floor(number) && Math.Abs(number) < 1e15)
         {
             // Whole numbers are written into the builder directly: no string for a score that changes every frame.
@@ -63,10 +64,19 @@ public readonly struct TextArgument : IEquatable<TextArgument>
             ((long)number).TryFormat(digits, out int written, default, CultureInfo.InvariantCulture);
             text.Append(digits[..written]);
         }
-        else text.Append(NumberText(number));
+        else text.Append(NumberText(number, true));
     }
 
-    private static string NumberText(double number) =>
+    /// <summary>The number as it is written: rounded to three decimals, and zero without a sign (-0.0004 is 0).</summary>
+    private static double Shown(double number)
+    {
+        double rounded = Math.Round(number, 3);
+        return rounded == 0 ? 0 : double.IsFinite(rounded) ? rounded : number;
+    }
+
+    private static string NumberText(double number) => NumberText(Shown(number), true);
+
+    private static string NumberText(double number, bool _) =>
         number == Math.Floor(number) && Math.Abs(number) < 1e15
             ? ((long)number).ToString(CultureInfo.InvariantCulture)
             : number.ToString("0.###", CultureInfo.InvariantCulture);

@@ -108,3 +108,17 @@ Route: inline, in this worktree. Status: `[ ]` pending, `[x]` done with its evid
   it); it was left in place. L6's explanation (the touch example) was wrong.
 - L13 (2026-11-20) Not done: a shaped-font asset kind. A game writes `ShapedFont.FromBytes(Graphics,
   Assets.Bytes(fonts[0]))`, an `AddFallback` per further font, and disposes it, as the example does.
+- L14 (2026-11-20, correction batch, from an independent verification) Fixed, each with a test seen failing first
+  (`EdgeCaseTests`): a message nested deeper than 32 levels is refused (`Message.MaxDepth`; 5,000 levels ended the
+  test host with a stack overflow before); tabs and line breaks count as space inside an argument; a CSV line of
+  spaces is an empty line; a choice made before the tables is matched again as tables are added, so `Language` is
+  always one of `Languages`; a number that rounds to zero is written "0", never "-0"; whole numbers beyond a long
+  keep their plural form (`many` in Russian and Polish).
+- L15 (2026-11-20) File names: every `*.strings.json` is a string table and its name must be a language tag;
+  `menu.strings.json` is refused by `Load` and reported by the content check instead of being skipped. A name with
+  the shape of a tag that is no real language (`ui.strings.json`) is still taken as a language: the engine keeps no
+  list of languages, and private tags are allowed. The two added assertions (the game's and the tool's) were written
+  with the fix and not run failing on their own.
+- L16 (2026-11-20) `MissingKeys` keeps meaning "keys no table has": the manual now says so. A developer finds
+  untranslated texts with the content check or `StringTableChecks`, which list all of them without playing the game;
+  a list filled only by the keys a session happened to ask for would be a weaker answer to the same question.

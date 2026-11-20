@@ -376,7 +376,8 @@ public string? TextOrNull(string key, params ReadOnlySpan<TextArgument> argument
 
 Sets [Language](MicroEngine.Localization.Localizer.md#MicroEngine_Localization_Localizer_Language) when a table matches <code class="paramref">language</code>, and says whether one did: for a
 choice read from a save or from the system, which may name a language the game does not have. Before any table
-is loaded every tag is taken.
+is loaded every tag is taken, and matched to the tables as they are added: a choice no table matches then
+leaves the default language in use, and is taken as soon as a table for it arrives.
 
 ```csharp
 public bool TrySetLanguage(string? language)

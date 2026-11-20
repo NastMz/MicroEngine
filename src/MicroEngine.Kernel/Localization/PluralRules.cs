@@ -135,8 +135,10 @@ public static class PluralRules
     /// <summary>Whether <paramref name="n"/> (taken without its sign) is a whole number, and which.</summary>
     private static bool Whole(double n, out long whole)
     {
-        whole = (long)n;
-        return whole == n;
+        if (n != Math.Floor(n)) { whole = 0; return false; }
+        // Beyond what a long holds the number is still whole; its last digits are zeros as far as a rule can tell.
+        whole = n < 9e18 ? (long)n : (long)(n % 1000);
+        return true;
     }
 
     /// <summary>The rule of a tag: its own (<c>pt-PT</c>), else its language's (<c>pt</c>).</summary>

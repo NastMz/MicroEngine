@@ -40,7 +40,7 @@ public class Localizer
     private readonly HashSet<string> _reported = new(StringComparer.Ordinal);
     private readonly List<string> _missing = [];
     private readonly StringBuilder _builder = new();
-    private string? _language, _default;
+    private string? _language, _default, _wanted;
     private string _fallback = "en";
     private LanguageInfo[]? _languages;
     // The tables a key is looked up in, for the language in use: its own, its parents', the fallback's.
@@ -67,7 +67,8 @@ public class Localizer
     /// <summary>
     /// Sets <see cref="Language"/> when a table matches <paramref name="language"/>, and says whether one did: for a
     /// choice read from a save or from the system, which may name a language the game does not have. Before any table
-    /// is loaded every tag is taken.
+    /// is loaded every tag is taken, and matched to the tables as they are added: a choice no table matches then
+    /// leaves the default language in use, and is taken as soon as a table for it arrives.
     /// </summary>
     public bool TrySetLanguage(string? language)
     {
@@ -75,6 +76,7 @@ public class Localizer
         string? chosen = _tables.Count == 0 ? LanguageTag.Normalize(language) : Match([language]);
         if (chosen is null) return false;
         string before = Language;
+        _wanted = LanguageTag.Normalize(language);
         _language = chosen;
         if (!LanguageTag.Same(before, chosen)) Invalidate();
         return true;
@@ -180,6 +182,7 @@ public class Localizer
         if (table.Fonts.Count > 0) target.Fonts = table.Fonts;
         target.Info = null;
         foreach (var (key, pattern) in table.Entries) target.Entries[key] = new Entry(pattern);
+        Rematch();
         Invalidate();
     }
 
@@ -190,7 +193,14 @@ public class Localizer
         ArgumentNullException.ThrowIfNull(entries);
         var target = Target(language);
         foreach (var (key, pattern) in entries) target.Entries[key] = new Entry(pattern);
+        Rematch();
         Invalidate();
+    }
+
+    /// <summary>The language chosen, matched again to the tables there are now: the language in use is always one the game has.</summary>
+    private void Rematch()
+    {
+        if (_wanted is not null) _language = Match([_wanted]);
     }
 
     private Table Target(string language)

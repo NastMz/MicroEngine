@@ -129,6 +129,7 @@ public sealed class ContentTests
             .Text("text/es.strings.json", """{ "play": "Jugar", "found": "{quien} lo encontró", "gems": "{n, plural, one {# gema}}" }""")
             .Text("text/ja.strings.json", """{ "@fonts": ["fonts/Inter.ttf"], "play": "プレイ", "quit": "終了", "found": "{who}", "gems": "{n, plural, other {#}}" }""")
             .Text("text/fr.strings.json", "{ \"play\": 3 }")
+            .Text("text/menu.strings.json", "{ \"play\": \"Play\" }")
             .Text("more/extra.strings.csv", "key,en,es\nextra,More,\n")
             .Bytes("fonts/Inter.ttf", ExampleFont("Inter-Regular.ttf"))
             .Bytes("ui/banner.es.png", Png(Solid(4, 4, 1)))
@@ -141,6 +142,7 @@ public sealed class ContentTests
         Error("text/es.strings.json", "{quien}");
         Error("text/es.strings.json", "'gems'");
         Error("text/fr.strings.json", "line 1");
+        Error("text/menu.strings.json", "language tag");
         Error("text/en.strings.json", "fonts/gone.ttf");
         Error("ui/hud.JA.png", "'ja'");
         Warning("text/ja.strings.json", "プレイ終了");

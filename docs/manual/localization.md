@@ -114,6 +114,10 @@ compiled: the files load as they are.
 **One JSON file per language**, named by its language tag (`en.strings.json`, `pt-BR.strings.json`,
 `zh-Hans.strings.json`):
 
+The part of the name before `.strings.json` is the language, so it must be a language tag: two or three letters,
+then optional parts for a script or a region. A file such as `menu.strings.json` is refused when loaded, naming it,
+and reported by the content check; texts for several languages in one file go in a CSV table.
+
 ```json
 {
   "@name": "Español",
@@ -193,8 +197,9 @@ PluralRules.Register("ga", n => n == 1 ? PluralCategory.One : n == 2 ? PluralCat
 ```
 
 A key no table has shows the key itself, and a key the language lacks shows the fallback language's text; each is
-written once to the log (`localization: no text for 'menu.options' in 'es'...`) and listed in
-`Localization.MissingKeys`.
+written once to the log (`localization: no text for 'menu.options' in 'es'...`). `Localization.MissingKeys` lists the
+keys no table has, as the game asked for them. Texts a language has not translated are found before the game runs,
+all of them and not only those a play session reaches, by [checking the tables](#checking-tables).
 
 ## The language in use
 
@@ -360,7 +365,7 @@ warning: text/ja.strings.json: the texts of 'ja' show 212 characters its fonts (
 
 | Finding | Level |
 | --- | --- |
-| A table that cannot be read; a message that cannot be read | error |
+| A table that cannot be read; a `.strings.json` file whose name is not a language tag; a message that cannot be read | error |
 | A key a language lacks (a region counts its language's texts; `prompt.` names are optional) | error |
 | A value a translation names that the reference language's text does not | error |
 | A font in `@fonts` that does not exist; a variant whose language tag is spelled with another letter case | error |
@@ -384,7 +389,8 @@ its fallback language until the player chooses.
 - Numbers are written with plain digits and a point, without grouping; dates, times and currencies are not
   formatted. Format them in the game and pass them as text.
 - The message syntax leaves out `selectordinal` ("1st", "2nd"), `offset:` and the date, time, duration and spell-out
-  formats; a text using them is refused when it is read.
+  formats; a text using them is refused when it is read. Arguments nest inside the branches of others up to 32
+  levels deep; a text nested deeper is refused too.
 - Plural forms follow Unicode's rules for whole numbers; fractions are approximated, and French, Italian,
   Portuguese, Spanish and Catalan have no separate form for whole millions.
 - Right to left: labels start from the right, shaped fonts lay each line out, and `PromptText` lays the pieces of a

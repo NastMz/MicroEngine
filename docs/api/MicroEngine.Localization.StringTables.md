@@ -62,7 +62,9 @@ public const string PromptPrefix = "prompt."
 
 ### <a id="MicroEngine_Localization_StringTables_IsTable_System_String_"></a> IsTable\(string\)
 
-Whether a file name is a string table's.
+Whether a file name is a string table's: it ends in [JsonExtension](MicroEngine.Localization.StringTables.md#MicroEngine_Localization_StringTables_JsonExtension) or [CsvExtension](MicroEngine.Localization.StringTables.md#MicroEngine_Localization_StringTables_CsvExtension). A
+JSON table must also be named by its language ([LanguageOf](MicroEngine.Localization.StringTables.md#MicroEngine_Localization_StringTables_LanguageOf_System_String_)); one that is not is refused when
+loaded and reported by the content check, never skipped.
 
 ```csharp
 public static bool IsTable(string path)
@@ -78,7 +80,9 @@ public static bool IsTable(string path)
 
 ### <a id="MicroEngine_Localization_StringTables_LanguageOf_System_String_"></a> LanguageOf\(string\)
 
-The language of a JSON table from its file name (<code>text/pt-BR.strings.json</code> is <code>pt-BR</code>), or null when the name is not a JSON table's.
+The language of a JSON table from its file name (<code>text/pt-BR.strings.json</code> is <code>pt-BR</code>), or null when
+the file is not a JSON table or its name is not a language tag (<code>menu.strings.json</code>). Any name with the
+shape of a tag counts: two or three letters, then parts of letters or digits.
 
 ```csharp
 public static string? LanguageOf(string path)
