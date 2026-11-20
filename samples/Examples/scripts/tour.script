@@ -212,4 +212,9 @@
 4370 press down
 4384 capture 36-mix.png
 4390 press pause
-4404 quit
+4404 press down
+4414 press confirm
+4454 hold down 50
+4520 capture 37-depth.png
+4526 press pause
+4540 quit

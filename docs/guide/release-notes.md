@@ -6,6 +6,13 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Graphics: draw order, post-processing, the window stage and mip levels
+
+- **Draw order that does not depend on call order.** A `SortedRenderer` keeps the draws made between `Begin` and
+  `End` and sends them by layer, then depth, then call order, each with the camera, blending, clip and state it was
+  recorded under; objects on the ground sort by the Y of their feet. It is a renderer, so everything that draws into
+  one draws into it, on every platform ([Draw order](../manual/rendering.md#draw-order)).
+
 ### Content: sheets, animations, names, validation and packing
 
 - A **sheet description** (a `.sheet` file next to its images) says how images are cut: cell size, margin, spacing,

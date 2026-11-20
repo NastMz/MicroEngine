@@ -193,6 +193,58 @@ Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient`, `DrawNineSlice` (an image stretched to any
 size with its corners kept, from a `NineSlice`) and `Panel` (a bordered UI box from a `PanelStyle`, or its `Image`).
 
+## Draw order
+
+A renderer draws in the order of the calls: what is drawn later covers what was drawn before. A `SortedRenderer`
+removes that dependency for the draws that need it. It is a renderer itself: between `Begin` and `End` it keeps every
+draw with the layer and depth of that moment, and `End` sends them to the real renderer by **layer** (lower first),
+then by **depth** (smaller first, so a larger depth covers), then in the order of the calls.
+
+<!-- code: samples/Examples/Examples/DepthExample.cs#sorted -->
+```csharp
+var world = _sorted.Begin(r);      // a SortedRenderer the scene keeps: draws wait until End
+DrawWorld(world, world);
+_sorted.End();                     // sent by layer, then depth, then the order of the calls
+```
+
+Objects standing on the ground cover each other correctly with the Y of their feet as the depth: the walker goes
+behind the trees below it and in front of those above, wherever the code draws it. Layers separate what never mixes
+(shadows under everything that stands, markers over it):
+
+<!-- code: samples/Examples/Examples/DepthExample.cs#world -->
+```csharp
+/// <summary>The same calls for both pictures; <paramref name="order"/> is null when nothing sorts them.</summary>
+private void DrawWorld(IRenderer r, SortedRenderer? order)
+{
+    // The walker first and the trees after it: in call order every tree would cover the walker.
+    order?.At(layer: 0, depth: Walker.Y);                       // the depth of an object on the ground: its feet
+    r.Draw(_atlas["hero0"], Walker);
+    foreach (var tree in Trees)
+    {
+        order?.At(layer: -1);                                   // shadows: under everything that stands
+        r.FillCircle(tree + new Vector2(0, 1), 9, Color.Black.WithAlpha(0.25f));
+        order?.At(layer: 0, depth: tree.Y);
+        r.FillRect(new RectF(tree.X - 2, tree.Y - 14, 4, 14), Color.Hex("5d275d"));
+        r.FillCircle(tree - new Vector2(0, 22), 13, Color.Hex("257179"));
+        r.FillCircle(tree - new Vector2(4, 26), 5, Color.Hex("38b764"));
+    }
+    order?.At(layer: 1);                                        // over everything, wherever the walker is
+    r.FillTriangle(Walker - new Vector2(3, 24), Walker - new Vector2(-3, 24), Walker - new Vector2(0, 19), Color.Hex("ffcd75"));
+}
+```
+
+- Anything that draws into an `IRenderer` draws into a sorted one: sprites, fonts, tile renderers, particles. Set
+  `Layer` and `Depth` (or `At(layer, depth)`) before the draws they apply to.
+- Each draw keeps the camera, blend mode, clip and states (`PushState`) it was recorded under, whatever position it
+  ends up in. A block starts with no camera, no clip and normal blending of its own; a camera, a state or a clip the
+  renderer already has stays under it. A block that sets a clip leaves the renderer without one.
+- `Clear`, `PushTarget` and `PopTarget` throw `InvalidOperationException` inside a block: a clear and a change of
+  target have no place in an order. Draw into render targets with the renderer itself, before `Begin` or after `End`.
+- The order is the same on every platform and every run: draws with equal layer and depth keep the order of the calls.
+- Draws that end up next to each other with the same texture and state share a draw call, as always; sorting by depth
+  can separate draws that call order kept together. Keep one `SortedRenderer` per scene and reuse it: it keeps its
+  memory between frames.
+
 ## Art in code: `PixelImage` and `Art`
 
 `PixelImage` is a CPU-side RGBA image. It is how games author sprites procedurally and how loaded PNGs are

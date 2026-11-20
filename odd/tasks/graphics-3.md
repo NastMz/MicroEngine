@@ -1,0 +1,62 @@
+# GRAPHICS-3: post-processing, present stage, mipmaps and draw order
+
+Objective: what a developer still assembles by hand on top of RENDER-1 (ADR 0064): a chain of full-screen effects on a
+scene, the canvas or the window; mip levels for textures drawn smaller than their size; an order of drawing that does
+not depend on call order. Branch `feat/graphics-3`, issue #181, one pull request. Evaluation:
+[`docs/evaluations/graphics-3.md`](../../docs/evaluations/graphics-3.md); decision: ADR 0071.
+Test runner: `dotnet test MicroEngine.slnx -c Release`; visual checks are scripted captures looked at.
+
+## Specs
+
+- S1 (issue, acceptance) "A game enables a full-screen effect in a few lines and it covers the UI when asked."
+- S2 (issue, acceptance) "Behaviour on tier-0 devices and browsers is declared and tested."
+- S3 (issue, acceptance) "Manual, guide, ADR 0057 amended."
+- S4 (issue, target) "a post-process chain owned by the scene or camera, a present stage that can take a material at
+  window resolution, mipmaps on devices that can and through `Assets.Texture`, draw depth and sorting on the normal
+  path". "A small set of ready effects (colour grade, blur, CRT, vignette) is evaluated as shipped content rather than
+  examples."
+- S5 (issue, target) "Stencil, multiple render targets and MSAA are re-evaluated with the same method, not assumed
+  either way."
+- S6 (issue) "the shader tool on Linux and macOS where the toolchain allows" and the section "Cross-platform shader
+  compilation ownership". Assumption (the writer's): this part needs hosts this machine does not have and edits
+  outside the writer's surface (`src/MicroEngine.Cli/Shaders.cs`, `.github/`), so it is delimited in the evaluation
+  and left to its own unit.
+- S7 (brief) "A capability a backend cannot do must be declared and fail with a typed error or degrade in a stated
+  way." "state what post-processing does in the browser today, honestly."
+- S8 (brief) "for every effect and for mipmaps and sorting, run a scripted capture of an example and LOOK at the PNG".
+- S9 (brief) "CONTENT-1 (ADR 0066) left "compressed textures and mipmaps" to this initiative: mipmaps are yours;
+  compressed textures only if the method justifies them, otherwise delimit them with reasons."
+
+## Tasks
+
+| ID | Task | Specs | Route | Status |
+| --- | --- | --- | --- | --- |
+| T1 | Draw order: `SortedRenderer` (layer, depth, call order) over any renderer | S4 | inline | [ ] |
+| T2 | Post-processing chain and ready effects; `Scene.PostProcess`, `Game.PostProcess` | S1, S2, S4, S7 | inline | [ ] |
+| T3 | Window stage: `Game.ScreenPostProcess` at the window's resolution, over the UI | S1, S4 | inline | [ ] |
+| T4 | Mip levels: `TextureFilter.LinearMipmap`, device feature on `sdl-gpu` and raylib | S4, S7, S9 | inline | [ ] |
+| T5 | Evaluation, ADR 0071, ADR 0057 amended, manual, guide, release notes, limitations, API reference | S3, S5, S6 | inline | [ ] |
+
+## Log
+
+- L1 (2026-11-20) Issue #181, verbatim. **Problem**: "Post-processing is a hand-written chain in an example, there is
+  no hook at window resolution (effects run before prescale and never include the UI), no device declares mipmaps
+  (minified HD art shimmers), the draw API has no depth or sort although the batcher does, and the shader compiler
+  runs only on Windows. ADR 0057 (GRAPHICS-1 #109) recorded "no post-processing stack" because "no scenario asked for
+  one"." **Target**: "On top of RENDER-1: a post-process chain owned by the scene or camera, a present stage that can
+  take a material at window resolution, mipmaps on devices that can and through `Assets.Texture`, draw depth and
+  sorting on the normal path, and the shader tool on Linux and macOS where the toolchain allows. A small set of ready
+  effects (colour grade, blur, CRT, vignette) is evaluated as shipped content rather than examples. Stencil, multiple
+  render targets and MSAA are re-evaluated with the same method, not assumed either way." **Cross-platform shader
+  compilation ownership**: "The current `microengine shaders` implementation explicitly gates on Windows and locates
+  Windows `dxc.exe` from `Microsoft.Direct3D.DXC`. Investigate **maintained DXC releases/builds and alternatives
+  (including SDL_shadercross)** on Windows, Linux and macOS, with redistribution/licensing, native architecture, CI
+  and per-host reproducibility evidence; remove the host-OS gate where validated. Ensure one host can produce all
+  required native output formats (DXIL, SPIR-V and MSL) without requiring the developer to own every target machine.
+  Include compilation error parity, `--check` and regression tests per supported host." "**Distinct
+  responsibilities:** GRAPHICS-3 owns cross-platform native shader compilation; CONTENT-1 #113 owns
+  automatic/incremental content-build integration; SHADER-GRAPH-1 #190 owns the recommended C# Fluent authoring
+  experience; WEBGPU-1 #192 owns browser programmable rendering and WGSL integration. Preserve raw HLSL + the existing
+  CLI as an advanced path." **Acceptance**: "A game enables a full-screen effect in a few lines and it covers the UI
+  when asked." "Behaviour on tier-0 devices and browsers is declared and tested." "Manual, guide, ADR 0057 amended."
+  "Depends on RENDER-1."
