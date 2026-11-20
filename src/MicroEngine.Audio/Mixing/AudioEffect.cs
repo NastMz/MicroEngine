@@ -15,6 +15,15 @@ namespace MicroEngine.Audio;
 /// whatever block sizes the sink renders.
 /// </para>
 /// <para>
+/// What keeps the two apart, as rules of the contract: <see cref="Prepare"/> is called once in an effect's life, on the
+/// game's thread, before the rendering thread has ever seen it; from then on only the rendering thread calls
+/// <see cref="OnParameter"/>, <see cref="Reset"/> and <c>Process</c>, also when the effect is taken off its bus and
+/// added again, or moved to another bus (it is cleared with <see cref="Reset"/> where it enters a chain). An effect
+/// belongs to the first mixer that plays it: it cannot be added to a bus of another one, whose rendering thread would
+/// process it while the first may still do so. And <c>Process</c> never sets the effect's own properties: they are
+/// the game's thread's.
+/// </para>
+/// <para>
 /// <see cref="Process(Span{float})"/> must not allocate, lock, block or throw. An effect that throws is taken out of the
 /// mix for good (<see cref="Faulted"/>) and the bus goes on without it.
 /// </para>
@@ -55,9 +64,11 @@ public abstract class AudioEffect
         _parameters = new float[parameters];
     }
 
-    // Main thread: the bus the effect is on, and whether a parameter could not be queued (the sink stopped reading).
+    // Main thread: the bus the effect is on, whether a parameter could not be queued (the sink stopped reading), and
+    // the mixer that prepared it, which is the only one whose render function ever touches it.
     internal AudioBus? Bus;
     internal bool Unsent;
+    internal AudioEngine? Owner;
     // Rendering thread.
     internal bool Bypassed, Failed;
     private volatile Exception? _error;
@@ -125,8 +136,10 @@ public abstract class AudioEffect
     internal string? Key => _sidechain;
 
     /// <summary>
-    /// Called on the game's thread when the effect is added to a bus, before it processes anything: the place to
-    /// allocate delay lines and tables for the mixer's format.
+    /// Called once in the effect's life, on the game's thread, the first time it is added to a bus of a device that
+    /// plays, before the rendering thread processes anything: the place to allocate delay lines and tables for the
+    /// mixer's format. It is not called again when the effect is removed and added again, so it never runs while the
+    /// rendering thread uses the effect. On a device without sound it is not called at all.
     /// </summary>
     /// <param name="sampleRate">Frames per second.</param>
     /// <param name="channels">Samples per frame, 1 or 2.</param>

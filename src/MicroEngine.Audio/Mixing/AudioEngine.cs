@@ -148,12 +148,12 @@ public sealed class AudioBus
     public IReadOnlyList<AudioEffect> Effects => _effects;
 
     /// <summary>Adds <paramref name="effect"/> at the end of the chain, from the current step's frame; returns the bus, to add another.</summary>
-    /// <exception cref="InvalidOperationException">The effect is already on a bus.</exception>
+    /// <exception cref="InvalidOperationException">The effect is already on a bus, or has played on another mixer.</exception>
     /// <exception cref="ArgumentException">The effect listens to a bus that does not exist, to this bus or to one this bus plays into.</exception>
     public AudioBus Add(AudioEffect effect) => Insert(_effects.Count, effect);
 
     /// <summary>Adds <paramref name="effect"/> at <paramref name="index"/> of the chain (0: first), from the current step's frame.</summary>
-    /// <exception cref="InvalidOperationException">The effect is already on a bus.</exception>
+    /// <exception cref="InvalidOperationException">The effect is already on a bus, or has played on another mixer.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not in 0..<c>Effects.Count</c>.</exception>
     /// <exception cref="ArgumentException">The effect listens to a bus that does not exist, to this bus or to one this bus plays into.</exception>
     public AudioBus Insert(int index, AudioEffect effect)
@@ -162,6 +162,10 @@ public sealed class AudioBus
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _effects.Count);
         if (effect.Bus is not null) throw new InvalidOperationException($"The effect is already on bus '{effect.Bus.Name}'; remove it from that bus first.");
+        // The mixer that prepared an effect may still be rendering it after it left its bus (until the chain without
+        // it reaches its frame): another mixer's thread must never process it at the same time.
+        if (Engine is not null && effect.Owner is not null && effect.Owner != Engine)
+            throw new InvalidOperationException("The effect has played on another mixer, which may still be processing it; create a new effect for this one.");
         _effects.Insert(index, effect);
         effect.Bus = this;
         try { GraphChanged(); }
@@ -332,6 +336,7 @@ public sealed class AudioEngine : IDisposable
         for (int i = 0; i < Limiter.ParameterCount; i++) Limiter.Deliver(i, Limiter.ParameterValue(i));
         Limiter.Bypassed = Limiter.Bypass;
         Limiter.Bus = _buses[0];
+        Limiter.Owner = this;
         _sentEffects.Add(Limiter);
         _sinkThread = sink.Schedule == AudioSinkSchedule.SinkThread;
         sink.Start(CountedRender);
@@ -555,8 +560,14 @@ public sealed class AudioEngine : IDisposable
                 keys[i] = effect.Key is { } name ? _busNames[name].Index : -1;
                 if (keys[i] >= 0) graph.Submix[keys[i]] = true;
                 if (_sentEffects.Contains(effect)) continue;
-                // Its buffers are made here, on the game's thread, before the render function ever sees it.
-                effect.PrepareFor(_rate, _channels);
+                // Its buffers are made here, on the game's thread, before the render function ever sees it, and only
+                // then: an effect that comes back to a chain may still be rendered by the chain it left, so nothing
+                // on this thread touches it again. From here on it is this mixer's.
+                if (effect.Owner is null)
+                {
+                    effect.PrepareFor(_rate, _channels);
+                    effect.Owner = this;
+                }
                 (entering ??= []).Add(effect);
             }
         }
@@ -611,9 +622,12 @@ public sealed class AudioEngine : IDisposable
         KeepEffect(effect);
     }
 
-    /// <summary>An effect left its bus: changes to it that waited for room in the queue are of no use.</summary>
+    /// <summary>An effect left its bus: the render function is no longer taken to know it, and changes to it that waited for room in the queue are of no use.</summary>
     internal void Forget(AudioEffect effect)
     {
+        // Whatever chain it enters next, it enters as new (cleared, with its values), also when the chain without it
+        // could not be queued and the render function never saw it leave.
+        _sentEffects.Remove(effect);
         if (!effect.Unsent) return;
         effect.Unsent = false;
         _unsentEffects--;
@@ -1128,6 +1142,12 @@ public sealed class AudioEngine : IDisposable
                 if (_busFadeLeft[b] > 0) segmentEnd = Math.Min(segmentEnd, segmentStart + _busFadeLeft[b]);
                 int parent = _busParent[b];
                 bool submix = graph.Submix[b] || _busFadeLeft[b] > 0;
+                if (submix && b > 0 && graph.Buffers[b] is null)
+                {
+                    // The chains always arrive before a fade and carry its buffer; should one ever not, the fade ends
+                    // here instead of the render function failing.
+                    (_busFadeLeft[b], _busVolume[b], submix) = (0, _busFadeTarget[b], false);
+                }
                 _busSubmix[b] = submix;
                 _busAbove[b] = parent < 0 || _busSubmix[parent] ? 1 : _busGain[parent];
                 _busGain[b] = submix ? 1 : _busVolume[b] * (parent >= 0 ? _busAbove[b] : 1);

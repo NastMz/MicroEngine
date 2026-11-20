@@ -97,7 +97,7 @@ public AudioBus Add(AudioEffect effect)
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-The effect is already on a bus.
+The effect is already on a bus, or has played on another mixer.
 
  [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
 
@@ -149,7 +149,7 @@ public AudioBus Insert(int index, AudioEffect effect)
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-The effect is already on a bus.
+The effect is already on a bus, or has played on another mixer.
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 

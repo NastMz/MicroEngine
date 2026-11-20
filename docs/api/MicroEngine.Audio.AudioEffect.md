@@ -61,6 +61,15 @@ the game step that set it, as a voice's volume does. No lock is involved, and th
 whatever block sizes the sink renders.
 </p>
 <p>
+What keeps the two apart, as rules of the contract: [Prepare](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Prepare_System_Int32_System_Int32_) is called once in an effect's life, on the
+game's thread, before the rendering thread has ever seen it; from then on only the rendering thread calls
+[OnParameter](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_OnParameter_System_Int32_System_Single_), [Reset](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Reset) and <code>Process</code>, also when the effect is taken off its bus and
+added again, or moved to another bus (it is cleared with [Reset](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Reset) where it enters a chain). An effect
+belongs to the first mixer that plays it: it cannot be added to a bus of another one, whose rendering thread would
+process it while the first may still do so. And <code>Process</code> never sets the effect's own properties: they are
+the game's thread's.
+</p>
+<p>
 [Process](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Process_System_Span_System_Single__) must not allocate, lock, block or throw. An effect that throws is taken out of the
 mix for good ([Faulted](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Faulted)) and the bus goes on without it.
 </p>
@@ -180,8 +189,10 @@ protected virtual void OnParameter(int index, float value)
 
 ### <a id="MicroEngine_Audio_AudioEffect_Prepare_System_Int32_System_Int32_"></a> Prepare\(int, int\)
 
-Called on the game's thread when the effect is added to a bus, before it processes anything: the place to
-allocate delay lines and tables for the mixer's format.
+Called once in the effect's life, on the game's thread, the first time it is added to a bus of a device that
+plays, before the rendering thread processes anything: the place to allocate delay lines and tables for the
+mixer's format. It is not called again when the effect is removed and added again, so it never runs while the
+rendering thread uses the effect. On a device without sound it is not called at all.
 
 ```csharp
 protected virtual void Prepare(int sampleRate, int channels)

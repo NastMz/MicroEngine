@@ -184,8 +184,10 @@ protected override void OnParameter(int index, float value)
 
 ### <a id="MicroEngine_Audio_Effects_Compressor_Prepare_System_Int32_System_Int32_"></a> Prepare\(int, int\)
 
-Called on the game's thread when the effect is added to a bus, before it processes anything: the place to
-allocate delay lines and tables for the mixer's format.
+Called once in the effect's life, on the game's thread, the first time it is added to a bus of a device that
+plays, before the rendering thread processes anything: the place to allocate delay lines and tables for the
+mixer's format. It is not called again when the effect is removed and added again, so it never runs while the
+rendering thread uses the effect. On a device without sound it is not called at all.
 
 ```csharp
 protected override void Prepare(int sampleRate, int channels)

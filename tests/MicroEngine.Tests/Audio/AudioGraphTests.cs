@@ -397,4 +397,111 @@ public sealed class AudioGraphTests
         Assert.AreEqual(0.5f, audio.BusVolume("voice"));
         Assert.IsTrue(new AudioMixer(new CaptureAudioDevice()).SupportsVoices);
     }
+
+    /// <summary>Counts what each thread does to it, and notes a <c>Prepare</c> that arrives after it started processing.</summary>
+    private sealed class Watched : AudioEffect
+    {
+        public int Prepares, Resets, Blocks, PreparedWhileRendering;
+        protected override void Prepare(int sampleRate, int channels)
+        {
+            Prepares++;
+            if (Blocks > 0) PreparedWhileRendering++;
+        }
+        protected override void Reset() => Resets++;
+        protected override void Process(Span<float> buffer) => Blocks++;
+    }
+
+    [TestMethod]
+    public void An_effect_is_prepared_once_in_its_life_so_adding_it_again_never_touches_what_the_render_thread_still_reads()
+    {
+        // A delay of several blocks: a change to the chains waits that long, and the render function goes on with the
+        // chain it has. The sink renders only when the test says so, as another thread would at any moment.
+        var sink = new ManualSink();
+        using var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps, DelayFrames = StepFrames * 4 }) { Deterministic = true };
+        var effect = new Watched();
+        var sfx = engine.Bus(AudioEngine.SfxBus);
+        sfx.Add(effect);
+        for (int i = 0; i < 6; i++) { engine.Advance(); sink.Render(); }
+        Assert.AreEqual(1, effect.Prepares);
+        Assert.AreEqual(1, effect.Resets);
+        int rendered = effect.Blocks;
+        Assert.IsTrue(rendered > 0, "the render function is processing it");
+
+        sfx.Remove(effect);
+        sfx.Add(effect);
+        // Between the two calls and after them the old chain is still what renders: this block processes the effect.
+        sink.Render();
+        Assert.IsTrue(effect.Blocks > rendered, "the chain without it has not reached its frame: the effect is still rendered");
+        Assert.AreEqual(1, effect.Prepares, "it is not prepared again: Prepare runs on the game's thread and would write what the render function reads");
+        Assert.AreEqual(0, effect.PreparedWhileRendering);
+
+        for (int i = 0; i < 6; i++) { engine.Advance(); sink.Render(); }
+        Assert.AreEqual(2, effect.Resets, "it starts clean when it comes back, on the render thread, at its frame");
+        engine.Bus(AudioEngine.MusicBus).Add(new Watched());
+        sfx.Remove(effect);
+        engine.Bus(AudioEngine.MusicBus).Add(effect);
+        for (int i = 0; i < 6; i++) { engine.Advance(); sink.Render(); }
+        Assert.AreEqual(1, effect.Prepares, "moved to another bus of the same mixer: still prepared once");
+        Assert.AreEqual(3, effect.Resets);
+        Assert.AreEqual(0, engine.FaultedEffects);
+    }
+
+    [TestMethod]
+    public void An_effect_belongs_to_the_first_mixer_that_plays_it()
+    {
+        var (first, _) = Open();
+        var (second, _) = Open();
+        var effect = new Watched();
+        var silent = new AudioMixer(new SilentAudioDevice());
+        silent.Bus(AudioEngine.SfxBus).Add(effect);
+        silent.Bus(AudioEngine.SfxBus).Remove(effect);
+        Assert.AreEqual(0, effect.Prepares, "a device without sound renders nothing: nothing to prepare");
+        first.Bus(AudioEngine.SfxBus).Add(effect);
+        first.Bus(AudioEngine.SfxBus).Remove(effect);
+        var refused = Assert.ThrowsExactly<InvalidOperationException>(() => second.Bus(AudioEngine.SfxBus).Add(effect),
+            "the first mixer's render thread may still be processing it");
+        StringAssert.Contains(refused.Message, "another mixer");
+        Assert.AreEqual(0, second.Bus(AudioEngine.SfxBus).Effects.Count);
+        first.Bus(AudioEngine.MusicBus).Add(effect);
+        Assert.AreEqual(1, effect.Prepares);
+    }
+
+    [TestMethod]
+    public void Clearing_a_bus_of_its_effects_in_the_middle_of_a_fade_leaves_the_fade_running()
+    {
+        var (engine, sink) = Open();
+        var bus = engine.AddBus("late");
+        bus.Add(new Gain(0.5f));
+        engine.Play(Constant(0.8f, StepFrames * 8), new PlayParameters { Bus = "late" });
+        Step(engine);
+        bus.FadeTo(0.5f, 0.05f);          // 2400 frames from step 1
+        Step(engine);
+        bus.ClearEffects();               // step 2: 800 frames into the fade
+        Step(engine, 4);
+        Assert.AreEqual(0.8f * 0.5f * (1 - 0.5f * 800 / 2400), Left(sink, 2 * StepFrames - 1), 1e-5f, "with the effect, fading");
+        Assert.AreEqual(0.8f * (1 - 0.5f * 801 / 2400), Left(sink, 2 * StepFrames), 1e-5f, "without it from its frame, the fade where it was");
+        Assert.AreEqual(0.8f * 0.5f, Left(sink, StepFrames + 2400 + 10), 1e-6f, "and it ends on its volume");
+        Assert.AreEqual(0, engine.FaultedEffects);
+    }
+
+    [TestMethod]
+    public void An_effect_moved_to_another_bus_while_the_sink_does_not_read_still_starts_clean_there()
+    {
+        var sink = new ManualSink();
+        using var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps }) { Deterministic = true };
+        var effect = new Watched();
+        engine.Bus(AudioEngine.SfxBus).Add(effect);
+        engine.Advance();
+        sink.Render();
+        Assert.AreEqual(1, effect.Resets);
+        // The queue fills: the chain without the effect cannot be queued, nor the one that has it on the other bus.
+        var filler = new Gain();
+        engine.Bus(AudioEngine.MasterBus).Add(filler);
+        for (int i = 0; i < 5000; i++) filler.Amount = i;
+        engine.Bus(AudioEngine.SfxBus).Remove(effect);
+        engine.Bus(AudioEngine.MusicBus).Add(effect);
+        for (int i = 0; i < 4; i++) { engine.Advance(); sink.Render(); }
+        Assert.AreEqual(2, effect.Resets, "the render function never saw it leave, but it is cleared where it enters the other bus's chain");
+        Assert.AreEqual(1, effect.Prepares);
+    }
 }

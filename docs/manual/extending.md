@@ -179,14 +179,16 @@ fields: the ones behind its properties and the ones `Process` reads.
 
 | Member | Called on | For |
 | --- | --- | --- |
-| `Prepare(sampleRate, channels)` | the game's thread, when added to a bus | allocating delay lines and tables |
+| `Prepare(sampleRate, channels)` | the game's thread, once in the effect's life, the first time it is added to a bus of a device that plays | allocating delay lines and tables |
 | `OnParameter(index, value)` | the audio thread | every parameter once when the effect enters a chain, then each change |
 | `Reset()` | the audio thread | forgetting what it heard: entering a chain, leaving `Bypass` |
 | `Process(buffer)` | the audio thread | interleaved samples (`buffer.Length / channels` frames), any block length from one frame |
 | `Process(buffer, sidechain)` | the audio thread | the same, with the mix of the bus named by `SidechainBus` |
 
 `Process` must not allocate, lock, wait or throw. An effect that throws is taken out of the mix for good: `Faulted`
-turns true, `Error` holds the exception, and the bus goes on without it. An effect belongs to one bus at a time. Keep
+turns true, `Error` holds the exception, and the bus goes on without it. An effect belongs to one bus at a time; it
+can be removed and added again, or moved to another bus, and starts clean (`Reset`) each time. `Process` never sets
+the effect's own properties. Keep
 `Process` independent of how its blocks are cut (count frames yourself rather than blocks), and the same game run
 gives the same samples on every platform.
 
