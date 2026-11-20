@@ -30,7 +30,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | 2D only in the SDK packages. A minimal 3D path (glTF meshes, a perspective camera, depth) is in the engine's repository only, in no package; there is no 3D renderer | [The 3D path](../manual/rendering.md#the-3d-path) |
 | No networking or scripting language | [Architecture](../architecture.md) |
 | No visual editor, level editor or asset tool: content is code, or files loaded through `Game.Assets` | [Assets](../manual/assets.md) |
-| No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
+| Objects are plain entities with attachments by default. An Entity Component System is an optional package (`MicroEngine.Ecs`), without events, relations between rows or saving of its own | [Entity Component Systems](../guide/entity-component-systems.md) |
 | Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 

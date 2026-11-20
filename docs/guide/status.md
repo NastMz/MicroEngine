@@ -22,7 +22,7 @@ iOS and in web browsers. It is in Alpha: public APIs may still change between 0.
 | --- | --- |
 | A visual editor, level editor or asset tool | MicroEngine is code-first: content is code (`PixelImage.FromMap`, `TileLayer.Parse` over text rows) or files made with other tools (images, packing tools' atlases, fonts) loaded at run time. A visual editor is a long-term vision on the [roadmap](/roadmap/) |
 | 3D | The SDK is 2D. A minimal 3D path (glTF meshes, a perspective camera, depth) exists in the engine's repository only, in no package ([The 3D path](../manual/rendering.md#the-3d-path)); a 3D renderer is a long-term vision |
-| An ECS, networking or a scripting language | Not part of the engine's design ([Architecture](../architecture.md)) |
+| Networking or a scripting language | Not part of the engine's design ([Architecture](../architecture.md)) |
 | Cloud saves | Saves stay on the device (files) or in the browser (`localStorage`) |
 | Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs |
 

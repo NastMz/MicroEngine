@@ -1,47 +1,538 @@
-# Many alike objects and Entity Component Systems
+# Entity Component Systems
 
-A scene's world keeps each object as an entity with a transform and the attachments your game gives it. That is the
-model every example uses and the right one for almost every game. This page is for the games it was not shaped for:
-hundreds of thousands of projectiles, particles of your own or simulated creatures that all carry the same few
-numbers, where an Entity Component System (an ECS: objects as rows of plain data, walked column by column) does the
-same work in a fraction of the time and memory.
+MicroEngine has two ways to model the objects of a game. The scene's world (`Objects`) keeps each object as an entity
+with a transform and attachments of your own classes; it is what every template, tutorial and example uses and the
+right model for most games. The optional `MicroEngine.Ecs` package adds the other one: an Entity Component System
+(an ECS), where an object is a row of plain components, a behaviour is a system that walks every row with the
+components it needs, and what an object can do changes by adding and removing components while it lives.
 
-MicroEngine has no ECS of its own and needs none: a game adds the library it prefers and runs it beside the scene's
-world, through the same places every scene already has.
+```xml
+<PackageReference Include="MicroEngine.Ecs" Version="0.6.0-alpha.1" />
+```
+
+The package is a component store that lives in a scene. It is built on [Arch](https://github.com/genaray/Arch) (an
+Apache-2.0 library that the package brings with it) and does not hide it: rows, components and queries are Arch's,
+used as its documentation shows. What the package adds is everything between the store and the engine.
 
 | To do this | Use |
 | --- | --- |
-| Keep a few thousand objects of different kinds, with children, bodies and behaviour | the scene's world (`Objects`) |
-| Walk every object of one kind | `Objects.All<T>()` |
-| Keep hundreds of thousands of alike objects, or create and destroy thousands every step | a component store beside the world |
-| Give one of those objects a child, a physics body or a 3D mesh | an entity of the world linked to its row ([below](#an-object-on-both-sides)) |
-| Find the objects near a point, in either model | `SpatialIndex2D<T>` ([Large worlds and nearby objects](large-worlds.md)) |
-| Draw particles | `ParticleSystem`, which needs neither |
+| Give a scene a component store | `this.AddEcs(components)` in `Enter` |
+| Give every scene one | `Scenes.AddEcs(components)` in the game's `Load` |
+| Say which component types exist, which are simulation state and which are drawn between steps | `EcsComponents` |
+| Run behaviours in a fixed order, before and after the scene's `Update` | `ecs.Systems`, `ecs.LateSystems` |
+| Add, remove or destroy from inside a walk | `ecs.Commands` |
+| Give a row a transform with children, a physics body or a place in a spatial index | `ecs.Link(row, entity)` |
+| Draw a row between two steps | `ecs.Interpolated<T>()` |
+| Ask for "everything with this and that but not that" | a query description (`WithAll`, `WithAny`, `WithNone`) |
 
-## How far the scene's world goes
+## Which model fits
 
-Further than most games need. On a desktop, one update of a world of 100,000 entities that walks them all through
-`All<T>` and moves each one through `Local` takes about half a millisecond, of the 16.7 a 60 Hz update has; a million
-take about 6.5. Replacing a tenth of those 100,000 every step (10,000 destroyed and 10,000 created) takes about 1.7
-milliseconds. Asking for a combination ("every entity with a `Motion` and a `Vitals`") is a walk over one attachment
-with `TryGet<T>` for the other: about 1 millisecond for three such questions over 100,000 entities.
+Choose by what the game models, not by how many objects it has.
 
-Two things to know while the world is the store:
+**The scene's world fits when the kinds of object are few and stay what they are.** A player, three kinds of enemy,
+pickups and doors: each kind is a class, its state is fields, its rules are the code that reads them. This is the
+shortest and plainest way to write such a game. Attachments are walked in the order they were attached, an object can
+be changed while the world is being walked, and a rule reads as the `if` it is. Each object can have children, and a
+[state machine](state-machines.md) for the states it is in one at a time.
 
-- **Reuse the attachments of destroyed objects.** An attachment is an object of your own class. A game that creates a
-  new one for every projectile produces garbage in proportion to what it spawns: 10,000 spawns a step are 400 KB a
-  step and a collection every few dozen frames, each a pause of up to a few milliseconds. Keep the attachments of
-  destroyed entities in a `Stack<T>` and take them from there; then spawning allocates nothing.
-- **An entity costs about 240 bytes** with one attachment (two transforms, its links in the hierarchy, its
-  attachment). A million of them are about 240 MB.
+**Components and systems fit when what an object is changes, or kinds overlap.** The signs:
 
-What limits a game long before the world does is what it draws and what collides: a frame of a few hundred thousand
-sprites, or a few thousand moving bodies, fills an update whichever way the objects are stored.
+- *Capabilities come and go on a live object*: burning, frozen, shielded, carrying, possessed, selected. On the
+  world they are counters and flags in a class, tested in every loop they affect. As components, an effect is there
+  or not, and a behaviour it switches off leaves those rows out of its query.
+- *Kinds share some behaviours and not others*: a crate that burns and breaks like an enemy but does not move or
+  freeze. On the world the shared part becomes a base class or is split into several attachments, and the code that
+  assumed one kind is rewritten. As components, the crate is a row with a different set, and no system changes.
+- *The game asks about combinations*: every burning thing near here that has no shield. On the world that is a walk
+  over everything with a test per condition. As a query it is a description, and only matching rows are walked.
+- *The same behaviour is written again* for each kind of object that has it.
 
-## What a component store changes
+What components cost in return: a row cannot gain, lose or be destroyed during a walk (changes are asked of
+`Commands` or made after it), rows are walked in no promised order (sort when order is a rule), and a rule that
+touches another row reads through `Has`, `Get`, `Add` and `Remove` instead of fields. For a game without the signs
+above, that is ceremony with nothing in return.
 
-An ECS library keeps objects as rows of structs, one array per component, the rows with the same components side by
-side. Compared with the scene's world on the same work, on a desktop:
+**The two work together.** A scene can keep its player, its interface and its level in the world and its creatures,
+projectiles and effects in a store, and an object that needs both is a row [linked](#an-object-on-both-sides) to an
+entity.
+
+**Very many alike objects** are a second reason for a store: rows of structs are walked several times faster than
+attachments and take a quarter of the memory. It starts to matter far later than most games reach
+([below](#many-alike-objects)).
+
+## The components
+
+Components are plain structs. Declare every type of the game once, in an `EcsComponents`, and say what each is:
+
+- `AddState<T>()`: simulation state. Each row's value is part of the state hash
+  ([testing](../examples/testing.md)), through the component's own `HashState` (`IStateHashed`), or through a
+  function for a type you cannot change.
+- `AddTag<T>()`: a component without data whose presence is state (which rows are shielded).
+- `Add<T>()`: not state: what only drawing needs, or what can be rebuilt.
+- `Interpolate<T>(blend)`: the store keeps the value from the start of each step so drawing can blend.
+- `SyncTransform<T>(write)`: the component is the place of rows linked to an entity.
+
+<!-- code: samples/EcsEffects/Components.cs#components -->
+```csharp
+// What a thing is made of. A walker, a crate and a bolt are not classes: each is a row with some of these.
+public struct Position : IStateHashed
+{
+    public Vector2 Value;
+    public readonly void HashState(StateHasher hash) => hash.Add(Value);
+}
+
+public struct Velocity : IStateHashed
+{
+    public Vector2 Value;
+    public readonly void HashState(StateHasher hash) => hash.Add(Value);
+}
+
+public struct Health : IStateHashed
+{
+    public int Value;
+    public readonly void HashState(StateHasher hash) => hash.Add(Value);
+}
+
+/// <summary>A bolt in flight.</summary>
+public struct Shot : IStateHashed
+{
+    public int Damage, Life, Fired;
+    public Element Element;
+    public readonly void HashState(StateHasher hash)
+    {
+        hash.Add(Damage);
+        hash.Add(Life);
+        hash.Add(Fired);
+        hash.Add((int)Element);
+    }
+}
+
+// Effects come and go on a live row: adding the component starts the effect, removing it ends it.
+/// <summary>On fire: hurt at each tick, and at each tick the fire reaches what is near.</summary>
+public struct Burning : IStateHashed
+{
+    public int Left, Tick;
+    public readonly void HashState(StateHasher hash)
+    {
+        hash.Add(Left);
+        hash.Add(Tick);
+    }
+}
+
+/// <summary>In ice: it does not move, and the next hit shatters it for twice the damage.</summary>
+public struct Frozen : IStateHashed
+{
+    public int Left;
+    public readonly void HashState(StateHasher hash) => hash.Add(Left);
+}
+
+/// <summary>Takes the next hit whole, and is gone.</summary>
+public struct Shielded;
+
+// What a kind of thing can have: a walker carries both, a crate neither.
+/// <summary>The row can be frozen.</summary>
+public struct Freezes;
+/// <summary>The row can take a shield.</summary>
+public struct Shieldable;
+/// <summary>The row is a crate: it counts as broken, not as a kill.</summary>
+public struct Crate;
+```
+
+<!-- code: samples/EcsEffects/Components.cs#declared -->
+```csharp
+// Every component type of the game, declared once: the data is simulation state (in the state hash), the empty
+// ones are tags (which rows have them is state), and a position is drawn between two steps.
+public static readonly EcsComponents Components = new EcsComponents()
+    .AddState<Position>().AddState<Velocity>().AddState<Health>().AddState<Shot>().AddState<Burning>().AddState<Frozen>()
+    .AddTag<Shielded>().AddTag<Freezes>().AddTag<Shieldable>().AddTag<Crate>()
+    .Interpolate<Position>(static (in Position from, in Position to, float blend) => new Position { Value = Vector2.Lerp(from.Value, to.Value, blend) });
+```
+
+A row with a component that was not declared stops the game at the end of the system that made it, with a message
+that names the type. That is deliberate: a build published with NativeAOT cannot make rows of a component type
+nobody named, and a forgotten one would otherwise fail only there. Declaring a type also names it for that build.
+
+## The store and its systems
+
+A scene adds its store in `Enter` and lists its systems. The store is created at that moment and destroyed when the
+scene leaves; nothing in the scene's `Exit` mentions it.
+
+<!-- code: samples/EcsEffects/ArenaScene.cs#scene -->
+```csharp
+public override void Enter()
+{
+    // The store lives with the scene. Its systems run in the order written here, every step: the ones in Systems
+    // before this scene's Update, the ones in LateSystems after it.
+    _ecs = this.AddEcs(Rules.Components);
+    _ecs.Systems.Add(new Movement());
+    _ecs.Systems.Add(new Hits());
+    _ecs.Systems.Add(new Effects());
+    _ecs.LateSystems.Add(new Deaths());
+    _places = _ecs.Interpolated<Position>();
+
+    Caster = new Vector2(Game.Width / 2f, Game.Height - 12);
+    // Two rows of crates with a gap, a shielded guard in the gap, another one to the left, and walkers above.
+    for (int i = 0; i < 6; i++) AddCrate(new Vector2(Game.Width / 2f + (i < 3 ? -42 + i * 14 : -28 + i * 14), 96));
+    AddWalker(new Vector2(Game.Width / 2f, 84), Vector2.Zero, shielded: true);
+    AddWalker(new Vector2(Game.Width / 2f - 60, 60), Vector2.Zero);
+    for (int i = 0; i < 6; i++) AddWalker(new Vector2(30 + i * 50, 30 + i % 2 * 14), new Vector2(i % 2 == 0 ? 22 : -18, 6), shielded: i % 3 == 0);
+    // Walkers keep coming: one of the scene's timers adds a row every few seconds.
+    Timers.Every(4f, () => AddWalker(new Vector2(8, 30 + Game.Random.Next(80)), new Vector2(18 + Game.Random.Next(12), 5), shielded: Game.Random.Next(3) == 0));
+}
+```
+
+In each step of the scene:
+
+1. Rows linked to an entity that something else moves read its transform.
+2. The components marked with `Interpolate` are kept as they are now.
+3. `Systems` run, in the order they were added.
+4. The scene's own `Update` runs.
+5. `LateSystems` run, in the order they were added.
+6. Links that lost a side are settled, and linked rows write their place to their entity.
+
+The order of behaviours is the order of the `Add` calls: one place to read it and to change it. A system has an
+`Enabled` switch (a cutscene that stops combat and keeps movement), and a scene frozen under an overlay or in a
+transition does not step its store, like the rest of the scene.
+
+A system is a class with the queries it walks and an `Update`:
+
+<!-- code: samples/EcsEffects/Systems.cs#movement -->
+```csharp
+/// <summary>Everything with a place and a velocity moves, unless it is frozen: a bolt and a walker alike.</summary>
+public sealed class Movement : EcsSystem
+{
+    private static readonly QueryDescription Movers = new QueryDescription().WithAll<Position, Velocity>().WithNone<Frozen>();
+    private static readonly QueryDescription Walkers = new QueryDescription().WithAll<Position, Velocity, Health>().WithNone<Frozen>();
+
+    protected override void Update(float dt)
+    {
+        foreach (ref var chunk in World.Query(in Movers))
+        {
+            var positions = chunk.GetSpan<Position>();
+            var velocities = chunk.GetSpan<Velocity>();
+            for (int i = 0; i < chunk.Count; i++) positions[i].Value += velocities[i].Value * dt;
+        }
+        // What has health turns at the edges; a bolt flies out and ends.
+        foreach (ref var chunk in World.Query(in Walkers))
+        {
+            var positions = chunk.GetSpan<Position>();
+            var velocities = chunk.GetSpan<Velocity>();
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                if (positions[i].Value.X < 4 || positions[i].Value.X > Game.Width - 4) velocities[i].Value.X = -velocities[i].Value.X;
+                if (positions[i].Value.Y < 16 || positions[i].Value.Y > Game.Height - 30) velocities[i].Value.Y = -velocities[i].Value.Y;
+            }
+        }
+    }
+}
+```
+
+Inside a system, `World` is the store's rows (Arch's `World`), `Commands` its deferred changes, `Store`, `Scene` and
+`Game` what they say. A behaviour too small for a class is a function: `ecs.Systems.Add("gravity", (store, dt) => ...)`.
+A system that keeps something between steps (a counter, a timer) adds it to the state hash in its own `HashState`.
+
+## Changing rows
+
+Creating a row, destroying one, and adding or removing a component change the store's layout, which a walk does not
+allow under itself. Two ways to do it:
+
+- **Ask `Commands`** from inside the walk. The store applies what was asked when the system returns, and after the
+  scene's `Update`; the next system sees the result. `Store.Flush()` applies it at once, between two walks of one
+  system.
+- **Collect and change after the walk**, inside the same system. Outside a walk every call of the library is
+  allowed, and the change is visible at once, which a rule that depends on the previous change needs.
+
+The hit system of the sample does both: bolts that end are destroyed through `Commands`, and hits are settled after
+the walk, in the order the bolts were fired, because what one hit removes (a shield) decides what the next one does.
+
+<!-- code: samples/EcsEffects/Systems.cs#hits -->
+```csharp
+/// <summary>A bolt hits the nearest thing with health in reach, and what the hit does depends on what that thing has.</summary>
+public sealed class Hits : EcsSystem
+{
+    private static readonly QueryDescription Flying = new QueryDescription().WithAll<Position, Shot>();
+    private static readonly QueryDescription Targets = new QueryDescription().WithAll<Position, Health>();
+    private readonly List<(int Fired, Entity Target, int Damage, Element Element)> _hits = [];
+
+    protected override void Update(float dt)
+    {
+        foreach (ref var chunk in World.Query(in Flying))
+        {
+            var positions = chunk.GetSpan<Position>();
+            var shots = chunk.GetSpan<Shot>();
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                if (Nearest(positions[i].Value, out var target)) _hits.Add((shots[i].Fired, target, shots[i].Damage, shots[i].Element));
+                else if (--shots[i].Life > 0) continue;
+                Commands.Destroy(chunk.Entity(i));   // applied when this system returns
+            }
+        }
+        // A hit adds and removes components, which a walk does not allow, so hits are settled after it: in the order
+        // the bolts were fired, because the store walks rows in no promised order.
+        _hits.Sort(static (a, b) => a.Fired.CompareTo(b.Fired));
+        foreach (var hit in _hits) Hit(World, hit.Target, hit.Damage, hit.Element);
+        _hits.Clear();
+    }
+
+    private bool Nearest(Vector2 at, out Entity nearest)
+    {
+        nearest = Entity.Null;
+        float best = Rules.HitRadius * Rules.HitRadius;
+        foreach (ref var chunk in World.Query(in Targets))
+        {
+            var positions = chunk.GetSpan<Position>();
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                float distance = Vector2.DistanceSquared(positions[i].Value, at);
+                var row = chunk.Entity(i);
+                if (distance < best || (distance == best && nearest != Entity.Null && row.Id < nearest.Id)) (nearest, best) = (row, distance);
+            }
+        }
+        return nearest != Entity.Null;
+    }
+
+    // The order of these checks is the rule: a shield first, then ice, then the hit and what it carries.
+    private static void Hit(World world, Entity target, int damage, Element element)
+    {
+        if (world.Has<Shielded>(target))
+        {
+            world.Remove<Shielded>(target);
+            return;
+        }
+        if (world.Has<Frozen>(target))
+        {
+            world.Remove<Frozen>(target);
+            world.Get<Health>(target).Value -= element == Element.Fire ? damage : damage * 2;   // fire thaws, anything else shatters
+            return;
+        }
+        world.Get<Health>(target).Value -= damage;
+        if (element == Element.Fire) Effects.Ignite(world, target);
+        if (element == Element.Ice)
+        {
+            if (world.Has<Burning>(target)) world.Remove<Burning>(target);
+            else if (world.Has<Freezes>(target)) world.Add(target, new Frozen { Left = Rules.FrozenSteps });
+        }
+    }
+}
+```
+
+`Commands` allocates a little each time it is applied with something in it (around half a kilobyte, more with many
+changes). A system that changes many rows every step keeps them in a list of its own instead, as the swarm sample
+does; then a step allocates nothing.
+
+Effects pass their time in a system of their own. It uses `Flush` so the rows whose fire ended are out of the way
+before the fire spreads:
+
+<!-- code: samples/EcsEffects/Systems.cs#effects -->
+```csharp
+/// <summary>Effects pass their time: ice ends, fire hurts, spreads to what is near and ends.</summary>
+public sealed class Effects : EcsSystem
+{
+    private static readonly QueryDescription Iced = new QueryDescription().WithAll<Frozen>();
+    private static readonly QueryDescription Alight = new QueryDescription().WithAll<Burning, Health, Position>();
+    private static readonly QueryDescription NotAlight = new QueryDescription().WithAll<Position, Health>().WithNone<Burning>();
+    private readonly List<(Entity Row, Vector2 At)> _sources = [];
+    private readonly List<Entity> _reached = [];
+
+    public static void Ignite(World world, Entity target)
+    {
+        if (world.Has<Burning>(target)) world.Get<Burning>(target).Left = Rules.BurnSteps;
+        else world.Add(target, new Burning { Left = Rules.BurnSteps, Tick = Rules.BurnTick });
+    }
+
+    protected override void Update(float dt)
+    {
+        foreach (ref var chunk in World.Query(in Iced))
+        {
+            var frozen = chunk.GetSpan<Frozen>();
+            for (int i = 0; i < chunk.Count; i++)
+                if (--frozen[i].Left == 0) Commands.Remove<Frozen>(chunk.Entity(i));
+        }
+        foreach (ref var chunk in World.Query(in Alight))
+        {
+            var burning = chunk.GetSpan<Burning>();
+            var health = chunk.GetSpan<Health>();
+            var positions = chunk.GetSpan<Position>();
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                if (--burning[i].Tick == 0)
+                {
+                    health[i].Value--;
+                    burning[i].Tick = Rules.BurnTick;
+                    _sources.Add((chunk.Entity(i), positions[i].Value));
+                }
+                if (--burning[i].Left == 0) Commands.Remove<Burning>(chunk.Entity(i));
+            }
+        }
+        // The effects that ended leave their rows now: the walk below must not see them.
+        Store.Flush();
+
+        // Fire reaches from every row that burned this step. Who is reached is decided before any row is changed.
+        foreach (var (source, from) in _sources)
+            foreach (ref var chunk in World.Query(in NotAlight))
+            {
+                var positions = chunk.GetSpan<Position>();
+                for (int i = 0; i < chunk.Count; i++)
+                {
+                    var row = chunk.Entity(i);
+                    if (row == source || _reached.Contains(row)) continue;
+                    if (Vector2.DistanceSquared(positions[i].Value, from) < Rules.SpreadRadius * Rules.SpreadRadius) _reached.Add(row);
+                }
+            }
+        foreach (var row in _reached)
+        {
+            if (World.Has<Frozen>(row)) World.Remove<Frozen>(row);   // fire takes the ice and does not catch
+            else Ignite(World, row);
+        }
+        _sources.Clear();
+        _reached.Clear();
+    }
+}
+```
+
+## Kinds of object, and questions
+
+A kind of object is a choice of components, made where the row is created. Nothing declares "a crate"; a crate is a
+row without a velocity and without the two tags a walker carries, so movement never finds it and ice and shields
+pass it by. No system mentions crates to leave them out.
+
+<!-- code: samples/EcsEffects/ArenaScene.cs#spawn -->
+```csharp
+// A kind of thing is a choice of components. A crate has no velocity, so nothing ever moves it; it has neither
+// Freezes nor Shieldable, so ice and shields pass it by. No system mentions crates to leave them out.
+public Entity AddWalker(Vector2 at, Vector2 velocity, bool shielded = false)
+{
+    var row = _ecs.World.Create(new Position { Value = at }, new Velocity { Value = velocity }, new Health { Value = WalkerHealth }, new Freezes(), new Shieldable());
+    if (shielded) _ecs.World.Add<Shielded>(row);
+    return row;
+}
+
+public Entity AddCrate(Vector2 at) => _ecs.World.Create(new Position { Value = at }, new Health { Value = CrateHealth }, new Crate());
+
+public Entity Shoot(Vector2 from, Vector2 velocity, int damage, Element element) => _ecs.World.Create(
+    new Position { Value = from }, new Velocity { Value = velocity }, new Shot { Damage = damage, Life = Rules.ShotLife, Fired = _fired++, Element = element });
+```
+
+A question about a combination is a query description, kept in a static field:
+
+<!-- code: samples/EcsEffects/ArenaScene.cs#question -->
+```csharp
+private static readonly QueryDescription AlightAndOpen = new QueryDescription().WithAll<Position, Burning>().WithNone<Shielded>();
+
+/// <summary>
+/// Everything burning within <paramref name="radius"/> of <paramref name="center"/> that has no shield: walkers
+/// and crates alike. The question is a description of the rows wanted, and only those rows are walked.
+/// </summary>
+public int BurningNear(Vector2 center, float radius, List<Entity>? found = null)
+{
+    int count = 0;
+    foreach (ref var chunk in _ecs.World.Query(in AlightAndOpen))
+    {
+        var positions = chunk.GetSpan<Position>();
+        for (int i = 0; i < chunk.Count; i++)
+        {
+            if (Vector2.DistanceSquared(positions[i].Value, center) >= radius * radius) continue;
+            found?.Add(chunk.Entity(i));
+            count++;
+        }
+    }
+    return count;
+}
+```
+
+To find rows near a point among very many, keep them in a `SpatialIndex2D<T>`
+([Large worlds and nearby objects](large-worlds.md)) with the row as its value; a query alone walks every matching
+row.
+
+## Drawing
+
+The scene draws its rows in `Draw`. For a component marked with `Interpolate`, `ecs.Interpolated<T>()` gives a
+reader; `Blended(row, in now)` returns the value between where the row was when the step started and where it is,
+at the frame's blend. It is exactly the current value for a row that is new this step and while the scene is frozen
+under an overlay, as with entities of the world. Keep the reader in a field.
+
+<!-- code: samples/EcsEffects/ArenaScene.cs#draw -->
+```csharp
+private static readonly QueryDescription Things = new QueryDescription().WithAll<Position, Health>();
+private static readonly QueryDescription Bolts = new QueryDescription().WithAll<Position, Shot>();
+
+public override void Draw(IRenderer r)
+{
+    var world = _ecs.World;
+    bool flicker = (int)(Age * 12) % 2 == 0;
+    foreach (ref var chunk in world.Query(in Things))
+    {
+        var positions = chunk.GetSpan<Position>();
+        // What a chunk's rows have is the same for all of them: asked once, not per row.
+        bool crate = chunk.Has<Crate>(), frozen = chunk.Has<Frozen>(), burning = chunk.Has<Burning>(), shielded = chunk.Has<Shielded>();
+        for (int i = 0; i < chunk.Count; i++)
+        {
+            // The store kept each position from the start of the step: a row is drawn between that and where it is.
+            var at = _places.Blended(chunk.Entity(i), in positions[i]).Value;
+            var body = RectF.FromCenter(at, crate ? 10 : 7, crate ? 10 : 7);
+            r.FillRect(body, frozen ? Ice : crate ? Wood : Walker);
+            if (shielded) r.DrawRect(RectF.FromCenter(at, 11, 11), Color.White);
+            if (burning) r.FillCircle(at + new Vector2(0, flicker ? -6 : -7), flicker ? 2.5f : 2, Flame);
+            if (burning && !shielded && Vector2.DistanceSquared(at, Caster) < Rules.NearRadius * Rules.NearRadius) r.DrawRect(RectF.FromCenter(at, 15, 15), Flame);
+        }
+    }
+    foreach (ref var chunk in world.Query(in Bolts))
+    {
+        var positions = chunk.GetSpan<Position>();
+        var shots = chunk.GetSpan<Shot>();
+        for (int i = 0; i < chunk.Count; i++)
+            r.FillCircle(_places.Blended(chunk.Entity(i), in positions[i]).Value, 1.5f, Tint(shots[i].Element));
+    }
+    r.FillRect(RectF.FromCenter(Caster, 9, 5), Tint(Loaded));
+    r.FillRect(RectF.FromCenter(Caster + new Vector2(0, -4), 3, 4), Tint(Loaded));
+
+    var deaths = _ecs.LateSystems.Get<Deaths>();
+    r.FillRect(new RectF(0, 0, r.Width, 12), Color.Black.WithAlpha(0.6f));
+    Font.Draw(r, $"Z: SHOOT {Loaded.ToString().ToUpperInvariant()}   X: SWITCH   KILLS {deaths.Kills}   CRATES {deaths.CratesBroken}   BURNING NEAR {BurningNear(Caster, Rules.NearRadius)}", new Vector2(4, 3), Color.White);
+}
+
+private static Color Tint(Element element) => element switch { Element.Fire => Flame, Element.Ice => Ice, _ => Color.Hex("f4f4f4") };
+
+private static readonly Color Walker = Color.Hex("b13e53"), Wood = Color.Hex("a66a3a"), Ice = Color.Hex("73eff7"), Flame = Color.Hex("ffcd75");
+```
+
+## An object on both sides
+
+Some objects need what the scene's world gives: a child that follows them, a physics body, a place in a spatial
+index, a 3D mesh. Create the entity, create the row, and link them:
+
+<!-- code: samples/EcsSwarm/SwarmScene.cs#link -->
+```csharp
+// A carrier is one row in the store and one entity in the world, linked: the row's position moves the entity,
+// each is found from the other, and destroying either removes both when the step ends.
+private void AddCarrier(Vector2 at, Vector2 velocity)
+{
+    var twin = Objects.Create();
+    Objects.Local(twin).Position2D = at;
+    var flag = Objects.Create(twin);                      // a child: the world's hierarchy keeps it with the carrier
+    Objects.Local(flag).Position2D = new Vector2(0, -7);
+    var row = _ecs.World.Create(new Position { Value = at }, new Velocity { Value = velocity });
+    _ecs.Link(row, twin);
+    CarrierTwins.Add(twin);
+}
+```
+
+- `ecs.TryGetEntity(row, out entity)` and `ecs.TryGetRow(entity, out row)` find one from the other. Both answer
+  false for a handle that is stale, also when a newer row or entity took its place.
+- **Destroying either destroys both** when the step ends: `Objects.Destroy(entity)`, the library's
+  `World.Destroy(row)`, or `Commands.Destroy(row)`. `ecs.Unlink(row)` ends the link and destroys neither.
+- With `SyncTransform<T>` declared, the row's component is written to the entity's transform when each step ends
+  (`EcsLink.RowMovesEntity`, the default), so the entity's children, its body and its drawing follow the row. For an
+  entity that something else moves (a physics body, a tween), link with `EcsLink.EntityMovesRow` and give
+  `SyncTransform` a second function: the row then reads the entity when each step starts. `EcsLink.Unsynced` copies
+  nothing.
+- A linked row has a `SceneLink` component, so a query can ask for the linked rows (`WithAll<Position, SceneLink>`).
+
+Most rows are never linked. A link costs an entity, so link the few objects that need one.
+
+## Many alike objects
+
+A store also keeps very many alike objects cheaply. Compared with the scene's world on the same work, on a desktop:
 
 | | Scene's world | Component store |
 | --- | --- | --- |
@@ -49,70 +540,45 @@ side. Compared with the scene's world on the same work, on a desktop:
 | Three questions about combinations over 100,000 objects | about 1 ms | about 0.1 ms |
 | Replacing 10,000 of 100,000 objects in a step | about 1.7 ms | 0.5 to 0.9 ms |
 | A game step of 375,000 objects (a swarm, shots, deaths, all drawn) | about 22 ms: over a 60 Hz update | about 6.5 ms |
-| Largest such game step within a 60 Hz update | about 280,000 objects | 600,000 to 675,000 objects |
 | Memory per object (position, previous position, velocity) | about 240 bytes | 55 to 65 bytes |
 | Drawing each object as a sprite | the same | the same |
-| Garbage when objects spawn | none with pooled attachments | none |
 
-So the store matters when the objects are very many. Under about 75,000 objects simulated per step the difference
-is a fraction of a millisecond, and the world's hierarchy, attachments of any class and interpolation are worth more.
-From about 200,000 objects that are created and destroyed as the game goes, a step of the world costs more
-than their count suggests (its objects are likely scattered in memory by then), while a store keeps its rows packed; there, or when
-memory is tight (a browser tab), a store gives a game back milliseconds and megabytes. It does not make drawing or
-physics cheaper.
+Under about 75,000 objects simulated per step the difference is a fraction of a millisecond of the 16.7 a 60 Hz
+update has. What limits a game long before either store does is what it draws and what collides. On the world, reuse
+the attachments of destroyed objects (keep them in a `Stack<T>`): a new attachment per spawn is garbage in
+proportion to what the game spawns.
 
-## A store beside the world
-
-The `EcsSwarm` sample keeps a swarm of 20,000 in a store (it uses [Arch](https://github.com/genaray/Arch), an
-Apache-2.0 library) next to a beacon and a few carriers that are entities of the scene's world. The library is a
-package reference of the game; the scene joins the two in five places.
-
-**1. The scene owns the store.** It is created in `Enter` and destroyed in `Exit`. Components are structs; the
-position is kept twice so drawing can blend between two steps.
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#components -->
-```csharp
-// The store's components: plain structs, one row per object. A position kept twice, so drawing can blend from where
-// the object was when the step started to where it is now.
-public struct Position { public Vector2 Value; }
-public struct Previous { public Vector2 Value; }
-public struct Velocity { public Vector2 Value; }
-/// <summary>A member of the swarm: how hard it pulls towards the beacon.</summary>
-public struct Chase { public float Pull; }
-/// <summary>What is left of a caught member: gone when the steps run out.</summary>
-public struct Spark { public int StepsLeft; }
-/// <summary>The entity of the scene's world that stands for this row (a carrier's, which has a child).</summary>
-public struct Twin { public EntityId Id; }
-```
+The `EcsSwarm` sample keeps a swarm of 20,000 in a store beside a beacon and a few carriers that are entities of the
+world. Its systems are functions of the scene, listed in order after the scene's `Update` has moved the beacon:
 
 <!-- code: samples/EcsSwarm/SwarmScene.cs#store -->
 ```csharp
-// The store belongs to the scene: created when the scene enters, destroyed when it exits. The engine never sees it.
-private World _rows = null!;
-private Predicate<EntityId>? _gone;   // kept, so asking each step allocates nothing
-private static readonly QueryDescription Moving = new QueryDescription().WithAll<Position, Previous, Velocity>();
+// What the store's rows are made of, declared once: every component is simulation state here, a position is drawn
+// between two steps, and a linked row's position is its entity's.
+public static readonly EcsComponents Components = new EcsComponents()
+    .AddState<Position>().AddState<Velocity>().AddState<Chase>().AddState<Spark>()
+    .Interpolate<Position>(static (in Position from, in Position to, float blend) => new Position { Value = Vector2.Lerp(from.Value, to.Value, blend) })
+    .SyncTransform<Position>(static (in Position position, ref Transform local) => local.Position2D = position.Value);
+
+private static readonly QueryDescription Moving = new QueryDescription().WithAll<Position, Velocity>();
 private static readonly QueryDescription Chasers = new QueryDescription().WithAll<Position, Velocity, Chase>();
 private static readonly QueryDescription Sparks = new QueryDescription().WithAll<Spark>();
-private static readonly QueryDescription Carried = new QueryDescription().WithAll<Position, Velocity, Twin>();
-private static readonly QueryDescription DrawnMembers = new QueryDescription().WithAll<Position, Previous, Chase>();
-private static readonly QueryDescription DrawnSparks = new QueryDescription().WithAll<Position, Previous, Spark>();
-private readonly List<Entity> _caught = [], _spent = [];
+private static readonly QueryDescription Carried = new QueryDescription().WithAll<Position, Velocity, SceneLink>();
+private static readonly QueryDescription DrawnMembers = new QueryDescription().WithAll<Position, Chase>();
+private static readonly QueryDescription DrawnSparks = new QueryDescription().WithAll<Position, Spark>();
 
-// Only a NativeAOT build needs this: there the library cannot make an array of a component type nobody named,
-// so each one is named once, before the first row.
-static SwarmScene()
-{
-    ArrayRegistry.Add<Position>();
-    ArrayRegistry.Add<Previous>();
-    ArrayRegistry.Add<Velocity>();
-    ArrayRegistry.Add<Chase>();
-    ArrayRegistry.Add<Spark>();
-    ArrayRegistry.Add<Twin>();
-}
+private EcsStore _ecs = null!;
+private EcsInterpolation<Position> _places = null!;
 
 public override void Enter()
 {
-    _rows = World.Create();
+    // The store lives with the scene, and its systems run in this order after the scene's Update has moved the beacon.
+    _ecs = this.AddEcs(Components);
+    _ecs.LateSystems.Add("move", Move);
+    _ecs.LateSystems.Add("sparks", BurnOut);      // before the chase, so a spark made this step lasts all its steps
+    _ecs.LateSystems.Add("chase", ChaseBeacon);
+    _ecs.LateSystems.Add("bounce", Bounce);
+    _places = _ecs.Interpolated<Position>();
 
     // The beacon is an entity of the scene's world, with a child that circles it.
     Beacon = Objects.Create();
@@ -122,264 +588,37 @@ public override void Enter()
     for (int i = 0; i < Members; i++) AddMember(RandomPoint());
     for (int i = 0; i < Carriers; i++) AddCarrier(RandomPoint(), new Vector2(Game.Random.Next(-20, 21), Game.Random.Next(-20, 21)));
 }
-
-public override void Exit() => World.Destroy(_rows);
 ```
-
-**2. The step runs the systems.** `Update` is called at the fixed step, so a system is a loop in it (or a method it
-calls, in the order you call them). Rows are added and removed after the walks, never during one.
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#step -->
-```csharp
-public override void Update(float dt)
-{
-    // The beacon: an entity of the world, moved through its transform.
-    ref var beacon = ref Objects.Local(Beacon);
-    var target = beacon.Position2D + Input.Vector("left", "right", "up", "down") * BeaconSpeed * dt;
-    target = Vector2.Clamp(target, Vector2.Zero, new Vector2(Game.Width, Game.Height));
-    beacon.Position2D = target;
-    Objects.Local(Halo).Position2D = new Vector2(MathF.Cos(Age * 3), MathF.Sin(Age * 3)) * 9;
-    if (Input.Pressed("confirm") && CarrierTwins.Count > 0) Objects.Destroy(CarrierTwins[^1]);   // from the world's side
-
-    // Every row that moves: remember where it was, then move it.
-    foreach (ref var chunk in _rows.Query(in Moving))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var was = chunk.GetSpan<Previous>()[..chunk.Count];
-        var v = chunk.GetSpan<Velocity>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++)
-        {
-            was[i].Value = p[i].Value;
-            p[i].Value += v[i].Value * dt;
-        }
-    }
-
-    // The swarm: steer towards the beacon; a member that reaches it is caught.
-    foreach (ref var chunk in _rows.Query(in Chasers))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var v = chunk.GetSpan<Velocity>()[..chunk.Count];
-        var chase = chunk.GetSpan<Chase>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++)
-        {
-            var away = p[i].Value - target;
-            float distance = away.Length();
-            if (distance < CatchRadius) { _caught.Add(chunk.Entity(i)); continue; }
-            var velocity = v[i].Value - away / distance * (chase[i].Pull * dt);
-            float speed = velocity.Length();
-            v[i].Value = speed > MaxSpeed ? velocity * (MaxSpeed / speed) : velocity;
-        }
-    }
-
-    // Carriers bounce off the edges, and their place goes to their world entity, which carries the flag.
-    foreach (ref var chunk in _rows.Query(in Carried))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var v = chunk.GetSpan<Velocity>()[..chunk.Count];
-        var twin = chunk.GetSpan<Twin>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++)
-        {
-            if (p[i].Value.X < 0 || p[i].Value.X > Game.Width) v[i].Value.X = -v[i].Value.X;
-            if (p[i].Value.Y < 0 || p[i].Value.Y > Game.Height) v[i].Value.Y = -v[i].Value.Y;
-            Objects.Local(twin[i].Id).Position2D = p[i].Value;
-        }
-    }
-
-    foreach (ref var chunk in _rows.Query(in Sparks))
-    {
-        var spark = chunk.GetSpan<Spark>()[..chunk.Count];
-        for (int i = 0; i < spark.Length; i++)
-            if (--spark[i].StepsLeft <= 0) _spent.Add(chunk.Entity(i));
-    }
-
-    // Rows are added and removed after the walks, never during one.
-    foreach (var row in _caught)
-    {
-        var at = _rows.Get<Position>(row).Value;
-        var velocity = _rows.Get<Velocity>(row).Value;
-        _rows.Destroy(row);
-        _rows.Create(new Position { Value = at }, new Previous { Value = at }, new Velocity { Value = -velocity * 0.5f }, new Spark { StepsLeft = SparkSteps });
-        AddMember(Game.Random.Next(2) == 0
-            ? new Vector2(Game.Random.Next(2) * Game.Width, Game.Random.NextSingle() * Game.Height)
-            : new Vector2(Game.Random.NextSingle() * Game.Width, Game.Random.Next(2) * Game.Height));
-        Caught++;
-    }
-    foreach (var row in _spent) _rows.Destroy(row);
-    _caught.Clear();
-    _spent.Clear();
-    CarrierTwins.RemoveAll(_gone ??= twin => !Objects.IsAlive(twin));
-}
-```
-
-**3. Drawing blends by hand.** The world interpolates its entities (`DrawPosition2D`); for the store's rows the scene
-does it, with the world's `Blend`: the frame's blend while the scene plays, and 1 while it is frozen under an overlay
-or in a transition, so a paused swarm stands still. Read `Objects` once in `Enter` (creating an entity does) so the
-scene has a world to ask.
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#draw -->
-```csharp
-public override void Draw(IRenderer r)
-{
-    // The blend of the scene's world: the frame's blend while the scene plays, 1 while it is frozen under an
-    // overlay or in a transition. The store's rows are blended by hand with it; the world's entities by the world.
-    float blend = Objects.Blend;
-    var dot = ((SwarmGame)Game).Dot;
-    foreach (ref var chunk in _rows.Query(in DrawnMembers))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var was = chunk.GetSpan<Previous>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++) r.Draw(dot, Vector2.Lerp(was[i].Value, p[i].Value, blend), Member);
-    }
-    foreach (ref var chunk in _rows.Query(in DrawnSparks))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var was = chunk.GetSpan<Previous>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++) r.Draw(dot, Vector2.Lerp(was[i].Value, p[i].Value, blend), Ember);
-    }
-
-    foreach (var twin in CarrierTwins)
-    {
-        if (!Objects.IsAlive(twin)) continue;
-        r.FillRect(RectF.FromCenter(Objects.DrawPosition2D(twin), 8, 5), Hull);
-        foreach (var flag in Objects.Children(twin)) r.FillRect(RectF.FromCenter(Objects.DrawPosition2D(flag), 3, 3), Flag);
-    }
-    r.FillCircle(Objects.DrawPosition2D(Beacon), CatchRadius, Light);
-    r.FillCircle(Objects.DrawPosition2D(Halo), 1.5f, Flag);
-    r.FillRect(new RectF(0, 0, r.Width, 12), Color.Black.WithAlpha(0.6f));
-    Font.Draw(r, $"ARROWS: MOVE   Z: DROP A CARRIER   SWARM {Members}   CAUGHT {Caught}", new Vector2(4, 3), Color.White);
-}
-
-private static readonly Color Member = Color.Hex("73eff7"), Ember = Color.Hex("ffcd75"), Hull = Color.Hex("b13e53"),
-    Flag = Color.Hex("a7f070"), Light = Color.Hex("f4f4f4");
-```
-
-**4. The state hash includes the store.** The engine hashes the simulation state after every step for replays and
-determinism checks, and it cannot see the store. `HashState` adds it.
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#hash -->
-```csharp
-// The store is simulation state the engine cannot see, so the scene adds it to the state hash: a replay or a
-// determinism check then covers the swarm like everything else.
-public override void HashState(StateHasher hash)
-{
-    hash.Add(_rows.Size);
-    hash.Add(Caught);
-    foreach (ref var chunk in _rows.Query(in Moving))
-    {
-        var p = chunk.GetSpan<Position>()[..chunk.Count];
-        var v = chunk.GetSpan<Velocity>()[..chunk.Count];
-        for (int i = 0; i < p.Length; i++)
-        {
-            hash.Add(p[i].Value);
-            hash.Add(v[i].Value);
-        }
-    }
-    foreach (ref var chunk in _rows.Query(in Sparks))
-        foreach (ref var spark in chunk.GetSpan<Spark>()[..chunk.Count]) hash.Add(spark.StepsLeft);
-}
-```
-
-### An object on both sides
-
-**5. A row that needs the engine gets an entity.** Physics bodies belong to an `EntityId`
-(`IPhysicsWorld2D.CreateBody`), children hang from an entity, and the 3D renderer draws the world's hierarchy. An
-object of the store that needs any of them gets an entity of the world as well: the row carries the entity's id in a
-component, the entity carries the row in an attachment, and `IDestroyedCallback` tells the attachment when the world
-releases the entity.
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#twin -->
-```csharp
-/// <summary>
-/// The attachment of a carrier's world entity. It remembers the carrier's row in the store, and the world tells it
-/// when the entity is released, so destroying the entity removes the row as well.
-/// </summary>
-public sealed class Carrier(SwarmScene scene, Entity row) : IDestroyedCallback
-{
-    /// <summary>The carrier's row in the store.</summary>
-    public Entity Row => row;
-    /// <inheritdoc/>
-    public void OnDestroyed(EntityId entity) => scene.Forget(row);
-}
-```
-
-<!-- code: samples/EcsSwarm/SwarmScene.cs#link -->
-```csharp
-// A carrier is one row in the store and one entity in the world. The row carries the entity's id (Twin); the
-// entity carries the row (Carrier). Each side can find the other, and removing one removes both.
-private void AddCarrier(Vector2 at, Vector2 velocity)
-{
-    var twin = Objects.Create();
-    Objects.Local(twin).Position2D = at;
-    var flag = Objects.Create(twin);                      // a child: the world's hierarchy keeps it with the carrier
-    Objects.Local(flag).Position2D = new Vector2(0, -7);
-    var row = _rows.Create(new Position { Value = at }, new Previous { Value = at }, new Velocity { Value = velocity }, new Twin { Id = twin });
-    Objects.Attach(twin, new Carrier(this, row));
-    CarrierTwins.Add(twin);
-}
-
-/// <summary>Removes a carrier from the store's side: its row goes now, its entity (and the flag) with the step.</summary>
-public void RemoveRow(Entity row)
-{
-    if (!_rows.IsAlive(row)) return;      // a handle whose row is gone, even if a newer row took its place
-    var twin = _rows.Get<Twin>(row).Id;
-    _rows.Destroy(row);
-    Objects.Destroy(twin);
-}
-
-/// <summary>Called by a carrier's entity when the world releases it: the row goes too, if it is still there.</summary>
-internal void Forget(Entity row)
-{
-    if (_rows.IsAlive(row)) _rows.Destroy(row);
-}
-```
-
-Everything else the engine offers takes values, not entities, so a row uses it directly: a `SpatialIndex2D<T>` can
-file the library's own row handles, the renderer draws a sprite at any position, sounds play at a pan your code
-computes, and a tile map answers `TileGrid` and `TileMotion` questions for any rectangle.
 
 ## Identity and lifetime, side by side
 
-| | Scene's world | The store (Arch in the sample) |
+| | Scene's world | The store |
 | --- | --- | --- |
-| Identity | `EntityId`: a slot and a generation; a stale id never reaches the entity that reused its slot | the library's handle (`Entity`: an id and a version); `IsAlive` is false once its row is gone, also after a new row takes the id |
-| Creation | at once; a walk already running does not visit it | at once, outside a walk |
-| Destruction | at once for every question; the transform and attachments stay readable until the step ends, then `IDestroyedCallback` runs | at once, outside a walk; nothing is readable afterwards |
-| Order of a walk | attach order, stable | the library's rows; removing a row moves the last one into its place |
-| Stepping | by the scene, with the world's clock (`Objects.Clock`: time scale, freezes) | by your `Update`, with the `dt` it receives (already scaled by that clock) |
-| Interpolation | by the world | by your `Draw`, with `Objects.Blend` |
-| State hash | included | added by your `HashState` |
+| Identity | `EntityId`: a slot and a generation | Arch's `Entity`: an id and a version; `World.IsAlive(row)` is false once the row is gone, also after a new row takes the id |
+| Creation | at once; a walk already running does not visit it | at once outside a walk; through `Commands` inside one |
+| Destruction | at once for every question; readable until the step ends | at once outside a walk; nothing is readable afterwards |
+| Order of a walk | attach order, stable | not promised: a removed row's place is taken by the last one |
+| Stepping | by the scene, with the world's clock | by the scene, with the step its `Update` receives |
+| Interpolation | by the world (`DrawPosition2D`) | by the store, for the components marked for it |
+| State hash | included | included, for the components declared as state or tags |
 
-Two rules keep the sides in step: remove a linked object from one side and let the link remove the other (the
-sample's `RemoveRow` and `Carrier.OnDestroyed`), and keep the library's handle, not a bare index, wherever a row is
-remembered across steps.
+## Platforms and limits
 
-## Choosing and replacing the library
+- The package is managed code. It publishes trimmed and with NativeAOT without warnings, and runs in browsers
+  ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)).
+- Arch's types are part of what your game uses, so the package is tied to one version of Arch, and a new one arrives
+  with a new version of the package.
+- A walk must not add, remove or destroy rows: use `Commands`, or change them after the walk.
+- A store has no events, relations between rows or saving of its own. Systems pass work through components and
+  lists; Arch offers events and relations as separate packages, which a game can add.
+- A store of bodies is not a physics world: an object that collides is linked to an entity with a body.
+- Inside a namespace that starts with `MicroEngine`, `World` names an engine namespace, not Arch's type; a game in
+  its own namespace is not affected.
+- The figures on this page are for one desktop processor and scale with it; the proportions are what carries over.
 
-The engine references no ECS library, and no part of it (graphics, physics, input, audio, scenes) knows one is there:
-the five places above are the whole surface between the two. Replacing the library, or writing a store of your own,
-changes those five places in your scenes and nothing else.
+## Another library, or your own
 
-What to ask of a library:
-
-- **Components as structs and walks over spans**, so a system is a loop over arrays.
-- **No allocation once its buffers have grown**, like the rest of a frame.
-- **A build that publishes trimmed without warnings**, if the game is published trimmed, with NativeAOT or for
-  browsers ([Trimmed and NativeAOT publishing](platforms.md#trimmed-and-nativeaot-publishing)). Libraries find
-  component types at run time unless told; under NativeAOT each component type has to be named before the first row
-  (the sample's `ArrayRegistry.Add<T>()` calls, which other builds do not need).
-- **A deterministic order** of its rows for the same sequence of calls, if the game relies on replays.
-
-[Arch](https://github.com/genaray/Arch) (Apache-2.0) and [Friflo.Engine.ECS](https://github.com/friflo/Friflo.Engine.ECS)
-(MIT) both fit and walk their rows at the same speed. They differ in what creating and destroying a row costs, which
-matters to a game that replaces thousands of objects every step, and in publishing: Arch publishes trimmed and with
-NativeAOT without warnings; Friflo.Engine.ECS reports trimming warnings and asks for its component types to be
-registered in a NativeAOT build.
-
-## Limits
-
-- The engine does not step, interpolate, hash or save a store: the scene does, as shown.
-- An object that needs a physics body, a child or a mesh needs an entity of the world; a store of bodies is not a
-  physics world.
-- A walk over a store must not add or remove rows; collect them and apply the changes after it.
-- The figures on this page are for one desktop processor and scale with it; the proportions between the two models
-  are what carries over.
+Nothing in the engine knows the package: a store is one of a scene's systems
+([Scene systems](../manual/scenes.md#scene-systems)). To use another library, or a store of your own, write a
+`SceneSystem` that creates it in `Start`, steps it in `Update` and `LateUpdate`, keeps what drawing needs in
+`BeginDraw`, adds its state in `HashState` and releases it in `Stop`. That is all the package's `EcsStore` is.

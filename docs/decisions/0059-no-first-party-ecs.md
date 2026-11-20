@@ -1,6 +1,7 @@
 # 0059 — No first-party Entity Component System for now; a game runs one beside the scene world
 
-Status: Accepted (2026-11-18), provisional: it rests on the dimensions listed under "Scope of the evaluation" and is
+Status: Superseded by [ADR 0065](0065-optional-ecs-package.md) (2026-11-19), which adds an optional package after
+the modelling comparison this record left open; the measurements below stand. Originally accepted (2026-11-18), provisional: it rests on the dimensions listed under "Scope of the evaluation" and is
 looked at again with the evidence of the substantial demo game (NastMz/MicroEngine#114). The SDK is in Alpha.
 Evidence: [ENTITY-1](../evaluations/entity-1.md). Task record: [`odd/tasks/entity-1.md`](../../odd/tasks/entity-1.md).
 Issue NastMz/MicroEngine#151.

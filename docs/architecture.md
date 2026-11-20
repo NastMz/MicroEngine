@@ -178,10 +178,11 @@ a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked i
 drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
 the per-step state hash. Beside the world, and used only by a game that creates one, is `SpatialIndex2D<T>`: the
 game's own items under a point or a rectangle, found by rectangle or by circle
-([Large worlds and nearby objects](guide/large-worlds.md)). The engine has no Entity Component System and no assembly
-references one (the architecture test checks it): a game with hundreds of thousands of alike objects runs the
-library it chooses beside the scene's world, through the scene's own hooks
-([Many alike objects and Entity Component Systems](guide/entity-component-systems.md)).
+([Large worlds and nearby objects](guide/large-worlds.md)). The world is the default model. An Entity Component System is an
+optional package, `MicroEngine.Ecs`: a component store of the Arch library that lives in a scene as a scene system,
+for games modelled as components and systems ([Entity Component Systems](guide/entity-component-systems.md)). It
+is the only engine assembly that references an ECS library, and no other assembly, tool, template or demo
+references it (the architecture test checks both).
 
 Physics is two more assemblies of the
 `MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies
@@ -317,10 +318,12 @@ In short:
   harmonise imported art at load (cutting along outlines, recolouring, colour-grading) so it shares one palette.
 - **Scenes on a stack, not a global state machine.** Pause menus, dialogue and inventories are overlay
   scenes that freeze (or not) the scene below; transitions swap scenes at their midpoint.
-- **Plain entities, not an ECS.** A game of this kind has at most a few hundred objects. Small classes with
-  `Update`/`Draw`, kept in the scene's world (`Scene.Objects`, an `IWorld`: each entity has an id, a transform, an
-  optional parent and your own classes as attachments, walked in a stable order) or simply in a `List<T>`, are easier
-  to read and debug than component plumbing at this scale. Games that outgrow it can add their own systems on top.
+- **Plain entities by default, components and systems by choice.** Small classes with `Update`/`Draw`, kept in the
+  scene's world (`Scene.Objects`, an `IWorld`: each entity has an id, a transform, an optional parent and your own
+  classes as attachments, walked in a stable order) or simply in a `List<T>`, are the shortest and plainest way to
+  write a game whose kinds of object are few and fixed. A game whose objects gain and lose capabilities, or whose
+  kinds share behaviours partially, adds the optional `MicroEngine.Ecs` package and keeps those objects in a
+  component store beside the world; nothing else in the engine changes.
 - **Actions, never keys.** Games query `"jump"` or `"confirm"` (and `Value`/`Vector` for analog strength); keys,
   gamepads, touch controls and custom sources all press the same actions, and scripts and tests force the same
   actions or touch the same controls, so automated runs exercise exactly the code players do.
