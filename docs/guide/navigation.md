@@ -157,6 +157,15 @@ if (playerCell != _chasedCell || Chaser.GridVersion != _nav.Version)
 if (Vector2.Distance(Chaser.Center, Player.Center) > CatchDistance) Follow(Chaser, dt);
 ```
 
+### A search over several steps
+
+On a very large map one long search can take more than a step of the game has to give. `finder.Begin(grid, start,
+goal)` starts a search and `finder.Continue(nodes)` advances it by at most that many nodes: it returns
+`PathStatus.Searching` until the answer is known, and then `Found`, `Unreachable` or `Incomplete` with the path in
+`finder.Path`. The path, its cost and the work done are the ones `Find` gives, however the search was divided, so a
+run stays repeatable when the budget is a number of nodes and not a time. The grid must not change while a search is
+in progress: begin again when it does. `grid.ForAgent(radius)` is searched the same way.
+
 ## Obstacles that change
 
 When a door closes or a crate lands, change the grid: `SetWalkable(x, y, false)` for one cell,
@@ -384,8 +393,9 @@ public sealed class HexBoard(int width, int height) : INavGraph
 
 - On a 128 × 128 grid a search across the map takes a fraction of a millisecond, and a whole distance field between
   one and two. On a 1000 × 1000 grid a long path takes about a frame, and a target that cannot be reached makes the
-  search look at every cell the agent can reach, several frames of work: set `finder.MaxExpansions` to bound it
-  (the route then leads to the nearest cell found), and give fields a distance limit.
+  search look at every cell the agent can reach, several frames of work: ask `NavRegions` first, spread the search
+  over several steps, or set `finder.MaxExpansions` to bound it (the route then leads to the nearest cell found),
+  and give fields a distance limit.
 - A finder keeps 24 bytes per cell of the largest map it searched, a grid 5 and a field 8.
 - One finder or field serves one search at a time: use one per thread.
 - An agent wider than a cell is given whole cells of room on every side: wider than one cell it needs a passage

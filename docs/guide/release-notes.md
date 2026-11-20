@@ -44,6 +44,9 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `StaysConnected(area, a, b)` (whether a wall about to be built would cut a way that must stay open: the placement
   rule of a tower defence). It follows the grid's changes by itself and takes the agents' size
   ([What can be reached](navigation.md#what-can-be-reached)).
+- **A search can be spread over several steps**: `finder.Begin(graph, start, goal)` and `finder.Continue(nodes)`,
+  which returns the new `PathStatus.Searching` until the answer is known. The path is the one `Find` gives
+  ([A search over several steps](navigation.md#a-search-over-several-steps)).
 
 A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
 optional, for agents that find their way through a level. An eleventh: `MicroEngine.Ecs`, optional, for games
