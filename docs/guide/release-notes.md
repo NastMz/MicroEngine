@@ -18,6 +18,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   game's own; `PostEffect` and `PostPass` are for effects written in the game. A chain runs on every platform: where
   no shader runs each effect draws a stated simpler form or is left out, and `SupportOn` says which
   ([Post-processing](render-targets-and-shaders.md#post-processing)).
+- **The window stage.** `Game.ScreenPostProcess` is a chain that runs on the finished window, at the window's
+  resolution, over the letterbox, the world and the interface: a tube, a fade or a shader of the game's own over
+  everything. Captures of such a frame are the window as presented. Platforms offer it as the `IScreenEffects`
+  capability; `DeviceCanvas.Compose` and `CanvasPresenter.Present` take the chain or a destination target
+  ([The window stage](../manual/rendering.md#the-window-stage)).
 - `IGraphicsDevice.SupportsShaders` (`Game.Graphics.SupportsShaders`) says whether materials run their shaders on the
   device in use.
 - The examples' post-processing scene uses the chain; its hand-written passes and their two shaders are gone.

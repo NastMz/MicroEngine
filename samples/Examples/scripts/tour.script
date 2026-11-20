@@ -217,4 +217,8 @@
 4454 hold down 50
 4520 capture 37-depth.png
 4526 press pause
-4540 quit
+4540 press down
+4550 press confirm
+4610 capture 38-screen-effects.png
+4616 press pause
+4630 quit

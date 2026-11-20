@@ -42,6 +42,27 @@ public sealed class CanvasPresenter : IDisposable
         ArgumentNullException.ThrowIfNull(presentation);
         ArgumentNullException.ThrowIfNull(canvas);
         if (!_device.TryAcquireSurfaceTarget(out var surface)) return false;
+        Present(presentation, canvas, ui, frame, letterbox, surface);
+        return true;
+    }
+
+    /// <summary>
+    /// Draws the window's picture into <paramref name="destination"/> instead of the window: the same composition as
+    /// <see cref="Present(Presentation, RenderTarget, RenderTarget?, RectF, Color)"/>, into a target of the window's
+    /// size that something else then shows (a post-processing chain over the whole window).
+    /// </summary>
+    /// <param name="presentation">The game's presentation: its upscale sampler and prescale.</param>
+    /// <param name="canvas">The canvas the game drew.</param>
+    /// <param name="ui">The UI view of the frame, in window pixels, or null when the frame drew none.</param>
+    /// <param name="frame">Where the canvas lands, in the destination's pixels.</param>
+    /// <param name="letterbox">The colour around the frame.</param>
+    /// <param name="destination">The target to draw into; it is cleared first.</param>
+    public void Present(Presentation presentation, RenderTarget canvas, RenderTarget? ui, RectF frame, Color letterbox, RenderTarget destination)
+    {
+        ArgumentNullException.ThrowIfNull(presentation);
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(destination);
+        var surface = destination;
 
         var source = canvas;
         var sampler = presentation.Upscale;
@@ -72,7 +93,6 @@ public sealed class CanvasPresenter : IDisposable
             _batcher.PopState();
         }
         _batcher.End();
-        return true;
     }
 
     private RenderTarget Enlarge(RenderTarget canvas, int width, int height)

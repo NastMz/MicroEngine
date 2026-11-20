@@ -101,6 +101,23 @@ on a canvas drawn smaller than its size. `Presentation.PrescaleFor` gives the fa
 windows are composed this way, and a capture of the window (`IViewCapture.CaptureScreen`, the headless platform's
 included) samples the same enlargement.
 
+### The window stage
+
+`Presentation` decides how the canvas is placed and sampled in the window. What happens to the finished window after
+that is the game's too: `Game.ScreenPostProcess` is a [post-processing chain](#post-processing) that runs on the
+window's picture (the letterbox, the scaled canvas and the UI view over it) at the window's resolution, just before
+it is shown. A final shader is one effect of that chain (`ShaderEffect`, with a material of the game's own); `Crt`,
+`Vignette` and the other ready effects work there as well.
+
+```csharp
+protected override void Load() =>
+    ScreenPostProcess.Add(new Crt { Lines = Height }).Add(new Vignette());   // over everything, UI included
+```
+
+With no enabled effect the window is composed exactly as without the chain. While it is active, captures show the
+window as it was presented. The stage is a capability of the platform (`IScreenEffects`: SDL, raylib and the headless
+platform have it); on a platform without it the chain runs on the canvas.
+
 ### Filtering: nearest or linear
 
 Every texture has a `TextureFilter`:
@@ -249,8 +266,9 @@ private void DrawWorld(IRenderer r, SortedRenderer? order)
 ## Post-processing
 
 A `PostProcess` is a chain of full-screen effects over a picture. A scene's (`Scene.PostProcess`) covers what that
-scene draws; the game's (`Game.PostProcess`) covers the whole canvas. Add effects and the engine does the rest: it
-draws into a picture of the canvas's size, runs the effects in order and draws the result.
+scene draws; the game's (`Game.PostProcess`) covers the whole canvas; the screen's (`Game.ScreenPostProcess`) covers
+the whole window, interface included, at the window's resolution. Add effects and the engine does the rest: it draws
+into a picture of the right size, runs the effects in order and draws the result.
 
 ```csharp
 public override void Enter() =>

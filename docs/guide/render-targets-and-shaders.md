@@ -377,6 +377,35 @@ scene as it is, at no cost; `PostProcess.Get<Bloom>()` returns an effect to chan
 | --- | --- | --- | --- |
 | `Scene.PostProcess` | what that scene's `Draw` draws; transparent where it draws nothing, so scenes under it show | the canvas's | not included |
 | `Game.PostProcess` | the whole canvas: background, every visible scene, the transition, `DrawAboveScenes` | the canvas's | not included |
+| `Game.ScreenPostProcess` | the whole window: the letterbox, the canvas scaled into its frame, the interface over it | the window's | included |
+
+The screen's chain is for what belongs to the screen rather than to the world: a tube's curve and lines, a fade over
+everything, a shader that needs the window's pixels. The example puts a tube over a scene and its widgets:
+
+<!-- code: samples/Examples/Examples/ScreenEffectsExample.cs#screen -->
+```csharp
+public override void Enter()
+{
+    // One line of the tube per row of the canvas, whatever the window's size.
+    _tube.Lines = Game.Height;
+    Game.ScreenPostProcess.Add(_tube).Add(_corners);
+
+    Widgets.Anchor = Anchor.Center;
+    Widgets.Content = new Panel(new Label("THE INTERFACE IS PART\nOF THE SCREEN'S PICTURE"));
+}
+
+// The chain belongs to the game, not to this scene: take out what this scene put in.
+public override void Exit()
+{
+    Game.ScreenPostProcess.Remove(_tube);
+    Game.ScreenPostProcess.Remove(_corners);
+}
+```
+
+The game's two chains belong to the game, so a scene that adds effects to them takes them out when it leaves. While
+the screen's chain is active, captures (`--captures`, screenshots) are the window as it was presented, at the
+window's size. A platform of your own takes part by offering `IScreenEffects`; on one that does not, the chain runs
+on the canvas instead.
 
 A chain of your own does the same for any part of a frame: `chain.Begin(renderer, Game.Graphics)`, the draws, then
 `chain.End(renderer)`; or `chain.Apply(renderer, Game.Graphics, texture, destination)` for a picture that already
@@ -507,8 +536,9 @@ material built from shaders created on the device. None of it is needed for the 
 - A material is a fragment shader; the vertex stage is the engine's.
 - Effects with a shader draw their simpler form, or nothing, where shaders do not run
   ([the table above](#what-each-effect-draws-without-shaders)); browser builds are among those places.
-- A scene's chain and the game's chain run at the canvas's resolution, before the canvas is scaled to the window, and
-  do not include the interface.
+- A scene's chain and `Game.PostProcess` run at the canvas's resolution, before the canvas is scaled to the window,
+  and do not include the interface; `Game.ScreenPostProcess` runs at the window's and includes it. The on-screen
+  touch controls are drawn after every chain.
 - A chain's picture has the size of what it is drawn into; use one chain per picture. Release a chain of your own
   between frames, like any texture.
 - A pass has one colour target; there is no stencil buffer and no multisampling.

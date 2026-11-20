@@ -26,6 +26,21 @@ public interface IScreenView
 }
 
 /// <summary>
+/// The window stage of a platform: where the finished frame (the letterbox, the canvas scaled into its frame and the UI
+/// view over it) can go through a post-processing chain at the window's resolution before it is shown. A capability
+/// (<see cref="Platform.IPlatformHost.TryGetCapability{T}"/>) of the SDL and raylib platforms and of the headless
+/// platform; the game sets it every frame from <see cref="Game.ScreenPostProcess"/>.
+/// </summary>
+public interface IScreenEffects
+{
+    /// <summary>
+    /// The chain the next frames are presented through, or null to present them as they are. The platform runs it; the
+    /// game that set it owns it. While it is set and active, captures show the window as it was presented.
+    /// </summary>
+    PostProcess? ScreenEffects { get; set; }
+}
+
+/// <summary>
 /// The game's two views and the mapping between them (<see cref="Game.Views"/>): the world view (the canvas, at the
 /// canvas's resolution, placed in the window by the presentation) and the UI view (the window's resolution, in UI units),
 /// drawn over it. Positions convert between window pixels, canvas pixels and UI units, and the pointer is given in each

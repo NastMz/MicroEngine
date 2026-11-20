@@ -15,7 +15,7 @@ namespace MicroEngine.Core;
 /// Its run preset (<see cref="Preset"/>) is deterministic time: a stated default of this testing composition that a
 /// run or a game overrides. Nothing the platform does depends on the time mode.
 /// </summary>
-public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
+public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture, IScreenEffects
 {
     private readonly int _width, _height;
     private HeadlessRenderer _renderer;
@@ -55,6 +55,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
         _capabilities.Add(_preset);
         _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IViewCapture>(this);
+        _capabilities.Add<IScreenEffects>(this);
         if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
         _input = request?.CombineInput(Keys) ?? Keys;
     }
@@ -318,10 +319,25 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     {
         var capture = (IViewCapture)this;
         var world = capture.CaptureWorld();
-        if (capture.CaptureUi() is not { } ui) return world;
+        var ui = capture.CaptureUi();
+        bool effects = ScreenEffects is { IsActive: true };
+        if (ui is null && !effects) return world;
         var view = (IScreenView)this;
-        return ScreenCapture.Compose(world, ui, view.ScreenPixels, view.WorldFrame, Letterbox, Presentation);
+        var window = ScreenCapture.Compose(world, ui, view.ScreenPixels, view.WorldFrame, Letterbox, Presentation);
+        if (!effects) return window;
+        // The window through the screen's chain, as a platform with a window presents it.
+        using var picture = _graphics.CreateTexture(window, TextureFilter.Nearest);
+        var renderer = new HeadlessRenderer(window.Width, window.Height, _graphics);
+        ScreenEffects!.Apply(renderer, _graphics, picture, new RectF(0, 0, window.Width, window.Height), opaque: true);
+        return renderer.Frame!;
     }
+
+    /// <summary>
+    /// The chain the window is captured through (<see cref="IScreenEffects"/>): there is no window to present, so it
+    /// runs when a capture is taken (<see cref="IViewCapture.CaptureScreen"/>, <see cref="SaveScreenshot"/>), on the
+    /// window composed from the two views. Captures need <see cref="Rasterize"/>.
+    /// </summary>
+    public PostProcess? ScreenEffects { get; set; }
 
     void IViewCapture.SaveWorldScreenshot(string path) => Write(path, ((IViewCapture)this).CaptureWorld());
     /// <summary>Counts the request in <see cref="FullscreenToggles"/>: there is no window to switch.</summary>

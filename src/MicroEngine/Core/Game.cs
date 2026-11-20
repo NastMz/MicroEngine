@@ -596,12 +596,33 @@ public abstract class Game : IEngineModule, IStateHashed
     /// The game's post-processing chain for the canvas (<see cref="MicroEngine.Graphics.PostProcess"/>): while it holds an enabled
     /// effect, everything drawn into the canvas (the background, every visible scene, their transition and
     /// <see cref="DrawAboveScenes"/>) goes through the effects, at the canvas's resolution. Debug drawing and the
-    /// interface (the UI view) are drawn after it and are not affected.
+    /// interface (the UI view) are drawn after it and are not affected; <see cref="ScreenPostProcess"/> covers them.
     /// Captures of the canvas show the result. The engine releases the chain when the game ends.
     /// </summary>
     public PostProcess PostProcess { get; } = new();
 
+    /// <summary>
+    /// The game's post-processing chain for the window (<see cref="MicroEngine.Graphics.PostProcess"/>): while it holds
+    /// an enabled effect, the finished frame goes through the effects at the window's resolution, after the canvas was
+    /// scaled into the window: the letterbox, the world and the interface (the UI view) over it. Use it for effects that
+    /// belong to the screen rather than to the world (a tube's curve and lines, a fade over everything), or that need
+    /// the window's pixels. Captures then show the window as it was presented. On a platform without a window stage
+    /// (<see cref="IScreenEffects"/>) the chain runs on the canvas instead: over the interface where the interface is
+    /// drawn in the canvas, under it otherwise. The engine releases the chain when the game ends.
+    /// </summary>
+    public PostProcess ScreenPostProcess { get; } = new();
+
     private void RenderFrame(IRenderer renderer)
+    {
+        // The window's chain runs in the platform's window stage; without one, around everything drawn into the canvas.
+        bool windowStage = TryGetCapability(out IScreenEffects? stage);
+        if (windowStage) stage!.ScreenEffects = ScreenPostProcess.IsActive ? ScreenPostProcess : null;
+        bool onCanvas = !windowStage && ScreenPostProcess.Begin(renderer, Graphics, Color.Black);
+        try { RenderViews(renderer); }
+        finally { if (onCanvas) ScreenPostProcess.End(renderer, opaque: true); }
+    }
+
+    private void RenderViews(IRenderer renderer)
     {
         // With post-processing the frame is drawn into the chain's picture, which starts as the background.
         bool processed = PostProcess.Begin(renderer, Graphics, Settings.Background);
@@ -698,6 +719,8 @@ public abstract class Game : IEngineModule, IStateHashed
         _achievements?.Flush();
         Unload();
         PostProcess.Dispose();
+        ScreenPostProcess.Dispose();
+        if (TryGetCapability(out IScreenEffects? stage)) stage.ScreenEffects = null;
         Assets.Dispose();
         Font.Dispose();
     }

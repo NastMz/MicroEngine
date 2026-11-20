@@ -60,6 +60,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
         ("Effects on buses (reverb, ducking)", g => new MixExample()),
         ("Draw order (depth and layers)", g => new DepthExample()),
+        ("Screen effects (the whole window)", g => new ScreenEffectsExample()),
     ];
 
     /// <summary>The id the examples' saves have always been kept under; without it, it would be the project's application id.</summary>

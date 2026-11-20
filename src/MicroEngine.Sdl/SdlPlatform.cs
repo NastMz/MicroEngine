@@ -35,7 +35,7 @@ namespace MicroEngine.Sdl;
 /// belong to the page. A few SDL calls go through declarations of the engine's own there (<c>SdlWeb</c>), because .NET's
 /// WebAssembly interpreter mispasses SDL3-CS's 64-bit enum parameters.
 /// </remarks>
-public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture, IScreenEffects
 {
     private readonly GameSettings _settings;
     private readonly ILog _log;
@@ -262,6 +262,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IViewCapture>(this);
+        _capabilities.Add<IScreenEffects>(this);
         if (CanBlock) _capabilities.Add<IPreciseDelay>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
@@ -679,6 +680,12 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private bool _frameHasUi;
 
     /// <inheritdoc/>
+    public PostProcess? ScreenEffects { get; set; }
+
+    /// <summary>Whether the last frame went through the screen's chain, so its capture is the window and not the canvas.</summary>
+    private bool ScreenEffectsShown => ScreenEffects is { IsActive: true };
+
+    /// <inheritdoc/>
     public Color Letterbox { get; set; }
 
     /// <inheritdoc/>
@@ -686,7 +693,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         _canvas.EndFrame();
         // The canvas into the window as the presentation says; nothing to present while minimised.
-        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
+        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox, ScreenEffects))
         {
             // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
             if (_touch.Canvas is { } overlayCanvas) _touch.Overlay?.Draw(overlayCanvas);
@@ -719,7 +726,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// </summary>
     public void SaveScreenshot(string path)
     {
-        if (!_frameHasUi) _canvas.SaveCapture(path, _captureScale);
+        if (!_frameHasUi && !ScreenEffectsShown) _canvas.SaveCapture(path, _captureScale);
         else
         {
             var screen = ((IViewCapture)this).CaptureScreen();
@@ -732,6 +739,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     PixelImage? IViewCapture.CaptureUi() => _frameHasUi ? _canvas.CaptureUi() : null;
     PixelImage IViewCapture.CaptureScreen()
     {
+        // A frame presented through the screen's post-processing chain is captured as the window showed it.
+        if (_canvas.CapturePresented() is { } presented) return presented;
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
         // A prescaled canvas is sampled from its enlargement, as the window's frame was.

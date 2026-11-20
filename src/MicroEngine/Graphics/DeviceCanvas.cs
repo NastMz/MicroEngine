@@ -528,6 +528,11 @@ public sealed class DeviceCanvas : IDisposable
     private DeviceRenderer? _uiRenderer;
     private float _uiScale = 1;
     private bool _uiDrawn, _uiReady, _disposed;
+    // The window stage: the window's picture before and after the screen's post-processing chain.
+    private readonly Renderer2D _screenBatcher;
+    private RenderTarget2D? _screen, _screenOut;
+    private DeviceRenderer? _screenRenderer;
+    private bool _screenPresented;
 
     /// <summary>Creates a canvas of <paramref name="width"/> × <paramref name="height"/> pixels on <paramref name="device"/>.</summary>
     public DeviceCanvas(Dev.IGraphicsDevice device, int width, int height)
@@ -537,6 +542,7 @@ public sealed class DeviceCanvas : IDisposable
         _batcher = new Renderer2D(device);
         _composer = new Renderer2D(device);
         _uiBatcher = new Renderer2D(device);
+        _screenBatcher = new Renderer2D(device);
         (Target, _renderer) = NewCanvas(width, height);
     }
 
@@ -600,7 +606,7 @@ public sealed class DeviceCanvas : IDisposable
 
     /// <summary>
     /// Starts the frame's UI view: a transparent target of the window's size in pixels, drawn in UI units of
-    /// <paramref name="scale"/> pixels, composited over the world by <see cref="Compose"/>. Call it after
+    /// <paramref name="scale"/> pixels, composited over the world by <see cref="Compose(Presentation, RectF, Color)"/>. Call it after
     /// <see cref="BeginFrame"/>, at most once per frame.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The size or the scale is not positive.</exception>
@@ -627,9 +633,19 @@ public sealed class DeviceCanvas : IDisposable
     /// through a <see cref="CanvasPresenter"/>), and the frame's UI view over everything. Returns false, drawing nothing,
     /// when the window has no target this frame (minimised); the caller then skips presenting.
     /// </summary>
-    public bool Compose(Presentation presentation, RectF frame, Color letterbox)
+    public bool Compose(Presentation presentation, RectF frame, Color letterbox) => Compose(presentation, frame, letterbox, null);
+
+    /// <summary>
+    /// <see cref="Compose(Presentation, RectF, Color)"/> through a post-processing chain: while <paramref name="effects"/>
+    /// is active, the window's picture (letterbox, canvas, UI view) is drawn off screen at the window's size, run through
+    /// the chain, and the result is what the window shows; <see cref="CapturePresented"/> then returns it. With a null
+    /// or inactive chain it is the plain composition.
+    /// </summary>
+    public bool Compose(Presentation presentation, RectF frame, Color letterbox, PostProcess? effects)
     {
         ArgumentNullException.ThrowIfNull(presentation);
+        _screenPresented = false;
+        if (effects is { IsActive: true }) return ComposeThrough(effects, presentation, frame, letterbox);
         if (presentation.Prescale != 1)
         {
             _presenter ??= new CanvasPresenter(Device);
@@ -653,6 +669,50 @@ public sealed class DeviceCanvas : IDisposable
         _composer.End();
         _uiReady = false;
         return true;
+    }
+
+    private bool ComposeThrough(PostProcess effects, Presentation presentation, RectF frame, Color letterbox)
+    {
+        if (!Device.TryAcquireSurfaceTarget(out var surface)) return false;
+        int width = surface.Width, height = surface.Height;
+        if (_screen is null || _screen.Width != width || _screen.Height != height)
+        {
+            _screen?.Dispose();
+            _screenOut?.Dispose();
+            _screen = Graphics.CreateRenderTarget(width, height, TextureFilter.Nearest);
+            _screenOut = Graphics.CreateRenderTarget(width, height, TextureFilter.Nearest);
+            _screenRenderer = new DeviceRenderer(_screenBatcher, Graphics, ((DeviceTexture)_screenOut.Texture).Target!);
+        }
+        // The window as it would be shown, off screen; then through the chain; then onto the window, pixel for pixel.
+        _presenter ??= new CanvasPresenter(Device);
+        _presenter.Present(presentation, Target, _uiReady ? _ui : null, frame, letterbox, ((DeviceTexture)_screen.Texture).Target!);
+        _screenRenderer!.Begin();
+        effects.Apply(_screenRenderer, Graphics, _screen.Texture, new RectF(0, 0, width, height), opaque: true);
+        _screenRenderer.End();
+        _composer.Begin(new BatchSettings(surface, Blend: Dev.BlendState.Opaque, Sampler: Dev.SamplerDescription.PointClamp));
+        _composer.Draw(_screenOut!.Texture.Native!, new RectF(0, 0, width, height), Matrix3x2.Identity, ColorF.White);
+        _composer.End();
+        _uiReady = false;
+        _screenPresented = true;
+        return true;
+    }
+
+    /// <summary>
+    /// The window as the last frame presented it through a post-processing chain
+    /// (<see cref="Compose(Presentation, RectF, Color, PostProcess?)"/>), opaque, at the window's size; null when the
+    /// last frame was presented without one.
+    /// </summary>
+    public PixelImage? CapturePresented()
+    {
+        if (!_screenPresented || _screenOut is null) return null;
+        var target = ((DeviceTexture)_screenOut.Texture).Target!;
+        var request = Device.ReadPixels(target, target.Bounds);
+        request.Wait();
+        var rgba = request.Pixels;
+        var image = new PixelImage(target.Width, target.Height);
+        for (int i = 0, n = target.Width * target.Height; i < n; i++)
+            image[i % target.Width, i / target.Width] = new Color(rgba[i * 4], rgba[i * 4 + 1], rgba[i * 4 + 2], 255);
+        return image;
     }
 
     /// <summary>The UI view of the last frame as stored (premultiplied, transparent where nothing was drawn), or null.</summary>
@@ -697,6 +757,7 @@ public sealed class DeviceCanvas : IDisposable
         _composer.Dispose();
         _presenter?.Dispose();
         _uiBatcher.Dispose();
+        _screenBatcher.Dispose();
         _ui?.Dispose();
         Target.Dispose();
     }

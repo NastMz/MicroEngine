@@ -122,4 +122,34 @@ public sealed class RenderingExampleTests
         Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current, "pause goes back to the list");
         Assert.IsTrue(((HeadlessGraphicsDevice)platform.Graphics).LiveTextures <= live, "leaving releases what the chain made");
     }
+
+    [TestMethod]
+    public void TheScreensChainCoversTheInterfaceAndIsTakenOutWhenTheSceneLeaves()
+    {
+        var (game, platform) = Start(new ScreenEffectsExample());
+        var scene = (ScreenEffectsExample)game.Scenes.Current!;
+        Assert.HasCount(2, game.ScreenPostProcess.Effects);
+        Assert.AreEqual(PostEffectSupport.Reduced, game.ScreenPostProcess.Effects[0].SupportOn(game.Graphics), "no shaders here: the tube is flat and shows its lines");
+
+        // The window is 960 × 540, three window pixels per canvas row: each of the tube's 180 lines is three rows high,
+        // and the heading's bar (drawn in the interface, at the top) is darkened by them like everything else.
+        Draw(game, platform);
+        var window = ((IViewCapture)platform).CaptureScreen();
+        Assert.AreEqual((960, 540), (window.Width, window.Height), "the capture is the window, as it was presented");
+        int[] bar = [.. Enumerable.Range(0, 12).Select(y => Brightness(window[300, y]))];
+        Assert.IsTrue(bar.Max() - bar.Min() > 12, $"the lines cross the interface: {string.Join(" ", bar)}");
+        int[] world = [.. Enumerable.Range(60, 12).Select(y => Brightness(window[4, y]))];
+        Assert.IsTrue(world.Max() - world.Min() > 20, $"and the world: {string.Join(" ", world)}");
+
+        Press(game, "confirm");
+        Assert.IsFalse(scene.On);
+        Draw(game, platform);
+        window = ((IViewCapture)platform).CaptureScreen();
+        bar = [.. Enumerable.Range(0, 12).Select(y => Brightness(window[300, y]))];
+        Assert.IsTrue(bar.Max() - bar.Min() <= 4, $"off: the heading's bar is the smooth picture again: {string.Join(" ", bar)}");
+
+        Press(game, "pause");
+        Assert.IsInstanceOfType<MenuScene>(game.Scenes.Current);
+        Assert.HasCount(0, game.ScreenPostProcess.Effects, "the scene took its effects out of the game's chain");
+    }
 }
