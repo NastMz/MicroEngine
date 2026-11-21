@@ -83,6 +83,7 @@ public sealed class AssetGalleryTests
     }
 
     [TestMethod]
+    [DoNotParallelize] // redirects the error output of the whole process: another test's game reporting a slow load would be read as this tour's
     public void TheScriptedTourReportsNoHitch()
     {
         // The engine reports a slow load during play on the error output; the tour loads and releases the level scope.
