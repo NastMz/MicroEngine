@@ -494,7 +494,7 @@ public sealed class NavAgentsTests
                 agents.Step(Dt);
             }
         }
-        Round(1800);
+        Round(4200);
         long before = GC.GetAllocatedBytesForCurrentThread();
         Round(600);
         Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "bytes allocated by 600 steps of 24 agents with orders, searches and a changing map");

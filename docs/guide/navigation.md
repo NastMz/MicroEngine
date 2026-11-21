@@ -174,9 +174,12 @@ public void Order(Vector2 point)
 }
 ```
 
-They share the passages, the first ones stop on and around the point, and each of the others stops beside those that
-arrived once it finds no place nearer: the group gathers instead of stacking on one cell or pushing for ever.
-Formations, who goes first and what a unit does when it is blocked are your game's rules.
+They share the passages, and at the point each takes a place of its own: the first stands on it, and each of the
+others, when it reaches those that arrived, takes the free place nearest the point on a honeycomb of places one body
+apart, and walks to it. The group gathers around the point instead of stacking on one cell or pushing for ever; an
+agent that cannot get to its place stops where it is held. Among agents that go the same way the one with less of
+its way left goes first and the others wait behind it, so a crowd queues at a door instead of wedging in it.
+Formations and what a unit does when it is blocked are your game's rules.
 
 Searches are spread over steps. One step looks at `agents.SearchBudget` nodes at most (4096 by default) for all the
 agents together; when a hundred units are ordered at once on a large map, most have their route in the same step and
@@ -592,12 +595,19 @@ public sealed class HexBoard(int width, int height) : INavGraph
   and give fields a distance limit.
 - A finder keeps 24 bytes per cell of the largest map it searched, a grid 5 and a field 8.
 - One finder or field serves one search at a time: use one per thread.
-- A system of a thousand agents on a 128 x 128 grid takes one to two milliseconds a step. With the default search
+- A system of a thousand agents on a 128 x 128 grid takes about two milliseconds a step. With the default search
   budget about a dozen long routes are found per step there, so a thousand units ordered at once all walk within a
   second or two; for one goal, a `DistanceField` gives them all a route in one computation.
-- Agents steer by simple rules, not by a solver: they keep apart, turn aside and take turns at a door, but a dense
-  crowd in a narrow passage queues, and two crowds that meet in one push through each other slowly. Pressed together,
-  bodies may overlap by a small part of a radius for a few steps.
+- Agents steer by simple rules, not by a solver: they keep apart, turn aside and take turns at a door. A dense
+  crowd queues at a narrow passage and goes through it one body at a time, at about half the rate of a single file
+  walking freely: four hundred bodies of radius 0.3 cells at speed 4 take some 160 seconds through a gap of one
+  cell.
+- Bodies do not walk into each other, and a step in which a body would move more than half its radius is taken in
+  parts. In a crowd pressed against a gap the overlap of two bodies stays under a tenth of the sum of their radii.
+  Where two bodies cannot pass side by side (two streams head-on in a passage narrower than two bodies) they pass
+  by overlapping, by up to a sixth of that sum.
+- An agent with an order that nothing lets through (a body that stands in the only passage) stays `Moving` with
+  `IsBlocked` set: it never gives up by itself.
 - A body is a circle for other agents and a square for walls. A group has no formation: its units gather around the
   point in the order they get there.
 - Agents walk a `NavGrid`. On a `NavGraph` or a space of your own, follow the path yourself.

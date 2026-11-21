@@ -56,7 +56,10 @@ if (unit.Status == NavAgentStatus.Arrived) Salute(unit);
 <ul><li><b>Order.</b> Agents are stepped in the order they were added, and searches are served in the order they
 were asked for. With the same orders in the same steps a run repeats exactly, on every machine.</li><li><b>Searches.</b> One step looks at [SearchBudget](MicroEngine.Navigation.NavAgents.md#MicroEngine_Navigation_NavAgents_SearchBudget) nodes at most, for all agents together: when
 many are ordered at once on a large map, the rest wait their turn ([Planning](MicroEngine.Navigation.NavAgentStatus.md)) instead
-of stalling the step.</li><li><b>Bodies.</b> An agent is a circle for the others and a square for walls. Agents are not obstacles in the
+of stalling the step.</li><li><b>Crowds.</b> An agent does not walk into a body it touches: it waits behind one that walks and goes
+around one that stands. Among agents that go the same way the one with less of its way left goes first. Where
+others stand at its destination it takes the free place nearest the point, on a honeycomb of places one body
+apart. A step in which a body would move more than half its radius is taken in parts (eight at most).</li><li><b>Bodies.</b> An agent is a circle for the others and a square for walls. Agents are not obstacles in the
 grid: block cells for things that stay.</li><li><b>Memory.</b> Stepping allocates nothing once the lists have grown.</li></ul>
 
 ## Constructors

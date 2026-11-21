@@ -87,7 +87,16 @@ public sealed class DistanceField
             }
         }
         Version = Grid.Version;
+        // What the field holds follows from the grid and from what was asked: that is what a state hash needs of it.
+        ulong stamp = 14695981039346656037UL;
+        foreach (int goal in goals) stamp = (stamp ^ (uint)goal) * 1099511628211UL;
+        stamp = (stamp ^ (uint)BitConverter.SingleToInt32Bits(maxDistance)) * 1099511628211UL;
+        stamp = (stamp ^ (uint)_rings) * 1099511628211UL;
+        Stamp = (stamp ^ (uint)Version) * 1099511628211UL;
     }
+
+    /// <summary>A number that tells apart fields computed for different goals, limits, sizes or versions of the grid.</summary>
+    internal ulong Stamp { get; private set; }
 
     /// <summary>The cost of the cheapest route from <paramref name="node"/> to the goal: 0 at a goal, infinity where no route exists or nothing was computed.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="node"/> is not a node of the grid.</exception>

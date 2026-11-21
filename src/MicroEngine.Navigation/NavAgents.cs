@@ -101,15 +101,17 @@ public sealed class NavAgent
     internal NavAgents? Owner;
     internal int Index;
     internal SpatialHandle Handle;
-    internal Vector2 Place, Drive, Wanted, Target, StallFrom, Aim;
+    internal Vector2 Place, Drive, Wanted, Target, StallFrom, Aim, Mark, Bar, Bearing;
     internal NavAgentSettings Config;
     internal NavAgentStatus State;
     internal PathStatus Search = PathStatus.Found;
     internal readonly List<Vector2> Points = [];
     internal readonly List<int> Cells = [];
-    internal int CellAt, TargetNode = -1, EndNode = -1;
-    internal bool Inside, Exact, Queued, Landing, Blocked;
-    internal float StallTime, Nearest = float.PositiveInfinity, Waited;
+    internal int CellAt, TargetNode = -1, EndNode = -1, FieldNode = -1, FieldGoal = -1;
+    internal ulong FieldStamp;
+    internal bool Inside, Exact, Queued, Landing, Blocked, Held, Slotted;
+    internal Vector2 Slot;
+    internal float StallTime, Waited, Remaining, Circled, Nearest = float.PositiveInfinity;
     internal DistanceField? Field;
 
     internal NavAgent(NavAgents owner, Vector2 position, NavAgentSettings settings)
@@ -219,6 +221,7 @@ public sealed class NavAgent
         if (field.Grid != owner.Grid) throw new ArgumentException("The field measures another grid than the agents walk.", nameof(field));
         owner.Halt(this);
         Field = field;
+        FieldNode = FieldGoal = -1;
         State = NavAgentStatus.Moving;
     }
 
@@ -247,6 +250,10 @@ public sealed class NavAgent
 /// <item><b>Searches.</b> One step looks at <see cref="SearchBudget"/> nodes at most, for all agents together: when
 /// many are ordered at once on a large map, the rest wait their turn (<see cref="NavAgentStatus.Planning"/>) instead
 /// of stalling the step.</item>
+/// <item><b>Crowds.</b> An agent does not walk into a body it touches: it waits behind one that walks and goes
+/// around one that stands. Among agents that go the same way the one with less of its way left goes first. Where
+/// others stand at its destination it takes the free place nearest the point, on a honeycomb of places one body
+/// apart. A step in which a body would move more than half its radius is taken in parts (eight at most).</item>
 /// <item><b>Bodies.</b> An agent is a circle for the others and a square for walls. Agents are not obstacles in the
 /// grid: block cells for things that stay.</item>
 /// <item><b>Memory.</b> Stepping allocates nothing once the lists have grown.</item>
@@ -266,10 +273,20 @@ public sealed class NavAgents : SceneSystem
 {
     // How far ahead, in seconds, a meeting with another body matters; how much harder a standing body holds its place.
     private const float Horizon = 0.5f, Hold = 8;
+    // The most the bodies around an agent change its velocity, as a part of its speed.
+    private const float Sway = 1;
     // How many times a step moves overlapping bodies apart: each pass halves what a dense crowd still overlaps by.
-    private const int Passes = 4;
+    private const int Passes = 8;
+    // The most parts a long step is taken in.
+    private const int MaxParts = 8;
     // How long an agent beside those that arrived looks for a place nearer its point before it stops, in seconds.
     private const float Patience = 0.25f;
+    // How many rings of places around a point a group is given: room for some twelve thousand bodies.
+    private const int Rings = 64;
+    // How many of its radii an agent may walk around those that arrived without getting a radius nearer.
+    private const float Around = 6;
+    // How many cells from the goal of its field a follower looks for it, to head straight there.
+    private const int InSight = 32;
 
     private readonly List<NavAgent> _agents = [];
     private readonly SpatialIndex2D<NavAgent> _index;
@@ -471,6 +488,28 @@ public sealed class NavAgents : SceneSystem
         }
         Plan();
 
+        // A step in which a body would move further than about half its radius is taken in parts, so that bodies meet
+        // instead of passing through each other. At most eight: a step that long is not a step of a game.
+        float longest = 0;
+        foreach (var agent in _agents)
+            if (agent.State == NavAgentStatus.Moving && agent.Config.Collides && agent.Radius > 0)
+                longest = MathF.Max(longest, agent.Config.Speed * dt / agent.Radius);
+        int parts = Math.Clamp((int)MathF.Ceiling(MathF.Min(longest * 2, MaxParts)), 1, MaxParts);
+        for (int part = 0; part < parts; part++) Advance(dt / parts);
+    }
+
+    // One part of a step: steer, move, move apart, settle.
+    private void Advance(float dt)
+    {
+        var grid = Grid;
+        foreach (var agent in _agents)
+        {
+            // How much of its way each has left, and which way that is: to the end of its route, not to the next
+            // turn of it, so that two that go to one place go the same way even while one steps back to a corner.
+            bool walks = agent.State == NavAgentStatus.Moving;
+            agent.Remaining = walks ? Left(agent, byField: true) : 0;
+            agent.Bearing = !walks ? Vector2.Zero : agent.Field is null && agent.Points.Count > 0 ? Steering.Seek(agent.Place, agent.Points[^1], 1) : agent.Aim;
+        }
         foreach (var agent in _agents) Steer(agent, dt);
 
         foreach (var agent in _agents)
@@ -488,16 +527,28 @@ public sealed class NavAgents : SceneSystem
                 continue;
             }
             var from = agent.Place;
-            var to = grid.Slide(from, velocity * dt, config.Radius);
+            var step = velocity * dt;
+            var to = grid.Slide(from, step, config.Radius);
+            // Held by a wall across its way, it does not lean on it: what the wall kept of the step is walked along
+            // the wall, towards the point it heads for (the mouth of a gap, the corner it has to turn).
+            var kept = step - (to - from);
+            if (!agent.Landing && (kept.X != 0) != (kept.Y != 0))
+            {
+                var along = kept.X != 0
+                    ? new Vector2(0, Math.Clamp(agent.Mark.Y - to.Y, -MathF.Abs(kept.X), MathF.Abs(kept.X)))
+                    : new Vector2(Math.Clamp(agent.Mark.X - to.X, -MathF.Abs(kept.Y), MathF.Abs(kept.Y)), 0);
+                // ...unless a body it must not walk into stands that way.
+                if (along != Vector2.Zero && !(Vector2.Dot(along, agent.Bar) > 0)) to = grid.Slide(to, along, config.Radius);
+            }
             if (agent.Landing)
             {
                 // The last step of a route ends on its point, not a rounding away from it.
-                var end = agent.Points[^1];
+                var end = agent.Mark;
                 if (Vector2.DistanceSquared(to, end) <= 1e-6f * grid.CellSize * grid.CellSize) to = end;
             }
             agent.Place = to;
             agent.Drive = (to - from) / dt;
-            if (agent.Landing && to == agent.Points[^1]) Arrive(agent);
+            if (agent.Landing && to == agent.Mark) Arrive(agent);
         }
         foreach (var agent in _agents) _index.Move(agent.Handle, agent.Place);
 
@@ -529,12 +580,31 @@ public sealed class NavAgents : SceneSystem
             hash.Add(agent.TargetNode);
             hash.Add(agent.EndNode);
             hash.Add(agent.Field is not null);
+            if (agent.Field is { } field) hash.Add(field.Stamp);
+            hash.Add(agent.FieldNode);
+            hash.Add(agent.FieldGoal);
+            var config = agent.Config;
+            hash.Add(config.Radius);
+            hash.Add(config.Speed);
+            hash.Add(config.Acceleration);
+            hash.Add(config.ArrivalTolerance);
+            hash.Add(config.SlowingDistance);
+            hash.Add(config.Separation);
+            hash.Add(config.Avoidance);
+            hash.Add(config.Weight);
+            hash.Add(config.Collides);
+            hash.Add(config.SlowedByCost);
+            hash.Add(config.MovedByGame);
             hash.Add(agent.Queued);
             hash.Add(agent.Blocked);
             hash.Add(agent.StallTime);
             hash.Add(agent.StallFrom);
-            hash.Add(agent.Nearest);
             hash.Add(agent.Waited);
+            hash.Add(agent.Circled);
+            hash.Add(agent.Slotted);
+            hash.Add(agent.Slot);
+            hash.Add(agent.Nearest);
+            hash.Add(agent.Remaining);
             hash.Add(agent.CellAt);
             hash.Add(agent.Points.Count);
             foreach (var point in agent.Points) hash.Add(point);
@@ -576,9 +646,8 @@ public sealed class NavAgents : SceneSystem
         agent.TargetNode = agent.EndNode = -1;
         agent.Search = PathStatus.Found;
         agent.Wanted = agent.Drive = Vector2.Zero;
-        agent.Landing = agent.Blocked = false;
+        agent.Landing = agent.Blocked = agent.Slotted = false;
         agent.StallTime = agent.Waited = 0;
-        agent.Nearest = float.PositiveInfinity;
     }
 
     internal void Send(NavAgent agent, Vector2 point)
@@ -631,10 +700,11 @@ public sealed class NavAgents : SceneSystem
     // The map changed: an agent whose way closed, or whose way may have opened, searches again.
     private void Review(NavAgent agent)
     {
+        agent.Slotted = false;        // the place it took may be in a wall now: it takes one again
         if (agent.Field is not null || agent.Queued || agent.TargetNode < 0) return;
         var grid = Grid;
         bool walking = agent.State == NavAgentStatus.Moving;
-        if (walking && agent.Cells.Count > 0 && !grid.IsOpen(agent.Cells, Math.Min(agent.CellAt, agent.Cells.Count - 1), agent.Radius))
+        if (walking && agent.Cells.Count > 0 && (!grid.IsOpen(agent.Cells, Math.Min(agent.CellAt, agent.Cells.Count - 1), agent.Radius) || !LegsClear(agent)))
         {
             Request(agent);
             return;
@@ -643,6 +713,19 @@ public sealed class NavAgents : SceneSystem
         // It was going, or went, as near as it could: is there somewhere nearer now?
         int from = grid.NodeAt(agent.Place);
         if (from >= 0 && Regions(agent.Radius).NearestReachable(from, agent.TargetNode) != agent.EndNode) Request(agent);
+    }
+
+    // Whether the straight legs the agent still walks touch no wall: a straightened leg crosses cells that are not
+    // cells of the searched path, and a wall may have been built on those.
+    private bool LegsClear(NavAgent agent)
+    {
+        var from = agent.Place;
+        foreach (var point in agent.Points)
+        {
+            if (!Grid.HasLineOfSight(from, point, agent.Radius)) return false;
+            from = point;
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------ searches
@@ -708,10 +791,10 @@ public sealed class NavAgents : SceneSystem
         agent.Cells.Clear();
         agent.Cells.AddRange(_finder.Path);
         agent.CellAt = 0;
+        agent.Slotted = false;
         agent.Exact = exact;
         agent.Search = status == PathStatus.Found && !exact ? PathStatus.Unreachable : status;
         agent.StallTime = agent.Waited = 0;
-        agent.Nearest = float.PositiveInfinity;
         agent.StallFrom = agent.Place;
         if (agent.Points.Count > 0) agent.State = NavAgentStatus.Moving;
         else Arrive(agent);
@@ -734,8 +817,8 @@ public sealed class NavAgents : SceneSystem
     // near the end, turned by the bodies around it.
     private void Steer(NavAgent agent, float dt)
     {
-        agent.Wanted = Vector2.Zero;
-        agent.Landing = false;
+        agent.Wanted = agent.Bar = Vector2.Zero;
+        agent.Landing = agent.Held = false;
 
         agent.Aim = Vector2.Zero;
         if (agent.State != NavAgentStatus.Moving) return;
@@ -752,8 +835,27 @@ public sealed class NavAgents : SceneSystem
         {
             int next = node < 0 ? -1 : field.Next(node);
             if (next < 0) return;
-            target = grid.CenterOf(next);
-            last = next == node;
+            // Near its goal and in sight of it, a follower heads straight for it like an agent sent there, instead
+            // of from the middle of one cell to the middle of the next. Looked up when it enters another cell.
+            if (node != agent.FieldNode || field.Stamp != agent.FieldStamp)
+            {
+                agent.FieldNode = node;
+                agent.FieldStamp = field.Stamp;
+                agent.FieldGoal = -1;
+                for (int at = node, hops = 0; hops < InSight; hops++)
+                {
+                    int on = field.Next(at);
+                    if (on < 0) break;
+                    if (on == at)
+                    {
+                        if (grid.HasLineOfSight(position, grid.CenterOf(at), config.Radius)) agent.FieldGoal = at;
+                        break;
+                    }
+                    at = on;
+                }
+            }
+            target = agent.Slotted ? agent.Slot : grid.CenterOf(agent.FieldGoal >= 0 ? agent.FieldGoal : next);
+            last = next == node || agent.FieldGoal >= 0 || agent.Slotted;
         }
         else
         {
@@ -776,14 +878,19 @@ public sealed class NavAgents : SceneSystem
             }
             target = points[0];
             last = points.Count == 1;
-            // Where it is along the cells of its path, for the day the map changes.
-            for (int i = agent.CellAt + 1, end = Math.Min(agent.Cells.Count, agent.CellAt + 5); i < end; i++)
-                if (agent.Cells[i] == node) agent.CellAt = i;
+            // Where it is along the cells of its path, for the day the map changes: past every cell whose successor
+            // is nearer. A straightened leg leaves the cells of the path, so being in one of them cannot be the test.
+            var cells = agent.Cells;
+            while (agent.CellAt + 1 < cells.Count
+                && Vector2.DistanceSquared(position, grid.CenterOf(cells[agent.CellAt + 1])) <= Vector2.DistanceSquared(position, grid.CenterOf(cells[agent.CellAt])))
+                agent.CellAt++;
         }
 
+        agent.Mark = target;
         var to = target - position;
         float distance = to.Length();
         Vector2 wanted;
+        agent.Aim = distance > 0 ? to / distance : Vector2.Zero;
         if (last)
         {
             if (distance <= Tolerance(agent))
@@ -793,17 +900,16 @@ public sealed class NavAgents : SceneSystem
                 return;
             }
             if (config.SlowingDistance > 0 && distance < config.SlowingDistance) speed = MathF.Max(speed * distance / config.SlowingDistance, config.Speed * 0.1f);
-            if (distance <= speed * dt && agent.Field is null && !agent.Queued)
+            if (distance <= speed * dt && (agent.Field is null || agent.Slotted) && !agent.Queued)
             {
                 agent.Landing = true;
                 agent.Wanted = to / dt;
                 return;
             }
         }
-        agent.Aim = distance > 0 ? to / distance : Vector2.Zero;
         wanted = agent.Aim * MathF.Min(speed, distance / dt);
 
-        if (config.Collides && (config.Separation > 0 || config.Avoidance > 0) && _agents.Count > 1)
+        if (config.Collides && _agents.Count > 1)
         {
             float keep = MathF.Max(config.Radius, 1e-3f * grid.CellSize);
             Near(agent, MathF.Max(keep, 2 * config.Speed * Horizon));
@@ -812,13 +918,60 @@ public sealed class NavAgents : SceneSystem
             {
                 if (other == agent || !other.Config.Collides) continue;
                 // Two that head the same way into the same place (a door, a corner) would each give way to the other
-                // for ever: the one added first goes first, and the other keeps clear of it.
-                if (other.Index > agent.Index && other.State == NavAgentStatus.Moving && Vector2.Dot(agent.Aim, other.Aim) > 0) continue;
+                // for ever: the one with less of its way left goes first, and the other keeps clear of it.
+                if (GivesWay(other, agent)) continue;
                 // Room is kept between bodies that walk; one that stands is gone around, and stood beside.
                 if (other.State == NavAgentStatus.Moving) apart += Steering.Separate(position, config.Radius, other.Place, other.Radius, keep);
                 aside += Steering.Avoid(position, wanted, config.Radius, other.Place, other.Drive, other.Radius, Horizon);
             }
-            wanted = Steering.Limit(wanted + speed * (config.Separation * apart + config.Avoidance * Steering.Limit(aside, 1)), speed);
+            // What the others add never outweighs where it is going: in a crowd an agent still heads for its point.
+            var turn = Steering.Limit(config.Separation * Steering.Limit(apart, 1) + config.Avoidance * Steering.Limit(aside, 1), Sway);
+            wanted = Steering.Limit(wanted + speed * turn, speed);
+            // It does not walk into a body it touches, unless that body gives way to it: a crowd presses on nobody
+            // but those behind it in the order.
+            Span<Vector2> standing = stackalloc Vector2[8];
+            int stands = 0;
+            bool held = false;
+            foreach (var other in _near)
+            {
+                if (other == agent || !other.Config.Collides || GivesWay(other, agent)) continue;
+                var between = other.Place - position;
+                float apartBy = between.Length(), reach = config.Radius + other.Radius;
+                if (apartBy > reach * 1.02f || !(apartBy > 0)) continue;
+                var toward = between / apartBy;
+                agent.Bar += toward;
+                if (other.State != NavAgentStatus.Moving)
+                {
+                    if (stands < standing.Length) standing[stands++] = toward;
+                    held |= Vector2.Dot(wanted, toward) > 0;
+                    continue;
+                }
+                float into = Vector2.Dot(wanted, toward);
+                if (into > 0) wanted -= toward * into;      // behind one that walks: wait for it
+            }
+            agent.Held = held;
+            // Around those that stand, at the pace it had: along the side of one of them that leads on and into none
+            // of the others. With no such side it is in a pocket between them, and stays.
+            float pace = wanted.Length();
+            if (held && pace > 0)
+            {
+                var heading = wanted / pace;
+                var best = Vector2.Zero;
+                float gain = -0.1f;       // straight behind one of them, either side leads on: its right is taken
+                for (int i = 0; i < stands; i++)
+                    for (int flip = 0; flip < 2; flip++)
+                    {
+                        var side = flip == 0 ? new Vector2(-standing[i].Y, standing[i].X) : new Vector2(standing[i].Y, -standing[i].X);
+                        float leads = Vector2.Dot(side, heading);
+                        if (!(leads > gain)) continue;
+                        bool free = true;
+                        for (int k = 0; k < stands && free; k++) free = Vector2.Dot(side, standing[k]) <= 1e-3f;
+                        if (!free) continue;
+                        gain = leads;
+                        best = side;
+                    }
+                wanted = best * pace;
+            }
         }
         agent.Wanted = wanted;
     }
@@ -847,6 +1000,7 @@ public sealed class NavAgents : SceneSystem
             var along = distance > 0 ? between / distance : new Vector2(1, 0);
             float mine = Hardness(agent), theirs = Hardness(other);
             if (float.IsPositiveInfinity(mine) && float.IsPositiveInfinity(theirs)) continue;
+            // Of two that walk the same way the later gives all the way; otherwise each gives by the weight of the other.
             float share = float.IsPositiveInfinity(mine) ? 0 : float.IsPositiveInfinity(theirs) ? 1 : theirs / (mine + theirs);
             // Each gives way by its share; what a wall keeps one from giving, the other gives.
             float given = 0;
@@ -858,6 +1012,14 @@ public sealed class NavAgents : SceneSystem
         return pushed;
     }
 
+    // Whether `behind` gives way to `ahead`: both walk, the same way, and `ahead` has less of its way left (the one
+    // added first, between equals). Two that head into one place would otherwise each give way to the other for
+    // ever, and those behind would press those in front into each other.
+    private static bool GivesWay(NavAgent behind, NavAgent ahead) =>
+        behind.State == NavAgentStatus.Moving && ahead.State == NavAgentStatus.Moving
+        && (ahead.Field is not null ? ahead.Field == behind.Field : behind.Field is null && Vector2.Dot(ahead.Bearing, behind.Bearing) > 0)
+        && (ahead.Remaining < behind.Remaining || (ahead.Remaining == behind.Remaining && ahead.Index < behind.Index));
+
     // Moves a body along a direction by an amount, as far as walls let it, and returns how far it went.
     private float Give(NavAgent agent, Vector2 along, float amount)
     {
@@ -866,13 +1028,70 @@ public sealed class NavAgents : SceneSystem
         return Vector2.Dot(agent.Place - from, along);
     }
 
-    // How far the agent still is from where it goes, in a straight line (through its field's cells for a follower).
-    private float Left(NavAgent agent)
+    // How far the agent still is from where it goes: in a straight line to the end of its route; for a follower, to
+    // the middle of the cell its field sends it to and on from there by the field. It falls as the agent walks, not
+    // once per cell.
+    private float Left(NavAgent agent, bool byField = false)
     {
         if (agent.Field is not { } field) return agent.Points.Count > 0 ? Vector2.Distance(agent.Place, agent.Points[^1]) : 0;
         int node = Grid.NodeAt(agent.Place);
-        float cells = node < 0 ? float.PositiveInfinity : field.DistanceAt(node);
-        return cells == 0 ? Vector2.Distance(agent.Place, Grid.CenterOf(node)) : cells * Grid.CellSize + Grid.CellSize;
+        int next = node < 0 ? -1 : field.Next(node);
+        if (next < 0) return float.PositiveInfinity;
+        // (To order followers among themselves, always by the field: one measure for all of them.)
+        if (agent.Slotted && !byField) return Vector2.Distance(agent.Place, agent.Slot);
+        if (agent.FieldGoal >= 0 && agent.FieldNode == node && !byField) return Vector2.Distance(agent.Place, Grid.CenterOf(agent.FieldGoal));
+        return Vector2.Distance(agent.Place, Grid.CenterOf(next)) + field.DistanceAt(next) * Grid.CellSize;
+    }
+
+    // Gives the agent the place it will stand on: the nearest to \`goal\`, on a honeycomb of places one body apart
+    // around it, that no standing body covers, no other agent has taken and the body can walk to from the point. Ring by
+    // ring outwards, each ring in the same order: the same crowd always takes the same places.
+    private void TakePlace(NavAgent agent, Vector2 goal)
+    {
+        var grid = Grid;
+        float radius = agent.Radius, apart = 2.1f * MathF.Max(radius, 1e-3f * grid.CellSize);
+        for (int ring = 0; ring <= Rings; ring++)
+        {
+            int q = ring, r = 0;
+            for (int side = 0; side < (ring == 0 ? 1 : 6); side++)
+                for (int step = 0; step < Math.Max(ring, 1); step++)
+                {
+                    var place = goal + apart * new Vector2(q + r * 0.5f, r * 0.8660254f);
+                    if (Free(agent, place, goal))
+                    {
+                        agent.Slotted = true;
+                        agent.Slot = place;
+                        if (agent.Field is null) agent.Points[0] = place;
+                        return;
+                    }
+                    // The next place of the ring: six sides, each \`ring\` places long.
+                    switch (side)
+                    {
+                        case 0: q--; r++; break;
+                        case 1: q--; break;
+                        case 2: r--; break;
+                        case 3: q++; r--; break;
+                        case 4: q++; break;
+                        default: r++; break;
+                    }
+                }
+        }
+    }
+
+    private bool Free(NavAgent agent, Vector2 place, Vector2 goal)
+    {
+        var grid = Grid;
+        float radius = agent.Radius;
+        // A place the body could walk to from the point itself: not one seen through a gap too narrow for it.
+        if (grid.NodeAt(place) < 0 || !grid.HasLineOfSight(goal, place, radius)) return false;
+        foreach (var other in _agents)
+        {
+            if (other == agent || !other.Config.Collides) continue;
+            float reach = (radius + other.Radius) * 0.98f;
+            if (other.State != NavAgentStatus.Moving && Vector2.DistanceSquared(place, other.Place) < reach * reach) return false;
+            if (other.Slotted && Vector2.DistanceSquared(place, other.Slot) < reach * reach) return false;
+        }
+        return true;
     }
 
     private static float Hardness(NavAgent agent) =>
@@ -889,17 +1108,26 @@ public sealed class NavAgents : SceneSystem
             float slack = 0.25f * MathF.Max(config.Radius, 1e-3f * Grid.CellSize);
             Near(agent, slack);
             bool lastLeg = agent.Field is null && agent.Points.Count == 1, beside = false;
-            // Followers of a field all head for the middle of its goal's cell, which only one of them can stand on.
-            bool close = agent.Field is not null && Left(agent) < Grid.CellSize;
+            float left = Left(agent);
+            // At the very end of the way, where the point is one that not all who press for it can stand on.
+            bool close = (lastLeg || agent.Field is not null) && left <= MathF.Max(2.1f * config.Radius, agent.Field is null ? 0 : Grid.CellSize);
             foreach (var other in _near)
             {
                 if (other == agent || !other.Config.Collides || other.State == NavAgentStatus.Planning) continue;
                 float reach = config.Radius + other.Radius;
                 if (Vector2.Distance(agent.Place, other.Place) > reach + slack) continue;
-                // Those sent to the same place: the ones that arrived, and in the goal's cell of a field the ones
-                // still pressing for its middle.
-                bool together = (other.State == NavAgentStatus.Arrived || (close && other.State == NavAgentStatus.Moving))
-                    && (agent.Field is not null ? other.Field == agent.Field : other.Field is null && other.TargetNode >= 0 && Vector2.Distance(agent.Target, other.Target) <= reach);
+                // Two of a size that stand in each other's way to their places take each other's.
+                if (agent.Slotted && other.Slotted && other.State == NavAgentStatus.Moving && agent.Radius == other.Radius
+                    && Vector2.Distance(agent.Place, other.Slot) + Vector2.Distance(other.Place, agent.Slot)
+                        < Vector2.Distance(agent.Place, agent.Slot) + Vector2.Distance(other.Place, other.Slot) - slack)
+                {
+                    (agent.Slot, other.Slot) = (other.Slot, agent.Slot);
+                    if (agent.Field is null && agent.Points.Count == 1) agent.Points[0] = agent.Slot;
+                    if (other.Field is null && other.Points.Count == 1) other.Points[0] = other.Slot;
+                }
+                // Those sent to the same place that arrived; and, at the very end of the way, whoever is in the way.
+                bool together = close || (other.State == NavAgentStatus.Arrived
+                    && (agent.Field is not null ? other.Field == agent.Field : other.Field is null && other.TargetNode >= 0 && Vector2.Distance(agent.Target, other.Target) <= reach));
                 // Somebody who is not going anywhere stands on the very point it was sent to.
                 bool taken = lastLeg && other.State != NavAgentStatus.Moving && Vector2.Distance(agent.Points[0], other.Place) < reach;
                 if (taken)
@@ -909,14 +1137,36 @@ public sealed class NavAgents : SceneSystem
                 }
                 beside |= together;
             }
-            // Beside those that arrived, it still looks for a place nearer the point: it has arrived once it finds none.
-            float left = Left(agent);
-            if (left < agent.Nearest - 1e-3f * Grid.CellSize)
+            // It walks on around them while a way leads on; held there, it has arrived.
+            // (Waiting behind others that still walk is neither: they will move on.)
+            // Where the others stand, it takes a place of its own beside them: the free one nearest the point.
+            if (beside && !agent.Slotted && (lastLeg || agent.FieldGoal >= 0))
+                TakePlace(agent, agent.Field is null ? agent.Points[0] : Grid.CenterOf(agent.FieldGoal));
+            // One that has its place and cannot get to it is beside them all the same.
+            beside |= agent.Slotted;
+            bool slow = agent.Drive.LengthSquared() <= 0.01f * config.Speed * config.Speed;
+            if (!beside || !((close && !agent.Slotted) || (agent.Held && slow))) agent.Waited = 0;
+            else if ((agent.Waited += dt) >= Patience)
             {
-                agent.Nearest = left;
-                agent.Waited = 0;
+                Arrive(agent);
+                return;
             }
-            else if (beside && (agent.Waited += dt) >= Patience)
+            // And it does not walk around them for ever: once the time to go around a body brought it no nearer by
+            // a radius, where it is will do.
+            if (!beside)
+            {
+                agent.Circled = 0;
+                agent.Nearest = float.PositiveInfinity;
+            }
+            else if (!agent.Held)
+            {
+            }
+            else if (left < agent.Nearest - MathF.Max(config.Radius, 1e-3f * Grid.CellSize))
+            {
+                agent.Circled = 0;
+                agent.Nearest = left;
+            }
+            else if ((agent.Circled += dt) >= MathF.Max(Patience, Around * config.Radius / config.Speed))
             {
                 Arrive(agent);
                 return;
@@ -928,13 +1178,8 @@ public sealed class NavAgents : SceneSystem
         bool stalled = Vector2.Distance(agent.Place, agent.StallFrom) < 0.1f * config.Speed * agent.StallTime;
         agent.StallTime = 0;
         agent.StallFrom = agent.Place;
-        if (stalled && !agent.Blocked && agent.Field is null && !agent.Queued && agent.TargetNode >= 0)
-        {
-            // Pushed off its route, perhaps: one more search from where it is.
-            agent.Blocked = true;
-            Request(agent);
-            return;
-        }
         agent.Blocked = stalled;
+        // Pushed off its route, perhaps: a search from where it is, each time it finds itself held.
+        if (stalled && agent.Field is null && !agent.Queued && !agent.Slotted && agent.TargetNode >= 0) Request(agent);
     }
 }

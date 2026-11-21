@@ -51,6 +51,7 @@ see L9.
 | T5 Agents: `NavAgents`, `NavAgent`, `NavAgentSettings`, `Steering`, `NavGrid.Slide` | S1 S2 S5 S6 S8 | inline | done | `e494062b`; RED: does not compile, then 3 of 73 failing (L4); `NavAgentsTests` and `SteeringTests` |
 | T6 Sample: the room built from agents, the group order, the tower defence, the route by hand; its tests and tour; the guide | S7 S9 | inline | done | `1b08244a`; `PathfindingTests` 11/11; captures looked at (L5, L6) |
 | T7 Evaluation, ADR 0069 and its row, ADR 0056's status, this record, `benchmarks/NavCrowd`, API reference | S9 S10 | inline | done | the documentation commit (L7, L8) |
+| T8 Correction batch after the independent verification: crowds under pressure (D1 to D6) | S1 S2 S3 S8 | inline | done | the correction commit; RED: 9 of 9 new tests failing; `MicroEngine.Navigation.Tests` 88/88, `PathfindingTests` 11/11 (L10) |
 
 ## Log
 
@@ -113,3 +114,24 @@ see L9.
   page), `docs/architecture.md` (lines 85 and 301), `docs/guide/sdk.md` (the package table),
   `docs/guide/getting-microengine.md` (the package table) and `docs/guide/project-structure.md` (the samples row).
   `sdk/tests/docs.mjs` plays the sample's tour, which is now 1802 updates instead of 482; it needs no change.
+- L10 (T8, 2026-11-20) The coordinator's verification, in its words: "found the search, clearance, regions, sliced
+  search and determinism all hold (bit-identical to main at radius 0), but found defects in crowds", D1 to D6
+  (followers of a field that plug a passage and report `Arrived` before the wall; wide groups that never end their
+  order; overlap of 65 % and 92 %; a search for cells already passed; settings and the field missing from the hash;
+  a last leg that clips a corner). Nine tests were written from its probes' scenarios and all nine failed, with the
+  verifier's numbers (65 %, 4,178 steps, 92 %). What changed, and what was tried and dropped on the way:
+  - Giving all the way to the agent added first when two overlap squeezed whoever stood between two with priority
+    (overlap went to 100 %): the share by weight stays, and priority is in steering only.
+  - Priority by the order of adding let agents behind press those in front into each other at a gap: it is now by
+    the way left (less goes first), with one measure for all followers of a field.
+  - An agent does not walk into a body it touches (it waits behind one that walks, goes around one that stands).
+    With that alone the group stopped in a line behind the first to arrive; with a time to go around, it never
+    stopped. Arrival is now by places: the free one nearest the point on a honeycomb, with the old rules (held
+    between bodies that stand; no nearer after the time to walk six radii) kept for an agent that cannot reach it.
+  - A wall across the way is walked along towards the point headed for, unless a body it must not walk into is
+    that way; without the exception two bodies pressed each other at the mouth of a gap for ever.
+  - Sub-steps for a step longer than half a radius; eight passes of moving apart.
+  The evaluation, section 7, has the table and the numbers measured after. Not done: an order that ends by itself
+  when a body that stands blocks the only passage (it stays `Moving` and `IsBlocked`); the reason is in the
+  evaluation, section 5. The crowd is slower through a one-cell gap than before (165 s for 400 agents against
+  about 90 s) and a step costs about a third more.

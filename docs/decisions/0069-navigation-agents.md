@@ -26,10 +26,12 @@ solve one layer each over a navigation mesh or with no following at all (NAV-2, 
   agent (`NavAgent`) is a body with a radius and a speed that takes `MoveTo`, `Follow(field)` and `Stop` and tells
   `Status`, `Path`, `Route` and `IsBlocked`. The package still registers no module.
 - **Agents steer by rules, not by a solver**: seek and arrive, separation, a turn aside from a body about to be
-  run into, bodies moved apart every step, walls of the grid never entered. Two agents that head the same way into
-  the same place do not yield to each other: the one added first goes first. The rules are public as `Steering`.
-- **A group is its units.** Each is ordered; they gather around the point because an agent beside those that
-  arrived at the same place has arrived once it finds no place nearer.
+  run into, bodies moved apart every step, walls of the grid never entered. An agent does not walk into a body it
+  touches: it waits behind one that walks and goes around one that stands. Two agents that head the same way into
+  the same place do not yield to each other: the one with less of its way left goes first, so nobody presses those
+  in front into each other. The rules are public as `Steering`.
+- **A group is its units.** Each is ordered; they gather around the point because an agent that reaches those that
+  arrived at the same place takes the free place nearest the point, on a honeycomb of places one body apart.
 - **The level is still the grid.** Agents are not obstacles in it. A change of the grid makes the agents whose way
   it closes search again, and those that could not reach their point try again when a way opens.
 - **Searches are budgeted in nodes per step** (`SearchBudget`), served in the order asked, and always to a cell
@@ -65,7 +67,9 @@ solve one layer each over a navigation mesh or with no following at all (NAV-2, 
   in the migration notes. `IsOpen` and `DistanceField`'s constructor gained an optional parameter; `PathStatus`
   gained `Searching`.
 - Stated limits: a wide agent needs a passage of three cells (five when wider than three); crowds queue at narrow
-  passages and may overlap by a small part of a radius while pressed; no formations; agents walk a `NavGrid` only.
+  passages at about half the rate of a free single file; bodies pressed at a gap overlap by under a tenth of their
+  two radii, and by up to a sixth where two cannot pass side by side; an agent nothing lets through stays `Moving`
+  and `IsBlocked`; no formations; agents walk a `NavGrid` only.
 - `samples/Pathfinding` is built from agents and holds the two games of the issue; the documentation check builds
   and plays its longer tour from the packed feed.
 - Correctness is the engine's to keep: sized paths, nearest reachable cells and "would this cut the way" are

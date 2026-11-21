@@ -612,7 +612,15 @@ public sealed class NavGrid : INavGraph
                 limit = next;
                 j++;
             }
-            anchor = Point(path, j, count, last);
+            var reached = Point(path, j, count, last);
+            // The step into the last cell ends off its centre, at the point asked for: when that cuts a corner and
+            // the step to the centre does not, the route goes by the centre.
+            if (j == i && j == count - 1 && last is not null && !Clear(anchor, reached, radius, float.PositiveInfinity))
+            {
+                var center = CenterOf(path[count]);
+                if (center != anchor && center != reached) waypoints.Add(center);
+            }
+            anchor = reached;
             waypoints.Add(anchor);
             anchorCost = _cost[path[j + 1]];
             i = j + 1;
