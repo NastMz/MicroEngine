@@ -254,6 +254,23 @@ public IEngineLifecycle Lifecycle { get; }
 
  [IEngineLifecycle](MicroEngine.Kernel.IEngineLifecycle.md)
 
+### <a id="MicroEngine_Core_Game_Localization"></a> Localization
+
+The game's texts and language ([GameLocalization](MicroEngine.Localization.GameLocalization.md)): string tables loaded from the content
+(<code>Localization.Load("text")</code>), the text of a key in the language in use
+(<code>Localization.Format("hud.gems", ("count", 3))</code>), the language and its change at any time, and the variant
+of an asset for it (<code>Localization.Path("ui/title.png")</code>). Widgets holding a
+[LocalizedText](MicroEngine.Localization.LocalizedText.md) and the names in [Prompts](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Prompts) follow it. A game that loads no table pays
+nothing for it. Created before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load).
+
+```csharp
+public GameLocalization Localization { get; }
+```
+
+#### Property Value
+
+ [GameLocalization](MicroEngine.Localization.GameLocalization.md)
+
 ### <a id="MicroEngine_Core_Game_Log"></a> Log
 
 Where the engine's diagnostics go (the [ILog](MicroEngine.Kernel.ILog.md) service; standard error by default).
@@ -444,7 +461,7 @@ public PostProcess ScreenPostProcess { get; }
 ### <a id="MicroEngine_Core_Game_Services"></a> Services
 
 The engine's services: every built-in service ([InputMap](MicroEngine.Input.InputMap.md), [AudioMixer](MicroEngine.Audio.AudioMixer.md),
-[SceneManager](MicroEngine.Scenes.SceneManager.md), [AssetCache](MicroEngine.Core.AssetCache.md), [VirtualControls](MicroEngine.Input.VirtualControls.md), [ActionPrompts](MicroEngine.Input.ActionPrompts.md),
+[SceneManager](MicroEngine.Scenes.SceneManager.md), [AssetCache](MicroEngine.Core.AssetCache.md), [GameLocalization](MicroEngine.Localization.GameLocalization.md), [VirtualControls](MicroEngine.Input.VirtualControls.md), [ActionPrompts](MicroEngine.Input.ActionPrompts.md),
 [BitmapFont](MicroEngine.Graphics.BitmapFont.md), [GameScreen](MicroEngine.Core.GameScreen.md), [IPlatform](MicroEngine.Core.IPlatform.md), `Random`, this
 game) and those the game's [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_) registered, found by the type they were registered as.
 Available from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) on.
@@ -554,7 +571,7 @@ public int Width { get; }
 Hashes the simulation state now ([StateHasher](MicroEngine.Kernel.StateHasher.md)), in sections: <code>engine.time</code> (update count and
 time), <code>engine.random</code> ([Random](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Random)), <code>engine.input</code> ([Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) after sampling, then the other players and the pairings when there are any),
 <code>engine.audio</code> (the music playing or paused and the volumes), <code>engine.assets</code> (how many assets are
-loaded), the sections modules added ([StateSections](MicroEngine.Kernel.StateSections.md): <code>engine.achievements</code> when on, then
+loaded), <code>engine.localization</code> (the language in use, once the game loaded a string table), the sections modules added ([StateSections](MicroEngine.Kernel.StateSections.md): <code>engine.achievements</code> when on, then
 any other), <code>engine.scenes</code> (the stack and the transition), one
 <code>scene[i]:Type</code> per scene from the bottom (its age, coroutines, tweens, objects, widgets and systems, then [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_))
 and <code>game</code> ([HashState](MicroEngine.Core.Game.md#MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_)). The loop records it after every fixed step of a run given a

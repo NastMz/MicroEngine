@@ -38,6 +38,7 @@ public sealed class FrameGarbageTests
     }
 
     [TestMethod]
+    [DoNotParallelize] // reads the live bytes of the whole process: another test's 12 MB buffers would be counted
     public void Frames_that_are_always_large_keep_their_storage_and_a_single_large_one_does_not_pin_it()
     {
         using var device = new ReferenceGraphicsDevice();

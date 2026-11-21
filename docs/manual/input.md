@@ -468,6 +468,11 @@ Keys are named as the player's keyboard layout prints them where the platform kn
 default bindings an AZERTY player reads `ZQSD` where a US player reads `WASD`, and a game that binds `Key.A` shows `Q`
 on that keyboard. `Prompts.KeyText(key)` gives the label; `ActionPrompts.KeyName(key)` is the US name, used where the layout is unknown (raylib).
 
+The names of the other keys and of controls ("Space", "Enter", "Shift", "D-pad", "Stick", "Start", "LMB") are English
+until the game's string tables translate them with `prompt.` keys (`"prompt.Space": "Espacio"`), and they change with
+the game's language ([Localization](localization.md#prompts)). `Prompts.Names` is the hook behind it, for a game
+that names them another way.
+
 The device is the one that last pressed an action (`InputMap.LastDevice`); before any press it is touch on a
 touch-first screen or while the on-screen controls are shown, otherwise the keyboard (a pad left plugged in takes over
 with its first press). The text follows remapping (`Unbind`, `Bind`) and the touch layout, and changes the moment the

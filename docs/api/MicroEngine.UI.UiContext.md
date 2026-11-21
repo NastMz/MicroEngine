@@ -71,6 +71,18 @@ public IFont Font { get; init; }
 
  [IFont](MicroEngine.Graphics.IFont.md)
 
+### <a id="MicroEngine_UI_UiContext_Localization"></a> Localization
+
+The game's texts ([Localization](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Localization)), which widgets holding a [LocalizedText](MicroEngine.Localization.LocalizedText.md) read theirs from; null when the root has none.
+
+```csharp
+public Localizer? Localization { get; init; }
+```
+
+#### Property Value
+
+ [Localizer](MicroEngine.Localization.Localizer.md)?
+
 ### <a id="MicroEngine_UI_UiContext_Opacity"></a> Opacity
 
 How opaque drawing is, 0..1 (1 by default): the product of the [Opacity](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Opacity) of the widget drawn
@@ -84,6 +96,18 @@ public float Opacity { get; init; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_UI_UiContext_RightToLeft"></a> RightToLeft
+
+Whether the language in use reads right to left: text then starts from the right edge of its widget.
+
+```csharp
+public bool RightToLeft { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_UI_UiContext_Theme"></a> Theme
 

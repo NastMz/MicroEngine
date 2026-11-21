@@ -214,15 +214,31 @@
 4390 press pause
 4404 press down
 4414 press confirm
-4454 hold down 50
-4520 capture 37-depth.png
-4526 press pause
-4540 press down
-4550 press confirm
-4610 capture 38-screen-effects.png
-4616 press pause
-4630 press down
-4640 press confirm
-4700 capture 39-mip-levels.png
-4706 press pause
-4720 quit
+4454 press action
+4464 press action
+4480 capture 37-localization-en.png
+4486 press confirm
+4500 capture 37-localization-es.png
+4506 press confirm
+4512 press action
+4518 press action
+4524 press action
+4540 capture 37-localization-ru.png
+4546 press confirm
+4560 capture 37-localization-ar.png
+4566 press confirm
+4580 press pause
+4594 press down
+4604 press confirm
+4644 hold down 50
+4710 capture 38-depth.png
+4716 press pause
+4730 press down
+4740 press confirm
+4800 capture 39-screen-effects.png
+4806 press pause
+4820 press down
+4830 press confirm
+4890 capture 40-mip-levels.png
+4896 press pause
+4910 quit

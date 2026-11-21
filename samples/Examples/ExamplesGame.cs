@@ -59,6 +59,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("A guard (state machine)", g => new StateMachineExample()),
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
         ("Effects on buses (reverb, ducking)", g => new MixExample()),
+        ("Languages (localization)", g => new LocalizationExample()),
         ("Draw order (depth and layers)", g => new DepthExample()),
         ("Screen effects (the whole window)", g => new ScreenEffectsExample()),
         ("Small pictures (mip levels)", g => new MipLevelsExample()),

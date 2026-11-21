@@ -1,5 +1,6 @@
 using System.Numerics;
 using MicroEngine.Graphics;
+using MicroEngine.Localization;
 
 namespace MicroEngine.UI;
 
@@ -16,9 +17,24 @@ public sealed class Label : Widget
     /// <summary>A label showing <paramref name="text"/>.</summary>
     public Label(string text = "") => Text = text;
 
-    /// <summary>The text; null counts as empty.</summary>
-    public string Text { get => _text; set => _text = value ?? ""; }
+    /// <summary>A label showing the text of a key of the game's string tables, in the language in use (<see cref="Localized"/>).</summary>
+    public Label(LocalizedText text) => Localized = text;
+
+    /// <summary>
+    /// The text. With <see cref="Localized"/> set it is that key's text in the language in use, as of the last layout;
+    /// setting it makes the label plain text again. Null counts as empty.
+    /// </summary>
+    public string Text { get => _text; set { _text = value ?? ""; _localized.Text = null; } }
     private string _text = "";
+    private LocalizedField _localized;
+
+    /// <summary>
+    /// A key of the game's string tables and the values its message shows: the label shows that text in the language
+    /// in use and changes when the language does. Set it again when a value changes
+    /// (<c>label.Localized = new("hud.gems", ("count", gems))</c>); the same key and values cost nothing. Null (the
+    /// default) is plain <see cref="Text"/>.
+    /// </summary>
+    public LocalizedText? Localized { get => _localized.Text; set => _localized.Text = value; }
     /// <summary>The text's colour; null (the default) is the theme's text colour, or its muted colour while disabled.</summary>
     public Color? Color { get; set; }
     /// <summary>Whether the text has the theme's shadow under it (true by default).</summary>
@@ -67,8 +83,17 @@ public sealed class Label : Widget
         return from;
     }
 
+    /// <summary>
+    /// Where line <paramref name="line"/> of <see cref="Lines"/> starts horizontally, in UI units, as of the last
+    /// draw: the label's left edge, or in a right-to-left language the point that puts the line's end at the label's
+    /// right edge.
+    /// </summary>
+    public float LineStart(int line) => _lineStarts is { } starts && (uint)line < (uint)starts.Length ? starts[line] : Bounds.X;
+    private float[]? _lineStarts;
+
     private void LayOut(UiContext context)
     {
+        _localized.Resolve(context, ref _text);
         float width = Wrap && Width is { } w ? w : float.PositiveInfinity;
         if (_laidOut == (_text, context.Font, width)) return;
         _lines = float.IsPositiveInfinity(width) ? _text.Split('\n') : [.. context.Font.Wrap(_text, width)];
@@ -89,9 +114,15 @@ public sealed class Label : Widget
         LayOut(context);
         var color = Color is { } own ? context.Fade(own) : IsEnabledInTree ? context.Theme.Text : context.Theme.Muted;
         float y = Bounds.Y;
-        foreach (var line in VisibleLines)
+        var lines = VisibleLines;
+        if (_lineStarts is null || _lineStarts.Length != lines.Count) _lineStarts = new float[lines.Count];
+        for (int i = 0; i < lines.Count; i++)
         {
-            var at = new Vector2(Bounds.X, y);
+            string line = lines[i];
+            // A right-to-left line starts from the right edge; revealed a little at a time, it grows leftwards.
+            float x = context.RightToLeft ? MathF.Round(Bounds.Right - context.Font.MeasureWidth(line)) : Bounds.X;
+            _lineStarts[i] = x;
+            var at = new Vector2(x, y);
             if (Shadow) context.Font.DrawShadowed(renderer, line, at, color, context.Theme.TextShadow, new Vector2(context.Unit));
             else context.Font.Draw(renderer, line, at, color);
             y += context.Font.LineHeight + context.Unit;
@@ -112,9 +143,19 @@ public sealed class Button : Widget
         if (clicked is not null) Clicked += clicked;
     }
 
-    /// <summary>The label; null counts as empty.</summary>
-    public string Text { get => _text; set => _text = value ?? ""; }
+    /// <summary>A button labelled with the text of a key of the game's string tables (<see cref="Localized"/>), calling <paramref name="clicked"/> (optional) when clicked.</summary>
+    public Button(LocalizedText text, Action? clicked = null)
+    {
+        Localized = text;
+        if (clicked is not null) Clicked += clicked;
+    }
+
+    /// <summary>The label; with <see cref="Localized"/> set, that key's text in the language in use as of the last layout. Setting it makes the label plain text again. Null counts as empty.</summary>
+    public string Text { get => _text; set { _text = value ?? ""; _localized.Text = null; } }
     private string _text = "";
+    private LocalizedField _localized;
+    /// <summary>A key of the game's string tables: the button shows its text in the language in use and changes with it. Null (the default) is plain <see cref="Text"/>.</summary>
+    public LocalizedText? Localized { get => _localized.Text; set => _localized.Text = value; }
     /// <summary>Raised when the button is clicked.</summary>
     public event Action? Clicked;
     /// <inheritdoc/>
@@ -135,12 +176,16 @@ public sealed class Button : Widget
     protected internal override void OnClick() => Click();
 
     /// <inheritdoc/>
-    protected override Vector2 MeasureContent(UiContext context) =>
-        new(context.Font.MeasureWidth(Text) + 12 * context.Unit, context.Font.LineHeight + 8 * context.Unit);
+    protected override Vector2 MeasureContent(UiContext context)
+    {
+        _localized.Resolve(context, ref _text);
+        return new(context.Font.MeasureWidth(Text) + 12 * context.Unit, context.Font.LineHeight + 8 * context.Unit);
+    }
 
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
+        _localized.Resolve(context, ref _text);
         var theme = context.Theme;
         bool enabled = IsEnabledInTree;
         var style = theme.Panel;

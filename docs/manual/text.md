@@ -65,7 +65,8 @@ The font is proportional (narrow `i`, wide `m`) and covers:
 - symbols games use: `♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·`, and `○ □ △` for gamepad prompts.
 
 Any other character (accented letters, `ñ`, other alphabets, emoji) is drawn as `?`. Games written in languages that
-need other letters must replace them (`é` with `e`) or draw their own glyphs (below).
+need other letters must replace them (`é` with `e`) or use a [scalable font](#scalable-fonts-ttf-and-otf).
+[Localization](localization.md#fonts) covers choosing fonts per language and finding the characters a font lacks.
 
 ## Scalable fonts (TTF and OTF)
 
@@ -225,4 +226,5 @@ small font (SDL's 8x8 debug font, raylib's default font).
 - [Tutorial step 9: Text and HUD](../tutorial/09-hud.md)
 - [UI widgets](ui.md): dialogue boxes, typewriter text, menus
 - [Assets](assets.md): loading font files
+- [Localization](localization.md): texts per language, fonts per language, right-to-left languages
 - API: [`BitmapFont`](../api/MicroEngine.Graphics.BitmapFont.md)

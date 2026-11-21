@@ -2,6 +2,7 @@ using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
+using MicroEngine.Localization;
 using MicroEngine.Platform;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
@@ -70,6 +71,15 @@ public abstract class Game : IEngineModule, IStateHashed
     /// bindings of <see cref="Input"/> and the controls of <see cref="Touch"/>. Created with them, before <see cref="Load"/>.
     /// </summary>
     public ActionPrompts Prompts { get; private set; } = null!;
+    /// <summary>
+    /// The game's texts and language (<see cref="GameLocalization"/>): string tables loaded from the content
+    /// (<c>Localization.Load("text")</c>), the text of a key in the language in use
+    /// (<c>Localization.Format("hud.gems", ("count", 3))</c>), the language and its change at any time, and the variant
+    /// of an asset for it (<c>Localization.Path("ui/title.png")</c>). Widgets holding a
+    /// <see cref="LocalizedText"/> and the names in <see cref="Prompts"/> follow it. A game that loads no table pays
+    /// nothing for it. Created before <see cref="Load"/>.
+    /// </summary>
+    public GameLocalization Localization { get; private set; } = null!;
     /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
     /// <summary>
@@ -97,6 +107,7 @@ public abstract class Game : IEngineModule, IStateHashed
         {
             Clipboard = TryGetCapability(out IClipboard? clipboard) ? clipboard : null,
             Font = Font,
+            Localization = Localization,
             PointerToUi = Views.CanvasToUi,
             UiToCanvas = Views.UiToCanvas,
         };
@@ -242,7 +253,7 @@ public abstract class Game : IEngineModule, IStateHashed
     internal Engine? EngineOrNull => _engine;
     /// <summary>
     /// The engine's services: every built-in service (<see cref="InputMap"/>, <see cref="AudioMixer"/>,
-    /// <see cref="SceneManager"/>, <see cref="AssetCache"/>, <see cref="VirtualControls"/>, <see cref="ActionPrompts"/>,
+    /// <see cref="SceneManager"/>, <see cref="AssetCache"/>, <see cref="GameLocalization"/>, <see cref="VirtualControls"/>, <see cref="ActionPrompts"/>,
     /// <see cref="BitmapFont"/>, <see cref="GameScreen"/>, <see cref="IPlatform"/>, <see cref="System.Random"/>, this
     /// game) and those the game's <see cref="Configure"/> registered, found by the type they were registered as.
     /// Available from <see cref="Load"/> on.
@@ -387,6 +398,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Prompts = services.Get<ActionPrompts>();
         Assets = services.Get<AssetCache>();
         Assets.Log = engine.Log;
+        Localization = services.Get<GameLocalization>();
         StartupLog.Attach(engine.Log);
         Audio = services.Get<AudioMixer>();
         // Deterministic runs keep audio state on the simulation's timeline only (songs render when waited for, sounds
@@ -434,6 +446,12 @@ public abstract class Game : IEngineModule, IStateHashed
             game._touchScreen = screen;
             platform.Graphics.DefaultFilter = game.Settings.DefaultTextureFilter;
             services.Add(new AssetCache(platform.Graphics, game.ContentRoot));
+            // The game's texts: prompts name keys and controls from its tables ("prompt.Space") and follow its language.
+            var localization = new GameLocalization(game);
+            var prompts = services.Get<ActionPrompts>();
+            prompts.Names = name => localization.HasTables ? localization.TextOrNull(StringTables.PromptPrefix + name) : null;
+            localization.Changed += prompts.Invalidate;
+            services.Add(localization);
             services.Add(new AudioMixer(platform.Audio));
             services.Add(BitmapFont.CreateDefault(platform.Graphics));
             services.Add(new SceneManager(game));
@@ -740,7 +758,7 @@ public abstract class Game : IEngineModule, IStateHashed
     /// Hashes the simulation state now (<see cref="StateHasher"/>), in sections: <c>engine.time</c> (update count and
     /// time), <c>engine.random</c> (<see cref="Random"/>), <c>engine.input</c> (<see cref="Input"/> after sampling, then the other players and the pairings when there are any),
     /// <c>engine.audio</c> (the music playing or paused and the volumes), <c>engine.assets</c> (how many assets are
-    /// loaded), the sections modules added (<see cref="Kernel.StateSections"/>: <c>engine.achievements</c> when on, then
+    /// loaded), <c>engine.localization</c> (the language in use, once the game loaded a string table), the sections modules added (<see cref="Kernel.StateSections"/>: <c>engine.achievements</c> when on, then
     /// any other), <c>engine.scenes</c> (the stack and the transition), one
     /// <c>scene[i]:Type</c> per scene from the bottom (its age, coroutines, tweens, objects, widgets and systems, then <see cref="Scene.HashState"/>)
     /// and <c>game</c> (<see cref="HashState"/>). The loop records it after every fixed step of a run given a
@@ -771,6 +789,12 @@ public abstract class Game : IEngineModule, IStateHashed
         hash.Add(Audio.SfxVolume);
         hash.Section("engine.assets");
         hash.Add(Assets.Count);
+        // Only once the game has string tables, so games without them hash as they always did.
+        if (Localization.HasTables)
+        {
+            hash.Section("engine.localization");
+            hash.Add(Localization.Language);
+        }
         // What modules own: achievements when on, then the sections other modules added, in the order they were added.
         Engine.StateSections.HashAll(hash);
         Scenes.HashState(hash);

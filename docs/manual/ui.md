@@ -41,8 +41,18 @@ or passes it to its own drawing code.
 is a glyph instead of a word: a key cap on a keyboard, a round button in its colour on Xbox pads (A green, B red, X
 blue, Y yellow), the shape on PlayStation pads, a ring with the button's label on a touch screen. `Measure` and
 `DrawCentered` lay it out; `DrawGlyph` draws one `ActionPrompt`. `PromptGlyphStyle` sets the caps' colours
-(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); text that
+(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). With the built-in font the glyphs are its nine-pixel
+caps; with any other font (`IFont`: a scalable or shaped font at a size) they are as tall as a line of it and
+labelled with it, and `rightToLeft: true` lays the pieces of the line from the right. Use it for short hints ("{confirm} Talk"); text that
 keeps words goes through `ActionPrompts.Format`. See [Showing controls to the player](input.md#showing-controls-to-the-player).
+
+## Text in several languages
+
+A `Label`, a `Button` and a `TextField`'s placeholder take a `LocalizedText`, a key of the game's string tables with
+its values, in place of a string: `new Button(new LocalizedText("menu.play"), Play)`,
+`label.Localized = new("hud.gems", ("count", 3))`. They show the text in the language in use and lay themselves out
+again when it changes; in a right-to-left language a label's lines start from its right edge
+([Localization](localization.md#widgets)).
 
 ## Widgets in the UI view
 
