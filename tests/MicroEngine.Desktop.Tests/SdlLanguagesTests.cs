@@ -25,8 +25,8 @@ public sealed class SdlLanguagesTests
     [TestCategory("Native")]
     public void TheSystemSaysWhichLanguagesThePlayerPrefers()
     {
+        // A system with no language set (a bare CI machine) reports none, and the game starts in its fallback language.
         var languages = new SdlLanguages().PreferredLanguages;
-        Assert.IsTrue(languages.Count > 0, "this machine has a language set");
         foreach (var tag in languages)
             Assert.IsTrue(LanguageTag.IsValid(tag) && !tag.Contains('_'), $"'{tag}' is a language tag");
         Assert.AreEqual(languages.Count, languages.Distinct(StringComparer.OrdinalIgnoreCase).Count(), "each language once");

@@ -266,7 +266,7 @@ Font.Draw(r, Game.Localization["hud.paused"], position, Color.White);
 
 ## Prompts
 
-`Game.Prompts` names the control that presses an action ([Input](input.md#action-prompts)). Put the action between
+`Game.Prompts` names the control that presses an action ([Input](input.md#showing-controls-to-the-player)). Put the action between
 braces in the text and format the result:
 
 ```csharp
@@ -413,6 +413,6 @@ its fallback language until the player chooses.
 ## Related
 
 - [Text](text.md): fonts, shaping and right-to-left text
-- [UI widgets](ui.md), [Input](input.md#action-prompts), [Assets](assets.md), [Saving data](persistence.md#settings)
+- [UI widgets](ui.md), [Input](input.md#showing-controls-to-the-player), [Assets](assets.md), [Saving data](persistence.md#settings)
 - API: [`GameLocalization`](../api/MicroEngine.Localization.GameLocalization.md),
   [`Localizer`](../api/MicroEngine.Localization.Localizer.md), [`Message`](../api/MicroEngine.Localization.Message.md)
