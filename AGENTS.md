@@ -43,6 +43,13 @@ sufficient without previous chats or agent memory.
   "defer" decisions (ECS, state machines, pointer bindings, audio effects, joints, post-processing, content
   processing, save migrations) and judges a capability by what a developer outside the repository must write, never
   by what the demos use or by a benchmark alone. Read it before proposing or declining an engine capability.
+  Its merged initiatives have records of their own, among them [`odd/tasks/nav-2.md`](odd/tasks/nav-2.md) (agents that
+  follow routes, clearance and reachability in `MicroEngine.Navigation`, ADR 0069),
+  [`odd/tasks/loc-1.md`](odd/tasks/loc-1.md) (localization in the core: string tables, plurals, a language that
+  changes while the game runs, ADR 0070) and [`odd/tasks/graphics-3.md`](odd/tasks/graphics-3.md) (draw order,
+  post-processing chains, the window stage and mip levels, ADR 0071); scene systems, state machines, pointer bindings,
+  save versions, the ECS package, content files, audio effects and the physics contract's version 2 are ADRs 0060 to
+  0068.
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
