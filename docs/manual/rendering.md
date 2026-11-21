@@ -292,14 +292,15 @@ private void DrawWorld(IRenderer r, SortedRenderer? order)
 - Anything that draws into an `IRenderer` draws into a sorted one: sprites, fonts, tile renderers, particles. Set
   `Layer` and `Depth` (or `At(layer, depth)`) before the draws they apply to.
 - Each draw keeps the camera, blend mode, clip and states (`PushState`) it was recorded under, whatever position it
-  ends up in. A block starts with no camera, no clip and normal blending of its own; a camera, a state or a clip the
+  ends up in. The camera is taken as it is when it is pushed: moving it before `End` does not move the draws already
+  made, exactly as when drawing directly. A block starts with no camera, no clip and normal blending of its own; a camera, a state or a clip the
   renderer already has stays under it. A block that sets a clip leaves the renderer without one.
 - `Clear`, `PushTarget` and `PopTarget` throw `InvalidOperationException` inside a block: a clear and a change of
   target have no place in an order. Draw into render targets with the renderer itself, before `Begin` or after `End`.
 - The order is the same on every platform and every run: draws with equal layer and depth keep the order of the calls.
 - Draws that end up next to each other with the same texture and state share a draw call, as always; sorting by depth
   can separate draws that call order kept together. Keep one `SortedRenderer` per scene and reuse it: it keeps its
-  memory between frames.
+  memory between frames, so a block of the size of an earlier one allocates nothing, states and cameras included.
 
 ## Post-processing
 
@@ -321,6 +322,9 @@ public override void Enter() =>
   answers `Full`, `Reduced` or `None`.
 - A chain with no enabled effect costs nothing. The chain owns the targets its effects need and the engine releases a
   scene's when the scene leaves the stack and the game's when the game ends.
+- An effect's values are kept within their ranges: one beyond its range becomes the nearest limit, and one that is not
+  a number is ignored.
+- One chain can run on pictures of different sizes; it runs at most eight times in a frame.
 - Post-processing only draws: it is not part of a scripted run's state.
 
 [Post-processing](../guide/render-targets-and-shaders.md#post-processing) has the effects' values, what each draws

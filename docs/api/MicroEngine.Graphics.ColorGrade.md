@@ -39,11 +39,25 @@ public sealed class ColorGrade : PostEffect
 public ColorGrade()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Graphics_ColorGrade_MaxBrightness"></a> MaxBrightness
+
+The largest [Brightness](MicroEngine.Graphics.ColorGrade.md#MicroEngine_Graphics_ColorGrade_Brightness).
+
+```csharp
+public const float MaxBrightness = 16
+```
+
+#### Field Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_ColorGrade_Brightness"></a> Brightness
 
-Multiplies the colours; 1 changes nothing, 0 is black, 2 twice as bright (clamped at white).
+Multiplies the colours; 1 changes nothing, 0 is black, 2 twice as bright (clamped at white). Kept within 0 to 16; a value that is not a number is ignored.
 
 ```csharp
 public float Brightness { get; set; }
@@ -55,7 +69,7 @@ public float Brightness { get; set; }
 
 ### <a id="MicroEngine_Graphics_ColorGrade_Contrast"></a> Contrast
 
-Spreads the colours away from mid grey (above 1) or towards it (below 1); 1 changes nothing.
+Spreads the colours away from mid grey (above 1) or towards it (below 1); 1 changes nothing. Kept within 0 to 16; a value that is not a number is ignored.
 
 ```csharp
 public float Contrast { get; set; }
@@ -67,7 +81,7 @@ public float Contrast { get; set; }
 
 ### <a id="MicroEngine_Graphics_ColorGrade_Saturation"></a> Saturation
 
-How much colour is kept: 1 changes nothing, 0 is black and white, above 1 is more vivid.
+How much colour is kept: 1 changes nothing, 0 is black and white, above 1 is more vivid. Kept within 0 to 16; a value that is not a number is ignored.
 
 ```csharp
 public float Saturation { get; set; }

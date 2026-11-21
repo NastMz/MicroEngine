@@ -363,7 +363,8 @@ public override void Draw(IRenderer r)
 public override void DrawUi(IRenderer ui)
 {
     Heading.Draw(ui, Font, "POST-PROCESSING", PostProcess.Enabled ? "CONFIRM: OFF   ACTION: PIXELS" : "CONFIRM: ON");
-    if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(160, 16), Color.White);
+    // At the bottom of the window, over the floor: clear of the heading and of the lights, whatever the window's size.
+    if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(ui.Width / 2f, ui.Height - 12), Color.White);
 }
 ```
 
@@ -415,13 +416,16 @@ exists (a render target's texture). Dispose a chain of your own when you are don
 
 | Effect | What it does | Values |
 | --- | --- | --- |
-| `ColorGrade` | brightness, contrast, saturation and a tint | `Brightness`, `Contrast`, `Saturation` (1 changes nothing), `Tint` |
-| `Blur` | blurs the picture | `Radius` in pixels |
-| `Bloom` | adds the blurred bright parts back, so lights glow | `Threshold` (0..1), `Strength`, `Radius` |
-| `Vignette` | darkens towards the corners | `Strength`, `Radius`, `Softness`, `Color` |
-| `Scanlines` | darkens every other line | `Strength`, `Lines` |
-| `Crt` | a tube: curved glass, lines, colour stripes | `Curvature`, `Scanlines`, `Lines`, `Mask` |
+| `ColorGrade` | brightness, contrast, saturation and a tint | `Brightness`, `Contrast`, `Saturation` (1 changes nothing; 0 to 16), `Tint` |
+| `Blur` | blurs the picture | `Radius` in pixels (0 to 256) |
+| `Bloom` | adds the blurred bright parts back, so lights glow | `Threshold` (0 to 1), `Strength` (0 to 8), `Radius` (0 to 256) |
+| `Vignette` | darkens towards the corners | `Strength`, `Radius` (0 to 1), `Softness` (0 to 4), `Color` |
+| `Scanlines` | darkens every other line | `Strength` (0 to 1), `Lines` (0 to 4096; 0 is half the picture's height) |
+| `Crt` | a tube: curved glass, lines, colour stripes | `Curvature`, `Scanlines`, `Mask` (0 to 1), `Lines` (as above) |
 | `ShaderEffect` | a pass through a material of your own | the material's parameters; `Prepare` for those that depend on the picture's size |
+
+Every value is kept within its range when it is set: a value beyond it becomes the nearest limit (infinity
+included), and a value that is not a number is ignored, so the effect keeps the value it had.
 
 Pictures are premultiplied, like the canvas, and the effects keep a picture's transparency: a vignette on a scene that
 covers part of the screen darkens that scene only.
@@ -512,8 +516,12 @@ public sealed class Pixelate : PostEffect
 | `Copy(material, tint)` | the picture through a material, texel for texel, as the new picture |
 | `Replace(texture, filter, material, tint)` | another texture, stretched over the picture's size, as the new picture |
 | `BeginOver()` ... `EndOver()` | draw on top of the picture (a glow added, a vignette multiplied in) |
-| `Scratch(name, width, height, filter)` | a render target the chain keeps for this effect |
-| `Image(name, version, state, create, filter)` | a texture the chain keeps for this effect, made again when `version` changes |
+| `Scratch(name, width, height, filter)` | a render target the chain keeps for this effect, by name and size |
+| `Image(name, version, state, create, filter)` | a texture the chain keeps for this effect, by name and version |
+
+A name belongs to one kind: asking for a texture under the name of one of the effect's targets (or the reverse)
+throws `InvalidOperationException` naming it.
+
 | `Draw(source, target, state, tint)` | one pass: a whole texture over a whole target |
 | `ShadersRun` | whether materials run their shaders on this device |
 
@@ -539,6 +547,8 @@ material built from shaders created on the device. None of it is needed for the 
 - A scene's chain and `Game.PostProcess` run at the canvas's resolution, before the canvas is scaled to the window,
   and do not include the interface; `Game.ScreenPostProcess` runs at the window's and includes it. The on-screen
   touch controls are drawn after every chain.
-- A chain's picture has the size of what it is drawn into; use one chain per picture. Release a chain of your own
-  between frames, like any texture.
+- A chain's picture has the size of what it is drawn into. One chain can run on pictures of different sizes, in one
+  frame too: it keeps what it made for each size and releases what no run has used for eight runs
+  (`PostProcess.KeptForRuns`), so a chain runs at most eight times in a frame. Release a chain of your own between
+  frames, like any texture.
 - A pass has one colour target; there is no stencil buffer and no multisampling.

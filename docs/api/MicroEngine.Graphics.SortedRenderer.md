@@ -400,8 +400,8 @@ Always.
 
 ### <a id="MicroEngine_Graphics_SortedRenderer_PushCamera_MicroEngine_Graphics_Camera2D_"></a> PushCamera\(Camera2D\)
 
-Draws in the world coordinates of <code class="paramref">camera</code> until [PopCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopCamera): its [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset)
-replaces the current offset (cameras do not combine). Every push needs a pop in the same frame.
+Draws in the world coordinates of <code class="paramref">camera</code> until [PopCamera](MicroEngine.Graphics.SortedRenderer.md#MicroEngine_Graphics_SortedRenderer_PopCamera), as it is at this
+moment: moving the camera afterwards does not move the draws already made, as on any renderer.
 
 ```csharp
 public void PushCamera(Camera2D camera)

@@ -55,7 +55,7 @@ public Color Color { get; set; }
 
 ### <a id="MicroEngine_Graphics_Vignette_Radius"></a> Radius
 
-Where the darkening starts, from the centre (0) to the corners (1).
+Where the darkening starts, from the centre (0) to the corners (1). Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Radius { get; set; }
@@ -67,7 +67,7 @@ public float Radius { get; set; }
 
 ### <a id="MicroEngine_Graphics_Vignette_Softness"></a> Softness
 
-How gradually it darkens after [Radius](MicroEngine.Graphics.Vignette.md#MicroEngine_Graphics_Vignette_Radius), as a share of the way to the corners; 0 is a hard edge.
+How gradually it darkens after [Radius](MicroEngine.Graphics.Vignette.md#MicroEngine_Graphics_Vignette_Radius), as a share of the way to the corners; 0 is a hard edge. Kept within 0 to 4; a value that is not a number is ignored.
 
 ```csharp
 public float Softness { get; set; }
@@ -79,7 +79,7 @@ public float Softness { get; set; }
 
 ### <a id="MicroEngine_Graphics_Vignette_Strength"></a> Strength
 
-How strong the darkening is at the corners: 0 nothing, 1 the corners are the picture times [Color](MicroEngine.Graphics.Vignette.md#MicroEngine_Graphics_Vignette_Color) (black, by default).
+How strong the darkening is at the corners: 0 nothing, 1 the corners are the picture times [Color](MicroEngine.Graphics.Vignette.md#MicroEngine_Graphics_Vignette_Color) (black, by default). Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Strength { get; set; }

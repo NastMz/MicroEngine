@@ -68,7 +68,8 @@ public sealed class PostProcessExample : Scene
     public override void DrawUi(IRenderer ui)
     {
         Heading.Draw(ui, Font, "POST-PROCESSING", PostProcess.Enabled ? "CONFIRM: OFF   ACTION: PIXELS" : "CONFIRM: ON");
-        if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(160, 16), Color.White);
+        // At the bottom of the window, over the floor: clear of the heading and of the lights, whatever the window's size.
+        if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(ui.Width / 2f, ui.Height - 12), Color.White);
     }
     #endregion
 

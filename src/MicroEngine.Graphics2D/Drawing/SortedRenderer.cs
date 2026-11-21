@@ -33,10 +33,14 @@ public sealed class SortedRenderer : IRenderer
         RectF A, RectF B, Vector2 P, Vector2 Q, float F, Color Color, DrawOptions Options);
 
     /// <summary>What a draw was recorded under. A null blend or an untouched clip keeps the renderer's own.</summary>
-    private readonly record struct Context(Camera2D? Camera, BlendMode? Blend, bool BlendInState, bool Clipped, RectF? Clip, DrawState[] States)
+    /// <remarks>
+    /// The camera is a copy made when it was pushed, and the states are a run of the block's state store: both are kept
+    /// by this renderer between frames, so recording a context allocates nothing once the memory is there.
+    /// </remarks>
+    private readonly record struct Context(Camera2D? Camera, BlendMode? Blend, bool BlendInState, bool Clipped, RectF? Clip, int StateStart, int StateCount)
     {
         /// <summary>Whether the blend mode needs a state of its own around it, so that leaving the context undoes it.</summary>
-        public bool Wrapped => Blend is not null && !(BlendInState && States.Length > 0);
+        public bool Wrapped => Blend is not null && !(BlendInState && StateCount > 0);
     }
 
     private static readonly Comparison<Command> ByOrder = (a, b) =>
@@ -52,7 +56,10 @@ public sealed class SortedRenderer : IRenderer
     private BlendMode? _blend;
     private RectF? _clip;
     private bool _clipped, _contextChanged, _blendInState;
-    private DrawState[] _snapshot = [];
+    // Every context's states, one run after another; and the copies of the cameras pushed in the block.
+    private readonly List<DrawState> _stateStore = [];
+    private readonly List<Camera2D> _cameraCopies = [];
+    private int _cameraCopiesUsed;
 
     /// <summary>The layer of the draws made from now on: lower layers are drawn first, whatever their depth. 0 at <see cref="Begin"/>.</summary>
     public int Layer { get; set; }
@@ -147,11 +154,13 @@ public sealed class SortedRenderer : IRenderer
         _cameras.Clear();
         _states.Clear();
         _blends.Clear();
-        (_camera, _blend, _blendInState, _clip, _clipped, _contextChanged, _snapshot) = (null, null, false, null, false, true, []);
+        _stateStore.Clear();
+        _cameraCopiesUsed = 0;
+        (_camera, _blend, _blendInState, _clip, _clipped, _contextChanged) = (null, null, false, null, false, true);
         (Layer, _depth) = (0, 0);
     }
 
-    private static void Enter(IRenderer target, in Context context, bool clipped)
+    private void Enter(IRenderer target, in Context context, bool clipped)
     {
         // A blend mode set under a state is undone by that state's pop, so the renderer's own blending comes back.
         if (context.Wrapped)
@@ -161,14 +170,14 @@ public sealed class SortedRenderer : IRenderer
         }
         if (clipped) target.SetClip(context.Clipped ? context.Clip : null);
         if (context.Camera is { } camera) target.PushCamera(camera);
-        foreach (var state in context.States) target.PushState(state);
+        for (int i = 0; i < context.StateCount; i++) target.PushState(_stateStore[context.StateStart + i]);
         // A blend mode set after the last state was pushed applies over it, and that state's pop undoes it.
         if (context.Blend is { } blend && !context.Wrapped) target.SetBlendMode(blend);
     }
 
     private static void Leave(IRenderer target, in Context context)
     {
-        for (int i = 0; i < context.States.Length; i++) target.PopState();
+        for (int i = 0; i < context.StateCount; i++) target.PopState();
         if (context.Camera is not null) target.PopCamera();
         if (context.Wrapped) target.PopState();
     }
@@ -193,7 +202,9 @@ public sealed class SortedRenderer : IRenderer
         _ = Open;
         if (_contextChanged)
         {
-            _contexts.Add(new Context(_camera, _blend, _blendInState, _clipped, _clip, _snapshot));
+            int start = _stateStore.Count;
+            _stateStore.AddRange(_states);
+            _contexts.Add(new Context(_camera, _blend, _blendInState, _clipped, _clip, start, _states.Count));
             _contextChanged = false;
         }
         _commands.Add(new Command(kind, Layer, _depth, _commands.Count, _contexts.Count - 1, texture, a, b, p, q, f, color, options));
@@ -237,13 +248,38 @@ public sealed class SortedRenderer : IRenderer
     /// <inheritdoc/>
     public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color) => Record(Kind.Line, null, default, default, from, to, thickness, color);
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// The view of <paramref name="camera"/> as it is now, in a camera this renderer keeps: a draw is placed by the
+    /// camera as it was when the draw was made, wherever the camera moves before <see cref="End"/>.
+    /// </summary>
+    private Camera2D Copy(Camera2D camera)
+    {
+        Camera2D copy;
+        if (_cameraCopiesUsed < _cameraCopies.Count && _cameraCopies[_cameraCopiesUsed] is var kept
+            && kept.ViewWidth == camera.ViewWidth && kept.ViewHeight == camera.ViewHeight) copy = kept;
+        else
+        {
+            copy = new Camera2D(camera.ViewWidth, camera.ViewHeight) { MaxShake = 0 };
+            if (_cameraCopiesUsed < _cameraCopies.Count) _cameraCopies[_cameraCopiesUsed] = copy;
+            else _cameraCopies.Add(copy);
+        }
+        _cameraCopiesUsed++;
+        // The shake is part of where the view is drawn; the copy never shakes on its own.
+        copy.DrawPosition = camera.DrawnPosition + camera.ShakeOffset;
+        (copy.Zoom, copy.Rotation, copy.PixelSnap) = (camera.Zoom, camera.Rotation, camera.PixelSnap);
+        return copy;
+    }
+
+    /// <summary>
+    /// Draws in the world coordinates of <paramref name="camera"/> until <see cref="PopCamera"/>, as it is at this
+    /// moment: moving the camera afterwards does not move the draws already made, as on any renderer.
+    /// </summary>
     public void PushCamera(Camera2D camera)
     {
         ArgumentNullException.ThrowIfNull(camera);
         _ = Open;
         _cameras.Push(_camera);
-        (_camera, _contextChanged) = (camera, true);
+        (_camera, _contextChanged) = (Copy(camera), true);
     }
 
     /// <inheritdoc/>
@@ -277,7 +313,7 @@ public sealed class SortedRenderer : IRenderer
         _ = Open;
         _states.Add(state);
         _blends.Push((_blend, _blendInState));
-        (_blendInState, _snapshot, _contextChanged) = (false, [.. _states], true);
+        (_blendInState, _contextChanged) = (false, true);
     }
 
     /// <inheritdoc/>
@@ -288,7 +324,7 @@ public sealed class SortedRenderer : IRenderer
         _states.RemoveAt(_states.Count - 1);
         // A blend mode set inside the state ends with it, as on every renderer.
         (_blend, _blendInState) = _blends.Pop();
-        (_snapshot, _contextChanged) = ([.. _states], true);
+        _contextChanged = true;
     }
 
     /// <summary>Refused: draw into a render target with the renderer itself, outside the sorted block.</summary>

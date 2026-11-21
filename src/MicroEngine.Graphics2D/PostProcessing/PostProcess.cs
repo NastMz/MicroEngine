@@ -47,7 +47,9 @@ public abstract class PostEffect
 /// A chain of full-screen effects over a picture: what was drawn between <see cref="Begin"/> and <see cref="End"/>
 /// (or a picture given to <see cref="Apply"/>) goes through every enabled effect in order, and the result is drawn
 /// where the picture would have been. The chain owns the render targets, textures and built-in materials its effects
-/// need, sized to the picture, and releases them with <see cref="Dispose"/>. A scene has one for its own picture
+/// need, sized to the picture, and releases them with <see cref="Dispose"/>. One chain can run on pictures of
+/// different sizes, in one frame too: it keeps what it made for each size, and releases what no run has used for
+/// <see cref="KeptForRuns"/> runs (so a chain may run up to that many times in one frame). A scene has one for its own picture
 /// (<c>Scene.PostProcess</c>), and a game has one for the canvas and one for the window (<c>Game.PostProcess</c>,
 /// <c>Game.ScreenPostProcess</c>); the engine begins, ends and releases those.
 /// </summary>
@@ -69,8 +71,29 @@ public abstract class PostEffect
 public sealed class PostProcess : IDisposable
 {
     private readonly List<PostEffect> _effects = [];
-    private readonly Dictionary<(PostEffect? Effect, string Name), IDisposable> _resources = [];
-    private readonly Dictionary<(PostEffect? Effect, string Name), long> _versions = [];
+    /// <summary>How many runs of the chain a target or a texture is kept for after the last run that used it.</summary>
+    public const int KeptForRuns = 8;
+
+    private enum Kind : byte { Target, Image, Material }
+
+    /// <summary>
+    /// What was made for an effect under a name, and for which variant of it: a target's size, an image's version.
+    /// Several variants live side by side, so a chain that runs on pictures of two sizes in a frame keeps both.
+    /// </summary>
+    private readonly record struct Key(PostEffect? Effect, string Name, long Variant);
+
+    private sealed class Held(IDisposable resource, Kind kind)
+    {
+        public IDisposable Resource { get; } = resource;
+        public Kind Kind { get; } = kind;
+        public long UsedAt { get; set; }
+    }
+
+    private readonly Dictionary<Key, Held> _resources = [];
+    private readonly Dictionary<(PostEffect? Effect, string Name), Kind> _kinds = [];
+    private readonly List<Key> _stale = [];
+    private RenderTarget2D? _picture;
+    private long _run;
     private readonly PostPass _pass;
     private IGraphicsDevice? _graphics;
     private Camera2D? _whole;
@@ -118,10 +141,10 @@ public sealed class PostProcess : IDisposable
         if (!_effects.Remove(effect)) return false;
         foreach (var key in _resources.Keys.Where(key => ReferenceEquals(key.Effect, effect)).ToArray())
         {
-            _resources[key].Dispose();
+            _resources[key].Resource.Dispose();
             _resources.Remove(key);
-            _versions.Remove(key);
         }
+        foreach (var name in _kinds.Keys.Where(name => ReferenceEquals(name.Effect, effect)).ToArray()) _kinds.Remove(name);
         return true;
     }
 
@@ -168,7 +191,7 @@ public sealed class PostProcess : IDisposable
         if (_begun) throw new InvalidOperationException("The chain's picture is already being drawn: call End before Begin.");
         if (!IsActive) return false;
         Use(graphics);
-        var picture = Target(null, "picture", renderer.Width, renderer.Height, TextureFilter.Nearest);
+        var picture = _picture = Target(null, "picture", renderer.Width, renderer.Height, TextureFilter.Nearest);
         renderer.PushTarget(picture);
         renderer.Clear(clear ?? Color.Transparent);
         _begun = true;
@@ -187,7 +210,7 @@ public sealed class PostProcess : IDisposable
         if (!_begun) return;
         _begun = false;
         renderer.PopTarget();
-        var picture = (RenderTarget2D)_resources[(null, "picture")];
+        var picture = _picture!;
         Present(renderer, Run(renderer, picture), new RectF(0, 0, renderer.Width, renderer.Height), opaque);
     }
 
@@ -221,9 +244,10 @@ public sealed class PostProcess : IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var resource in _resources.Values) resource.Dispose();
+        foreach (var held in _resources.Values) held.Resource.Dispose();
         _resources.Clear();
-        _versions.Clear();
+        _kinds.Clear();
+        _picture = null;
         _begun = false;
         _graphics = null;
     }
@@ -234,18 +258,31 @@ public sealed class PostProcess : IDisposable
         get
         {
             long bytes = 0;
-            foreach (var resource in _resources.Values)
-                bytes += resource switch { RenderTarget2D target => target.SizeInBytes, Texture texture => texture.SizeInBytes, _ => 0 };
+            foreach (var held in _resources.Values)
+                bytes += held.Resource switch { RenderTarget2D target => target.SizeInBytes, Texture texture => texture.SizeInBytes, _ => 0 };
             return bytes;
         }
     }
 
     private void Use(IGraphicsDevice graphics)
     {
-        if (ReferenceEquals(_graphics, graphics)) return;
-        // Another device: what was made on the previous one cannot be drawn here.
-        Dispose();
-        _graphics = graphics;
+        if (!ReferenceEquals(_graphics, graphics))
+        {
+            // Another device: what was made on the previous one cannot be drawn here.
+            Dispose();
+            _graphics = graphics;
+        }
+        // A new run. What no run used for a while is released now: a picture size or an image the chain stopped
+        // needing. Never what an earlier run of this frame may still be drawn with (see KeptForRuns).
+        _run++;
+        foreach (var (key, held) in _resources)
+            if (held.Kind != Kind.Material && _run - held.UsedAt > KeptForRuns) _stale.Add(key);
+        foreach (var key in _stale)
+        {
+            _resources[key].Resource.Dispose();
+            _resources.Remove(key);
+        }
+        _stale.Clear();
     }
 
     private Texture Run(IRenderer renderer, RenderTarget2D picture)
@@ -285,48 +322,55 @@ public sealed class PostProcess : IDisposable
         renderer.PopCamera();
     }
 
+    /// <summary>The resource held under a key, marked as used by this run; refused when the name is another kind's.</summary>
+    private T? Find<T>(in Key key, Kind kind) where T : class, IDisposable
+    {
+        var name = (key.Effect, key.Name);
+        if (_kinds.TryGetValue(name, out var other) && other != kind)
+            throw new InvalidOperationException($"{key.Effect?.GetType().Name ?? "The chain"} already uses the name '{key.Name}' for a {Word(other)}; " +
+                $"give its {Word(kind)} another name (an effect's targets and textures are kept by name).");
+        _kinds[name] = kind;
+        if (!_resources.TryGetValue(key, out var held)) return null;
+        held.UsedAt = _run;
+        return (T)held.Resource;
+    }
+
+    private static string Word(Kind kind) => kind switch { Kind.Target => "render target", Kind.Image => "texture", _ => "material" };
+
+    private T Keep<T>(in Key key, Kind kind, T resource) where T : class, IDisposable
+    {
+        _resources[key] = new Held(resource, kind) { UsedAt = _run };
+        return resource;
+    }
+
     internal RenderTarget2D Target(PostEffect? effect, string name, int width, int height, TextureFilter filter)
     {
-        var key = (effect, name);
-        if (_resources.TryGetValue(key, out var held) && held is RenderTarget2D target)
+        (width, height) = (Math.Max(1, width), Math.Max(1, height));
+        var key = new Key(effect, name, ((long)width << 32) | (uint)height);
+        if (Find<RenderTarget2D>(key, Kind.Target) is { IsDisposed: false } target)
         {
-            if (target.Width == width && target.Height == height && !target.IsDisposed)
-            {
-                target.Texture.Filter = filter;
-                return target;
-            }
-            target.Dispose();
+            target.Texture.Filter = filter;
+            return target;
         }
-        var created = _graphics!.CreateRenderTarget(Math.Max(1, width), Math.Max(1, height), filter);
-        _resources[key] = created;
-        return created;
+        return Keep(key, Kind.Target, _graphics!.CreateRenderTarget(width, height, filter));
     }
 
     internal Texture Image<TState>(PostEffect effect, string name, long version, TState state, Func<TState, PixelImage> create, TextureFilter filter)
     {
-        var key = (effect, name);
-        if (_resources.TryGetValue(key, out var held) && held is Texture texture)
+        var key = new Key(effect, name, version);
+        if (Find<Texture>(key, Kind.Image) is { IsDisposed: false } texture)
         {
-            if (!texture.IsDisposed && _versions.TryGetValue(key, out long made) && made == version)
-            {
-                texture.Filter = filter;
-                return texture;
-            }
-            texture.Dispose();
+            texture.Filter = filter;
+            return texture;
         }
-        var created = _graphics!.CreateTexture(create(state), filter);
-        _resources[key] = created;
-        _versions[key] = version;
-        return created;
+        return Keep(key, Kind.Image, _graphics!.CreateTexture(create(state), filter));
     }
 
     internal Material2D BuiltIn(string name)
     {
-        var key = ((PostEffect?)null, name);
-        if (_resources.TryGetValue(key, out var held) && held is Material2D material && !material.IsDisposed) return material;
-        var created = _graphics!.CreateMaterial(PostShaders.Get(name));
-        _resources[key] = created;
-        return created;
+        var key = new Key(null, name, 0);
+        if (Find<Material2D>(key, Kind.Material) is { IsDisposed: false } material) return material;
+        return Keep(key, Kind.Material, _graphics!.CreateMaterial(PostShaders.Get(name)));
     }
 }
 
@@ -411,10 +455,12 @@ public sealed class PostPass
     }
 
     /// <summary>
-    /// A render target of the chain's for this effect, by <paramref name="name"/>: kept between frames, made again
-    /// when the size asked for changes, released with the chain. It keeps its pixels until the effect draws into it.
+    /// A render target of the chain's for this effect, by <paramref name="name"/> and size: kept between frames,
+    /// released with the chain or when no run has asked for that size for a while. It keeps its pixels until the
+    /// effect draws into it. A name is a target's or a texture's (<c>Image</c>), not both.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">A size that is not positive.</exception>
+    /// <exception cref="InvalidOperationException">The effect already uses <paramref name="name"/> for a texture.</exception>
     public RenderTarget2D Scratch(string name, int width, int height, TextureFilter filter = TextureFilter.Linear)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -429,6 +475,7 @@ public sealed class PostPass
     /// with the chain. Pass a static function and what it needs as <paramref name="state"/>, so nothing is allocated
     /// on the frames that reuse the texture.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The effect already uses <paramref name="name"/> for a render target.</exception>
     public Texture Image<TState>(string name, long version, TState state, Func<TState, PixelImage> create, TextureFilter filter = TextureFilter.Linear)
     {
         ArgumentNullException.ThrowIfNull(name);

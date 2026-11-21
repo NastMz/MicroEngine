@@ -44,7 +44,7 @@ public Crt()
 
 ### <a id="MicroEngine_Graphics_Crt_Curvature"></a> Curvature
 
-How much the glass bulges: 0 is flat, 0.1 a gentle curve. What falls outside the curved picture is black.
+How much the glass bulges: 0 is flat, 0.1 a gentle curve. What falls outside the curved picture is black. Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Curvature { get; set; }
@@ -58,6 +58,7 @@ public float Curvature { get; set; }
 
 How many lines the picture has. 0 (the default) is half the picture's height. On a picture larger than the game's
 canvas (the window), give the canvas's height, so each canvas row is one line.
+Kept within 0 to 4096.
 
 ```csharp
 public int Lines { get; set; }
@@ -69,7 +70,7 @@ public int Lines { get; set; }
 
 ### <a id="MicroEngine_Graphics_Crt_Mask"></a> Mask
 
-How visible the red, green and blue stripes are: 0 nothing, 1 full. They are three pixels of the picture wide.
+How visible the red, green and blue stripes are: 0 nothing, 1 full. They are three pixels of the picture wide. Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Mask { get; set; }
@@ -81,7 +82,7 @@ public float Mask { get; set; }
 
 ### <a id="MicroEngine_Graphics_Crt_Scanlines"></a> Scanlines
 
-How dark the picture is between two of its lines: 0 nothing, 1 black.
+How dark the picture is between two of its lines: 0 nothing, 1 black. Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Scanlines { get; set; }

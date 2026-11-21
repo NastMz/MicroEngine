@@ -40,11 +40,25 @@ public sealed class Bloom : PostEffect
 public Bloom()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Graphics_Bloom_MaxStrength"></a> MaxStrength
+
+The largest [Strength](MicroEngine.Graphics.Bloom.md#MicroEngine_Graphics_Bloom_Strength).
+
+```csharp
+public const float MaxStrength = 8
+```
+
+#### Field Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_Bloom_Radius"></a> Radius
 
-How far the glow reaches, in pixels of the picture.
+How far the glow reaches, in pixels of the picture. Kept within 0 to 256; a value that is not a number is ignored.
 
 ```csharp
 public float Radius { get; set; }
@@ -56,7 +70,7 @@ public float Radius { get; set; }
 
 ### <a id="MicroEngine_Graphics_Bloom_Strength"></a> Strength
 
-How much of the glow is added: 1 adds it once, 0 nothing, 2 twice.
+How much of the glow is added: 1 adds it once, 0 nothing, 2 twice. Kept within 0 to 8; a value that is not a number is ignored.
 
 ```csharp
 public float Strength { get; set; }
@@ -68,7 +82,7 @@ public float Strength { get; set; }
 
 ### <a id="MicroEngine_Graphics_Bloom_Threshold"></a> Threshold
 
-How bright a pixel's brightest channel must be to glow, 0..1; 0 makes everything glow.
+How bright a pixel's brightest channel must be to glow, 0..1; 0 makes everything glow. Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Threshold { get; set; }

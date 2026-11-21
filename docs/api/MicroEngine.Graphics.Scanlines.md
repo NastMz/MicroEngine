@@ -38,12 +38,27 @@ public sealed class Scanlines : PostEffect
 public Scanlines()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Graphics_Scanlines_MaxLines"></a> MaxLines
+
+The largest number of lines of [Lines](MicroEngine.Graphics.Scanlines.md#MicroEngine_Graphics_Scanlines_Lines) and of [Lines](MicroEngine.Graphics.Crt.md#MicroEngine_Graphics_Crt_Lines).
+
+```csharp
+public const int MaxLines = 4096
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_Scanlines_Lines"></a> Lines
 
 How many lines the picture has: each is a bright row and a dark row. 0 (the default) is half the picture's
 height, one row of pixels each. On a picture larger than the game's canvas (the window), give the canvas's height.
+Kept within 0 to 4096.
 
 ```csharp
 public int Lines { get; set; }
@@ -55,7 +70,7 @@ public int Lines { get; set; }
 
 ### <a id="MicroEngine_Graphics_Scanlines_Strength"></a> Strength
 
-How dark the dark lines are: 0 nothing, 1 black.
+How dark the dark lines are: 0 nothing, 1 black. Kept within 0 to 1; a value that is not a number is ignored.
 
 ```csharp
 public float Strength { get; set; }

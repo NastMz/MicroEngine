@@ -201,6 +201,12 @@ public Texture Image<TState>(string name, long version, TState state, Func<TStat
 
 `TState` 
 
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The effect already uses <code class="paramref">name</code> for a render target.
+
 ### <a id="MicroEngine_Graphics_PostPass_Replace_MicroEngine_Graphics_Texture_MicroEngine_Graphics_TextureFilter_MicroEngine_Graphics_Material2D_System_Nullable_MicroEngine_Color__"></a> Replace\(Texture, TextureFilter, Material2D?, Color?\)
 
 Makes <code class="paramref">picture</code> the new picture: the whole of it stretched over a target of the picture's size,
@@ -223,8 +229,9 @@ public void Replace(Texture picture, TextureFilter filter = TextureFilter.Linear
 
 ### <a id="MicroEngine_Graphics_PostPass_Scratch_System_String_System_Int32_System_Int32_MicroEngine_Graphics_TextureFilter_"></a> Scratch\(string, int, int, TextureFilter\)
 
-A render target of the chain's for this effect, by <code class="paramref">name</code>: kept between frames, made again
-when the size asked for changes, released with the chain. It keeps its pixels until the effect draws into it.
+A render target of the chain's for this effect, by <code class="paramref">name</code> and size: kept between frames,
+released with the chain or when no run has asked for that size for a while. It keeps its pixels until the
+effect draws into it. A name is a target's or a texture's (<code>Image</code>), not both.
 
 ```csharp
 public RenderTarget2D Scratch(string name, int width, int height, TextureFilter filter = TextureFilter.Linear)
@@ -249,5 +256,9 @@ public RenderTarget2D Scratch(string name, int width, int height, TextureFilter 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 A size that is not positive.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The effect already uses <code class="paramref">name</code> for a texture.
 
 </div>

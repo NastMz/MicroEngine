@@ -9,12 +9,17 @@ namespace MicroEngine.Graphics;
 /// </summary>
 public sealed class ColorGrade : PostEffect
 {
-    /// <summary>Multiplies the colours; 1 changes nothing, 0 is black, 2 twice as bright (clamped at white).</summary>
-    public float Brightness { get; set; } = 1f;
-    /// <summary>Spreads the colours away from mid grey (above 1) or towards it (below 1); 1 changes nothing.</summary>
-    public float Contrast { get; set; } = 1f;
-    /// <summary>How much colour is kept: 1 changes nothing, 0 is black and white, above 1 is more vivid.</summary>
-    public float Saturation { get; set; } = 1f;
+    /// <summary>The largest <see cref="Brightness"/>.</summary>
+    public const float MaxBrightness = 16f;
+    /// <summary>Multiplies the colours; 1 changes nothing, 0 is black, 2 twice as bright (clamped at white). Kept within 0 to 16; a value that is not a number is ignored.</summary>
+    public float Brightness { get => _brightness; set => _brightness = PostValue.Kept(value, _brightness, 0f, MaxBrightness); }
+    private float _brightness = 1f;
+    /// <summary>Spreads the colours away from mid grey (above 1) or towards it (below 1); 1 changes nothing. Kept within 0 to 16; a value that is not a number is ignored.</summary>
+    public float Contrast { get => _contrast; set => _contrast = PostValue.Kept(value, _contrast, 0f, 16f); }
+    private float _contrast = 1f;
+    /// <summary>How much colour is kept: 1 changes nothing, 0 is black and white, above 1 is more vivid. Kept within 0 to 16; a value that is not a number is ignored.</summary>
+    public float Saturation { get => _saturation; set => _saturation = PostValue.Kept(value, _saturation, 0f, 16f); }
+    private float _saturation = 1f;
     /// <summary>A colour every pixel is multiplied by; white changes nothing. Its alpha is ignored.</summary>
     public Color Tint { get; set; } = Color.White;
 
@@ -44,9 +49,10 @@ public sealed class ColorGrade : PostEffect
         if (brightness <= 1f) return;
         var r = pass.BeginOver();
         r.PushState(DrawState.Additive.Filtered(TextureFilter.Nearest));
-        for (float more = brightness - 1f; more > 0.002f; more -= 1f)
+        // Whole additions of the picture, then the rest: a count known before the loop starts.
+        for (int added = 0; brightness - 1f - added > 0.002f; added++)
         {
-            float part = MathF.Min(1f, more);
+            float part = MathF.Min(1f, brightness - 1f - added);
             var add = new Color((byte)MathF.Round(Tint.R * part), (byte)MathF.Round(Tint.G * part), (byte)MathF.Round(Tint.B * part));
             r.DrawStretched(before, before.Bounds, new RectF(0, 0, r.Width, r.Height), add);
         }
@@ -62,8 +68,11 @@ public sealed class ColorGrade : PostEffect
 /// </summary>
 public sealed class Blur : PostEffect
 {
-    /// <summary>How far the blur reaches, in pixels of the picture. 0 leaves the picture as it is.</summary>
-    public float Radius { get; set; } = 4f;
+    /// <summary>The largest <see cref="Radius"/>, in pixels.</summary>
+    public const float MaxRadius = 256f;
+    /// <summary>How far the blur reaches, in pixels of the picture. 0 leaves the picture as it is. Kept within 0 to 256; a value that is not a number is ignored.</summary>
+    public float Radius { get => _radius; set => _radius = PostValue.Kept(value, _radius, 0f, MaxRadius); }
+    private float _radius = 4f;
 
     /// <inheritdoc/>
     public override PostEffectSupport SupportOn(IGraphicsDevice graphics) =>
@@ -142,12 +151,17 @@ public sealed class Blur : PostEffect
 /// </summary>
 public sealed class Bloom : PostEffect
 {
-    /// <summary>How bright a pixel's brightest channel must be to glow, 0..1; 0 makes everything glow.</summary>
-    public float Threshold { get; set; } = 0.6f;
-    /// <summary>How much of the glow is added: 1 adds it once, 0 nothing, 2 twice.</summary>
-    public float Strength { get; set; } = 1f;
-    /// <summary>How far the glow reaches, in pixels of the picture.</summary>
-    public float Radius { get; set; } = 6f;
+    /// <summary>The largest <see cref="Strength"/>.</summary>
+    public const float MaxStrength = 8f;
+    /// <summary>How bright a pixel's brightest channel must be to glow, 0..1; 0 makes everything glow. Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Threshold { get => _threshold; set => _threshold = PostValue.Kept(value, _threshold, 0f, 1f); }
+    private float _threshold = 0.6f;
+    /// <summary>How much of the glow is added: 1 adds it once, 0 nothing, 2 twice. Kept within 0 to 8; a value that is not a number is ignored.</summary>
+    public float Strength { get => _strength; set => _strength = PostValue.Kept(value, _strength, 0f, MaxStrength); }
+    private float _strength = 1f;
+    /// <summary>How far the glow reaches, in pixels of the picture. Kept within 0 to 256; a value that is not a number is ignored.</summary>
+    public float Radius { get => _radius; set => _radius = PostValue.Kept(value, _radius, 0f, Blur.MaxRadius); }
+    private float _radius = 6f;
 
     /// <inheritdoc/>
     public override PostEffectSupport SupportOn(IGraphicsDevice graphics) =>
@@ -160,9 +174,9 @@ public sealed class Bloom : PostEffect
         var glow = Blur.Blurred(pass, pass.Source, Radius, MathF.Max(Threshold, pass.ShadersRun ? 0f : 0.01f), "bloom");
         var r = pass.BeginOver();
         r.PushState(DrawState.Additive.Filtered(TextureFilter.Linear));
-        for (float left = Strength; left > 0.002f; left -= 1f)
+        for (int added = 0; Strength - added > 0.002f; added++)
         {
-            byte part = (byte)MathF.Round(MathF.Min(1f, left) * 255);
+            byte part = (byte)MathF.Round(MathF.Min(1f, Strength - added) * 255);
             r.DrawStretched(glow, glow.Bounds, new RectF(0, 0, r.Width, r.Height), new Color(part, part, part));
         }
         r.PopState();
@@ -179,12 +193,15 @@ public sealed class Vignette : PostEffect
 {
     private const int Size = 64;
 
-    /// <summary>How strong the darkening is at the corners: 0 nothing, 1 the corners are the picture times <see cref="Color"/> (black, by default).</summary>
-    public float Strength { get; set; } = 0.5f;
-    /// <summary>Where the darkening starts, from the centre (0) to the corners (1).</summary>
-    public float Radius { get; set; } = 0.45f;
-    /// <summary>How gradually it darkens after <see cref="Radius"/>, as a share of the way to the corners; 0 is a hard edge.</summary>
-    public float Softness { get; set; } = 0.55f;
+    /// <summary>How strong the darkening is at the corners: 0 nothing, 1 the corners are the picture times <see cref="Color"/> (black, by default). Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Strength { get => _strength; set => _strength = PostValue.Kept(value, _strength, 0f, 1f); }
+    private float _strength = 0.5f;
+    /// <summary>Where the darkening starts, from the centre (0) to the corners (1). Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Radius { get => _radius; set => _radius = PostValue.Kept(value, _radius, 0f, 1f); }
+    private float _radius = 0.45f;
+    /// <summary>How gradually it darkens after <see cref="Radius"/>, as a share of the way to the corners; 0 is a hard edge. Kept within 0 to 4; a value that is not a number is ignored.</summary>
+    public float Softness { get => _softness; set => _softness = PostValue.Kept(value, _softness, 0f, 4f); }
+    private float _softness = 0.55f;
     /// <summary>The colour the corners are multiplied by; black (the default) darkens, another colour tints. Its alpha is ignored.</summary>
     public Color Color { get; set; } = Color.Black;
 
@@ -227,19 +244,35 @@ public sealed class Vignette : PostEffect
 /// </summary>
 public sealed class Scanlines : PostEffect
 {
-    /// <summary>How dark the dark lines are: 0 nothing, 1 black.</summary>
-    public float Strength { get; set; } = 0.25f;
+    /// <summary>The largest number of lines of <see cref="Lines"/> and of <see cref="Crt.Lines"/>.</summary>
+    public const int MaxLines = 4096;
+    /// <summary>How dark the dark lines are: 0 nothing, 1 black. Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Strength { get => _strength; set => _strength = PostValue.Kept(value, _strength, 0f, 1f); }
+    private float _strength = 0.25f;
     /// <summary>
     /// How many lines the picture has: each is a bright row and a dark row. 0 (the default) is half the picture's
     /// height, one row of pixels each. On a picture larger than the game's canvas (the window), give the canvas's height.
+    /// Kept within 0 to 4096.
     /// </summary>
-    public int Lines { get; set; }
+    public int Lines { get => _lines; set => _lines = Math.Clamp(value, 0, MaxLines); }
+    private int _lines;
 
     /// <inheritdoc/>
     public override PostEffectSupport SupportOn(IGraphicsDevice graphics) => PostEffectSupport.Full;
 
     /// <inheritdoc/>
     protected internal override void Apply(PostPass pass) => PostLines.Draw(pass, Strength, Lines);
+}
+
+/// <summary>The one rule for the values of the ready effects.</summary>
+internal static class PostValue
+{
+    /// <summary>
+    /// The value an effect keeps when <paramref name="value"/> is set: the value it had when the new one is not a
+    /// number, else the new one within <paramref name="min"/> and <paramref name="max"/> (an infinite value is the
+    /// nearest limit). So no value can make an effect loop without end or draw nothing.
+    /// </summary>
+    public static float Kept(float value, float current, float min, float max) => float.IsNaN(value) ? current : Math.Clamp(value, min, max);
 }
 
 /// <summary>The dark rows of <see cref="Scanlines"/>, which <see cref="Crt"/> also draws where its shader does not run.</summary>
@@ -249,7 +282,7 @@ internal static class PostLines
     {
         strength = Math.Clamp(strength, 0f, 1f);
         if (strength <= 0) return;
-        int count = Math.Clamp(lines > 0 ? lines : pass.Height / 2, 1, 4096);
+        int count = Math.Clamp(lines > 0 ? lines : pass.Height / 2, 1, Scanlines.MaxLines);
         // One texel per row of a line: the first clear, the second opaque; stretched over the picture with nearest sampling.
         var rows = pass.Image("scanlines", count, count, static count =>
         {
@@ -274,17 +307,22 @@ internal static class PostLines
 /// </summary>
 public sealed class Crt : PostEffect
 {
-    /// <summary>How much the glass bulges: 0 is flat, 0.1 a gentle curve. What falls outside the curved picture is black.</summary>
-    public float Curvature { get; set; } = 0.1f;
-    /// <summary>How dark the picture is between two of its lines: 0 nothing, 1 black.</summary>
-    public float Scanlines { get; set; } = 0.25f;
+    /// <summary>How much the glass bulges: 0 is flat, 0.1 a gentle curve. What falls outside the curved picture is black. Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Curvature { get => _curvature; set => _curvature = PostValue.Kept(value, _curvature, 0f, 1f); }
+    private float _curvature = 0.1f;
+    /// <summary>How dark the picture is between two of its lines: 0 nothing, 1 black. Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Scanlines { get => _scanlines; set => _scanlines = PostValue.Kept(value, _scanlines, 0f, 1f); }
+    private float _scanlines = 0.25f;
     /// <summary>
     /// How many lines the picture has. 0 (the default) is half the picture's height. On a picture larger than the game's
     /// canvas (the window), give the canvas's height, so each canvas row is one line.
+    /// Kept within 0 to 4096.
     /// </summary>
-    public int Lines { get; set; }
-    /// <summary>How visible the red, green and blue stripes are: 0 nothing, 1 full. They are three pixels of the picture wide.</summary>
-    public float Mask { get; set; } = 0.15f;
+    public int Lines { get => _lines; set => _lines = Math.Clamp(value, 0, MicroEngine.Graphics.Scanlines.MaxLines); }
+    private int _lines;
+    /// <summary>How visible the red, green and blue stripes are: 0 nothing, 1 full. They are three pixels of the picture wide. Kept within 0 to 1; a value that is not a number is ignored.</summary>
+    public float Mask { get => _mask; set => _mask = PostValue.Kept(value, _mask, 0f, 1f); }
+    private float _mask = 0.15f;
 
     /// <inheritdoc/>
     public override PostEffectSupport SupportOn(IGraphicsDevice graphics) =>

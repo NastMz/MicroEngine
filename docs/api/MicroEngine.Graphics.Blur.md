@@ -39,11 +39,25 @@ public sealed class Blur : PostEffect
 public Blur()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Graphics_Blur_MaxRadius"></a> MaxRadius
+
+The largest [Radius](MicroEngine.Graphics.Blur.md#MicroEngine_Graphics_Blur_Radius), in pixels.
+
+```csharp
+public const float MaxRadius = 256
+```
+
+#### Field Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_Blur_Radius"></a> Radius
 
-How far the blur reaches, in pixels of the picture. 0 leaves the picture as it is.
+How far the blur reaches, in pixels of the picture. 0 leaves the picture as it is. Kept within 0 to 256; a value that is not a number is ignored.
 
 ```csharp
 public float Radius { get; set; }

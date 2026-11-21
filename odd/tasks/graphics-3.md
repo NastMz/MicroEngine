@@ -95,3 +95,16 @@ stencil, several colour targets and multisampling (S5: re-evaluated, kept out wi
   known. It may be the fault the manual already lists (a process that opens many `sdl-gpu` devices on Vulkan with this
   NVIDIA driver), which this unit makes a little more likely by adding device tests, or something in this unit:
   not established. `AssetGalleryTests.TheScriptedTourReportsNoHitch` failed once in a full run and passed alone.
+- L9 (2026-11-20) Correction batch after an independent verification (one hang, five defects), each with a test seen
+  failing first (`tests/MicroEngine.Tests/Graphics/GraphicsCorrectionTests.cs`; the hang as a 10 s timeout).
+  D1: `Bloom.Strength` and `ColorGrade.Brightness` of infinity or 2^24 never left a `left -= 1f` loop; every numeric
+  effect value is now kept within a stated range when it is set (`Bloom.MaxStrength` 8, `ColorGrade.MaxBrightness`
+  16, `Blur.MaxRadius` 256, `Scanlines.MaxLines` 4096) and the two loops count whole passes. D6: a value that is not
+  a number is ignored, as the audio effects do (it drew black). D2: one name for a `Scratch` and an `Image` of the
+  same effect leaked two textures a frame; it now throws naming the effect and the name. D3: a chain on two picture
+  sizes in one frame re-made its targets inside the frame; targets are now kept per size and images per version, and
+  released when unused for `PostProcess.KeptForRuns` (8) runs, which is also the stated limit of runs per frame.
+  D4: `SortedRenderer` kept the camera by reference; it copies the view at `PushCamera` into cameras it keeps.
+  D5: each `PushState`/`PopState` copied the state stack; states are stored in one list the renderer keeps, and the
+  steady state is asserted to allocate nothing. Also: text and a tile map through a sorted renderer (test), and the
+  example's "no shaders" label moved to the bottom of the window (looked at on SDL's default device).

@@ -9,7 +9,9 @@ Guide: [Graphics](../manual/rendering.md)
 A chain of full-screen effects over a picture: what was drawn between [Begin](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Begin_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Color__) and [End](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_End_MicroEngine_Graphics_IRenderer_System_Boolean_)
 (or a picture given to [Apply](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Apply_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IGraphicsDevice_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Boolean_)) goes through every enabled effect in order, and the result is drawn
 where the picture would have been. The chain owns the render targets, textures and built-in materials its effects
-need, sized to the picture, and releases them with [Dispose](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Dispose). A scene has one for its own picture
+need, sized to the picture, and releases them with [Dispose](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_Dispose). One chain can run on pictures of
+different sizes, in one frame too: it keeps what it made for each size, and releases what no run has used for
+[KeptForRuns](MicroEngine.Graphics.PostProcess.md#MicroEngine_Graphics_PostProcess_KeptForRuns) runs (so a chain may run up to that many times in one frame). A scene has one for its own picture
 (<code>Scene.PostProcess</code>), and a game has one for the canvas and one for the window (<code>Game.PostProcess</code>,
 <code>Game.ScreenPostProcess</code>); the engine begins, ends and releases those.
 
@@ -52,6 +54,20 @@ Creates an empty chain.
 ```csharp
 public PostProcess()
 ```
+
+## Fields
+
+### <a id="MicroEngine_Graphics_PostProcess_KeptForRuns"></a> KeptForRuns
+
+How many runs of the chain a target or a texture is kept for after the last run that used it.
+
+```csharp
+public const int KeptForRuns = 8
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Properties
 
