@@ -3,10 +3,25 @@ using System.Numerics;
 namespace MicroEngine.Graphics;
 
 /// <summary>
-/// How a texture is sampled when it is drawn bigger or smaller than its pixels, or between them: <c>Nearest</c> keeps
-/// hard pixel edges (pixel art), <c>Linear</c> blends neighbouring pixels (smooth, high-resolution art and text).
+/// How a texture is sampled when it is drawn bigger or smaller than its pixels, or between them.
 /// </summary>
-public enum TextureFilter { Nearest, Linear }
+public enum TextureFilter
+{
+    /// <summary>The texel under each pixel: hard pixel edges (pixel art).</summary>
+    Nearest,
+    /// <summary>The four texels around each pixel, blended: smooth, high-resolution art and text.</summary>
+    Linear,
+    /// <summary>
+    /// <see cref="Linear"/>, with mip levels: the texture also keeps smaller copies of itself (each half the size of the
+    /// one before, a third more memory in all) and a draw that makes it smaller than its pixels samples the copies
+    /// nearest to that size, blended. Art drawn well below its size (a zoomed-out camera, a large picture on a small
+    /// canvas) then neither shimmers when it moves nor loses thin details. The levels are made when the texture is
+    /// created with this filter (<see cref="Texture.MipLevels"/>), on a graphics device with mip levels: <c>sdl-gpu</c>
+    /// and raylib on desktop. On every other device (SDL's default device and its software renderer, browser builds,
+    /// the headless platform) the texture has one level and is sampled as <see cref="Linear"/>.
+    /// </summary>
+    LinearMipmap,
+}
 
 /// <summary>
 /// A texture of the drawing API, owned by the game's graphics device: a picture <see cref="IRenderer"/> draws, with the
@@ -77,6 +92,12 @@ public abstract class Texture : IDisposable
     public virtual Devices.Texture? Native => null;
     /// <summary>Whether a renderer can draw into this texture: it is the picture of a <see cref="RenderTarget2D"/>.</summary>
     public virtual bool IsRenderTarget => false;
+    /// <summary>
+    /// How many sizes of the picture the texture holds: 1 for the picture alone, more for a texture created with
+    /// <see cref="TextureFilter.LinearMipmap"/> on a device with mip levels (each level half the size of the one before,
+    /// down to one pixel). Updating the texture's pixels makes its smaller levels again.
+    /// </summary>
+    public virtual int MipLevels => 1;
 
     /// <summary>How the texture is sampled; it can change at any time and applies to the next draws.</summary>
     public TextureFilter Filter
@@ -287,4 +308,11 @@ public interface IGraphicsDevice
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="fragment"/> is not a fragment shader.</exception>
     Material2D CreateMaterial(Devices.CompiledShader fragment, MaterialFallback fallback = default) => Material2D.Create(null, fragment, fallback);
+    /// <summary>
+    /// Whether materials created here run their shaders (<see cref="Material2D.IsSupported"/>): true on a programmable
+    /// device (<c>sdl-gpu</c>), false on every other (SDL's default device and its software renderer, raylib, browser
+    /// builds, the headless platform), where a material draws with its fallback and a post-processing effect with a
+    /// shader draws its stated simpler form (<see cref="PostEffect.SupportOn"/>).
+    /// </summary>
+    bool SupportsShaders => false;
 }

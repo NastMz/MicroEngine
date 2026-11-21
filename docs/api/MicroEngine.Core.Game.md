@@ -309,6 +309,22 @@ protected IPlatform Platform { get; }
 
  [IPlatform](MicroEngine.Core.IPlatform.md)
 
+### <a id="MicroEngine_Core_Game_PostProcess"></a> PostProcess
+
+The game's post-processing chain for the canvas ([PostProcess](MicroEngine.Graphics.PostProcess.md)): while it holds an enabled
+effect, everything drawn into the canvas (the background, every visible scene, their transition and
+[DrawAboveScenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_)) goes through the effects, at the canvas's resolution. Debug drawing and the
+interface (the UI view) are drawn after it and are not affected; [ScreenPostProcess](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ScreenPostProcess) covers them.
+Captures of the canvas show the result. The engine releases the chain when the game ends.
+
+```csharp
+public PostProcess PostProcess { get; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)
+
 ### <a id="MicroEngine_Core_Game_Prompts"></a> Prompts
 
 How to name each action to the player on the device in use (<code>Prompts.Format("Press {confirm}")</code>), from the
@@ -423,6 +439,24 @@ public GameScreen Screen { get; }
 #### Property Value
 
  [GameScreen](MicroEngine.Core.GameScreen.md)
+
+### <a id="MicroEngine_Core_Game_ScreenPostProcess"></a> ScreenPostProcess
+
+The game's post-processing chain for the window ([PostProcess](MicroEngine.Graphics.PostProcess.md)): while it holds
+an enabled effect, the finished frame goes through the effects at the window's resolution, after the canvas was
+scaled into the window: the letterbox, the world and the interface (the UI view) over it. Use it for effects that
+belong to the screen rather than to the world (a tube's curve and lines, a fade over everything), or that need
+the window's pixels. Captures then show the window as it was presented. On a platform without a window stage
+([IScreenEffects](MicroEngine.Core.IScreenEffects.md)) the chain runs on the canvas instead: over the interface where the interface is
+drawn in the canvas, under it otherwise. The engine releases the chain when the game ends.
+
+```csharp
+public PostProcess ScreenPostProcess { get; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)
 
 ### <a id="MicroEngine_Core_Game_Services"></a> Services
 

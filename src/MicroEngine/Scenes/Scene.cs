@@ -195,6 +195,23 @@ public abstract class Scene : IStateHashed
     /// </summary>
     public Camera2D? WorldCamera { get; set; }
 
+    private PostProcess? _post;
+    /// <summary>
+    /// The scene's post-processing chain (<see cref="MicroEngine.Graphics.PostProcess"/>), created the first time it is read: while
+    /// it holds an enabled effect, what <see cref="Draw"/> draws goes into a picture of the canvas's size, through the
+    /// effects, and the result is drawn over the scenes under this one. The scene's interface (<see cref="DrawUi"/>,
+    /// <see cref="Widgets"/>) is not part of the picture. The engine releases the chain's targets when the scene leaves
+    /// the stack; the effects stay, so a scene pushed again is processed again. A scene that never reads it pays nothing.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// public override void Enter() =&gt; PostProcess.Add(new Bloom { Strength = 1.2f }).Add(new Vignette());
+    /// </code>
+    /// </example>
+    public PostProcess PostProcess => _post ??= new PostProcess();
+    /// <summary>The scene's chain when <see cref="PostProcess"/> was read, else null.</summary>
+    internal PostProcess? PostProcessOrNull => _post;
+
     private UI.UiRoot? _ui;
     /// <summary>
     /// The scene's widgets (<see cref="UI.UiRoot"/>), created the first time it is read (from <see cref="Enter"/> on; the
@@ -406,7 +423,11 @@ public sealed class SceneManager
         top.Coroutines.StopAll();
         top.Tweens.Clear();
         try { top.Exit(); }
-        finally { top.StopSystems(); }
+        finally
+        {
+            top.StopSystems();
+            top.PostProcessOrNull?.Dispose();
+        }
         top.UiOrNull?.Focus(null); // releases the text channel a focused text field holds
         Exited?.Invoke(top);
         var handler = top.HasResult ? top.ResultHandler : null;
@@ -482,9 +503,13 @@ public sealed class SceneManager
         {
             var scene = _stack[i];
             scene.BeginDraw();
+            // A scene with post-processing draws into its chain's picture, which the chain then draws over the scenes under it.
+            var post = scene.PostProcessOrNull;
+            bool processed = post is not null && post.Begin(renderer, _game.Graphics);
             if (scene.WorldCamera is { } camera) renderer.PushCamera(camera);
             scene.Draw(renderer);
             if (scene.WorldCamera is not null) renderer.PopCamera();
+            if (processed) post!.End(renderer);
         }
         _transition?.DrawAt(renderer, _game.FrameBlend);
     }

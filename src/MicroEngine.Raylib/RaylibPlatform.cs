@@ -40,7 +40,7 @@ public sealed record DesktopOptions
 /// capabilities (<see cref="TryGetCapability{T}"/>): <see cref="IDisplayControl"/>, <see cref="IDisplayPacing"/>,
 /// <see cref="ITouchScreen"/> and <see cref="IPreciseDelay"/>.
 /// </summary>
-public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
+public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture, IScreenEffects
 {
     private readonly GameSettings _settings;
     // A visible desktop window: the only kind whose window and monitor the platform changes. Browsers and Android leave
@@ -146,6 +146,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IViewCapture>(this);
+        _capabilities.Add<IScreenEffects>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
@@ -261,6 +262,12 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     private bool _frameHasUi;
 
     /// <inheritdoc/>
+    public PostProcess? ScreenEffects { get; set; }
+
+    /// <summary>Whether the last frame went through the screen's chain, so its capture is the window and not the canvas.</summary>
+    private bool ScreenEffectsShown => ScreenEffects is { IsActive: true };
+
+    /// <inheritdoc/>
     public Color Letterbox { get; set; }
 
     public void EndFrame()
@@ -268,7 +275,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _canvas.EndFrame();
         Rl.BeginDrawing();
         // The canvas into the window as the presentation says, prescale included (copied opaque: its alpha never darkens it).
-        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
+        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox, ScreenEffects))
         {
             // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
             _touch.DrawOverlay();
@@ -291,7 +298,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     /// </summary>
     public void SaveScreenshot(string path)
     {
-        if (!_frameHasUi) _canvas.SaveCapture(path, _captureScale);
+        if (!_frameHasUi && !ScreenEffectsShown) _canvas.SaveCapture(path, _captureScale);
         else
         {
             var screen = ((IViewCapture)this).CaptureScreen();
@@ -304,6 +311,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     PixelImage? IViewCapture.CaptureUi() => _frameHasUi ? _canvas.CaptureUi() : null;
     PixelImage IViewCapture.CaptureScreen()
     {
+        // A frame presented through the screen's post-processing chain is captured as the window showed it.
+        if (_canvas.CapturePresented() is { } presented) return presented;
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
         return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation, _device.Capabilities.Limits.MaxRenderTargetSize);

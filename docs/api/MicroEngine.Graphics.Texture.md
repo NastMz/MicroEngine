@@ -142,6 +142,20 @@ public virtual bool IsRenderTarget { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Graphics_Texture_MipLevels"></a> MipLevels
+
+How many sizes of the picture the texture holds: 1 for the picture alone, more for a texture created with
+[LinearMipmap](MicroEngine.Graphics.TextureFilter.md) on a device with mip levels (each level half the size of the one before,
+down to one pixel). Updating the texture's pixels makes its smaller levels again.
+
+```csharp
+public virtual int MipLevels { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Graphics_Texture_Native"></a> Native
 
 The device texture behind this texture, holding its premultiplied pixels, or null when the graphics device draws

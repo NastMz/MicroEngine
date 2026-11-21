@@ -17,7 +17,7 @@ also reports the window's safe area and density; a system that sends the app to 
 [ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers, [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
-public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
+public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture, IScreenEffects
 ```
 
 #### Inheritance
@@ -36,7 +36,8 @@ public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatfo
 [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md), 
 [IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md), 
 [IScreenView](MicroEngine.Core.IScreenView.md), 
-[IViewCapture](MicroEngine.Core.IViewCapture.md)
+[IViewCapture](MicroEngine.Core.IViewCapture.md), 
+[IScreenEffects](MicroEngine.Core.IScreenEffects.md)
 
 ## Remarks
 
@@ -320,6 +321,19 @@ public string RendererName { get; }
 #### Property Value
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_ScreenEffects"></a> ScreenEffects
+
+The chain the next frames are presented through, or null to present them as they are. The platform runs it; the
+game that set it owns it. While it is set and active, captures show the window as it was presented.
+
+```csharp
+public PostProcess? ScreenEffects { get; set; }
+```
+
+#### Property Value
+
+ [PostProcess](MicroEngine.Graphics.PostProcess.md)?
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Suspended"></a> Suspended
 

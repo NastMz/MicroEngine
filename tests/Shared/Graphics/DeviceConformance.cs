@@ -48,6 +48,13 @@ public abstract class DeviceConformance
     /// </summary>
     protected virtual int BlendTolerance => 1;
 
+    /// <summary>
+    /// Whether linear minification of a texture with one level already averages the texels a pixel covers, instead of
+    /// reading the four around its centre. False for conformant devices; a diagnostic device (SDL's software renderer,
+    /// which shrinks with an averaging scaler) says so.
+    /// </summary>
+    protected virtual bool MinificationAverages => false;
+
     protected IGraphicsDevice Device => _device!;
     protected Painter Painter => _painter ??= new Painter(Device);
     protected GraphicsCapabilities Caps => Device.Capabilities;
@@ -476,6 +483,66 @@ public abstract class DeviceConformance
         Assert.AreNotEqual(handle.Generation, next.Handle.Generation, "with a new generation");
         Assert.IsFalse(core.TryGetResource<Texture>(handle, out _), "the old handle does not find the new resource");
         Assert.AreEqual(0, core.PendingReleases, "nothing waits: this device executes lists at Submit");
+    }
+
+    // ---------------------------------------------------------------- mip levels
+
+    [TestMethod]
+    public void Mipmaps_AMinifiedTextureIsSampledThroughItsLevels_OrMoreThanOneLevelFailsTyped()
+    {
+        // A 64 × 64 checkerboard of single texels, drawn at an eighth of its size so that every pixel centre falls on
+        // the centre of a texel of the same colour: one level shows that colour alone, levels show their average.
+        var texels = new uint[64 * 64];
+        for (var i = 0; i < texels.Length; i++) texels[i] = ((i % 64 + i / 64) & 1) == 0 ? 0xFFFFFFFFu : 0x000000FFu;
+        var eighth = Matrix3x2.CreateScale(1 / 8f) * Matrix3x2.CreateTranslation(-5 / 16f, -5 / 16f);
+        Image Minified(Texture texture)
+        {
+            var target = Target(8, 8);
+            Painter.Paint(target, new Quad(texture, new RectF(0, 0, 64, 64), eighth, ColorF.White), clear: Opaque(0, 0, 255), blend: BlendState.Opaque, sampler: SamplerDescription.LinearClamp);
+            return Read(target);
+        }
+
+        var single = Device.CreateTexture(new TextureDescription(64, 64), Texels.Bytes(texels));
+        var aliased = Minified(single);
+        if (!MinificationAverages)
+        {
+            for (var x = 1; x < 7; x++) Assert.AreEqual(aliased.Channel(1, 1, 0), aliased.Channel(x, 3, 0), $"one level: every pixel reads a texel of the same colour (x={x})");
+            Assert.IsTrue(aliased.Channel(1, 1, 0) is 0 or 255, $"one level: black or white, never their mix ({aliased.Channel(1, 1, 0)})");
+        }
+
+        if (!Caps.Has(GraphicsFeatures.Mipmaps))
+        {
+            var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateTexture(new TextureDescription(64, 64, MipLevels: 7)));
+            Assert.AreEqual(GraphicsFeatures.Mipmaps, e.Missing);
+            return;
+        }
+
+        var levels = Device.CreateTexture(new TextureDescription(64, 64, MipLevels: 7), Texels.Bytes(texels));
+        var list = Device.BeginCommands();
+        list.GenerateMipmaps(levels);
+        Device.Submit(list);
+        var smooth = Minified(levels);
+        for (var y = 1; y < 7; y++)
+            for (var x = 1; x < 7; x++)
+                Assert.IsTrue(Math.Abs(smooth.Channel(x, y, 0) - 128) <= 6, $"levels: the average of black and white at ({x},{y}), got {smooth.Channel(x, y, 0)}");
+
+        // The levels follow level 0 when they are made again after an update.
+        var white = Enumerable.Repeat(0xFFFFFFFFu, 64 * 64).ToArray();
+        list = Device.BeginCommands();
+        list.UpdateTexture(levels, new RectI(0, 0, 64, 64), Texels.Bytes(white));
+        list.GenerateMipmaps(levels);
+        Device.Submit(list);
+        Assert.AreEqual(255, Minified(levels).Channel(4, 4, 0), "made again from the new level 0");
+
+        // What cannot have levels made is refused when it is recorded.
+        var refused = Device.BeginCommands();
+        Assert.ThrowsExactly<ArgumentException>(() => refused.GenerateMipmaps(single), "a texture with one level");
+        var target = Target(4, 4);
+        Assert.ThrowsExactly<ArgumentException>(() => refused.GenerateMipmaps(target.Color!), "a render target's colour texture");
+        refused.BeginPass(new PassDescription(new ColorAttachment(target, LoadOp.Clear, Clear: Opaque(0, 0, 0))));
+        Assert.ThrowsExactly<InvalidOperationException>(() => refused.GenerateMipmaps(levels), "inside a pass");
+        refused.EndPass();
+        Device.Submit(refused);
     }
 
     // ---------------------------------------------------------------- capabilities (typed errors)

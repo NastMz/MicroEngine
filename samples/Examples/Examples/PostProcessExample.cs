@@ -7,44 +7,53 @@ using MicroEngine.Scenes;
 namespace Examples;
 
 /// <summary>
-/// A chain of full-screen passes over the finished picture: its bright parts blurred across, then down, at half size,
-/// and a last pass that adds that glow and darkens the corners and every other line. Each pass is one draw of the
-/// previous pass's target into the next through a material. The shaders run on a graphics device with custom shaders
-/// (<c>--graphics sdl-gpu</c>); on any other the same passes copy the picture as it is, the materials' fallback.
+/// Post-processing with the scene's chain: the scene draws its picture as usual and the chain runs it through a
+/// bloom, a pass through a shader of the game's own, a vignette and scanlines. Confirm turns the chain off and on;
+/// action adds an effect written in the game (large pixels). Where the graphics device runs no shaders the bloom is
+/// its simpler form and the shader pass is left out; the scene says so from what the chain reports.
 /// </summary>
 public sealed class PostProcessExample : Scene
 {
     private static readonly RectF Whole = new(0, 0, 320, 180);
 
     private AssetCache? _assets;
-    private Material2D? _blur, _look;
-    private RenderTarget2D? _scene, _across, _glow;
-    private bool _on = true;
+    private readonly Pixelate _pixelate = new() { Enabled = false };
+    private string _support = "";
     private float _time;
 
+    #region chain
     public override void Enter()
     {
         _assets = Assets.CreateScope("post-processing");
-        _blur = _assets.Material("shaders/glow.frag.shader");
-        _look = _assets.Material("shaders/combine.frag.shader");
-        _scene = _assets.RenderTarget("post/scene", 320, 180, TextureFilter.Nearest);
-        _across = _assets.RenderTarget("post/across", 160, 90, TextureFilter.Linear);   // the glow at half size
-        _glow = _assets.RenderTarget("post/glow", 160, 90, TextureFilter.Linear);
+        var fringe = _assets.Material("shaders/fringe.frag.shader");   // a fragment shader of the game's own
+        fringe.Set("Amount", 0.004f);
+        PostProcess
+            .Add(new Bloom { Threshold = 0.55f, Strength = 1.4f, Radius = 6 })
+            .Add(new ShaderEffect(fringe))
+            .Add(_pixelate)
+            .Add(new Vignette { Strength = 0.7f })
+            .Add(new Scanlines { Strength = 0.18f });
+        // What this device leaves out or simplifies, to tell the player.
+        _support = string.Join(", ", PostProcess.SupportOn(Game.Graphics)
+            .Where(e => e.Support != PostEffectSupport.Full)
+            .Select(e => $"{e.Effect.GetType().Name.ToUpperInvariant()} {(e.Support == PostEffectSupport.None ? "OFF" : "REDUCED")}"));
     }
+    #endregion
 
     public override void Exit() => _assets?.Dispose();
 
     public override void Update(float dt)
     {
         if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-        if (Input.Pressed("confirm")) _on = !_on;
+        if (Input.Pressed("confirm")) PostProcess.Enabled = !PostProcess.Enabled;
+        if (Input.Pressed("action")) _pixelate.Enabled = !_pixelate.Enabled;
         _time += dt;
     }
 
+    #region draw
     public override void Draw(IRenderer r)
     {
-        // The picture, drawn where the passes can read it: a dark room with a few bright things in it.
-        r.PushTarget(_scene!);
+        // The picture, drawn as in any scene: a dark room with a few bright things in it. The chain does the rest.
         r.FillGradient(Whole, Color.Hex("1a1c2c"), Color.Hex("29366f"));
         for (int i = 0; i < 6; i++)
         {
@@ -53,44 +62,34 @@ public sealed class PostProcessExample : Scene
         }
         r.FillRect(new RectF(0, 150, 320, 30), Color.Hex("333c57"));
         r.FillRect(new RectF(20, 146, 280, 4), Color.Hex("f4f4f4"));
-        r.PopTarget();
-
-        if (_on)
-        {
-            #region chain
-            // 1. The picture's bright parts blurred across, at half size. 2. That, blurred down.
-            _blur!.Set("Step", new Vector2(1f / 160, 0));
-            _blur.Set("Threshold", 0.55f);
-            Pass(r, _scene!, _across, _blur);
-            _blur.Set("Step", new Vector2(0, 1f / 90));
-            _blur.Set("Threshold", 0f);
-            Pass(r, _across!, _glow, _blur);
-            // 3. The picture and the glow together, into the canvas.
-            _look!.Set("GlowStrength", 1.4f);
-            _look.Set("Vignette", 0.9f);
-            _look.Set("Scanlines", 0.18f);
-            _look.Set("Lines", 180f);
-            _look.SetTexture("Glow", _glow!.Texture);
-            Pass(r, _scene!, null, _look);
-            #endregion
-        }
-        else Pass(r, _scene!, null, null);
-        if (!_blur!.IsSupported) Font.DrawCentered(r, "THE SHADERS NEED --GRAPHICS SDL-GPU", new Vector2(160, 30), Color.White);
-        Heading.Draw(r, Font, "POST-PROCESSING", _on ? "CONFIRM: OFF" : "CONFIRM: ON");
     }
 
-    #region pass
-    /// <summary>
-    /// One pass: the whole of <paramref name="source"/> drawn over the whole of <paramref name="target"/> (the canvas
-    /// when null), through a material or as it is.
-    /// </summary>
-    private static void Pass(IRenderer r, RenderTarget2D source, RenderTarget2D? target, Material2D? material)
+    // The interface is not part of the scene's picture: it stays sharp over the effects.
+    public override void DrawUi(IRenderer ui)
     {
-        if (target is not null) r.PushTarget(target);
-        r.PushState(DrawState.Opaque.Filtered(TextureFilter.Linear) with { Material = material });
-        r.DrawStretched(source.Texture, source.Bounds, new RectF(0, 0, r.Width, r.Height), Color.White);
-        r.PopState();
-        if (target is not null) r.PopTarget();
+        Heading.Draw(ui, Font, "POST-PROCESSING", PostProcess.Enabled ? "CONFIRM: OFF   ACTION: PIXELS" : "CONFIRM: ON");
+        // At the bottom of the window, over the floor: clear of the heading and of the lights, whatever the window's size.
+        if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(ui.Width / 2f, ui.Height - 12), Color.White);
+    }
+    #endregion
+
+    #region effect
+    /// <summary>An effect written in the game: the picture in large pixels. It needs no shader, so it is the same everywhere.</summary>
+    public sealed class Pixelate : PostEffect
+    {
+        /// <summary>The side of a large pixel, in pixels of the picture.</summary>
+        public int Size { get; set; } = 4;
+
+        public override PostEffectSupport SupportOn(IGraphicsDevice graphics) => PostEffectSupport.Full;
+
+        protected override void Apply(PostPass pass)
+        {
+            // The picture shrunk into a target of the chain's (linear: each large pixel is the average of what it
+            // covers), then enlarged again with nearest sampling as the new picture.
+            var small = pass.Scratch("small", Math.Max(1, pass.Width / Size), Math.Max(1, pass.Height / Size), TextureFilter.Nearest);
+            pass.Draw(pass.Source, small, DrawState.Opaque.Filtered(TextureFilter.Linear));
+            pass.Replace(small.Texture, TextureFilter.Nearest);
+        }
     }
     #endregion
 }

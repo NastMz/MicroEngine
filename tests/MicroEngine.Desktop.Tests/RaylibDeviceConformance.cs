@@ -54,7 +54,7 @@ public sealed class RaylibDeviceConformance : DeviceConformance
     protected override string ExpectedBackend => RaylibDevice.BackendName;
     protected override string? ExpectedApi => "opengl";
     protected override GraphicsFeatures ExpectedFeatures => GraphicsFeatures.RenderTargets | GraphicsFeatures.AddressRepeat
-        | GraphicsFeatures.AddressMirror | GraphicsFeatures.SeparateFilters | GraphicsFeatures.CustomBlend;
+        | GraphicsFeatures.AddressMirror | GraphicsFeatures.SeparateFilters | GraphicsFeatures.CustomBlend | GraphicsFeatures.Mipmaps;
 
     protected override ITestSurface CreateSurface(int width, int height)
     {

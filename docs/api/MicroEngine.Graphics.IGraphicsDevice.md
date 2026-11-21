@@ -28,6 +28,21 @@ TextureFilter DefaultFilter { get; set; }
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
+### <a id="MicroEngine_Graphics_IGraphicsDevice_SupportsShaders"></a> SupportsShaders
+
+Whether materials created here run their shaders ([IsSupported](MicroEngine.Graphics.Material2D.md#MicroEngine_Graphics_Material2D_IsSupported)): true on a programmable
+device (<code>sdl-gpu</code>), false on every other (SDL's default device and its software renderer, raylib, browser
+builds, the headless platform), where a material draws with its fallback and a post-processing effect with a
+shader draws its stated simpler form ([SupportOn](MicroEngine.Graphics.PostEffect.md#MicroEngine_Graphics_PostEffect_SupportOn_MicroEngine_Graphics_IGraphicsDevice_)).
+
+```csharp
+bool SupportsShaders { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ## Methods
 
 ### <a id="MicroEngine_Graphics_IGraphicsDevice_CreateMaterial_MicroEngine_Graphics_Devices_CompiledShader_MicroEngine_Graphics_MaterialFallback_"></a> CreateMaterial\(CompiledShader, MaterialFallback\)

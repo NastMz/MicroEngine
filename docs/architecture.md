@@ -125,6 +125,10 @@ whose picture is a `Texture`, and `IRenderer`'s states and targets are the batch
 The SDL and raylib platforms draw every frame into a canvas
 render target through it, with `IRenderer` as its façade, and compose the canvas into the window as the game's
 `Presentation` says ([The 2D batcher and the camera](manual/rendering.md#the-2d-batcher-and-the-camera)).
+Three things are built on `IRenderer` alone, so they run on every renderer: post-processing chains (`PostProcess`,
+on a scene, the canvas or, through the platform's `IScreenEffects` capability, the composed window), draw order
+(`SortedRenderer`) and their ready effects, each of which states what it draws where no shader runs. Mip levels are a
+device feature (`Mipmaps`: `sdl-gpu`, raylib on desktop) reached through a texture filter.
 
 Text is `MicroEngine.Text`, another assembly
 of the `MicroEngine` package, which references only the 2D layer, the graphics contract, content, the kernel and the

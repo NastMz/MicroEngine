@@ -37,6 +37,7 @@ public sealed class DeviceTexture : Texture, IDisposable
 [Texture.SizeInBytes](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_SizeInBytes), 
 [Texture.Native](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Native), 
 [Texture.IsRenderTarget](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_IsRenderTarget), 
+[Texture.MipLevels](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_MipLevels), 
 [Texture.Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
@@ -58,6 +59,20 @@ public override bool IsRenderTarget { get; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Graphics_DeviceTexture_MipLevels"></a> MipLevels
+
+How many sizes of the picture the texture holds: 1 for the picture alone, more for a texture created with
+[LinearMipmap](MicroEngine.Graphics.TextureFilter.md) on a device with mip levels (each level half the size of the one before,
+down to one pixel). Updating the texture's pixels makes its smaller levels again.
+
+```csharp
+public override int MipLevels { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ### <a id="MicroEngine_Graphics_DeviceTexture_Native"></a> Native
 

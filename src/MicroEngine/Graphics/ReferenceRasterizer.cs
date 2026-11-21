@@ -116,7 +116,7 @@ internal sealed class ReferenceRasterizer
     /// </summary>
     public void DrawSprite(PixelImage texture, TextureFilter filter, RectF source, Vector2 position, Vector2 scale, float rotation, Vector2 origin,
         bool flipX, bool flipY, Color tint)
-        => DrawSprite(texture, false, filter == TextureFilter.Linear ? Dev.SamplerDescription.LinearClamp : Dev.SamplerDescription.PointClamp,
+        => DrawSprite(texture, false, filter == TextureFilter.Nearest ? Dev.SamplerDescription.PointClamp : Dev.SamplerDescription.LinearClamp,
             source, position, scale, rotation, origin, flipX, flipY, tint);
 
     /// <summary>

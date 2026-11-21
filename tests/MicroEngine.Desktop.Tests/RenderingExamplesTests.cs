@@ -8,8 +8,8 @@ namespace MicroEngine.Desktop.Tests;
 /// <summary>
 /// The four rendering examples (samples/Examples: light behind walls, masks, water, post-processing), each run as the
 /// only scene of a game in an SDL window through the launcher, on both graphics devices: on <c>sdl-gpu</c> every
-/// technique shows; on the default device the two made of render targets and blend states show and the two that need
-/// shaders draw their plain picture. Checked by the canvas each scene leaves, read back inside the frame; no input is
+/// technique shows; on the default device the two made of render targets and blend states show, the water draws its
+/// plain picture and the post-processing chain runs the effects that need no shader. Checked by the canvas each scene leaves, read back inside the frame; no input is
 /// involved, so nothing another window does can change what is drawn.
 /// </summary>
 [TestClass]
@@ -109,12 +109,13 @@ public sealed class RenderingExamplesTests
     }
 
     [TestMethod]
-    public void On_the_default_device_the_render_target_techniques_show_and_the_shader_ones_draw_their_plain_picture()
+    public void On_the_default_device_the_render_target_techniques_show_and_the_shader_ones_draw_what_they_can_without_one()
     {
         var canvases = Play("sdl-renderer");
         AssertLightAndMask(canvases);
         Assert.AreEqual(FlatWater, At(canvases["Water"], 20, 170), "flat water where the device has no shaders");
+        // Post-processing: the chain runs here too, with the effects that need no shader (the vignette among them).
         var post = canvases["Post-processing"];
-        Assert.AreEqual(At(post, 160, 21), At(post, 3, 21), "the picture as it was drawn");
+        Assert.IsTrue(Brightness(At(post, 160, 21)) > Brightness(At(post, 3, 21)) + 12, "the corners are darkened without a shader as well");
     }
 }

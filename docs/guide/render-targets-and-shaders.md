@@ -2,15 +2,16 @@
 
 The drawing calls of a scene (`IRenderer`) cover sprites, shapes and text. The same renderer also draws into pictures
 off screen, with any blend state, and through shaders the game wrote: three additions to the calls you already use,
-with no second renderer to keep. The engine ships none of the effects themselves; this page shows how four are built,
-each as an example in `samples/Examples`.
+with no second renderer to keep. This page shows how three techniques are built from them, and how a chain of
+full-screen effects (ready ones, or your own) is put on a scene, the canvas or the window; each is an example in
+`samples/Examples`.
 
 | Technique | Built from | Shows on |
 | --- | --- | --- |
 | [Light that stops at walls](#light-that-stops-at-walls) | render targets, the built-in blend states | every platform |
 | [Masks](#masks) | render targets, the built-in blend states | every platform |
 | [Water with a shader of your own](#a-shader-of-your-own-water) | a material: a fragment shader compiled ahead of time, with named parameters | the `sdl-gpu` device; elsewhere the material's fallback |
-| [Post-processing in several passes](#several-passes-post-processing) | materials and render targets | the `sdl-gpu` device; elsewhere the materials' fallback |
+| [Post-processing](#post-processing) | a chain of effects: ready ones, a shader of your own, an effect of your own | every platform; each effect says [what it draws without shaders](#what-each-effect-draws-without-shaders) |
 
 Shaders run on the programmable device, which a game asks for with `Graphics = new GraphicsSettings { Device = "sdl-gpu" }`
 in its settings, or a player with `--graphics sdl-gpu` ([Backends](../manual/backends.md)). The game's code does not
@@ -316,55 +317,215 @@ _night = Assets.Material("shaders/night.frag.shader", new MaterialFallback(Tint:
 The water example draws flat water there, and says so with one check:
 `if (!_water.IsSupported) Font.DrawCentered(...)`.
 
-## Several passes: post-processing
+## Post-processing
 
-A pass is one draw of a whole picture into another target through a material. A chain is passes one after another,
-each reading the target the one before wrote. The example draws its picture into a target, blurs its bright parts at
-half size and adds them back, with darker corners and scanlines:
+A post-processing effect takes a finished picture and leaves a new one: a glow around what is bright, darker corners,
+the lines of an old screen. A `PostProcess` is a chain of them. A scene has one, `PostProcess`: add effects to it and
+the engine draws the scene into a picture of the canvas's size, runs it through the effects in order and draws the
+result over the scenes under it. The scene's `Draw` does not change.
 
 <!-- code: samples/Examples/Examples/PostProcessExample.cs#chain -->
 ```csharp
-// 1. The picture's bright parts blurred across, at half size. 2. That, blurred down.
-_blur!.Set("Step", new Vector2(1f / 160, 0));
-_blur.Set("Threshold", 0.55f);
-Pass(r, _scene!, _across, _blur);
-_blur.Set("Step", new Vector2(0, 1f / 90));
-_blur.Set("Threshold", 0f);
-Pass(r, _across!, _glow, _blur);
-// 3. The picture and the glow together, into the canvas.
-_look!.Set("GlowStrength", 1.4f);
-_look.Set("Vignette", 0.9f);
-_look.Set("Scanlines", 0.18f);
-_look.Set("Lines", 180f);
-_look.SetTexture("Glow", _glow!.Texture);
-Pass(r, _scene!, null, _look);
-```
-
-<!-- code: samples/Examples/Examples/PostProcessExample.cs#pass -->
-```csharp
-/// <summary>
-/// One pass: the whole of <paramref name="source"/> drawn over the whole of <paramref name="target"/> (the canvas
-/// when null), through a material or as it is.
-/// </summary>
-private static void Pass(IRenderer r, RenderTarget2D source, RenderTarget2D? target, Material2D? material)
+public override void Enter()
 {
-    if (target is not null) r.PushTarget(target);
-    r.PushState(DrawState.Opaque.Filtered(TextureFilter.Linear) with { Material = material });
-    r.DrawStretched(source.Texture, source.Bounds, new RectF(0, 0, r.Width, r.Height), Color.White);
-    r.PopState();
-    if (target is not null) r.PopTarget();
+    _assets = Assets.CreateScope("post-processing");
+    var fringe = _assets.Material("shaders/fringe.frag.shader");   // a fragment shader of the game's own
+    fringe.Set("Amount", 0.004f);
+    PostProcess
+        .Add(new Bloom { Threshold = 0.55f, Strength = 1.4f, Radius = 6 })
+        .Add(new ShaderEffect(fringe))
+        .Add(_pixelate)
+        .Add(new Vignette { Strength = 0.7f })
+        .Add(new Scanlines { Strength = 0.18f });
+    // What this device leaves out or simplifies, to tell the player.
+    _support = string.Join(", ", PostProcess.SupportOn(Game.Graphics)
+        .Where(e => e.Support != PostEffectSupport.Full)
+        .Select(e => $"{e.Effect.GetType().Name.ToUpperInvariant()} {(e.Support == PostEffectSupport.None ? "OFF" : "REDUCED")}"));
 }
 ```
 
-The last pass reads two textures: the picture, which is the draw's texture, and the glow, which the material holds
-under the name the shader gives it.
+<!-- code: samples/Examples/Examples/PostProcessExample.cs#draw -->
+```csharp
+public override void Draw(IRenderer r)
+{
+    // The picture, drawn as in any scene: a dark room with a few bright things in it. The chain does the rest.
+    r.FillGradient(Whole, Color.Hex("1a1c2c"), Color.Hex("29366f"));
+    for (int i = 0; i < 6; i++)
+    {
+        var at = new Vector2(40 + i * 48, 90 + MathF.Sin(_time * 1.5f + i) * 34);
+        r.FillCircle(at, 7, Color.Hex(i % 2 == 0 ? "ffcd75" : "73eff7"));
+    }
+    r.FillRect(new RectF(0, 150, 320, 30), Color.Hex("333c57"));
+    r.FillRect(new RectF(20, 146, 280, 4), Color.Hex("f4f4f4"));
+}
 
-Create a material in `Load`, or behind a loading screen, when it is used during play: reading a shader and creating
-it on the device takes longer than a frame, and the engine reports a load that takes that long. A scene that asks for
-the same material later gets the one already loaded.
+// The interface is not part of the scene's picture: it stays sharp over the effects.
+public override void DrawUi(IRenderer ui)
+{
+    Heading.Draw(ui, Font, "POST-PROCESSING", PostProcess.Enabled ? "CONFIRM: OFF   ACTION: PIXELS" : "CONFIRM: ON");
+    // At the bottom of the window, over the floor: clear of the heading and of the lights, whatever the window's size.
+    if (_support.Length > 0) Font.DrawCentered(ui, "NO SHADERS HERE: " + _support, new Vector2(ui.Width / 2f, ui.Height - 12), Color.White);
+}
+```
 
-The passes draw into the canvas, so captures (`--captures`) show them, and the interface a scene draws in `DrawUi`
-stays sharp over them at the window's resolution.
+The chain owns the render targets, textures and materials its effects need, sized to the picture, and the engine
+releases them when the scene leaves the stack. `PostProcess.Enabled = false` (or every effect's `Enabled`) draws the
+scene as it is, at no cost; `PostProcess.Get<Bloom>()` returns an effect to change its values while the game runs.
+
+### Where a chain runs
+
+| Chain | The picture | Resolution | The interface |
+| --- | --- | --- | --- |
+| `Scene.PostProcess` | what that scene's `Draw` draws; transparent where it draws nothing, so scenes under it show | the canvas's | not included |
+| `Game.PostProcess` | the whole canvas: background, every visible scene, the transition, `DrawAboveScenes` | the canvas's | not included |
+| `Game.ScreenPostProcess` | the whole window: the letterbox, the canvas scaled into its frame, the interface over it | the window's | included |
+
+The screen's chain is for what belongs to the screen rather than to the world: a tube's curve and lines, a fade over
+everything, a shader that needs the window's pixels. The example puts a tube over a scene and its widgets:
+
+<!-- code: samples/Examples/Examples/ScreenEffectsExample.cs#screen -->
+```csharp
+public override void Enter()
+{
+    // One line of the tube per row of the canvas, whatever the window's size.
+    _tube.Lines = Game.Height;
+    Game.ScreenPostProcess.Add(_tube).Add(_corners);
+
+    Widgets.Anchor = Anchor.Center;
+    Widgets.Content = new Panel(new Label("THE INTERFACE IS PART\nOF THE SCREEN'S PICTURE"));
+}
+
+// The chain belongs to the game, not to this scene: take out what this scene put in.
+public override void Exit()
+{
+    Game.ScreenPostProcess.Remove(_tube);
+    Game.ScreenPostProcess.Remove(_corners);
+}
+```
+
+The game's two chains belong to the game, so a scene that adds effects to them takes them out when it leaves. While
+the screen's chain is active, captures (`--captures`, screenshots) are the window as it was presented, at the
+window's size. A platform of your own takes part by offering `IScreenEffects`; on one that does not, the chain runs
+on the canvas instead.
+
+A chain of your own does the same for any part of a frame: `chain.Begin(renderer, Game.Graphics)`, the draws, then
+`chain.End(renderer)`; or `chain.Apply(renderer, Game.Graphics, texture, destination)` for a picture that already
+exists (a render target's texture). Dispose a chain of your own when you are done with it, between frames.
+
+### The ready effects
+
+| Effect | What it does | Values |
+| --- | --- | --- |
+| `ColorGrade` | brightness, contrast, saturation and a tint | `Brightness`, `Contrast`, `Saturation` (1 changes nothing; 0 to 16), `Tint` |
+| `Blur` | blurs the picture | `Radius` in pixels (0 to 256) |
+| `Bloom` | adds the blurred bright parts back, so lights glow | `Threshold` (0 to 1), `Strength` (0 to 8), `Radius` (0 to 256) |
+| `Vignette` | darkens towards the corners | `Strength`, `Radius` (0 to 1), `Softness` (0 to 4), `Color` |
+| `Scanlines` | darkens every other line | `Strength` (0 to 1), `Lines` (0 to 4096; 0 is half the picture's height) |
+| `Crt` | a tube: curved glass, lines, colour stripes | `Curvature`, `Scanlines`, `Mask` (0 to 1), `Lines` (as above) |
+| `ShaderEffect` | a pass through a material of your own | the material's parameters; `Prepare` for those that depend on the picture's size |
+
+Every value is kept within its range when it is set: a value beyond it becomes the nearest limit (infinity
+included), and a value that is not a number is ignored, so the effect keeps the value it had.
+
+Pictures are premultiplied, like the canvas, and the effects keep a picture's transparency: a vignette on a scene that
+covers part of the screen darkens that scene only.
+
+### What each effect draws without shaders
+
+Effects are made of the drawing API, so a chain runs everywhere. Shaders run on the `sdl-gpu` device only; on SDL's
+default device and its software renderer, on raylib, in browser builds and on the headless platform, an effect with a
+shader draws a simpler form made of render targets, blend states and linear sampling, or is left out. Each effect
+reports which with `SupportOn(Game.Graphics)`, and `PostProcess.SupportOn` lists the whole chain (the example shows
+it to the player):
+
+| Effect | Where shaders run | Elsewhere |
+| --- | --- | --- |
+| `Vignette`, `Scanlines` | `Full` | `Full`: the same picture, pixel for pixel |
+| `ColorGrade` | `Full` | `Full` with a tint and a brightness only; `Reduced` when `Contrast` or `Saturation` is not 1: those two are left out |
+| `Blur` | `Full`: a Gaussian blur | `Reduced`: the picture halved and enlarged again with linear sampling, a boxier blur of about the same reach |
+| `Bloom` | `Full`: what is brighter than `Threshold`, blurred, added | `Reduced`: the bright parts picked by multiplying the picture by itself (no exact threshold), blurred by halving |
+| `Crt` | `Full` | `Reduced`: its lines only, flat and without stripes; `None` when `Scanlines` is 0 |
+| `ShaderEffect` | `Full` | `None`: the picture passes through unchanged |
+
+### A pass through a shader of your own
+
+`ShaderEffect` runs the picture through a material: the picture is the draw's texture, in slot 0, and the shader's
+output is the new picture. The example's separates red and blue towards the edges:
+
+<!-- code: samples/Examples/Shaders/fringe.frag.hlsl -->
+```hlsl
+// A post-processing pass of the game's own: the red and blue of the picture pulled apart towards the edges, as a cheap
+// lens does. The picture is the draw's texture, in slot 0.
+// SDL_GPU binding rules (fragment stage): textures and samplers in space2, uniform buffers in space3.
+Texture2D<float4> Picture : register(t0, space2);
+SamplerState PictureSampler : register(s0, space2);
+
+cbuffer Fringe : register(b0, space3)
+{
+    float Amount;  // how far apart the colours are at the edge, in texture coordinates
+};
+
+struct Input
+{
+    float2 TexCoord : TEXCOORD0;
+    float4 Color : TEXCOORD1;
+};
+
+float4 main(Input input) : SV_Target0
+{
+    float2 apart = (input.TexCoord - 0.5) * 2.0 * Amount;
+    float4 c = Picture.Sample(PictureSampler, input.TexCoord);
+    c.r = Picture.Sample(PictureSampler, input.TexCoord + apart).r;
+    c.b = Picture.Sample(PictureSampler, input.TexCoord - apart).b;
+    return c * input.Color;
+}
+```
+
+The game owns the material (here an asset scope does); the chain only uses it. Create it in `Load`, or behind a
+loading screen, when it is used during play: reading a shader and creating it on the device takes longer than a frame.
+
+### An effect of your own
+
+An effect derives from `PostEffect`: `SupportOn` says what it draws on a device, and `Apply` receives a `PostPass`
+with the picture so far (`Source`), the renderer, and targets and textures the chain keeps for it between frames:
+
+<!-- code: samples/Examples/Examples/PostProcessExample.cs#effect -->
+```csharp
+/// <summary>An effect written in the game: the picture in large pixels. It needs no shader, so it is the same everywhere.</summary>
+public sealed class Pixelate : PostEffect
+{
+    /// <summary>The side of a large pixel, in pixels of the picture.</summary>
+    public int Size { get; set; } = 4;
+
+    public override PostEffectSupport SupportOn(IGraphicsDevice graphics) => PostEffectSupport.Full;
+
+    protected override void Apply(PostPass pass)
+    {
+        // The picture shrunk into a target of the chain's (linear: each large pixel is the average of what it
+        // covers), then enlarged again with nearest sampling as the new picture.
+        var small = pass.Scratch("small", Math.Max(1, pass.Width / Size), Math.Max(1, pass.Height / Size), TextureFilter.Nearest);
+        pass.Draw(pass.Source, small, DrawState.Opaque.Filtered(TextureFilter.Linear));
+        pass.Replace(small.Texture, TextureFilter.Nearest);
+    }
+}
+```
+
+| `PostPass` | Use |
+| --- | --- |
+| `Source`, `Width`, `Height` | the picture so far, and its size |
+| `Copy(material, tint)` | the picture through a material, texel for texel, as the new picture |
+| `Replace(texture, filter, material, tint)` | another texture, stretched over the picture's size, as the new picture |
+| `BeginOver()` ... `EndOver()` | draw on top of the picture (a glow added, a vignette multiplied in) |
+| `Scratch(name, width, height, filter)` | a render target the chain keeps for this effect, by name and size |
+| `Image(name, version, state, create, filter)` | a texture the chain keeps for this effect, by name and version |
+
+A name belongs to one kind: asking for a texture under the name of one of the effect's targets (or the reverse)
+throws `InvalidOperationException` naming it.
+
+| `Draw(source, target, state, tint)` | one pass: a whole texture over a whole target |
+| `ShadersRun` | whether materials run their shaders on this device |
+
+The passes are part of the frame, so captures (`--captures`) show them.
 
 ## The device under the drawing API
 
@@ -381,7 +542,13 @@ material built from shaders created on the device. None of it is needed for the 
   the four blend states work everywhere, browsers included.
 - Compiling shaders needs Windows ([the tool's page](cli.md#shaders) says why); the compiled files load everywhere.
 - A material is a fragment shader; the vertex stage is the engine's.
-- A scene's passes cover what that scene drew into its targets. The drawing API has no pass over the finished frame of
-  every scene (the canvas is not a texture a draw can read), and none over the window's own composition (the canvas
-  scaled into the window).
-- A pass has one colour target; there is no stencil buffer, no multisampling and no mipmap generation.
+- Effects with a shader draw their simpler form, or nothing, where shaders do not run
+  ([the table above](#what-each-effect-draws-without-shaders)); browser builds are among those places.
+- A scene's chain and `Game.PostProcess` run at the canvas's resolution, before the canvas is scaled to the window,
+  and do not include the interface; `Game.ScreenPostProcess` runs at the window's and includes it. The on-screen
+  touch controls are drawn after every chain.
+- A chain's picture has the size of what it is drawn into. One chain can run on pictures of different sizes, in one
+  frame too: it keeps what it made for each size and releases what no run has used for eight runs
+  (`PostProcess.KeptForRuns`), so a chain runs at most eight times in a frame. Release a chain of your own between
+  frames, like any texture.
+- A pass has one colour target; there is no stencil buffer and no multisampling.

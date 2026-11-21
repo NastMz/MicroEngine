@@ -101,11 +101,28 @@ on a canvas drawn smaller than its size. `Presentation.PrescaleFor` gives the fa
 windows are composed this way, and a capture of the window (`IViewCapture.CaptureScreen`, the headless platform's
 included) samples the same enlargement.
 
-### Filtering: nearest or linear
+### The window stage
+
+`Presentation` decides how the canvas is placed and sampled in the window. What happens to the finished window after
+that is the game's too: `Game.ScreenPostProcess` is a [post-processing chain](#post-processing) that runs on the
+window's picture (the letterbox, the scaled canvas and the UI view over it) at the window's resolution, just before
+it is shown. A final shader is one effect of that chain (`ShaderEffect`, with a material of the game's own); `Crt`,
+`Vignette` and the other ready effects work there as well.
+
+```csharp
+protected override void Load() =>
+    ScreenPostProcess.Add(new Crt { Lines = Height }).Add(new Vignette());   // over everything, UI included
+```
+
+With no enabled effect the window is composed exactly as without the chain. While it is active, captures show the
+window as it was presented. The stage is a capability of the platform (`IScreenEffects`: SDL, raylib and the headless
+platform have it); on a platform without it the chain runs on the canvas.
+
+### Filtering: nearest, linear or with mip levels
 
 Every texture has a `TextureFilter`:
 `Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
-pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
+pixels, and `LinearMipmap` is linear with [mip levels](#mip-levels) for pictures drawn smaller than their size. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
 to every texture and atlas created without a filter of its own; each one can choose:
 
 ```csharp
@@ -118,12 +135,50 @@ var page = Graphics.CreateTexture(image, TextureFilter.Linear);
 Glyph pages of TTF/OTF fonts take their filter from `FontOptions.Filter`; when that is null, they follow the game's
 default like every other texture (the presentation's `DefaultSampler`), and `FontOptions.Pixel` chooses nearest itself. `ScalableFont.Filter`
 changes it later. The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
-neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
-at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
-the size it is drawn at.
+neighbouring sprites never bleed into each other.
+
+#### Mip levels
+
+A linear texture drawn much smaller than its pixels reads only four texels per pixel and skips the rest: thin details
+break up, and the picture shimmers as it moves. A texture created with `TextureFilter.LinearMipmap` also keeps smaller
+copies of itself (each half the size of the one before, down to one pixel: a third more memory in all), and a draw
+that shrinks it samples the copies nearest to the size it is drawn at.
+
+<!-- code: samples/Examples/Examples/MipLevelsExample.cs#textures -->
+```csharp
+public override void Enter()
+{
+    var picture = Picture();
+    _linear = Game.Graphics.CreateTexture(picture, TextureFilter.Linear);
+    // The same call with another filter; from a file it is Assets.Texture("big.png", TextureFilter.LinearMipmap).
+    _levels = Game.Graphics.CreateTexture(picture, TextureFilter.LinearMipmap);
+}
+
+public override void Exit()
+{
+    _linear.Dispose();
+    _levels.Dispose();
+}
+```
+
+- Use it for art drawn well below its size: a camera that zooms out, a large picture on a small canvas, one set of
+  HD art for several canvas sizes. Art drawn at its own size or larger gains nothing from it.
+- The levels are made when the texture is created with that filter, and again whenever its pixels are updated.
+  `Texture.MipLevels` says how many there are (1: the picture alone); `SizeInBytes` counts them. A texture created
+  with another filter has none, and setting `Filter = TextureFilter.LinearMipmap` on it later does not make them.
+- Mip levels need a graphics device that has them: `sdl-gpu`, and raylib on desktop. On SDL's default device and its
+  software renderer, in browser builds and on the headless platform the texture has one level and is sampled as
+  `Linear`: the same code, the picture of a linear texture. There the advice for linear art holds: keep it within
+  about twice the size it is drawn at.
+- On a device with mip levels, a texture that has them is minified through them by every linear draw, including one
+  made under a state with its own sampler; on `sdl-gpu` a nearest draw of it picks the nearest level as well.
+- In an atlas the smallest levels mix neighbouring sprites, since the atlas keeps one pixel of border around each:
+  mip levels suit single pictures and atlases drawn down to about half their size.
 
 `Texture.Update(x, y, width, height, pixels)` replaces a rectangle of a texture (glyph pages use it), and
 `Texture.SizeInBytes` gives its device memory.
+
+
 
 ## `IRenderer`
 
@@ -185,6 +240,7 @@ Every backend draws by the same rules.
   `InvalidOperationException`.
 - A material draws through its shader on a device that runs shaders (`sdl-gpu`) and with its declared fallback on
   every other, the headless platform included; its parameters are checked by name the same way on all of them.
+  `Game.Graphics.SupportsShaders` says which.
 - Captures are opaque (alpha 255) on every backend.
 - Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
 
@@ -192,6 +248,87 @@ Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient`, `DrawNineSlice` (an image stretched to any
 size with its corners kept, from a `NineSlice`) and `Panel` (a bordered UI box from a `PanelStyle`, or its `Image`).
+
+## Draw order
+
+A renderer draws in the order of the calls: what is drawn later covers what was drawn before. A `SortedRenderer`
+removes that dependency for the draws that need it. It is a renderer itself: between `Begin` and `End` it keeps every
+draw with the layer and depth of that moment, and `End` sends them to the real renderer by **layer** (lower first),
+then by **depth** (smaller first, so a larger depth covers), then in the order of the calls.
+
+<!-- code: samples/Examples/Examples/DepthExample.cs#sorted -->
+```csharp
+var world = _sorted.Begin(r);      // a SortedRenderer the scene keeps: draws wait until End
+DrawWorld(world, world);
+_sorted.End();                     // sent by layer, then depth, then the order of the calls
+```
+
+Objects standing on the ground cover each other correctly with the Y of their feet as the depth: the walker goes
+behind the trees below it and in front of those above, wherever the code draws it. Layers separate what never mixes
+(shadows under everything that stands, markers over it):
+
+<!-- code: samples/Examples/Examples/DepthExample.cs#world -->
+```csharp
+/// <summary>The same calls for both pictures; <paramref name="order"/> is null when nothing sorts them.</summary>
+private void DrawWorld(IRenderer r, SortedRenderer? order)
+{
+    // The walker first and the trees after it: in call order every tree would cover the walker.
+    order?.At(layer: 0, depth: Walker.Y);                       // the depth of an object on the ground: its feet
+    r.Draw(_atlas["hero0"], Walker);
+    foreach (var tree in Trees)
+    {
+        order?.At(layer: -1);                                   // shadows: under everything that stands
+        r.FillCircle(tree + new Vector2(0, 1), 9, Color.Black.WithAlpha(0.25f));
+        order?.At(layer: 0, depth: tree.Y);
+        r.FillRect(new RectF(tree.X - 2, tree.Y - 14, 4, 14), Color.Hex("5d275d"));
+        r.FillCircle(tree - new Vector2(0, 22), 13, Color.Hex("257179"));
+        r.FillCircle(tree - new Vector2(4, 26), 5, Color.Hex("38b764"));
+    }
+    order?.At(layer: 1);                                        // over everything, wherever the walker is
+    r.FillTriangle(Walker - new Vector2(3, 24), Walker - new Vector2(-3, 24), Walker - new Vector2(0, 19), Color.Hex("ffcd75"));
+}
+```
+
+- Anything that draws into an `IRenderer` draws into a sorted one: sprites, fonts, tile renderers, particles. Set
+  `Layer` and `Depth` (or `At(layer, depth)`) before the draws they apply to.
+- Each draw keeps the camera, blend mode, clip and states (`PushState`) it was recorded under, whatever position it
+  ends up in. The camera is taken as it is when it is pushed: moving it before `End` does not move the draws already
+  made, exactly as when drawing directly. A block starts with no camera, no clip and normal blending of its own; a camera, a state or a clip the
+  renderer already has stays under it. A block that sets a clip leaves the renderer without one.
+- `Clear`, `PushTarget` and `PopTarget` throw `InvalidOperationException` inside a block: a clear and a change of
+  target have no place in an order. Draw into render targets with the renderer itself, before `Begin` or after `End`.
+- The order is the same on every platform and every run: draws with equal layer and depth keep the order of the calls.
+- Draws that end up next to each other with the same texture and state share a draw call, as always; sorting by depth
+  can separate draws that call order kept together. Keep one `SortedRenderer` per scene and reuse it: it keeps its
+  memory between frames, so a block of the size of an earlier one allocates nothing, states and cameras included.
+
+## Post-processing
+
+A `PostProcess` is a chain of full-screen effects over a picture. A scene's (`Scene.PostProcess`) covers what that
+scene draws; the game's (`Game.PostProcess`) covers the whole canvas; the screen's (`Game.ScreenPostProcess`) covers
+the whole window, interface included, at the window's resolution. Add effects and the engine does the rest: it draws
+into a picture of the right size, runs the effects in order and draws the result.
+
+```csharp
+public override void Enter() =>
+    PostProcess.Add(new Bloom { Threshold = 0.6f, Strength = 1.2f }).Add(new Vignette { Strength = 0.6f });
+```
+
+- The ready effects are `ColorGrade`, `Blur`, `Bloom`, `Vignette`, `Scanlines`, `Crt` and `ShaderEffect` (a pass
+  through a material of the game's own); a game writes others by deriving from `PostEffect`.
+- A chain runs on every platform. Where the device runs no shaders (`Game.Graphics.SupportsShaders` is false: every
+  device but `sdl-gpu`, browser builds included), `Vignette` and `Scanlines` draw the same picture, `ColorGrade`,
+  `Blur`, `Bloom` and `Crt` draw a stated simpler form, and `ShaderEffect` is left out. `effect.SupportOn(Game.Graphics)`
+  answers `Full`, `Reduced` or `None`.
+- A chain with no enabled effect costs nothing. The chain owns the targets its effects need and the engine releases a
+  scene's when the scene leaves the stack and the game's when the game ends.
+- An effect's values are kept within their ranges: one beyond its range becomes the nearest limit, and one that is not
+  a number is ignored.
+- One chain can run on pictures of different sizes; it runs at most eight times in a frame.
+- Post-processing only draws: it is not part of a scripted run's state.
+
+[Post-processing](../guide/render-targets-and-shaders.md#post-processing) has the effects' values, what each draws
+without shaders, and how to write an effect.
 
 ## Art in code: `PixelImage` and `Art`
 
@@ -543,11 +680,12 @@ a 3D renderer:
 
 ## Limitations
 
-- Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback. A material is a fragment
-  shader; there is no stencil buffer, no multisampling, and no pass over the finished frame or the window's composition.
-- Images load as 32-bit RGBA textures without mipmaps. A device texture in another format (a single channel, a
+- Shaders run on the `sdl-gpu` device only; elsewhere a material draws with its fallback and a post-processing effect
+  with a shader draws its simpler form or nothing. A material is a fragment shader; there is no stencil buffer and no
+  multisampling.
+- Images load as 32-bit RGBA textures; mip levels exist on `sdl-gpu` and on raylib on desktop only. A device texture in another format (a single channel, a
   compressed format the device declares) can be created on the device and drawn through `DeviceGraphics.Wrap`.
-- No sprite batching control beyond packing art into atlases; draw order is call order.
+- No sprite batching control beyond packing art into atlases. Draw order is call order unless a `SortedRenderer` orders the draws.
 - Tile maps come from code (ASCII rows) or from the Tiled editor through the optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)); there is no map editor.
 - On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in
   quick succession can, rarely, be ended by a fault inside the driver's own background thread. A game keeps one device

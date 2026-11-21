@@ -32,6 +32,8 @@ public enum CommandKind
     UpdateBuffer,
     /// <summary><see cref="Command.Resource"/> (<see cref="Texture"/>), <see cref="Command.Rect"/> region, payload.</summary>
     UpdateTexture,
+    /// <summary><see cref="Command.Resource"/> (<see cref="Texture"/>): every level below 0 is made from level 0.</summary>
+    GenerateMipmaps,
 }
 
 /// <summary>One validated command, as a backend reads it from <see cref="CommandList.Commands"/>.</summary>
@@ -328,6 +330,22 @@ public sealed class CommandList
             throw new ArgumentException($"expected {TextureFormats.ByteCount(texture.Format, region.Width, region.Height)} bytes of {texture.Format}", nameof(data));
         var (o, l) = Store(data);
         Add(new Command(CommandKind.UpdateTexture, Resource: texture, Rect: region, PayloadOffset: o, PayloadLength: l));
+    }
+
+    /// <summary>
+    /// Makes every mip level of <paramref name="texture"/> below level 0 from level 0, each a filtered half of the one
+    /// before, outside passes. Call it after creating a texture with more than one level and after updating level 0;
+    /// until then the smaller levels hold nothing defined. Only a device that declares
+    /// <see cref="GraphicsFeatures.Mipmaps"/> can create such a texture.
+    /// </summary>
+    /// <exception cref="ArgumentException">The texture has one level, or is a render target's colour texture.</exception>
+    public void GenerateMipmaps(Texture texture)
+    {
+        OutsidePass();
+        Use(texture, nameof(texture));
+        if (texture.Description.MipLevels <= 1) throw new ArgumentException($"'{texture.Name}' has one mip level; create it with TextureDescription.MipLevels > 1", nameof(texture));
+        if (texture.OwnerTarget is not null) throw new ArgumentException($"'{texture.Name}' is a render target's colour texture, which has one level", nameof(texture));
+        Add(new Command(CommandKind.GenerateMipmaps, Resource: texture));
     }
 
     /// <summary>Core, at submit: the list is finished and every resource it references is still alive. Marks it submitted.</summary>

@@ -152,4 +152,5 @@ public sealed class SdlSoftwareDeviceConformance() : SdlDeviceConformance("softw
     protected override GraphicsFeatures ExpectedFeatures => GraphicsFeatures.RenderTargets | GraphicsFeatures.AddressRepeat;
     protected override int CoverageTolerance => 40;
     protected override int BlendTolerance => 2;
+    protected override bool MinificationAverages => true;
 }

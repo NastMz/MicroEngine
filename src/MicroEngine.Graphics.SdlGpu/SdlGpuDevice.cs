@@ -60,7 +60,8 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
 
     /// <summary>The optional features this device declares on every API.</summary>
     public const GraphicsFeatures DeclaredFeatures = GraphicsFeatures.RenderTargets | GraphicsFeatures.AddressRepeat | GraphicsFeatures.AddressMirror
-        | GraphicsFeatures.CustomBlend | GraphicsFeatures.Shaders | GraphicsFeatures.DepthBuffer | GraphicsFeatures.Instancing | GraphicsFeatures.SeparateFilters;
+        | GraphicsFeatures.CustomBlend | GraphicsFeatures.Shaders | GraphicsFeatures.DepthBuffer | GraphicsFeatures.Instancing | GraphicsFeatures.SeparateFilters
+        | GraphicsFeatures.Mipmaps;
 
     internal const SDL_GPUShaderFormat AcceptedFormats =
         SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_DXIL | SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_MSL;
@@ -207,7 +208,10 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
     /// <inheritdoc />
     protected override Texture CreateTextureCore(in TextureDescription description, ReadOnlySpan<byte> initialData)
     {
-        var texture = NewTexture(Native(description.Format)!.Value, SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER, description.Width, description.Height, description.MipLevels);
+        // SDL makes mip levels by drawing each from the one above, so a texture with levels is also a colour target.
+        var usage = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER
+            | (description.MipLevels > 1 ? SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET : 0);
+        var texture = NewTexture(Native(description.Format)!.Value, usage, description.Width, description.Height, description.MipLevels);
         if (!initialData.IsEmpty)
         {
             var cmd = Acquire();
@@ -304,6 +308,10 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
                     if (copy == null) copy = SDL_BeginGPUCopyPass(cmd);
                     if (c.Kind == CommandKind.UpdateBuffer) UploadBuffer(copy, ((GpuBufferObject)c.Resource!).Native, c.First, commands.Payload(c));
                     else UploadTexture(copy, ((GpuTexture)c.Resource!).Native, c.Rect, commands.Payload(c));
+                    break;
+                case CommandKind.GenerateMipmaps:
+                    if (copy != null) { SDL_EndGPUCopyPass(copy); copy = null; }
+                    SDL_GenerateMipmapsForGPUTexture(cmd, ((GpuTexture)c.Resource!).Native);
                     break;
                 case CommandKind.BeginPass:
                 {

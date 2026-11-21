@@ -84,6 +84,18 @@ public long PixelsUploaded { get; }
 
  [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_SupportsShaders"></a> SupportsShaders
+
+False: nothing runs shaders without a graphics device.
+
+```csharp
+public bool SupportsShaders { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_TexturesCreated"></a> TexturesCreated
 
 Number of textures created so far, render targets included.

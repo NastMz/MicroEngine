@@ -169,6 +169,20 @@ public PixelImage Capture()
 
  [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
+### <a id="MicroEngine_Graphics_DeviceCanvas_CapturePresented"></a> CapturePresented\(\)
+
+The window as the last frame presented it through a post-processing chain
+([Compose](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_)), opaque, at the window's size; null when the
+last frame was presented without one.
+
+```csharp
+public PixelImage? CapturePresented()
+```
+
+#### Returns
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+
 ### <a id="MicroEngine_Graphics_DeviceCanvas_CaptureUi"></a> CaptureUi\(\)
 
 The UI view of the last frame as stored (premultiplied, transparent where nothing was drawn), or null.
@@ -200,6 +214,31 @@ public bool Compose(Presentation presentation, RectF frame, Color letterbox)
 `frame` [RectF](MicroEngine.RectF.md)
 
 `letterbox` [Color](MicroEngine.Color.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_MicroEngine_Graphics_PostProcess_"></a> Compose\(Presentation, RectF, Color, PostProcess?\)
+
+[Compose](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_) through a post-processing chain: while <code class="paramref">effects</code>
+is active, the window's picture (letterbox, canvas, UI view) is drawn off screen at the window's size, run through
+the chain, and the result is what the window shows; [CapturePresented](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_CapturePresented) then returns it. With a null
+or inactive chain it is the plain composition.
+
+```csharp
+public bool Compose(Presentation presentation, RectF frame, Color letterbox, PostProcess? effects)
+```
+
+#### Parameters
+
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)
+
+`frame` [RectF](MicroEngine.RectF.md)
+
+`letterbox` [Color](MicroEngine.Color.md)
+
+`effects` [PostProcess](MicroEngine.Graphics.PostProcess.md)?
 
 #### Returns
 

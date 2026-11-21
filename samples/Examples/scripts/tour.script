@@ -228,4 +228,17 @@
 4560 capture 37-localization-ar.png
 4566 press confirm
 4580 press pause
-4594 quit
+4594 press down
+4604 press confirm
+4644 hold down 50
+4710 capture 38-depth.png
+4716 press pause
+4730 press down
+4740 press confirm
+4800 capture 39-screen-effects.png
+4806 press pause
+4820 press down
+4830 press confirm
+4890 capture 40-mip-levels.png
+4896 press pause
+4910 quit

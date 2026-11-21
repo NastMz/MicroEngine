@@ -53,13 +53,16 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Light behind walls (targets)", g => new OccludedLightExample()),
         ("Masks (render targets)", g => new MaskExample()),
         ("Water (a shader of your own)", g => new WaterExample()),
-        ("Post-processing (shader passes)", g => new PostProcessExample()),
+        ("Post-processing (a chain of effects)", g => new PostProcessExample()),
         ("Nearby objects (spatial index)", g => new NearbyExample()),
         ("Day and night (a scene system)", g => new SystemsExample()),
         ("A guard (state machine)", g => new StateMachineExample()),
         ("Mouse actions (click, wheel, drag)", g => new MouseActionsExample()),
         ("Effects on buses (reverb, ducking)", g => new MixExample()),
         ("Languages (localization)", g => new LocalizationExample()),
+        ("Draw order (depth and layers)", g => new DepthExample()),
+        ("Screen effects (the whole window)", g => new ScreenEffectsExample()),
+        ("Small pictures (mip levels)", g => new MipLevelsExample()),
     ];
 
     /// <summary>The id the examples' saves have always been kept under; without it, it would be the project's application id.</summary>
@@ -86,7 +89,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
     {
         // The shader examples' materials, loaded before play: reading a shader and creating it on the device takes
         // longer than a frame. The scenes ask for them again and get these.
-        foreach (var shader in new[] { "water", "glow", "combine" }) Assets.Material($"shaders/{shader}.frag.shader");
+        foreach (var shader in new[] { "water", "fringe" }) Assets.Material($"shaders/{shader}.frag.shader");
         Scenes.Push(new MenuScene());
     }
 }

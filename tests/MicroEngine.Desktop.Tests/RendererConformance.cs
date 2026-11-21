@@ -671,6 +671,177 @@ public abstract class RendererConformance
         });
         Assert.IsEmpty(errors, string.Join("; ", errors));
     }
+
+    // ---- Post-processing -----------------------------------------------------------------------------------------------
+
+    /// <summary>A capture kept for a person to look at when MICROENGINE_KEEP_CAPTURES names a folder; nothing otherwise.</summary>
+    private void Keep(PixelImage frame, string name)
+    {
+        if (Environment.GetEnvironmentVariable("MICROENGINE_KEEP_CAPTURES") is not { Length: > 0 } folder) return;
+        Directory.CreateDirectory(folder);
+        File.WriteAllBytes(Path.Combine(folder, $"{GetType().Name}-{name}.png"), PngEncoder.Encode(frame.ToRgba(), frame.Width, frame.Height, 4));
+    }
+
+    [TestMethod]
+    public void TheEffectsMadeOfBlendingDrawTheSameOnEveryRenderer()
+    {
+        // A white picture through a tint, a vignette and scanlines: none of them needs a shader.
+        var tint = new Color(255, 200, 100);
+        var chain = new PostProcess()
+            .Add(new ColorGrade { Tint = tint })
+            .Add(new Vignette { Strength = 1f, Radius = 0.3f, Softness = 0.5f })
+            .Add(new Scanlines { Strength = 0.5f });
+        var frame = Render(64, 64, (r, graphics) =>
+        {
+            foreach (var (effect, support) in chain.SupportOn(graphics))
+                Assert.AreEqual(PostEffectSupport.Full, support, $"{effect.GetType().Name} is whole on every device");
+            Assert.IsTrue(chain.Begin(r, graphics));
+            r.FillRect(new RectF(8, 0, 48, 64), Color.White);        // the picture: a white band; the rest of it is transparent
+            chain.End(r);
+        });
+        Keep(frame, "blending-effects");
+        int tolerance = Allowed.HasFlag(Variation.Quantization) ? 2 : 1;   // two blends on top of each other
+        void Near(Color expected, int x, int y, string what)
+        {
+            var c = frame[x, y];
+            Assert.IsTrue(Math.Abs(c.R - expected.R) <= tolerance && Math.Abs(c.G - expected.G) <= tolerance && Math.Abs(c.B - expected.B) <= tolerance,
+                $"{what}: pixel ({x},{y}) is {Rgb(c)}, expected {Rgb(expected)} (±{tolerance})");
+        }
+        Near(tint, 32, 32, "the centre, on a bright row: the tint alone");
+        Near(new Color(128, 100, 50), 32, 33, "the centre, on a dark row: half of it");
+        Near(Background, 2, 32, "where the picture is transparent the canvas under it shows");
+        var corner = frame[9, 0];
+        Assert.IsTrue(corner.R + corner.G + corner.B < 60, $"the vignette darkens the corner of the band: {Rgb(corner)}");
+        Assert.IsTrue(frame[32, 8].R < frame[32, 20].R, "and darkens gradually towards it");
+        var mirrored = frame[54, 0];
+        Assert.IsTrue(Math.Abs(corner.R - mirrored.R) <= 2 * tolerance, $"the same on both sides: {Rgb(corner)} and {Rgb(mirrored)}");
+    }
+
+    [TestMethod]
+    public void EffectsWithAShaderDrawItWhereShadersRunAndTheirStatedSimplerFormElsewhere()
+    {
+        var grade = new PostProcess().Add(new ColorGrade { Saturation = 0f });
+        var blur = new PostProcess().Add(new Blur { Radius = 4 });
+        var crt = new PostProcess().Add(new Crt { Curvature = 0.4f, Scanlines = 0f, Mask = 0f });
+        var bloom = new PostProcess().Add(new Bloom { Threshold = 0.6f, Strength = 1f, Radius = 4 });
+        bool shaders = false;
+        var frame = Render(128, 32, (r, graphics) =>
+        {
+            shaders = graphics.SupportsShaders;
+            if (RunsShaders is { } runs) Assert.AreEqual(runs, shaders, "whether this backend's device runs shaders");
+            var whole = shaders ? PostEffectSupport.Full : PostEffectSupport.Reduced;
+            Assert.AreEqual(whole, grade.Effects[0].SupportOn(graphics));
+            Assert.AreEqual(whole, blur.Effects[0].SupportOn(graphics));
+            Assert.AreEqual(whole, bloom.Effects[0].SupportOn(graphics));
+            Assert.AreEqual(shaders ? PostEffectSupport.Full : PostEffectSupport.None, crt.Effects[0].SupportOn(graphics), "a tube without lines has nothing to draw without its shader");
+
+            // Four pictures of 32 × 32, each through one chain, side by side.
+            var red = graphics.CreateRenderTarget(32, 32, TextureFilter.Nearest);
+            r.PushTarget(red);
+            r.Clear(new Color(255, 0, 0));
+            r.PopTarget();
+            grade.Apply(r, graphics, red.Texture, new RectF(0, 0, 32, 32), opaque: true);
+
+            var square = graphics.CreateRenderTarget(32, 32, TextureFilter.Nearest);
+            r.PushTarget(square);
+            r.Clear(Color.Black);
+            r.FillRect(new RectF(12, 12, 8, 8), Color.White);
+            r.PopTarget();
+            blur.Apply(r, graphics, square.Texture, new RectF(32, 0, 32, 32), opaque: true);
+
+            var white = graphics.CreateRenderTarget(32, 32, TextureFilter.Nearest);
+            r.PushTarget(white);
+            r.Clear(Color.White);
+            r.PopTarget();
+            crt.Apply(r, graphics, white.Texture, new RectF(64, 0, 32, 32), opaque: true);
+
+            bloom.Apply(r, graphics, square.Texture, new RectF(96, 0, 32, 32), opaque: true);
+        });
+        Keep(frame, "shader-effects");
+
+        // Saturation 0: grey where the shader runs (red's luminance, 0.2126), the picture as it was elsewhere.
+        var graded = frame[16, 16];
+        if (shaders) Assert.IsTrue(Math.Abs(graded.R - 54) <= 2 && graded.R == graded.G && graded.G == graded.B, $"grey of red's brightness: {Rgb(graded)}");
+        else AssertColour(frame, 16, 16, new Color(255, 0, 0), "saturation is left out without a shader");
+
+        // The blur, either form: the square's light reaches outside it, its middle stays bright, far away stays black.
+        Assert.IsTrue(frame[32 + 16, 16].R > 120, $"the middle of the blurred square: {Rgb(frame[48, 16])}");
+        Assert.IsTrue(frame[32 + 10, 16].R is > 4 and < 200, $"light outside the square's edge: {Rgb(frame[42, 16])}");
+        Assert.IsTrue(frame[32 + 13, 16].R < 250, $"the edge is no longer white: {Rgb(frame[45, 16])}");
+        Assert.IsTrue(frame[32 + 1, 1].R <= 2, $"nothing far from it: {Rgb(frame[33, 1])}");
+        Assert.IsTrue(Math.Abs(frame[32 + 10, 16].R - frame[32 + 21, 16].R) <= 12, "the same on both sides of the square");
+
+        // The tube: its corners are curved away to black where the shader runs; the picture is flat elsewhere.
+        if (shaders) Assert.IsTrue(frame[64, 0].R < 8 && frame[64 + 31, 31].R < 8, $"the corners are outside the curved picture: {Rgb(frame[64, 0])}");
+        else AssertColour(frame, 64, 0, Color.White, "flat without a shader");
+        AssertColour(frame, 64 + 16, 16, Color.White, "the middle of the tube is the picture");
+
+        // The bloom: the light stays white and glows around itself.
+        AssertColour(frame, 96 + 16, 16, Color.White, "the light itself");
+        Assert.IsTrue(frame[96 + 10, 16].R > 6, $"a glow around the light: {Rgb(frame[106, 16])}");
+        Assert.IsTrue(frame[96 + 1, 1].R <= 2, "and none far from it");
+    }
+
+    [TestMethod]
+    public void AGamesOwnShaderRunsAsAPassWhereShadersRunAndIsLeftOutElsewhere()
+    {
+        PostProcess? chain = null;
+        bool shaders = false;
+        var frame = Render(16, 16, (r, graphics) =>
+        {
+            shaders = graphics.SupportsShaders;
+            if (chain is null)
+            {
+                var gray = graphics.CreateMaterial(MicroEngine.Conformance.Graphics.ShaderFiles.Compiled("grayscale.frag"), MaterialFallback.Hide);
+                gray.Set("Amount", 1f);
+                chain = new PostProcess().Add(new ShaderEffect(gray));
+            }
+            Assert.AreEqual(shaders ? PostEffectSupport.Full : PostEffectSupport.None, chain.Effects[0].SupportOn(graphics));
+            chain.Begin(r, graphics, Red);
+            chain.End(r, opaque: true);
+        });
+        var c = frame[8, 8];
+        if (shaders) Assert.IsTrue(c.R == c.G && c.G == c.B && c.R is > 20 and < 240, $"the picture through the game's shader: {Rgb(c)}");
+        else AssertColour(frame, 8, 8, Red, "the picture as it was, whatever the material's fallback");
+    }
+
+    // ---- Mip levels ----------------------------------------------------------------------------------------------------
+
+    /// <summary>Whether this backend's device keeps mip levels for a texture created with <see cref="TextureFilter.LinearMipmap"/>; null does not check.</summary>
+    protected virtual bool? HasMipLevels => null;
+
+    [TestMethod]
+    public void ATextureWithMipLevelsIsSmoothWhenItIsDrawnSmallWhereTheDeviceHasThemAndLinearElsewhere()
+    {
+        // A 64 × 64 checkerboard of single pixels drawn at an eighth of its size, placed so that every canvas pixel's
+        // centre falls on the centre of a texel of the same colour: without levels the picture is that one colour.
+        var board = new PixelImage(64, 64);
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++) board[x, y] = ((x + y) & 1) == 0 ? Color.White : Color.Black;
+        Texture? levels = null, linear = null;
+        var frame = Render(24, 8, (r, graphics) =>
+        {
+            levels ??= graphics.CreateTexture(board, TextureFilter.LinearMipmap);
+            linear ??= graphics.CreateTexture(board, TextureFilter.Linear);
+            r.DrawStretched(levels, levels.Bounds, new RectF(-5 / 16f, -5 / 16f, 8, 8), Color.White);
+            r.DrawStretched(linear, linear.Bounds, new RectF(12 - 5 / 16f, -5 / 16f, 8, 8), Color.White);
+        });
+        Keep(frame, "mip-levels");
+        Assert.AreEqual(1, linear!.MipLevels, "a linear texture has the picture alone");
+        if (HasMipLevels is { } has) Assert.AreEqual(has, levels!.MipLevels > 1, $"whether this backend's device keeps mip levels ({levels.MipLevels})");
+        Assert.IsTrue(levels!.MipLevels is 1 or 7, $"a 64-pixel texture has seven levels or one: {levels.MipLevels}");
+        Assert.AreEqual(TextureFilter.LinearMipmap, levels.Filter);
+        Assert.IsTrue(levels.SizeInBytes >= linear.SizeInBytes, "the levels are counted in the texture's memory");
+        if (levels.MipLevels > 1)
+        {
+            Assert.IsTrue(levels.SizeInBytes > linear.SizeInBytes);
+            for (int x = 1; x < 7; x++)
+                Assert.IsTrue(Math.Abs(frame[x, 4].R - 128) <= 8, $"with levels: the average of black and white at x={x}, got {frame[x, 4].R}");
+        }
+        else if (!Allowed.HasFlag(Variation.ShapeCoverage))    // the software renderer shrinks with an averaging scaler
+            for (int x = 1; x < 7; x++)
+                Assert.AreEqual(frame[12 + x, 4], frame[x, 4], $"without levels: the same picture as a linear texture (x={x})");
+    }
 }
 
 /// <summary>The blend equations of the contract on 8-bit colours (straight alpha, results rounded to nearest).</summary>

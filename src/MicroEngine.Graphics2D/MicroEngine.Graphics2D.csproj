@@ -25,6 +25,11 @@
   <ItemGroup>
     <EmbeddedResource Include="../MicroEngine.Graphics.SdlGpu/Shaders/compiled/sprite.vert.shader" LogicalName="builtin/sprite.vert.shader" Link="Shaders/sprite.vert.shader" />
   </ItemGroup>
+  <!-- The fragment shaders of the ready post-processing effects (PostShaders): HLSL in Shaders/, compiled offline with
+       the microengine tool's shaders command (source: this folder; out: Shaders/compiled). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Shaders/compiled/*.shader" LogicalName="builtin/%(Filename)%(Extension)" />
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine" />
     <InternalsVisibleTo Include="MicroEngine.Tests" />
