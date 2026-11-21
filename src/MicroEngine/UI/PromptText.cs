@@ -24,10 +24,12 @@ public sealed record PromptGlyphStyle(Color Cap, Color CapBorder, Color CapText)
 /// Draws text with action prompts as glyphs: <c>"Press {attack} to swing"</c> shows a key cap with Z on a keyboard, a
 /// green A on an Xbox pad, a × button on a PlayStation pad and the touch button's label in a ring on a phone. Text that
 /// does not name an action is drawn as with <see cref="BitmapFont.Draw"/>. Glyphs are as tall as a line of the font.
+/// The overloads taking a <see cref="BitmapFont"/> draw the built-in font's nine-pixel glyphs; those taking any
+/// <see cref="IFont"/> size the glyphs by the font's line height, for scalable and shaped fonts.
 /// </summary>
 public static class PromptText
 {
-    /// <summary>Width of <paramref name="template"/> drawn by <see cref="Draw"/>, in pixels (one line).</summary>
+    /// <summary>Width of <paramref name="template"/> drawn by <c>Draw</c>, in pixels (one line).</summary>
     public static int Measure(BitmapFont font, ActionPrompts prompts, string template)
     {
         int width = 0;
@@ -140,5 +142,131 @@ public static class PromptText
         r.FillCircle(new Vector2(box.X + radius, box.Y + radius), radius - 1, fill);
         r.FillCircle(new Vector2(box.Right - radius, box.Y + radius), radius - 1, fill);
         r.FillRect(new RectF(box.X + radius, box.Y + 1, box.Width - 2 * radius, box.Height - 2), fill);
+    }
+
+    // ---- any font
+
+    /// <summary>
+    /// Width of <paramref name="template"/> drawn by <see cref="Draw(IRenderer, IFont, ActionPrompts, string, Vector2, Color, Color?, PromptGlyphStyle?, bool)"/>
+    /// with any font (a scalable or shaped font at a size), in the font's units (one line).
+    /// </summary>
+    public static float Measure(IFont font, ActionPrompts prompts, string template)
+    {
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(prompts);
+        float width = 0, gap = Unit(font);
+        foreach (var (text, prompt) in prompts.Split(template))
+            width += prompt is { } p ? GlyphWidth(font, p) + 2 * gap : font.MeasureWidth(text);
+        return width;
+    }
+
+    /// <summary>
+    /// Draws one line of <paramref name="template"/> with any font, its top-left at <paramref name="position"/>: the
+    /// text and the labels of the glyphs in <paramref name="font"/>, the glyphs as tall as a line of it. Use it with
+    /// the font of the game's language (a scalable font, or a shaped one for Arabic and Hebrew).
+    /// </summary>
+    /// <param name="r">The renderer.</param>
+    /// <param name="font">The font of the text and of the glyph labels.</param>
+    /// <param name="prompts">Resolves the actions (<see cref="Core.Game.Prompts"/>).</param>
+    /// <param name="template">Text with <c>{action}</c> names (see <see cref="ActionPrompts.Format"/>).</param>
+    /// <param name="position">Top-left of the line.</param>
+    /// <param name="color">Colour of the plain text.</param>
+    /// <param name="shadow">A shadow under the plain text; null draws none.</param>
+    /// <param name="style">Glyph colours (<see cref="PromptGlyphStyle.Default"/> when null).</param>
+    /// <param name="rightToLeft">
+    /// Whether the pieces of the line follow each other from the right (a right-to-left language,
+    /// <c>Game.Localization.RightToLeft</c>): the first piece ends at the line's right edge. The line takes the same
+    /// width either way.
+    /// </param>
+    public static void Draw(IRenderer r, IFont font, ActionPrompts prompts, string template, Vector2 position, Color color, Color? shadow = null, PromptGlyphStyle? style = null, bool rightToLeft = false)
+    {
+        ArgumentNullException.ThrowIfNull(r);
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(prompts);
+        float gap = Unit(font), y = MathF.Round(position.Y);
+        float x = MathF.Round(position.X) + (rightToLeft ? Measure(font, prompts, template) : 0);
+        foreach (var (text, prompt) in prompts.Split(template))
+        {
+            float width = prompt is { } glyph ? GlyphWidth(font, glyph) + 2 * gap : font.MeasureWidth(text);
+            float left = rightToLeft ? x - width : x;
+            if (prompt is { } p) DrawGlyph(r, font, p, new Vector2(left + gap, y), style);
+            else if (shadow is { } s) font.DrawShadowed(r, text, new Vector2(left, y), color, s, new Vector2(gap));
+            else font.Draw(r, text, new Vector2(left, y), color);
+            x += rightToLeft ? -width : width;
+        }
+    }
+
+    /// <summary>Draws <paramref name="template"/> with any font, centred horizontally on <paramref name="centerX"/>.</summary>
+    public static void DrawCentered(IRenderer r, IFont font, ActionPrompts prompts, string template, float centerX, float y, Color color, Color? shadow = null, PromptGlyphStyle? style = null, bool rightToLeft = false)
+        => Draw(r, font, prompts, template, new Vector2(MathF.Round(centerX - Measure(font, prompts, template) / 2f), y), color, shadow, style, rightToLeft);
+
+    /// <summary>A tenth of the font's line: the outline of a glyph and the space around it.</summary>
+    private static float Unit(IFont font) => MathF.Max(1, MathF.Round(font.LineHeight / 10f));
+
+    /// <summary>Width of one prompt's glyph with any font: a label's text, a round button or a one-letter cap as wide as a line is tall, else the text with a margin.</summary>
+    public static float GlyphWidth(IFont font, ActionPrompt prompt)
+    {
+        ArgumentNullException.ThrowIfNull(font);
+        float height = MathF.Round(font.LineHeight);
+        return prompt.Kind switch
+        {
+            PromptKind.Label => font.MeasureWidth(prompt.Text),
+            PromptKind.PadButton when IsRound(prompt) => height,
+            _ => MathF.Max(height, MathF.Ceiling(font.MeasureWidth(prompt.Text) + height / 2)),
+        };
+    }
+
+    /// <summary>
+    /// Draws one prompt with any font, its top-left at <paramref name="position"/>, as tall as a line of the font: a key
+    /// cap, a round gamepad button, a pill, a ring for a touch control, plain text for a label.
+    /// </summary>
+    public static void DrawGlyph(IRenderer r, IFont font, ActionPrompt prompt, Vector2 position, PromptGlyphStyle? style = null)
+    {
+        ArgumentNullException.ThrowIfNull(r);
+        ArgumentNullException.ThrowIfNull(font);
+        var s = style ?? PromptGlyphStyle.Default;
+        float w = GlyphWidth(font, prompt), h = MathF.Round(font.LineHeight), u = Unit(font);
+        var box = new RectF(position.X, position.Y, w, h);
+        var textPos = new Vector2(MathF.Round(box.X + (w - font.MeasureWidth(prompt.Text)) / 2f), position.Y);
+        switch (prompt.Kind)
+        {
+            case PromptKind.Key or PromptKind.Pointer:
+                r.FillRect(box, s.CapBorder);
+                r.FillRect(new RectF(box.X + u, box.Y + u, w - 2 * u, h - 2 * u), s.Cap);
+                r.FillRect(new RectF(box.X + u, box.Bottom - 2 * u, w - 2 * u, u), Color.Lerp(s.Cap, s.CapBorder, 0.35f));
+                font.Draw(r, prompt.Text, textPos, s.CapText);
+                break;
+            case PromptKind.PadButton when IsRound(prompt):
+            {
+                var center = new Vector2(box.X + h / 2, box.Y + h / 2);
+                var fill = s.ColoredFaceButtons ? FaceColor(prompt) ?? s.Cap : s.Cap;
+                r.FillCircle(center, h / 2, s.CapBorder);
+                r.FillCircle(center, h / 2 - u, fill);
+                font.Draw(r, prompt.Text, textPos, fill == s.Cap ? s.CapText : Color.White);
+                break;
+            }
+            case PromptKind.PadButton or PromptKind.PadAxis:
+                Pill(r, box, s.CapBorder, s.Cap, u);
+                font.Draw(r, prompt.Text, textPos, s.CapText);
+                break;
+            case PromptKind.Touch:
+                Pill(r, box, s.Cap, s.CapBorder, u);
+                font.Draw(r, prompt.Text, textPos, s.Cap);
+                break;
+            default:
+                font.Draw(r, prompt.Text, position, s.Cap);
+                break;
+        }
+    }
+
+    private static void Pill(IRenderer r, RectF box, Color outline, Color fill, float border)
+    {
+        float radius = box.Height / 2f;
+        r.FillCircle(new Vector2(box.X + radius, box.Y + radius), radius, outline);
+        r.FillCircle(new Vector2(box.Right - radius, box.Y + radius), radius, outline);
+        r.FillRect(new RectF(box.X + radius, box.Y, box.Width - 2 * radius, box.Height), outline);
+        r.FillCircle(new Vector2(box.X + radius, box.Y + radius), radius - border, fill);
+        r.FillCircle(new Vector2(box.Right - radius, box.Y + radius), radius - border, fill);
+        r.FillRect(new RectF(box.X + radius, box.Y + border, box.Width - 2 * radius, box.Height - 2 * border), fill);
     }
 }

@@ -85,6 +85,7 @@ const guidePages = [
   { source: 'docs/guide/large-worlds.md', slug: 'docs/large-worlds', group: 'manual', label: 'Large worlds and nearby objects' },
   { source: 'docs/guide/entity-component-systems.md', slug: 'docs/entity-component-systems', group: 'manual', label: 'Entity Component Systems' },
   { source: 'docs/manual/ui.md', slug: 'docs/manual/ui', group: 'manual', label: 'UI widgets' },
+  { source: 'docs/manual/localization.md', slug: 'docs/manual/localization', group: 'manual', label: 'Localization' },
   { source: 'docs/manual/persistence.md', slug: 'docs/manual/persistence', group: 'manual', label: 'Saving data' },
   { source: 'docs/manual/achievements.md', slug: 'docs/manual/achievements', group: 'manual', label: 'Achievements' },
   { source: 'docs/examples/testing.md', slug: 'docs/examples/testing', group: 'manual', label: 'Testing your game' },

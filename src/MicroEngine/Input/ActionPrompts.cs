@@ -81,8 +81,49 @@ public sealed class ActionPrompts
     /// </summary>
     public IKeyLabels? KeyLabels { get; set; }
 
-    /// <summary>What a key cap shows on the player's keyboard: the layout's label (<see cref="KeyLabels"/>), else <see cref="KeyName"/>.</summary>
-    public string KeyText(Key key) => KeyLabels?.KeyLabel(key) is { Length: > 0 } label ? label : KeyName(key);
+    /// <summary>
+    /// What a key cap shows on the player's keyboard: the layout's label (<see cref="KeyLabels"/>), else
+    /// <see cref="KeyName"/> in the player's language (<see cref="Name"/>).
+    /// </summary>
+    public string KeyText(Key key) => KeyLabels?.KeyLabel(key) is { Length: > 0 } label ? label : Name(KeyName(key));
+
+    /// <summary>
+    /// Translates the names the engine gives keys and controls ("Space", "Enter", "Shift", "D-pad", "Stick", "LMB",
+    /// "Wheel", "Start"): it receives the English name and returns the name to show, or null to keep it. The game's
+    /// localization sets it, so a string table translates a name with the key <c>prompt.</c> followed by the English
+    /// name (<c>"prompt.Space": "Espacio"</c>). Call <see cref="Invalidate"/> when what it returns changes.
+    /// </summary>
+    public Func<string, string?>? Names { get; set; }
+
+    private readonly Dictionary<string, string> _names = [];
+
+    /// <summary>
+    /// The name of a key or control in the player's language: what <see cref="Names"/> gives for
+    /// <paramref name="english"/>, else for each of its words ("Num Enter", "Mouse 4", "Wheel ↑"), else the English name.
+    /// </summary>
+    public string Name(string english)
+    {
+        ArgumentNullException.ThrowIfNull(english);
+        if (Names is not { } names) return english;
+        if (_names.TryGetValue(english, out var known)) return known;
+        string? name = names(english);
+        if (name is null && english.Contains(' '))
+        {
+            var words = english.Split(' ');
+            bool any = false;
+            for (int i = 0; i < words.Length; i++)
+                if (words[i].Length > 1 && names(words[i]) is { } word) { words[i] = word; any = true; }
+            if (any) name = string.Join(' ', words);
+        }
+        return _names[english] = name ?? english;
+    }
+
+    /// <summary>Says that the text of prompts may have changed for a reason of the game's own (another language, labels of its own): moves <see cref="Version"/>.</summary>
+    public void Invalidate()
+    {
+        _names.Clear();
+        _version++;
+    }
 
     /// <summary>Forces prompts for one device (a "show keyboard controls" option, tests); null follows the player.</summary>
     public InputDevice? Override { get; set; }
@@ -157,14 +198,14 @@ public sealed class ActionPrompts
             case InputDevice.Gamepad:
                 var style = PadStyle;
                 foreach (var b in bindings?.Buttons ?? [])
-                    list.Add(new ActionPrompt(action, d, PromptKind.PadButton, ButtonName(b, style)) { Button = b, PadStyle = style });
+                    list.Add(new ActionPrompt(action, d, PromptKind.PadButton, Name(ButtonName(b, style))) { Button = b, PadStyle = style });
                 if (bindings?.Stick is { } stick and not InputMap.StickDirection.None)
                     list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, "L" + Arrow(stick)) { PadStyle = style });
                 foreach (var c in bindings?.Controls ?? [])
                     if (c is { Kind: InputControlKind.Stick, Stick: PadStick.Right })
                         list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, "R" + Arrow(c.Direction)) { PadStyle = style });
                 foreach (var (axis, positive) in bindings?.Axes ?? [])
-                    list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, AxisName(axis, positive, style)) { PadStyle = style });
+                    list.Add(new ActionPrompt(action, d, PromptKind.PadAxis, Name(AxisName(axis, positive, style))) { PadStyle = style });
                 break;
             case InputDevice.Touch:
                 if (_touch is null) break;
@@ -193,7 +234,7 @@ public sealed class ActionPrompts
                 // The mouse's controls after the keys: "E / RMB".
                 foreach (var c in bindings?.Controls ?? [])
                     if (PointerNames.Of(c) is { } name)
-                        list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Pointer, name) { Pointer = c });
+                        list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Pointer, Name(name)) { Pointer = c });
                 break;
         }
         return list;
@@ -245,15 +286,15 @@ public sealed class ActionPrompts
             case InputDevice.Gamepad:
             {
                 var all = actions.Select(a => _input.GetBindings(a)).ToList();
-                if (all.All(b => b is { Buttons.Count: > 0 } && b.Buttons.Any(x => x is >= PadButton.DPadUp and <= PadButton.DPadRight))) return "D-pad";
-                if (all.All(b => b is { Stick: not InputMap.StickDirection.None })) return "Stick";
+                if (all.All(b => b is { Buttons.Count: > 0 } && b.Buttons.Any(x => x is >= PadButton.DPadUp and <= PadButton.DPadRight))) return Name("D-pad");
+                if (all.All(b => b is { Stick: not InputMap.StickDirection.None })) return Name("Stick");
                 break;
             }
             case InputDevice.Touch when _touch is not null:
             {
                 var control = _touch.Layout.Controls.FirstOrDefault(c => c is TouchDPad or TouchStick && actions.All(a => All(a, d).Any(p => p.Control == c.Id)));
-                if (control is TouchDPad) return "D-pad";
-                if (control is TouchStick) return "Stick";
+                if (control is TouchDPad) return Name("D-pad");
+                if (control is TouchStick) return Name("Stick");
                 break;
             }
         }

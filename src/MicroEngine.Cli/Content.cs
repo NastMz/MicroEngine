@@ -6,6 +6,7 @@ using MicroEngine.Aseprite;
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Graphics.Devices;
+using MicroEngine.Localization;
 
 namespace MicroEngine.Cli;
 
@@ -193,7 +194,105 @@ public static class ContentTool
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Error($"cannot be read ({e.Message})."); }
         }
+        CheckStrings(contentDir, files, set, issues);
         return new ContentReport(files.Count, issues);
+    }
+
+    /// <summary>
+    /// The string tables of the content (<c>*.strings.json</c>, <c>*.strings.csv</c>), read and compared as the game
+    /// will use them: tables that cannot be read, keys a language lacks, values and plural forms that disagree
+    /// (<see cref="StringTableChecks"/>), fonts a table names that are missing or lack characters its texts show, and
+    /// variants of files per language that the game would never find.
+    /// </summary>
+    private static void CheckStrings(string contentDir, IReadOnlyList<string> files, HashSet<string> set, List<ContentIssue> issues)
+    {
+        var tables = new List<(string File, StringTableData Table)>();
+        foreach (var path in files)
+        {
+            if (!StringTables.IsTable(path)) continue;
+            try
+            {
+                string text = File.ReadAllText(System.IO.Path.Combine(contentDir, path));
+                if (path.EndsWith(StringTables.JsonExtension, StringComparison.OrdinalIgnoreCase) && StringTables.LanguageOf(path) is null)
+                    issues.Add(new ContentIssue(true, path, $"a JSON string table is named by its language tag (en{StringTables.JsonExtension}, pt-BR{StringTables.JsonExtension}), and this name is not one: the game refuses to load it. Rename it, or put texts shared by several languages in a {StringTables.CsvExtension} file."));
+                else if (StringTables.LanguageOf(path) is { } language) tables.Add((path, StringTables.ParseJson(language, text)));
+                else foreach (var table in StringTables.ParseCsv(text)) tables.Add((path, table));
+            }
+            catch (FormatException e) { issues.Add(new ContentIssue(true, path, $"not a string table the engine reads: {e.Message}")); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { issues.Add(new ContentIssue(true, path, $"cannot be read ({e.Message}).")); }
+        }
+        if (tables.Count == 0) return;
+
+        // A finding belongs to the file that holds the key in that language, else to the language's largest table.
+        string FileOf(string language, string? key) =>
+            tables.FirstOrDefault(t => LanguageTag.Same(t.Table.Language, language) && key is not null && t.Table.Entries.ContainsKey(key)).File
+            ?? tables.Where(t => LanguageTag.Same(t.Table.Language, language)).MaxBy(t => t.Table.Entries.Count).File;
+
+        foreach (var issue in StringTableChecks.Check(tables.Select(t => t.Table)))
+            issues.Add(new ContentIssue(issue.Error, FileOf(issue.Language, issue.Key), issue.Key is null ? issue.Message : $"'{issue.Key}': {issue.Message}"));
+
+        // Fonts: each one a table names must exist, and together they must have the characters the language shows.
+        var coverage = new Dictionary<string, FontCoverage?>(StringComparer.Ordinal);
+        foreach (var language in tables.Select(t => t.Table.Language).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var own = tables.Where(t => LanguageTag.Same(t.Table.Language, language)).ToList();
+            var named = own.LastOrDefault(t => t.Table.Fonts.Count > 0);
+            if (named.File is null) continue;
+            var chain = new List<FontCoverage>();
+            bool complete = true;
+            foreach (var font in named.Table.Fonts)
+            {
+                string normalized = Content.AssetPath.Normalize(font);
+                if (!coverage.TryGetValue(normalized, out var read))
+                {
+                    if (!set.Contains(normalized))
+                    {
+                        string? other = files.FirstOrDefault(f => string.Equals(f, normalized, StringComparison.OrdinalIgnoreCase));
+                        issues.Add(new ContentIssue(true, named.File, other is null
+                            ? $"@fonts names '{normalized}', which does not exist in the content folder."
+                            : $"@fonts names '{normalized}', which is spelled '{other}' in the content folder; names must match their letter case exactly."));
+                    }
+                    else
+                    {
+                        try { read = FontCoverage.Read(File.ReadAllBytes(System.IO.Path.Combine(contentDir, normalized))); }
+                        catch (InvalidDataException e) { issues.Add(new ContentIssue(true, named.File, $"@fonts names '{normalized}': {e.Message}")); }
+                    }
+                    coverage[normalized] = read;
+                }
+                if (read is null) complete = false; else chain.Add(read);
+            }
+            if (!complete) continue;
+            var shown = new StringBuilder();
+            foreach (var (_, table) in own)
+            {
+                shown.Append(table.Name);
+                foreach (var text in table.Entries.Values) shown.Append(text);
+            }
+            string missing = FontCoverage.Missing(shown.ToString(), [.. chain]);
+            if (missing.Length == 0) continue;
+            int count = missing.EnumerateRunes().Count();
+            string sample = count <= 24 ? missing : string.Concat(missing.EnumerateRunes().Take(24).Select(r => r.ToString())) + "...";
+            issues.Add(new ContentIssue(false, named.File,
+                $"the texts of '{language}' show {count} character{(count == 1 ? "" : "s")} its fonts ({string.Join(", ", named.Table.Fonts)}) lack, drawn as '?': {sample}. Add a font that has them to @fonts."));
+        }
+
+        // Variants of a file per language (name.<language>.ext): found only beside their file, spelled as the language's tag.
+        var languages = tables.Select(t => t.Table.Language).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        foreach (var path in files)
+        {
+            if (StringTables.IsTable(path)) continue;
+            int name = path.LastIndexOf('/') + 1;
+            int first = path.IndexOf('.', name);
+            int second = first < 0 ? -1 : path.IndexOf('.', first + 1);
+            if (second < 0) continue;
+            string tag = path[(first + 1)..second];
+            if (languages.FirstOrDefault(l => string.Equals(l, tag, StringComparison.OrdinalIgnoreCase)) is not { } language) continue;
+            string original = path[..first] + path[second..];
+            if (tag != language)
+                issues.Add(new ContentIssue(true, path, $"a variant for '{language}' whose name spells the language '{tag}': the game looks for '{path[..first]}.{language}{path[second..]}' and does not find it. Rename the file."));
+            else if (!set.Contains(original))
+                issues.Add(new ContentIssue(false, path, $"looks like the variant of '{original}' for '{language}', but that file does not exist: the game loads a variant only in place of its file. Add '{original}' (the file for the other languages), or rename this one."));
+        }
     }
 
     /// <summary>

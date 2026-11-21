@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Localization;
 
 namespace MicroEngine.UI;
 
@@ -76,6 +77,12 @@ public enum Anchor
 /// <param name="Time">Seconds the root has been updated, for blinking carets and other animation.</param>
 public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, float Time)
 {
+    /// <summary>The game's texts (<see cref="UiRoot.Localization"/>), which widgets holding a <see cref="LocalizedText"/> read theirs from; null when the root has none.</summary>
+    public Localizer? Localization { get; init; }
+
+    /// <summary>Whether the language in use reads right to left: text then starts from the right edge of its widget.</summary>
+    public bool RightToLeft => Localization?.RightToLeft ?? false;
+
     /// <summary>The area drawing is restricted to (UI units), or null for none: set by containers that clip their children.</summary>
     public RectF? Clip { get; init; }
 
@@ -307,4 +314,35 @@ public abstract class Widget
 
     /// <summary>Adds the widget's state that decides what happens next (a text field's text) to the scene's state hash; nothing by default.</summary>
     protected internal virtual void HashState(StateHasher hash) { }
+}
+
+/// <summary>The text of a widget that may come from a string table: resolved again whenever the language or the key changes.</summary>
+internal struct LocalizedField
+{
+    private LocalizedText? _text;
+    private Localizer? _from;
+    private int _version;
+    private bool _resolved;
+
+    /// <summary>The key and values, or null for plain text.</summary>
+    public LocalizedText? Text
+    {
+        readonly get => _text;
+        set
+        {
+            if (_text == value) return;
+            _text = value;
+            _resolved = false;
+        }
+    }
+
+    /// <summary>Writes the text in the language in use to <paramref name="text"/> when it may have changed. Without a localizer the key stands for the text.</summary>
+    public void Resolve(in UiContext context, ref string text)
+    {
+        if (_text is not { } localized) return;
+        var from = context.Localization;
+        if (_resolved && ReferenceEquals(from, _from) && (from is null || from.Version == _version)) return;
+        text = from is null ? localized.Key : from.Format(localized);
+        (_from, _version, _resolved) = (from, from?.Version ?? 0, true);
+    }
 }

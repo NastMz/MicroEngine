@@ -288,7 +288,8 @@ when it is out of date. The step is optional: strings keep working. See [the too
 `microengine content check` reads every file of the content folder the way the engine will and lists what would fail
 or mislead: unreadable images, sounds, fonts and shaders, sheets and atlases whose image is missing or too small for
 their frames, clips naming missing frames, names that differ only in letter case, source files that would ship,
-oversized textures, music only one platform decodes. It exits with 1 on errors, so it runs in CI as it is.
+oversized textures, music only one platform decodes, and string tables whose languages disagree
+([Localization](localization.md#checking-tables)). It exits with 1 on errors, so it runs in CI as it is.
 
 ```text
 error: enemies/lost.sheet: The image 'gone.png' cannot be read: 'enemies/gone.png' does not exist in the content folder. Fix the description or the image it names.
@@ -467,7 +468,8 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
 
 - No compressed GPU texture formats (BCn, ASTC, ETC2) and no mipmaps through `Assets.Texture`.
 - A changed file is picked up the next time the game starts: assets are not reloaded while the game runs.
-- One content folder serves every platform: there are no per-platform variants of a file.
+- One content folder serves every platform: there are no per-platform variants of a file. A file can have a variant
+  per language ([Localization](localization.md#files-per-language)).
 - Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a
   browser page still copies the package's files into memory before the game starts.
 - Rotated frames of Starling XML atlases, slices in Aseprite's exported JSON (the `.aseprite` file's slices are

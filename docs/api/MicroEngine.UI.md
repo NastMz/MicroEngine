@@ -45,6 +45,8 @@ Colours of prompt glyphs ([PromptText](MicroEngine.UI.PromptText.md)): key caps,
 Draws text with action prompts as glyphs: <code>"Press {attack} to swing"</code> shows a key cap with Z on a keyboard, a
 green A on an Xbox pad, a × button on a PlayStation pad and the touch button's label in a ring on a phone. Text that
 does not name an action is drawn as with [Draw](MicroEngine.Graphics.BitmapFont.md#MicroEngine_Graphics_BitmapFont_Draw_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_System_Single_). Glyphs are as tall as a line of the font.
+The overloads taking a [BitmapFont](MicroEngine.Graphics.BitmapFont.md) draw the built-in font's nine-pixel glyphs; those taking any
+[IFont](MicroEngine.Graphics.IFont.md) size the glyphs by the font's line height, for scalable and shaped fonts.
 
  [ScrollView](MicroEngine.UI.ScrollView.md)
 

@@ -64,6 +64,18 @@ public Label(string text = "")
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_UI_Label__ctor_MicroEngine_Localization_LocalizedText_"></a> Label\(LocalizedText\)
+
+A label showing the text of a key of the game's string tables, in the language in use ([Localized](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Localized)).
+
+```csharp
+public Label(LocalizedText text)
+```
+
+#### Parameters
+
+`text` [LocalizedText](MicroEngine.Localization.LocalizedText.md)
+
 ## Properties
 
 ### <a id="MicroEngine_UI_Label_Color"></a> Color
@@ -90,6 +102,21 @@ public IReadOnlyList<string> Lines { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
+### <a id="MicroEngine_UI_Label_Localized"></a> Localized
+
+A key of the game's string tables and the values its message shows: the label shows that text in the language
+in use and changes when the language does. Set it again when a value changes
+(<code>label.Localized = new("hud.gems", ("count", gems))</code>); the same key and values cost nothing. Null (the
+default) is plain [Text](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Text).
+
+```csharp
+public LocalizedText? Localized { get; set; }
+```
+
+#### Property Value
+
+ [LocalizedText](MicroEngine.Localization.LocalizedText.md)?
+
 ### <a id="MicroEngine_UI_Label_Shadow"></a> Shadow
 
 Whether the text has the theme's shadow under it (true by default).
@@ -104,7 +131,8 @@ public bool Shadow { get; set; }
 
 ### <a id="MicroEngine_UI_Label_Text"></a> Text
 
-The text; null counts as empty.
+The text. With [Localized](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Localized) set it is that key's text in the language in use, as of the last layout;
+setting it makes the label plain text again. Null counts as empty.
 
 ```csharp
 public string Text { get; set; }
@@ -169,6 +197,24 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
+
+### <a id="MicroEngine_UI_Label_LineStart_System_Int32_"></a> LineStart\(int\)
+
+Where line <code class="paramref">line</code> of [Lines](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Lines) starts horizontally, in UI units, as of the last
+draw: the label's left edge, or in a right-to-left language the point that puts the line's end at the label's
+right edge.
+
+```csharp
+public float LineStart(int line)
+```
+
+#### Parameters
+
+`line` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_UI_Label_MeasureContent_MicroEngine_UI_UiContext_"></a> MeasureContent\(UiContext\)
 

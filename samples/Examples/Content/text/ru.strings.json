@@ -1,0 +1,17 @@
+{
+  "@name": "Русский",
+  "@fonts": ["fonts/Inter-Regular.ttf"],
+
+  "loc": {
+    "title": "Локализация",
+    "language": "Язык: {name}",
+    // Russian counts with four forms: 1 самоцвет, 2 самоцвета, 5 самоцветов, 1.5 самоцвета.
+    "gems": "{count, plural, =0 {Самоцветов пока нет} one {# самоцвет} few {# самоцвета} many {# самоцветов} other {# самоцвета}}",
+    "hint": "Нажмите {keys}, чтобы сменить язык, и {action}, чтобы добавить самоцвет",
+    "next": "Следующий язык",
+    "glyph": "{action} добавляет самоцвет"
+  },
+
+  "prompt.Space": "Пробел",
+  "prompt.Enter": "Ввод"
+}

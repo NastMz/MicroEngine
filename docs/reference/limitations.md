@@ -35,6 +35,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | Assets are not reloaded while the game runs, there are no per-platform variants of a file, and textures are neither block-compressed nor mipmapped | [Assets](../manual/assets.md#limitations) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
 | Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
+| Localization formats no dates, times, currencies or grouped numbers, has no ordinal plurals, and does not mirror layouts for right-to-left languages (labels start from the right). On the raylib platform a packaged game starts in its fallback language until the player chooses | [Localization](../manual/localization.md#limits) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
 ## Physics
