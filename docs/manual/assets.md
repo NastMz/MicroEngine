@@ -305,7 +305,7 @@ not by name. Loaded images are ordinary `PixelImage`s, so they can be cropped, r
 rotated or silhouetted before packing.
 
 How textures are sampled (nearest for pixel art, linear for HD art) is described in
-[Graphics](rendering.md#filtering-nearest-or-linear).
+[Graphics](rendering.md#filtering-nearest-linear-or-with-mip-levels).
 
 ## Atlases from packing tools
 
