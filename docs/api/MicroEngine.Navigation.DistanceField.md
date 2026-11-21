@@ -23,17 +23,31 @@ public sealed class DistanceField
 
 ## Constructors
 
-### <a id="MicroEngine_Navigation_DistanceField__ctor_MicroEngine_Navigation_NavGrid_"></a> DistanceField\(NavGrid\)
+### <a id="MicroEngine_Navigation_DistanceField__ctor_MicroEngine_Navigation_NavGrid_System_Single_"></a> DistanceField\(NavGrid, float\)
 
 A field over <code class="paramref">grid</code>; nothing is known until [Compute](MicroEngine.Navigation.DistanceField.md#MicroEngine_Navigation_DistanceField_Compute_System_Int32_System_Single_).
 
 ```csharp
-public DistanceField(NavGrid grid)
+public DistanceField(NavGrid grid, float radius = 0)
 ```
 
 #### Parameters
 
 `grid` [NavGrid](MicroEngine.Navigation.NavGrid.md)
+
+The grid the field measures.
+
+`radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+Half the side of the square of the agents that read the field, in world units: for agents wider than a cell
+the field leads only through cells they fit in ([ForAgent](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_ForAgent_System_Single_)). Agents of different widths
+read different fields.
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">radius</code> is negative or not finite.
 
 ## Properties
 
@@ -48,6 +62,18 @@ public NavGrid Grid { get; }
 #### Property Value
 
  [NavGrid](MicroEngine.Navigation.NavGrid.md)
+
+### <a id="MicroEngine_Navigation_DistanceField_Radius"></a> Radius
+
+Half the side of the square of the agents the field is for, in world units.
+
+```csharp
+public float Radius { get; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Navigation_DistanceField_Version"></a> Version
 
@@ -133,7 +159,9 @@ public float DistanceAt(int node)
 ### <a id="MicroEngine_Navigation_DistanceField_Next_System_Int32_"></a> Next\(int\)
 
 The neighbouring node an agent at <code class="paramref">node</code> steps to on its cheapest route: the node itself at a
-goal, -1 where no route exists. Walk towards its centre ([CenterOf](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_CenterOf_System_Int32_)).
+goal, -1 where no route exists. Walk towards its centre ([CenterOf](MicroEngine.Navigation.NavGrid.md#MicroEngine_Navigation_NavGrid_CenterOf_System_Int32_)). An agent wider than
+a cell whose centre is in a cell too tight for it (it is pressed against a wall) is led to the best cell
+beside it that it fits in.
 
 ```csharp
 public int Next(int node)

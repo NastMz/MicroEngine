@@ -43,6 +43,7 @@
     <Project Path="benchmarks/FsmCompare/FsmCompare.csproj" />
     <Project Path="benchmarks/MapBench/MapBench.csproj" />
     <Project Path="benchmarks/NavBench/NavBench.csproj" />
+    <Project Path="benchmarks/NavCrowd/NavCrowd.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
     <Project Path="benchmarks/PhysicsBench/PhysicsBench.csproj" />
     <Project Path="benchmarks/StressBench/StressBench.csproj" />

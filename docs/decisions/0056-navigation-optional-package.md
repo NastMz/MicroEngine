@@ -3,6 +3,9 @@
 Status: Accepted (2026-11-14): the owner accepted it on the ground that the SDK is in Alpha, where a new package or
 a change of public API carries no compatibility commitment. Amends [0019](0019-sdk-packages.md) (the published package set). Evidence:
 [NAV-1](../evaluations/nav-1.md). Task record: [`odd/tasks/nav-1.md`](../../odd/tasks/nav-1.md).
+Amended by [ADR 0069](0069-navigation-agents.md) (2026-11-20): the package also moves agents (following a route,
+arriving, searching again, keeping apart), searches for agents wider than a cell and answers what can be reached; it
+has a scene system. "Behaviour stays in games" now means what an agent wants, not how it gets there.
 
 ## Context
 

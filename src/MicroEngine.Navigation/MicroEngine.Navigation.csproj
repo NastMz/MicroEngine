@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Navigation: shortest paths over grids and graphs (A*), grids read from tile maps or from a physics world,
-       straightened routes for agents with a size, and distance fields for many agents with one goal. An optional
-       package of the SDK (ADR 0056): managed code only, no dependency besides the engine. It decides no behaviour:
-       what an agent wants and how it moves is the game's. -->
+       searches and routes for agents of any size, reachability, distance fields for many agents with one goal, and
+       the agents themselves (NavAgents, a scene system): following a route, arriving, searching again when the map
+       changes, keeping apart. An optional package of the SDK (ADR 0056, amended by ADR 0069): managed code only, no
+       dependency besides the engine. What an agent wants is the game's. -->
   <PropertyGroup>
     <RootNamespace>MicroEngine.Navigation</RootNamespace>
-    <Description>MicroEngine navigation: A* paths over tile grids and waypoint graphs, grids built from tile maps or a physics world, obstacles that change at run time, straightened routes for agents with a size, and distance fields for many agents with one goal. Managed only. Optional; reference it next to MicroEngine.Desktop.</Description>
-    <PackageTags>$(PackageTags);pathfinding;navigation;astar;a-star;ai</PackageTags>
+    <Description>MicroEngine navigation: agents that follow routes, arrive, avoid each other and go around obstacles built at run time; A* paths over tile grids and waypoint graphs for agents of any size; grids built from tile maps or a physics world; reachability queries; distance fields for many agents with one goal. Managed only. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);pathfinding;navigation;astar;a-star;ai;steering;crowd</PackageTags>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>

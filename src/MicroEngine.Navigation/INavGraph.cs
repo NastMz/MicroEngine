@@ -39,4 +39,6 @@ public enum PathStatus
     Unreachable,
     /// <summary>The search stopped at <see cref="PathFinder.MaxExpansions"/> before knowing. The path leads to the nearest node found so far.</summary>
     Incomplete,
+    /// <summary>The search has not ended: <see cref="PathFinder.Continue"/> has more nodes to look at, or an agent's route is still being searched. There is no path yet.</summary>
+    Searching,
 }
