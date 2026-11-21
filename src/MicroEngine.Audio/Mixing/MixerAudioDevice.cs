@@ -149,9 +149,13 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
         _current = music;
     }
 
+    /// <summary>The voice of the music <see cref="PlayMusic"/> started, for the mixer's calls (its position, a seek); stale once the music stopped or ended.</summary>
+    public VoiceHandle MusicVoice => _musicVoice;
+
     /// <inheritdoc/>
     public void StopMusic()
     {
+
         Engine.Stop(_musicVoice);
         _musicVoice = VoiceHandle.None;
         _current = null;
@@ -186,8 +190,33 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
 }
 
 /// <summary>OGG Vorbis decoded in managed code (NVorbis), the same on every backend.</summary>
-internal sealed class VorbisStream(NVorbis.VorbisReader reader) : IAudioStream
+internal sealed class VorbisStream(NVorbis.VorbisReader reader) : ISeekableAudioStream
 {
+    public long Frames => reader.TotalSamples;
+    public void Seek(long frame) => reader.SamplePosition = Math.Clamp(frame, 0, Math.Max(0, reader.TotalSamples));
+
+    /// <summary>
+    /// The loop the file's comments name, in the convention game tools write: LOOPSTART with LOOPLENGTH or LOOPEND, in
+    /// frames.
+    /// </summary>
+    public LoopRegion? LoopRegion
+    {
+        get
+        {
+            if (!Tag("LOOPSTART", out long start)) return null;
+            if (Tag("LOOPLENGTH", out long length)) return new LoopRegion(start, start + length);
+            return Tag("LOOPEND", out long end) ? new LoopRegion(start, end) : new LoopRegion(start);
+        }
+    }
+
+    private bool Tag(string name, out long value)
+    {
+        value = 0;
+        string text = reader.Tags.GetTagSingle(name);
+        return !string.IsNullOrWhiteSpace(text)
+            && long.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out value) && value >= 0;
+    }
+
     public static IAudioStream Open(byte[] encoded) => new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded), closeOnDispose: true));
 
     public int Channels => reader.Channels;

@@ -15,6 +15,14 @@ public sealed class AudioClip
     public int Channels { get; }
     /// <summary>Length of the clip in seconds.</summary>
     public double Duration => Samples.Length / (double)(SampleRate * Channels);
+    /// <summary>
+    /// The part of the clip that repeats when it plays looping (an intro before it plays once), or null for the whole
+    /// clip. <see cref="FromWav"/> reads it from the file's sampler chunk; <see cref="PlayParameters.LoopRegion"/>
+    /// replaces it for one play.
+    /// </summary>
+    public LoopRegion? LoopRegion { get; init; }
+    /// <summary>A name for diagnostics (the content path of a clip loaded from a file), or null.</summary>
+    public string? Name { get; init; }
 
     /// <summary>Wraps existing samples in a clip without copying them.</summary>
     /// <param name="samples">Interleaved samples in -1..1; the length must be a multiple of <paramref name="channels"/>.</param>
@@ -36,12 +44,17 @@ public sealed class AudioClip
     /// <summary>The largest absolute sample value (0 for an empty clip). Computed on every read.</summary>
     public float Peak => Samples.Length == 0 ? 0 : Samples.Max(MathF.Abs);
 
-    /// <summary>Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo).</summary>
+    /// <summary>
+    /// Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo). The first loop of a sampler chunk ("smpl"),
+    /// which audio editors write for loop points, becomes the clip's <see cref="LoopRegion"/>.
+    /// </summary>
     public static AudioClip FromWav(ReadOnlySpan<byte> data)
     {
         if (data.Length < 12 || !data[..4].SequenceEqual("RIFF"u8) || !data.Slice(8, 4).SequenceEqual("WAVE"u8))
             throw new InvalidDataException("Not a WAV file.");
         int channels = 0, rate = 0, bits = 0, format = 0;
+        float[]? decoded = null;
+        LoopRegion? loop = null;
         int p = 12;
         while (p + 8 <= data.Length)
         {
@@ -76,11 +89,23 @@ public sealed class AudioClip
                         _ => ((s[2] << 24 | s[1] << 16 | s[0] << 8) >> 8) / 8388608f,
                     };
                 }
-                return new AudioClip(samples, rate, channels);
+                decoded ??= samples;
             }
+            else if (id.SequenceEqual("smpl"u8) && body.Length >= 36 + 24
+                && System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(body[28..]) > 0)
+            {
+                // The first loop: its first frame and its last one (inclusive).
+                long start = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 8)..]);
+                long end = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 12)..]);
+                if (end >= start) loop ??= new LoopRegion(start, end + 1);
+            }
+            // A chunk the file cuts short is the last one.
+            if (size > data.Length - p - 8) break;
             p += 8 + size + (size & 1);
         }
-        throw new InvalidDataException("WAV file has no data chunk.");
+        if (decoded is null) throw new InvalidDataException("WAV file has no data chunk.");
+        return new AudioClip(decoded, rate, channels) { LoopRegion = loop };
+
     }
 
     /// <summary>Encodes 16-bit PCM WAV bytes, the interchange format backends load from memory.</summary>
@@ -451,6 +476,75 @@ public sealed class AudioMixer
         return true;
     }
 
+    // ---- Time: where a sound is, and moving it
+
+    /// <summary>
+    /// Where <paramref name="voice"/> is in its sound, in seconds from the sound's beginning: 0 as it starts, what
+    /// <see cref="Seek"/> was given after a seek, back at the start of its loop region each time it loops. It follows
+    /// the game's steps, so a scripted run reads the same values every time. 0 for a voice that is not playing.
+    /// </summary>
+    public double Position(VoiceHandle voice) => Engine?.Position(voice) ?? 0;
+
+    /// <summary>
+    /// The position of <paramref name="voice"/> the player hears at this update: <see cref="Position"/> less
+    /// <see cref="OutputLatency"/>. Read it for anything shown or judged against the sound (a note reaching a line, a
+    /// cutscene's cue). Negative while the sound's first frame is still on its way to the speaker.
+    /// </summary>
+    public double HeardPosition(VoiceHandle voice) => Engine?.HeardPosition(voice) ?? 0;
+
+    /// <summary>The length in seconds of the sound <paramref name="voice"/> plays; 0 for a voice that is not playing or a stream that does not know its length.</summary>
+    public double Duration(VoiceHandle voice) => Engine?.Duration(voice) ?? 0;
+
+    /// <summary>
+    /// Moves <paramref name="voice"/> to <paramref name="seconds"/> from its sound's beginning, from this update on
+    /// (clamped to the sound's length; a time that is not a number changes nothing).
+    /// </summary>
+    /// <returns>Whether it moved: false for a voice that is not playing and for a stream whose decoder cannot seek.</returns>
+    public bool Seek(VoiceHandle voice, double seconds) => Engine?.Seek(voice, seconds) ?? false;
+
+    /// <summary>
+    /// Seconds between the mixer writing a frame and the player hearing it, as the device reports it (0 on a silent
+    /// device and when rendering offline). <see cref="HeardPosition"/> and <see cref="MusicHeardPosition"/> already
+    /// take it into account.
+    /// </summary>
+    public double OutputLatency => Engine is { } engine ? (double)engine.DelayFrames / engine.Format.SampleRate : 0;
+
+    // The music's clock on a device without voices: the time it has played, so a game that follows its music runs
+    // the same headless.
+    private double _silentMusicTime;
+
+    private VoiceHandle MusicVoice => _device is MixerAudioDevice mixer ? mixer.MusicVoice : VoiceHandle.None;
+
+    /// <summary>
+    /// Where the music <see cref="PlayMusic"/> plays is, in seconds from its beginning (see <see cref="Position"/>);
+    /// 0 with no music. Save it to bring the music back to the same place with <see cref="SeekMusic"/>. On a device
+    /// without voices (<see cref="SupportsVoices"/>) it is the time the music has played, which does not come back
+    /// when the music loops.
+    /// </summary>
+    public double MusicPosition => Engine is { } engine ? engine.Position(MusicVoice) : _device.CurrentMusic is null ? 0 : _silentMusicTime;
+
+    /// <summary>
+    /// The position of the music the player hears at this update (see <see cref="HeardPosition"/>): what a rhythm game
+    /// judges input against and a cutscene cues its pictures from.
+    /// </summary>
+    public double MusicHeardPosition => Engine is { } engine ? engine.HeardPosition(MusicVoice) : MusicPosition;
+
+    /// <summary>The length of the music playing, in seconds; 0 with no music, on a device without voices and for a format whose decoder does not know it.</summary>
+    public double MusicDuration => Engine?.Duration(MusicVoice) ?? 0;
+
+    /// <summary>
+    /// Moves the music playing to <paramref name="seconds"/> from its beginning, from this update on (clamped to its
+    /// length; a time that is not a number changes nothing).
+    /// </summary>
+    /// <returns>Whether it moved: false with no music and for a format whose decoder cannot seek.</returns>
+    public bool SeekMusic(double seconds)
+    {
+        if (Engine is { } engine) return engine.Seek(MusicVoice, seconds);
+        if (_device.CurrentMusic is null) return false;
+        if (!double.IsNaN(seconds)) _silentMusicTime = Math.Max(0, seconds);
+        return true;
+    }
+
     // ---- Buses
 
     // The buses of a device without the engine's mixer: they keep what they are told (volumes, effects), so the same
@@ -622,6 +716,7 @@ public sealed class AudioMixer
         }
         _fade = fadeIn ? 0.05f : 1f;
         _fadeSpeed = fadeIn ? 4f : 0f;
+        _silentMusicTime = 0;
         _device.PlayMusic(Music(name), _musicVolume * _fade);
     }
 
@@ -695,7 +790,9 @@ public sealed class AudioMixer
             else if (_fadeSpeed > 0 && _fade >= 1) _fadeSpeed = 0;
             Apply();
         }
+        if (!MusicPaused && !double.IsNaN(dt) && dt > 0) _silentMusicTime += dt;
         _device.Update();
+
     }
 }
 

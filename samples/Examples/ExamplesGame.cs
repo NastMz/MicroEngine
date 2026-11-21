@@ -63,6 +63,8 @@ public sealed class ExamplesGame : Game
         ("Draw order (depth and layers)", g => new DepthExample()),
         ("Screen effects (the whole window)", g => new ScreenEffectsExample()),
         ("Small pictures (mip levels)", g => new MipLevelsExample()),
+        ("Music time (intro, loop, position)", g => new MusicTimeExample()),
+
     ];
 
     /// <summary>The id the examples' saves have always been kept under; without it, it would be the project's application id.</summary>

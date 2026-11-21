@@ -335,6 +335,88 @@ ends a ramp that was running; a ramp stands still while its sound is paused.
 overlap: the new track is `CurrentMusic` at once and rises in a straight line while the old one falls. On a device
 without sound, and for a `Song` that is still being rendered in a browser, the music switches without the overlap.
 
+## Time: position, seeking and loops
+
+A game can read where a sound is, move it, start it from the middle or a moment later, and name the part of it that
+repeats.
+
+| Call | What it does |
+| --- | --- |
+| `Audio.MusicPosition`, `Audio.Position(voice)` | Seconds from the sound's beginning, at this update. A loop comes back to the start of its region |
+| `Audio.MusicHeardPosition`, `Audio.HeardPosition(voice)` | The same, less `Audio.OutputLatency`: what the player hears at this update |
+| `Audio.SeekMusic(seconds)`, `Audio.Seek(voice, seconds)` | Moves the sound there from this update on, exactly at the update's point in the output |
+| `Audio.MusicDuration`, `Audio.Duration(voice)` | The sound's length in seconds |
+| `new PlayParameters { StartAt = 12.5 }` | The sound starts that far into itself |
+| `new PlayParameters { Delay = 0.25 }` | The sound starts that long after this update, exact to the output sample |
+| `new PlayParameters { Loop = true, LoopRegion = ... }` | The part that repeats, for this play |
+
+### An intro, then a loop
+
+Music often has an opening that must play once and a body that repeats. That is one piece of music with a loop
+region: it plays from its beginning to the region's end, then goes back to the region's start every time.
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-setup -->
+```csharp
+public override void Enter()
+{
+    // The clip names the part that repeats; the music plays its intro once and then stays in that part.
+    if (!Audio.HasMusic("time-track"))
+        Audio.AddMusic("time-track", TimeSounds.Track(), loop: true);
+    Audio.PlayMusic("time-track", fadeSeconds: 0);
+}
+
+public override void Exit() => Audio.StopMusic(0.2f);
+```
+
+The region comes from the sound itself:
+
+- a WAV file's sampler chunk (`smpl`), which audio editors write when a loop is marked in them;
+- an OGG file's comments `LOOPSTART` with `LOOPLENGTH` or `LOOPEND`, in samples, as game audio tools write them;
+- `AudioClip.LoopRegion` for a clip made in code: `new AudioClip(samples) { LoopRegion = LoopRegion.FromSeconds(1, 0, rate) }`
+  (an end of 0 is the sound's end).
+
+`PlayParameters.LoopRegion` replaces it for one voice. A region is in samples of the sound, so it is exact whatever
+the output's rate; one that makes no sense (it starts past the end, or is empty) is the whole sound. MP3 files carry
+no loop points and are padded at both ends by their encoder: music that must loop without a gap is OGG or WAV.
+
+### Following the music
+
+Sound reaches the speaker later than the update that plays it (see `Audio.OutputLatency`). `MusicPosition` is where
+the music is in the mixer; `MusicHeardPosition` is where it is in the player's ears, and is the one to compare with
+what is on screen or with a key press:
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-follow -->
+```csharp
+// What the player hears at this update: the music's position less the time sound takes to reach the speaker.
+double heard = Audio.MusicHeardPosition;
+if (heard < IntroSeconds) (Beat, Phase) = (-1, 0);
+else
+{
+    double beats = (heard - IntroSeconds) / BeatSeconds;
+    Beat = (int)beats;
+    Phase = (float)(beats - Beat);
+}
+```
+
+Both follow the game's updates, not a clock of their own: an update later, the position is one update further (at
+the sound's pitch), and a scripted run reads the same values every time. A heard position is negative while a
+sound's first sample is still on its way, by the time left; so is the position of a sound waiting for its `Delay`.
+On a device without sound the music's position is the time it has played, so a game that follows its music behaves
+the same in a headless run until the music loops.
+
+Seeking is one call. A paused sound stays paused at the new place; a sound that does not loop ends as much sooner or
+later; a time past the end ends it, and past a loop's region lands inside the region:
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-seek -->
+```csharp
+if (Input.Pressed("action")) Audio.SeekMusic(0);                            // the intro again
+if (Input.Pressed("right")) Audio.SeekMusic(Audio.MusicPosition + BeatSeconds);   // one beat ahead
+```
+
+To bring the music back where a saved game left it, save `MusicPosition` and call `SeekMusic` after `PlayMusic`, or
+play it as a voice with `StartAt`.
+
+
 ## One mixer on every platform
 
 Every audio device of the engine is the same managed mixer,
@@ -483,8 +565,13 @@ sound and resumes it when shown again.
   bypass keeps it in place.
 - Without a time, volume, pan and pitch change in one step at the update that sets them: a large jump on a loud sound
   can click, so give `Set` a time or change them a little every update.
-- No playback position: a game cannot read where a sound or the music is, start it from the middle, schedule it for a
-  later moment or loop a part of it (an intro followed by a loop is two pieces of music).
+- A position follows the game's updates: it is exact at each update and does not move between two of them. Streamed
+  music that fell behind its decoding (a frame of several hundred milliseconds) is that much behind its position
+  until it is sought. A stream whose decoder does not know its length has no duration, cannot be sought and counts
+  its position on through its loops.
+- A loop wraps at a whole sample of the sound; played at another pitch or rate, the fraction of a sample across the
+  seam holds the last sample before it.
+
 - Streamed music keeps its own pitch.
 - Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
 - Sound is not instant: it is heard after the queue that keeps pauses from being heard, 60 ms on the SDL platform

@@ -17,10 +17,15 @@ internal sealed class StreamFeed
     private bool _sourceDone;
     private volatile bool _finished;
 
-    public StreamFeed(IAudioStream source, bool loop, int outRate, int outChannels, int aheadFrames)
+    // Looping: the source frames that repeat (_loopEnd 0: up to the end) and the source frame the next read gives.
+    private readonly long _loopStart, _loopEnd;
+    private long _sourceFrame;
+
+    public StreamFeed(IAudioStream source, bool loop, int outRate, int outChannels, int aheadFrames, long from = 0, long loopStart = 0, long loopEnd = 0)
     {
         Source = source;
         Loop = loop;
+        (_sourceFrame, _loopStart, _loopEnd) = (from, loopStart, loopEnd);
         _capacity = aheadFrames;
         _ring = new float[aheadFrames * 2];
         _ratio = (double)source.SampleRate / outRate;
@@ -47,8 +52,11 @@ internal sealed class StreamFeed
             int i = (int)_position;
             while (i + 1 >= _decodedFrames && !_sourceDone)
             {
-                if (!Decode(channels)) break;
+                // The buffer moved, also when nothing more came: the last frame is then its only one, still to be played.
+                bool more = Decode(channels);
                 i = (int)_position;
+                if (!more) break;
+
             }
             if (i >= _decodedFrames)
             {
@@ -79,13 +87,34 @@ internal sealed class StreamFeed
             _position -= last;
             keep = 1;
         }
-        int read = Source.Read(_decoded.AsSpan(keep * channels));
-        if (read == 0 && Loop)
+        var into = _decoded.AsSpan(keep * channels);
+        int read = 0;
+        // A loop reads up to the end of its region, then goes back to the region's start; twice at most, so a stream
+        // that gives nothing there ends instead of spinning.
+        for (int attempt = 0; attempt < 2 && read == 0; attempt++)
         {
-            Source.Rewind();
-            read = Source.Read(_decoded.AsSpan(keep * channels));
+            var room = into;
+            if (Loop && _loopEnd > 0)
+            {
+                long left = _loopEnd - _sourceFrame;
+                room = left <= 0 ? default : into[..(int)Math.Min(into.Length, left * channels)];
+            }
+            if (!room.IsEmpty) read = Source.Read(room);
+            if (read > 0 || !Loop) break;
+            if (_loopStart > 0 && Source is ISeekableAudioStream seekable)
+            {
+                seekable.Seek(_loopStart);
+                _sourceFrame = _loopStart;
+            }
+            else
+            {
+                Source.Rewind();
+                _sourceFrame = 0;
+            }
         }
+        _sourceFrame += read / channels;
         _decodedFrames = keep + read / channels;
+
         if (read == 0) _sourceDone = true;
         return read > 0;
     }

@@ -170,6 +170,17 @@ modelled as components and systems.
   `int.MaxValue` output frames (over twelve hours); a longer or endless time is that long.
 - `Audio.SupportsVoices` tells whether `PlayVoice` returns voices on the current device (false headless, muted or
   without audio hardware). The Examples sample has "Effects on buses".
+- Time in a sound ([Time: position, seeking and loops](../manual/audio.md#time-position-seeking-and-loops)):
+  `Audio.MusicPosition` and `Audio.Position(voice)` read where a sound is, `Audio.MusicHeardPosition` and
+  `Audio.HeardPosition(voice)` where the player hears it (less `Audio.OutputLatency`), `Audio.SeekMusic` and
+  `Audio.Seek` move it, `Audio.MusicDuration` and `Audio.Duration` give its length. `PlayParameters.StartAt` starts a
+  sound from the middle and `PlayParameters.Delay` a moment later, exact to the output sample. A loop can repeat a
+  part of the sound after an intro that plays once: `LoopRegion`, read from a WAV file's sampler chunk and an OGG
+  file's `LOOPSTART` comments, set on an `AudioClip`, or given per play. A decoder that can seek implements
+  `ISeekableAudioStream`. The Examples sample has "Music time".
+- Fixed: streamed music that does not loop played all but its last sample; and music paused for a while was reported
+  as ended (`CurrentMusic`, `IsPlaying`) that much before it stopped sounding.
+
 - [Physics](../manual/physics.md) for more kinds of game:
   - A scene has a physics world: `Scene.Physics` (`ScenePhysics`) is made on first use, stepped after the scene's
     `Update` on its world's clock, written to the owners' transforms, part of the state hash and disposed with the
