@@ -1,4 +1,4 @@
-# A click sends the unit into the far room; the door closes ahead of the patrol, which goes around; then it opens again.
+# The room: a click sends the unit into the far room; the door closes ahead of the patrol, which goes around; then it opens again.
 1 mouse 264,136
 2 mouse 264,136 down
 4 mouse 264,136 up
@@ -7,4 +7,47 @@
 200 capture around.png
 330 press confirm
 480 capture gathered.png
-482 quit
+# The group order: every unit to the top right room, then to the bottom right one.
+482 press action
+490 mouse 248,40
+492 mouse 248,40 down
+494 mouse 248,40 up
+560 capture group-moving.png
+900 capture group-arrived.png
+902 mouse 232,136
+904 mouse 232,136 down
+906 mouse 232,136 up
+1000 capture group-second.png
+1300 capture group-second-arrived.png
+# The tower defence: a wall of towers across the field, built while the wave walks; the last one is refused.
+1302 press action
+1400 mouse 168,88
+1402 mouse 168,88 down
+1404 mouse 168,88 up
+1410 mouse 168,72
+1412 mouse 168,72 down
+1414 mouse 168,72 up
+1420 mouse 168,104
+1422 mouse 168,104 down
+1424 mouse 168,104 up
+1430 mouse 168,56
+1432 mouse 168,56 down
+1434 mouse 168,56 up
+1440 mouse 168,120
+1442 mouse 168,120 down
+1444 mouse 168,120 up
+1450 mouse 168,40
+1452 mouse 168,40 down
+1454 mouse 168,40 up
+1460 mouse 168,136
+1462 mouse 168,136 down
+1464 mouse 168,136 up
+1470 mouse 168,24
+1472 mouse 168,24 down
+1474 mouse 168,24 up
+1480 mouse 168,152
+1482 mouse 168,152 down
+1484 mouse 168,152 up
+1490 capture refused.png
+1800 capture towers.png
+1802 quit

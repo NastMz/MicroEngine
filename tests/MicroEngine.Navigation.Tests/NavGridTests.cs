@@ -236,4 +236,32 @@ public sealed class NavGridTests
         Assert.IsFalse(grid.IsOpen(path, from: 1));
         Assert.IsTrue(grid.IsOpen([]));
     }
+
+    [TestMethod]
+    public void A_route_that_starts_on_costly_ground_leaves_it_instead_of_crossing_it()
+    {
+        // A strip of mud three cells deep; the agent stands in its top row, the target is below the strip.
+        var grid = Maps.Grid(
+            ".........",
+            "..33333..",
+            "..33333..",
+            "..33333..",
+            ".........",
+            ".........");
+        var finder = new PathFinder();
+        var route = new List<Vector2>();
+        Assert.AreEqual(PathStatus.Found, grid.FindPath(finder, grid.CenterOf(grid.NodeOf(2, 1)), grid.CenterOf(grid.NodeOf(1, 5)), route));
+        Assert.AreEqual(1, grid.CostAt(grid.CellOf(finder.Path[1]).X, grid.CellOf(finder.Path[1]).Y), "the cheapest path steps out of the mud at once");
+        Assert.AreEqual(grid.CenterOf(finder.Path[1]), route[0], "and so does the route: standing in mud is no licence to walk on through it");
+        var at = route[0];
+        foreach (var point in route.Skip(1))
+        {
+            for (float t = 0; t <= 1; t += 0.05f)
+            {
+                var cell = grid.CellAt(Vector2.Lerp(at, point, t));
+                Assert.AreEqual(1, grid.CostAt(cell.X, cell.Y), $"the leg from {at} to {point} crosses mud");
+            }
+            at = point;
+        }
+    }
 }

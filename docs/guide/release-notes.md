@@ -87,6 +87,43 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `PackedAtlas.ToJson` writes the atlas in the JSON the engine reads; `AtlasData.ToSheet` cuts a tool's atlas back
   into frames; `AssetStore.Read` loads an asset without storing it.
 
+### Navigation: agents that walk, keep apart and arrive
+
+- **`NavAgents`** is what a game used to write after it had a path. Add it to a scene
+  (`Systems.Add(new NavAgents(grid))`), add agents (`agents.Add(position, new NavAgentSettings(radius, speed))`) and
+  order them: `agent.MoveTo(point)`. Each follows its route, cuts corners where the way is clear, slows down and
+  stops on the point (`ArrivalTolerance`, `SlowingDistance`), searches again when a change of the grid closes its
+  way, keeps apart from the others, turns aside from those it would run into, and never enters a wall. A group sent
+  to one point gathers around it. `agent.Status`, `agent.Path` and `agent.IsBlocked` tell how it is doing
+  ([Agents](navigation.md#agents)).
+- Searches are spread over steps (`NavAgents.SearchBudget`), so ordering many agents at once never stalls a step,
+  and a destination that cannot be reached costs no search of the whole map.
+- `agent.Follow(field)` makes an agent read a `DistanceField` instead of searching: many agents, one goal.
+- `agents.CanBlock(area)` tells whether a wall can be built without walling an agent in or onto one;
+  `agents.Query(center, radius, results)` and `agents.Occupied(area)` find the agents near a place.
+- An agent can be moved by the game (`NavAgentSettings.MovedByGame`): the system steers
+  (`agent.DesiredVelocity`) and a `TopDownController2D`, a physics body or anything else moves the body.
+- **`Steering`**: `Seek`, `Flee`, `Arrive`, `Separate`, `Avoid` and `Limit`, the rules the agents are made of,
+  for things a game moves its own way. `NavGrid.Slide(position, delta, radius)` moves a body along a grid's walls.
+- The system is part of the scene's state hash, and a run with the same orders repeats exactly.
+
+### Navigation: agents with a size, and what can be reached
+
+- **Agents wider than a cell are led only where they fit.** The `radius` given to `NavGrid.FindPath` now takes part
+  in the search itself: a body wider than a cell is not sent through a gap it cannot pass, and the route ends at the
+  point of the goal's cell nearest the one asked for where the body touches no wall. `grid.ForAgent(radius)` is the
+  grid as that agent walks it, for `PathFinder.Find`; `grid.IsOpen(path, from, radius)` and
+  `new DistanceField(grid, radius)` take the size too; `grid.ClearanceAt(x, y)` and `grid.Fits(x, y, radius)` tell
+  how much room a cell has ([Agents with a size](navigation.md#agents-with-a-size)).
+- **`NavRegions`** tells what can be reached without searching: `Connected(a, b)`, `RegionOf(node)`,
+  `NearestReachable(from, to)` (where to go when a click lands on an island or in a wall) and
+  `StaysConnected(area, a, b)` (whether a wall about to be built would cut a way that must stay open: the placement
+  rule of a tower defence). It follows the grid's changes by itself and takes the agents' size
+  ([What can be reached](navigation.md#what-can-be-reached)).
+- **A search can be spread over several steps**: `finder.Begin(graph, start, goal)` and `finder.Continue(nodes)`,
+  which returns the new `PathStatus.Searching` until the answer is known. The path is the one `Find` gives
+  ([A search over several steps](navigation.md#a-search-over-several-steps)).
+
 A ninth package: `MicroEngine.Tiled`, optional, for maps made in the Tiled editor. A tenth: `MicroEngine.Navigation`,
 optional, for agents that find their way through a level. An eleventh: `MicroEngine.Ecs`, optional, for games
 modelled as components and systems.

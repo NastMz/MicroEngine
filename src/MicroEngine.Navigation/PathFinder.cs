@@ -15,6 +15,10 @@ public sealed class PathFinder
     private readonly NodeHeap _open = new();
     private readonly List<NavEdge> _edges = new(16);
     private readonly List<int> _path = new(64);
+    // The search in progress (Begin, Continue): its graph, goal, the node nearest the goal so far and its estimate.
+    private INavGraph? _graph;
+    private int _goal, _end;
+    private float _nearest;
 
     /// <summary>
     /// The most nodes a search looks at before it gives up with <see cref="PathStatus.Incomplete"/>; unlimited by
@@ -53,6 +57,22 @@ public sealed class PathFinder
     /// <exception cref="InvalidOperationException">The graph gave a step with a negative cost or to a node it does not have.</exception>
     public PathStatus Find(INavGraph graph, int start, int goal)
     {
+        Begin(graph, start, goal);
+        return Continue(int.MaxValue);
+    }
+
+    /// <summary>Whether a search begun with <see cref="Begin"/> has not ended yet.</summary>
+    public bool IsSearching => _graph is not null;
+
+    /// <summary>
+    /// Begins a search from <paramref name="start"/> to <paramref name="goal"/> that <see cref="Continue"/> advances
+    /// a few nodes at a time, so a long search on a large map is spread over several steps of the game instead of
+    /// stalling one. It replaces a search in progress. The graph must not change until the search ends: begin again
+    /// when it does.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="start"/> or <paramref name="goal"/> is not a node of the graph.</exception>
+    public void Begin(INavGraph graph, int start, int goal)
+    {
         ArgumentNullException.ThrowIfNull(graph);
         int count = graph.NodeCount;
         if ((uint)start >= (uint)count) throw new ArgumentOutOfRangeException(nameof(start), start, $"The graph has {count} nodes.");
@@ -60,17 +80,44 @@ public sealed class PathFinder
         Prepare(count);
         _path.Clear();
         Expanded = 0;
+        Cost = 0;
+        _graph = graph;
+        _goal = goal;
+        _end = start;
+        _nearest = graph.Estimate(start, goal);
+        Open(start, -1, 0, _nearest);
+    }
 
-        float nearest = graph.Estimate(start, goal);
-        int end = start;
-        Open(start, -1, 0, nearest);
+    /// <summary>
+    /// Advances the search begun with <see cref="Begin"/> by at most <paramref name="expansions"/> nodes. It returns
+    /// <see cref="PathStatus.Searching"/> while the answer is not known (<see cref="Path"/> is empty until then),
+    /// and otherwise how the search ended, with the path in <see cref="Path"/>: the same path, cost and
+    /// <see cref="Expanded"/> as <see cref="Find"/> gives, however the work was divided. <see cref="MaxExpansions"/>
+    /// bounds the whole search, not one call.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No search is in progress.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="expansions"/> is not positive.</exception>
+    /// <exception cref="InvalidOperationException">The graph gave a step with a negative cost or to a node it does not have.</exception>
+    public PathStatus Continue(int expansions)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(expansions);
+        var graph = _graph ?? throw new InvalidOperationException("No search is in progress: call Begin first.");
+        int count = graph.NodeCount, goal = _goal, end = _end, spent = 0;
+        float nearest = _nearest;
         var status = PathStatus.Unreachable;
         while (_open.Count > 0)
         {
+            if (spent == expansions)
+            {
+                _end = end;
+                _nearest = nearest;
+                return PathStatus.Searching;
+            }
             int node = _open.Pop();
             if (node == goal) { status = PathStatus.Found; end = goal; break; }
             if (Expanded >= _maxExpansions) { status = PathStatus.Incomplete; break; }
             Expanded++;
+            spent++;
             _edges.Clear();
             graph.GetEdges(node, _edges);
             float cost = _cost[node];
@@ -99,6 +146,7 @@ public sealed class PathFinder
             }
         }
 
+        _graph = null;
         for (int node = end; node >= 0; node = _parent[node]) _path.Add(node);
         _path.Reverse();
         Cost = _cost[end];

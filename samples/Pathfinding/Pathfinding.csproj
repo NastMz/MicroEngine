@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Pathfinding with the optional MicroEngine.Navigation package: a unit that walks where the pointer clicks, a
-       chaser, a swarm that reads one distance field, and a patrol that searches again when a door closes. Everything
-       is drawn by code. It references the packages a game outside this repository references; inside the repository
+  <!-- Navigation with the optional MicroEngine.Navigation package, in three scenes: a room with a unit that walks
+       where the pointer clicks, a chaser, a swarm that reads one distance field and a patrol that goes around when a
+       door closes; a group of units of two sizes sent to one point; and a tower defence where towers are built in
+       the way of a wave. Everything is drawn by code. It references the packages a game outside this repository references; inside the repository
        the projects replace them (samples/Directory.Build.targets). -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,7 +13,7 @@
     <ApplicationTitle>Pathfinding</ApplicationTitle>
     <ApplicationId>com.example.pathfinding</ApplicationId>
     <Version>1.0.0</Version>
-    <Description>Agents that find their way through a tile map with MicroEngine.Navigation.</Description>
+    <Description>Agents that find their way, keep apart and go around what is built in their way, with MicroEngine.Navigation.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MicroEngine.Desktop" Version="0.6.0-alpha.1" />
