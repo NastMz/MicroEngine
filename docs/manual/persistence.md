@@ -474,6 +474,8 @@ public sealed class Settings
     public float MusicVolume { get; set; } = 1;
     public float SoundVolume { get; set; } = 1;
     public bool Fullscreen { get; set; }
+    /// <summary>The language the player chose, as a tag ("es"); null follows the system's language.</summary>
+    public string? Language { get; set; }
 }
 
 public static readonly SaveSchema<Settings> SettingsSchema = new(version: 1, SaveTypes.Default.Settings);

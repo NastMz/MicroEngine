@@ -126,6 +126,10 @@ line names the file and says what to do; the command exits with 1 when there are
 | A clip that names a frame the sheet does not have; two frames or clips of one name | MP3 music, which one platform decodes |
 | Two files or folders that differ only in letter case | |
 | An image or sound format no platform reads (`.webp`, `.tiff`, `.flac`...) | |
+| A string table or a message that cannot be read; a key a language lacks; a value a translation names and the others do not | A value a translation does not use; a plural without the forms its language uses |
+| A font a string table names that does not exist; a per-language variant whose tag is spelled with another letter case | Characters a language's fonts lack; a per-language variant without its original file |
+
+String tables are the files named `*.strings.json` and `*.strings.csv` ([Localization](../manual/localization.md#checking-tables)).
 
 **names** writes a C# file of constants (`GameContent.g.cs` next to the project, or `--out`): a class per folder, a
 constant per file holding its path, and for each sheet, Aseprite file and atlas a class with its `Path` and the names

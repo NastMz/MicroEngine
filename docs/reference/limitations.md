@@ -36,6 +36,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
 | Navigation is an optional package (`MicroEngine.Navigation`). Its agents walk grids of square cells: no navigation meshes, no formations, and no automatic links between platforms. An agent wider than a cell needs a passage three cells wide, and a dense crowd queues at a narrow passage | [Navigation](../guide/navigation.md#costs-and-limits) |
 | Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
+| Localization formats no dates, times, currencies or grouped numbers, has no ordinal plurals, and does not mirror layouts for right-to-left languages (labels start from the right). On the raylib platform a packaged game starts in its fallback language until the player chooses | [Localization](../manual/localization.md#limits) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
 ## Physics

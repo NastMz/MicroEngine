@@ -114,6 +114,13 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
     /// <summary>The font widgets measure and draw text with. The engine sets the game's font; it must be set before drawing.</summary>
     public IFont? Font { get; set; }
+    /// <summary>
+    /// The game's texts: widgets holding a <see cref="MicroEngine.Localization.LocalizedText"/> (<see cref="Label.Localized"/>,
+    /// <see cref="Button.Localized"/>, <see cref="TextField.LocalizedPlaceholder"/>) show it in the language in use and
+    /// change with it, and labels start from the right in a right-to-left language. The engine sets the game's
+    /// (<c>Game.Localization</c>); null (a root made by hand) shows keys as written.
+    /// </summary>
+    public MicroEngine.Localization.Localizer? Localization { get; set; }
     /// <summary>The colours (<see cref="UiTheme.Default"/> by default).</summary>
     public UiTheme Theme { get; set; } = UiTheme.Default;
     /// <summary>The actions the widgets answer to (<see cref="UiActions.Default"/>: the input map's names).</summary>
@@ -154,7 +161,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     public event Action<FocusChange>? FocusChanged;
 
     private UiContext Context => new(Font ?? throw new InvalidOperationException("Set UiRoot.Font before laying out or drawing the UI."),
-        Theme, UiTheme.Unit(Font), Time);
+        Theme, UiTheme.Unit(Font), Time) { Localization = Localization };
 
     /// <summary>The visible widgets of the content in focus and drawing order (depth first).</summary>
     public IEnumerable<Widget> AllWidgets

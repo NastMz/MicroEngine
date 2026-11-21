@@ -212,4 +212,20 @@
 4370 press down
 4384 capture 36-mix.png
 4390 press pause
-4404 quit
+4404 press down
+4414 press confirm
+4454 press action
+4464 press action
+4480 capture 37-localization-en.png
+4486 press confirm
+4500 capture 37-localization-es.png
+4506 press confirm
+4512 press action
+4518 press action
+4524 press action
+4540 capture 37-localization-ru.png
+4546 press confirm
+4560 capture 37-localization-ar.png
+4566 press confirm
+4580 press pause
+4594 quit

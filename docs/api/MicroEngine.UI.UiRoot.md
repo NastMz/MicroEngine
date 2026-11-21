@@ -162,6 +162,21 @@ public Widget? Hovered { get; }
 
  [Widget](MicroEngine.UI.Widget.md)?
 
+### <a id="MicroEngine_UI_UiRoot_Localization"></a> Localization
+
+The game's texts: widgets holding a [LocalizedText](MicroEngine.Localization.LocalizedText.md) ([Localized](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Localized),
+[Localized](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Localized), [LocalizedPlaceholder](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_LocalizedPlaceholder)) show it in the language in use and
+change with it, and labels start from the right in a right-to-left language. The engine sets the game's
+(<code>Game.Localization</code>); null (a root made by hand) shows keys as written.
+
+```csharp
+public Localizer? Localization { get; set; }
+```
+
+#### Property Value
+
+ [Localizer](MicroEngine.Localization.Localizer.md)?
+
 ### <a id="MicroEngine_UI_UiRoot_Offset"></a> Offset
 
 Moves the content from its anchor, in UI units.

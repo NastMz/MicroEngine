@@ -50,7 +50,11 @@ public sealed class TextField : Widget
     /// <summary>The text an input method is composing and has not committed yet (empty when none); drawn underlined at the caret.</summary>
     public string Composition { get; private set; } = "";
     /// <summary>Shown in the muted colour while the field is empty and does not have the focus.</summary>
-    public string Placeholder { get; set; } = "";
+    public string Placeholder { get => _placeholder; set { _placeholder = value ?? ""; _localizedPlaceholder.Text = null; } }
+    private string _placeholder = "";
+    private LocalizedField _localizedPlaceholder;
+    /// <summary>A key of the game's string tables for the placeholder: shown in the language in use, changing with it. Null (the default) is plain <see cref="Placeholder"/>.</summary>
+    public MicroEngine.Localization.LocalizedText? LocalizedPlaceholder { get => _localizedPlaceholder.Text; set => _localizedPlaceholder.Text = value; }
     /// <summary>The most characters (UTF-16 code units) the text may have (64 by default).</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
     public int MaxLength
@@ -292,6 +296,7 @@ public sealed class TextField : Widget
         bool focused = IsFocused && IsEnabledInTree;
         renderer.Panel(Bounds, focused ? theme.Panel with { Border = theme.Accent } : theme.Panel);
         var font = _font = context.Font;
+        _localizedPlaceholder.Resolve(context, ref _placeholder);
         float left = Bounds.X + 4 * u, top = MathF.Round(Bounds.Y + (Bounds.Height - font.LineHeight) / 2), room = Bounds.Width - 8 * u;
         _textX = left;
         if (_text.Length == 0 && Composition.Length == 0 && !focused)

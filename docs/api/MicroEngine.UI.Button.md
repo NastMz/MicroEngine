@@ -65,6 +65,20 @@ public Button(string text, Action? clicked = null)
 
 `clicked` [Action](https://learn.microsoft.com/dotnet/api/system.action)?
 
+### <a id="MicroEngine_UI_Button__ctor_MicroEngine_Localization_LocalizedText_System_Action_"></a> Button\(LocalizedText, Action?\)
+
+A button labelled with the text of a key of the game's string tables ([Localized](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Localized)), calling <code class="paramref">clicked</code> (optional) when clicked.
+
+```csharp
+public Button(LocalizedText text, Action? clicked = null)
+```
+
+#### Parameters
+
+`text` [LocalizedText](MicroEngine.Localization.LocalizedText.md)
+
+`clicked` [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
 ## Properties
 
 ### <a id="MicroEngine_UI_Button_Focusable"></a> Focusable
@@ -79,9 +93,21 @@ public override bool Focusable { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_Button_Localized"></a> Localized
+
+A key of the game's string tables: the button shows its text in the language in use and changes with it. Null (the default) is plain [Text](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Text).
+
+```csharp
+public LocalizedText? Localized { get; set; }
+```
+
+#### Property Value
+
+ [LocalizedText](MicroEngine.Localization.LocalizedText.md)?
+
 ### <a id="MicroEngine_UI_Button_Text"></a> Text
 
-The label; null counts as empty.
+The label; with [Localized](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Localized) set, that key's text in the language in use as of the last layout. Setting it makes the label plain text again. Null counts as empty.
 
 ```csharp
 public string Text { get; set; }
