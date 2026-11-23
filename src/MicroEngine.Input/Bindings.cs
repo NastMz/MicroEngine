@@ -131,7 +131,7 @@ public sealed class InputBindingSet
     }
 
     /// <summary>Reads a set written by <see cref="ToJson"/>, of this format or of the first one.</summary>
-    /// <exception cref="FormatException">The text is not a binding set.</exception>
+    /// <exception cref="FormatException">The text is not a binding set, or it is one of a format this version does not know (a later one): read as this format it would hold every action with no control.</exception>
     public static InputBindingSet FromJson(string json)
     {
         try
@@ -139,6 +139,8 @@ public sealed class InputBindingSet
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var set = new InputBindingSet { Version = root.GetProperty("version").GetInt32() };
+            if (set.Version < 1 || set.Version > CurrentVersion)
+                throw new FormatException($"The input bindings are of format version {set.Version}; this version of the engine reads versions 1 to {CurrentVersion}.");
             foreach (var a in root.GetProperty("actions").EnumerateArray())
                 set.Actions.Add(new ActionBindingData
                 {
@@ -167,12 +169,18 @@ public sealed partial class InputMap
     /// <summary>The slot <see cref="SaveBindings"/> and <see cref="LoadBindings"/> use unless told otherwise.</summary>
     public const string BindingsSlot = "input-bindings";
 
-    /// <summary>Every action's bindings as data (see <see cref="InputBindingSet"/>), in ordinal order of the names.</summary>
-    public InputBindingSet ExportBindings()
+    /// <summary>
+    /// The bindings as data (see <see cref="InputBindingSet"/>), in ordinal order of the names: of every action, or of
+    /// <paramref name="actions"/> only (those the map has), which is what a rebinding screen saves: the actions it
+    /// lets the player change.
+    /// </summary>
+    public InputBindingSet ExportBindings(IEnumerable<string>? actions = null)
     {
+        var chosen = actions is null ? null : new HashSet<string>(actions, StringComparer.Ordinal);
         var set = new InputBindingSet();
         foreach (var action in _bindings.Keys.Order(StringComparer.Ordinal))
         {
+            if (chosen is not null && !chosen.Contains(action)) continue;
             var data = new ActionBindingData { Action = action };
             foreach (var c in _bindings[action].Controls) data.Controls.Add(c.ToString());
             set.Actions.Add(data);
@@ -186,14 +194,24 @@ public sealed partial class InputMap
     /// and so are controls this version does not know. A set of the first format (one list per kind of control) is read
     /// the same way.
     /// </summary>
+    /// <remarks>
+    /// Loading never empties an action by accident. An action saved with no control was unbound when it was saved and
+    /// is unbound again; an action saved with controls of which this version knows none keeps the controls it has; and a
+    /// set of a later format (<see cref="InputBindingSet.Version"/> above <see cref="InputBindingSet.CurrentVersion"/>)
+    /// changes nothing. With <paramref name="actions"/>, only those actions are replaced: a rebinding screen passes the
+    /// actions it offers, so the others (the menus', the engine's) always follow the game's code, whatever the set holds.
+    /// </remarks>
     /// <returns>The number of actions whose bindings were replaced.</returns>
-    public int ImportBindings(InputBindingSet set)
+    public int ImportBindings(InputBindingSet set, IEnumerable<string>? actions = null)
     {
         ArgumentNullException.ThrowIfNull(set);
+        if (set.Version > InputBindingSet.CurrentVersion) return 0;
+        var chosen = actions is null ? null : new HashSet<string>(actions, StringComparer.Ordinal);
         int replaced = 0;
         foreach (var data in set.Actions)
         {
             if (!_bindings.ContainsKey(data.Action)) continue;
+            if (chosen is not null && !chosen.Contains(data.Action)) continue;
             var b = new Binding();
             foreach (var k in data.Keys) if (InputControl.TryParse("Key:" + k, out var key)) b.Add(key);
             foreach (var k in data.Buttons) if (InputControl.TryParse("Pad:" + k, out var button)) b.Add(button);
@@ -201,6 +219,9 @@ public sealed partial class InputMap
             foreach (var a in data.Axes) if (InputControl.TryParse("Axis:" + a, out var axis)) b.Add(axis);
             foreach (var c in data.Chords) if (InputControl.TryParse("Chord:" + c, out var chord)) b.Add(chord);
             foreach (var c in data.Controls) if (InputControl.TryParse(c, out var control)) b.Add(control);
+            // Controls were saved and none is known here (another version's names): the action keeps what it has.
+            bool saved = data.Controls.Count + data.Keys.Count + data.Buttons.Count + data.Axes.Count + data.Chords.Count > 0 || data.Stick is { Length: > 0 } and not "None";
+            if (saved && b.Controls.Count == 0) continue;
             _bindings[data.Action] = b;
             replaced++;
         }
@@ -233,8 +254,14 @@ public sealed partial class InputMap
         };
     }
 
-    /// <summary>Writes every action's bindings to <paramref name="storage"/> (the slot <paramref name="slot"/>), for a rebinding screen.</summary>
+    /// <summary>
+    /// Writes the bindings to <paramref name="storage"/> (the slot <paramref name="slot"/>), for a rebinding screen:
+    /// those of <paramref name="actions"/>, the actions the screen lets the player change, or of every action when it
+    /// is null.
+    /// </summary>
     /// <remarks>
+    /// Pass the actions the player can rebind. Saving every action also saves the ones the game binds in code, and
+    /// loading them back later replaces what a newer version of the game binds there.
     /// The slot is handed to the storage as given, and the storage decides which names it can hold. The file storage
     /// takes plain names only (<c>"input-bindings"</c>, <c>"bindings.player2"</c>), and a plain name is the same file
     /// or key on every system.
@@ -243,23 +270,25 @@ public sealed partial class InputMap
     /// <exception cref="ArgumentException"><paramref name="slot"/> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).</exception>
     /// <exception cref="IOException">The storage failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The storage refused access.</exception>
-    public void SaveBindings(IStorage storage, string slot = BindingsSlot)
+    public void SaveBindings(IStorage storage, string slot = BindingsSlot, IEnumerable<string>? actions = null)
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentException.ThrowIfNullOrWhiteSpace(slot);
-        storage.Write(slot, ExportBindings().ToJson());
+        storage.Write(slot, ExportBindings(actions).ToJson());
     }
 
     /// <summary>
-    /// Reads bindings saved with <see cref="SaveBindings"/> and applies them (<see cref="ImportBindings"/>). Returns false
-    /// and keeps the current bindings when nothing was saved or the data is unreadable (which is set aside, so the next
-    /// save does not destroy it). A storage that cannot be read throws instead, and the current bindings stay.
+    /// Reads bindings saved with <see cref="SaveBindings"/> and applies them (<see cref="ImportBindings"/>): to
+    /// <paramref name="actions"/> only, the actions a rebinding screen offers, or to every action the data names when
+    /// it is null. Returns false and keeps the current bindings when nothing was saved or the data is unreadable or of a
+    /// later format (it is set aside, so the next save does not destroy it). A storage that cannot be read throws
+    /// instead, and the current bindings stay.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="storage"/> or <paramref name="slot"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="slot"/> is empty or white space, or is a name the storage cannot hold (for the file storage, anything that is not a plain name).</exception>
     /// <exception cref="IOException">The storage failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The storage refused access.</exception>
-    public bool LoadBindings(IStorage storage, string slot = BindingsSlot)
+    public bool LoadBindings(IStorage storage, string slot = BindingsSlot, IEnumerable<string>? actions = null)
     {
         ArgumentNullException.ThrowIfNull(storage);
         ArgumentException.ThrowIfNullOrWhiteSpace(slot);
@@ -271,7 +300,7 @@ public sealed partial class InputMap
             storage.SetAside(slot);
             return false;
         }
-        ImportBindings(set);
+        ImportBindings(set, actions);
         return true;
     }
 }
