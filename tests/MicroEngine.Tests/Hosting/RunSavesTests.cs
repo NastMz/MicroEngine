@@ -91,11 +91,12 @@ public sealed partial class RunSavesTests
         var game = new CountingGame(_id);
         Run(game, new RunOptions { Script = Script, TimeMode = TimeMode.RealTime, Mute = true, CaptureDirectory = _folder }, new RunPreset());
 
+        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)), "nothing was written where the player's saves are");
+        Assert.AreNotEqual(SaveStore.DefaultDirectory(_id), game.Saves.Directory, "and nothing is read from there");
         Assert.IsInstanceOfType<MemorySaveStorage>(game.Saves.Storage);
         Assert.AreEqual("memory", game.Saves.Directory);
         Assert.AreEqual(0, game.FoundAtStart, "empty at start");
         Assert.AreEqual(1, game.Saves.Load("progress", RunSaveTypes.Default.Progress)!.Launches, "what the run saved is there for the run");
-        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)), "nothing was written where the player's saves are");
     }
 
     [TestMethod]

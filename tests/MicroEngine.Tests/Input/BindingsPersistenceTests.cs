@@ -34,19 +34,20 @@ public sealed class BindingsPersistenceTests
     [TestMethod]
     public void A_file_of_a_later_format_is_not_applied_and_is_set_aside()
     {
-        var error = Assert.ThrowsExactly<FormatException>(() => InputBindingSet.FromJson(LaterFormat));
-        StringAssert.Contains(error.Message, "version 3");
-        Assert.ThrowsExactly<FormatException>(() => InputBindingSet.FromJson("""{ "version": 0, "actions": [] }"""));
-
         var storage = new MemorySaveStorage();
         storage.Write(InputMap.BindingsSlot, LaterFormat);
         var map = Map();
         var confirm = Controls(map, "confirm");
 
-        Assert.IsFalse(map.LoadBindings(storage), "nothing was loaded");
+        bool loaded = map.LoadBindings(storage);
         CollectionAssert.AreEqual(confirm, Controls(map, "confirm"), "the action keeps its controls");
         CollectionAssert.AreEqual(new[] { "Key:Z", "Key:Space", "Pad:A" }, Controls(map, "jump"));
+        Assert.IsFalse(loaded, "nothing was loaded");
         Assert.AreEqual(LaterFormat, storage.ReadSetAside(InputMap.BindingsSlot), "the file is kept aside, so the next save does not destroy it");
+
+        var error = Assert.ThrowsExactly<FormatException>(() => InputBindingSet.FromJson(LaterFormat));
+        StringAssert.Contains(error.Message, "version 3");
+        Assert.ThrowsExactly<FormatException>(() => InputBindingSet.FromJson("""{ "version": 0, "actions": [] }"""));
 
         // A set of a later format that reached the game another way (its own save) is not applied either.
         var set = new InputBindingSet { Version = 3, Actions = { new ActionBindingData { Action = "confirm" } } };
@@ -69,9 +70,10 @@ public sealed class BindingsPersistenceTests
             }
             """);
 
-        Assert.AreEqual(1, map.ImportBindings(set), "only the action that got a control was replaced");
+        int replaced = map.ImportBindings(set);
         CollectionAssert.AreEqual(confirm, Controls(map, "confirm"), "nothing it knows: the action is left as it was");
         CollectionAssert.AreEqual(new[] { "Key:Q" }, Controls(map, "jump"), "what it knows is applied, the rest ignored");
+        Assert.AreEqual(1, replaced, "only the action that got a control was replaced");
     }
 
     [TestMethod]

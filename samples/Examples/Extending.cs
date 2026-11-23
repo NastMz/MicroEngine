@@ -10,25 +10,83 @@ namespace Examples;
 
 #region save-storage
 /// <summary>
-/// Where save slots live is an ISaveStorage: files on desktops and phones, localStorage in browsers. This one keeps them
-/// in memory (tests, a demo kiosk); a cloud service or a console's save API would implement the same seven members.
+/// Where save slots live is an ISaveStorage: files on desktops and phones, localStorage in browsers, memory in a test.
+/// This one keeps every slot in one file, for a system that gives a game a single save file, or to copy a whole
+/// set of saves as one thing. A cloud service or a console's save API would implement the same seven members.
 /// </summary>
-public sealed class MemorySaveStorage : ISaveStorage
+public sealed class SingleFileSaveStorage(string path) : ISaveStorage
 {
-    private readonly Dictionary<string, string> _slots = [];
+    private const string Aside = ".corrupt";   // what SetAside keeps a slot's unreadable text under
+    private Dictionary<string, string>? _slots;
 
-    public string Location => "memory";
-    public string? Read(string slot) => _slots.GetValueOrDefault(slot);
-    public void Write(string slot, string text) => _slots[slot] = text;
-    public bool Exists(string slot) => _slots.ContainsKey(slot);
-    public void Delete(string slot) => _slots.Remove(slot);
+    public string Location => path;
+    public string? Read(string slot) => Slots.GetValueOrDefault(slot);
+    public bool Exists(string slot) => Slots.ContainsKey(slot);
+
+    public void Write(string slot, string text)
+    {
+        Slots[slot] = text;
+        Flush();
+    }
+
+    public void Delete(string slot)
+    {
+        if (Slots.Remove(slot)) Flush();
+    }
+
+    // Best effort: a medium that fails here leaves the slot where it was, and SaveStore will not write over it.
     public void SetAside(string slot)
     {
-        if (_slots.Remove(slot, out var text)) _slots[slot + ".corrupt"] = text;
+        try
+        {
+            if (!Slots.Remove(slot, out var text)) return;
+            Slots[slot + Aside] = text;
+            Flush();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
-    // A copy set aside is not a slot. This storage keeps no times, so LastWrite is null.
+
+    // A copy set aside is not a slot. One file has one time of writing, which says nothing about one slot: null.
     public IReadOnlyList<SlotInfo> List() =>
-        [.. _slots.Where(s => !s.Key.EndsWith(".corrupt")).Select(s => new SlotInfo(s.Key, s.Value.Length, null))];
+        [.. Slots.Where(s => !s.Key.EndsWith(Aside)).Select(s => new SlotInfo(s.Key, s.Value.Length, null))];
+
+    // Read once, on first use. A file that cannot be read throws IOException: the store then reports "could not load".
+    private Dictionary<string, string> Slots
+    {
+        get
+        {
+            if (_slots is not null) return _slots;
+            var slots = new Dictionary<string, string>();
+            if (File.Exists(path))
+            {
+                try
+                {
+                    using var file = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+                    foreach (var slot in file.RootElement.EnumerateObject()) slots[slot.Name] = slot.Value.GetString() ?? "";
+                }
+                catch (Exception e) when (e is System.Text.Json.JsonException or InvalidOperationException)
+                {
+                    throw new IOException($"The save file '{path}' is not one this storage wrote.", e);
+                }
+            }
+            return _slots = slots;
+        }
+    }
+
+    // The whole file, written beside it and moved over it, so a crash never leaves half a file.
+    private void Flush()
+    {
+        using var stream = new MemoryStream();
+        using (var json = new System.Text.Json.Utf8JsonWriter(stream))
+        {
+            json.WriteStartObject();
+            foreach (var (slot, text) in _slots!) json.WriteString(slot, text);
+            json.WriteEndObject();
+        }
+        if (Path.GetDirectoryName(path) is { Length: > 0 } folder) Directory.CreateDirectory(folder);
+        File.WriteAllBytes(path + ".tmp", stream.ToArray());
+        File.Move(path + ".tmp", path, overwrite: true);
+    }
 }
 #endregion
 

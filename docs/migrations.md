@@ -36,9 +36,12 @@ unless the run names a medium or the composition sets `host.Storage`
 - A game that uses `Saves` in its constructor, with no store of its own, now throws `InvalidOperationException` in
   such a run instead of using the player's saves. Use `Saves` from `Configure`, `Load` or later.
 - `Game.InitializeForTest` has a third, optional parameter (`saves`); a call with two arguments compiles as before.
-- The SDK now has a type named `MemorySaveStorage` in `MicroEngine.Core`. A game that copied the class of that name
-  from the examples and uses it from another namespace that also imports `MicroEngine.Core` gets an ambiguous
-  reference: delete the copy and use the SDK's, or name the one it means.
+- The SDK now has a type named `MemorySaveStorage` in `MicroEngine.Core`, and the examples no longer write one by
+  hand: their storage of their own is `SingleFileSaveStorage`, every slot in one file
+  ([A save storage](manual/extending.md#a-save-storage)). A game that copied the examples' `MemorySaveStorage`
+  deletes the copy and uses the SDK's; until it does, a file that imports both namespaces gets an ambiguous
+  reference. The SDK's keeps what `SetAside` took out of a slot apart (`ReadSetAside(slot)`), not in a slot named
+  `<slot>.corrupt`, and takes plain slot names only.
 
 ### `TextureFilter` has a third value, and two devices declare mip levels
 

@@ -1,8 +1,6 @@
 using Examples;
 using MicroEngine.Core;
 using MicroEngine.Scenes;
-// The storage the "extending" example writes by hand, not the engine's own (MicroEngine.Core.MemorySaveStorage).
-using MemorySaveStorage = Examples.MemorySaveStorage;
 
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
 
@@ -91,13 +89,44 @@ public sealed class ExtendingTests
     [TestMethod]
     public void AGameSavesThroughACustomStorage()
     {
-        var storage = new MemorySaveStorage();
-        var store = new SaveStore(storage);
-        Assert.IsTrue(store.Save("slot", new SaveExample.Progress { Coins = 3 }));
-        Assert.AreEqual(3, store.Load<SaveExample.Progress>("slot")!.Coins);
-        storage.Write("broken", "{ not json");
-        Assert.IsNull(store.Load<SaveExample.Progress>("broken"), "unreadable data loads as null");
-        Assert.IsTrue(storage.Exists("broken.corrupt"), "and is set aside, not lost");
+        string folder = Directory.CreateTempSubdirectory("examples-storage-").FullName;
+        string path = Path.Combine(folder, "saves", "all.json");
+        try
+        {
+            var storage = new SingleFileSaveStorage(path);
+            Assert.AreEqual(0, storage.List().Count, "no file yet: no slot");
+            Assert.IsFalse(File.Exists(path), "and reading creates nothing");
+            var store = new SaveStore(storage);
+            Assert.IsTrue(store.Save("slot", new SaveExample.Progress { Coins = 3 }));
+            Assert.IsTrue(store.Save("other", new SaveExample.Progress { Coins = 5 }));
+            Assert.AreEqual(3, store.Load<SaveExample.Progress>("slot")!.Coins);
+            Assert.IsTrue(File.Exists(path), "every slot is in the one file");
+            Assert.AreEqual(1, Directory.GetFiles(Path.GetDirectoryName(path)!).Length, "and nothing is left beside it");
+
+            // The next launch reads the same file.
+            var again = new SingleFileSaveStorage(path);
+            Assert.AreEqual(path, again.Location);
+            CollectionAssert.AreEquivalent(new[] { "slot", "other" }, again.List().Select(s => s.Name).ToArray());
+            Assert.IsNull(again.List()[0].LastWrite, "one file has no time per slot");
+            Assert.AreEqual(5, new SaveStore(again).Load<SaveExample.Progress>("other")!.Coins);
+
+            again.Write("broken", "{ not json");
+            Assert.IsNull(new SaveStore(again).Load<SaveExample.Progress>("broken"), "unreadable data loads as null");
+            Assert.IsFalse(again.Exists("broken"));
+            var third = new SingleFileSaveStorage(path);
+            Assert.AreEqual("{ not json", third.Read("broken.corrupt"), "and is set aside in the file, not lost");
+            Assert.AreEqual(2, third.List().Count, "a copy set aside is not a slot");
+            third.Delete("other");
+            Assert.IsFalse(new SingleFileSaveStorage(path).Exists("other"));
+
+            // A file this storage did not write is a failure of the medium: the store loads nothing and replaces nothing.
+            File.WriteAllText(path, "not a save file");
+            var foreign = new SaveStore(new SingleFileSaveStorage(path));
+            Assert.IsNull(foreign.Load<SaveExample.Progress>("slot"));
+            Assert.IsFalse(foreign.Save("slot", new SaveExample.Progress()), "what could not be read is not written over");
+            Assert.AreEqual("not a save file", File.ReadAllText(path));
+        }
+        finally { Directory.Delete(folder, true); }
     }
 
     [TestMethod]
@@ -736,7 +765,7 @@ public sealed class SaveVersionTests
         var (storage, store) = With("""{ "@version": 3, "Gold": "lots" }""");
         ProfileSaves.Load(store, out string notice);
         StringAssert.Contains(notice, "set aside");
-        Assert.IsTrue(storage.Exists("profile.corrupt"));
+        Assert.IsNotNull(storage.ReadSetAside("profile"));
         Assert.IsTrue(ProfileSaves.Save(store, new Profile()));
     }
 

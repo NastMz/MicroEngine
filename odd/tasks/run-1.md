@@ -112,3 +112,34 @@ Quoted fragments are the issue's text (L1).
   `16-rebind.png` and `37-localization-en.png` were looked at: key names, not action names. Not run: the browser
   suite (`web/tests`), the phone hosts, `sdk/tests`, the site build. No scripted trace or capture test of the demos
   or the samples changed.
+- L7 (2026-11-22) Coordinator's corrections, verbatim: "No failing run was observed for any new test. Observe one
+  now for each group"; "The name clash is a defect for a developer following the manual [...] Change the sample's
+  medium to something a developer would really write"; "Say in the manual's persistence page and in limitations
+  what a scripted run does in the browser (it uses the page's storage), since that is the one place the rule does
+  not hold."
+- L8 (2026-11-22) Red runs. Against the source of `origin/main` the two new test files do not compile (they use
+  `MemorySaveStorage`, `SaveDirectory` and the `actions` parameter: CS0246, CS1061, CS1501). So the behaviour was
+  taken out with the new API left in (in the working tree only, restored afterwards): `Game.AttachRun` giving no
+  store of its own, `InputBindingSet.FromJson` and `ImportBindings` accepting a later format, `ImportBindings`
+  replacing an action whose controls are all unknown. `RunSavesTests` and `BindingsPersistenceTests`: 7 failed,
+  8 passed of 15. The tests were first reordered so that each fails on the behaviour it is named for:
+  - `A_scripted_run_keeps_its_saves_in_a_store_of_its_own`: "Se esperaba que la condición fuera false" (the
+    default folder exists: the run wrote there).
+  - `Two_scripted_runs_in_a_row_start_from_the_same_state`: "Se esperaba que los valores fueran iguales" (the
+    second run found the first one's save).
+  - `A_run_in_deterministic_time_keeps_its_saves_in_a_store_of_its_own` and
+    `A_game_stepped_by_a_test_has_a_store_of_its_own_or_the_one_the_test_hands_it`: "Expected value to be of type
+    MemorySaveStorage".
+  - `A_game_that_used_its_saves_before_such_a_run_is_told`: "Expected exception of exact type
+    InvalidOperationException but no exception was thrown".
+  - `A_file_of_a_later_format_is_not_applied_and_is_set_aside`: "the action keeps its controls. Número diferente
+    de elementos" (the map was emptied).
+  - `An_action_whose_saved_controls_are_all_unknown_keeps_the_controls_it_has`: "nothing it knows: the action is
+    left as it was. Número diferente de elementos".
+  The eight that passed test the option, the composition's medium, a played run, the memory storage itself, the
+  `actions` parameter and an action saved unbound, none of which the removed lines decide.
+- L9 (2026-11-22) The examples' storage of their own is `SingleFileSaveStorage` (every slot in one file, written
+  whole beside it and moved over it), in place of a hand-written memory storage that now had the SDK's name.
+  `ExtendingTests.AGameSavesThroughACustomStorage` covers it; the samples' tests use the SDK's `MemorySaveStorage`
+  without qualifying. The persistence page and the limitations page state that a scripted run in a browser page
+  uses the page's storage.

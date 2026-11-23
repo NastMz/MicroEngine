@@ -17,6 +17,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   from given saves and leaves what it saved to look at, or a second set of saves while developing. In code it is
   `RunOptions.Saves`; `LaunchRequest.SaveDirectory` and `LaunchArguments.SaveDirectory` carry the option.
 - **`MemorySaveStorage`** is a save medium in memory, for tests and tools: `new SaveStore(new MemorySaveStorage())`.
+  The examples' storage of their own is now `SingleFileSaveStorage`, every slot in one file
+  ([A save storage](../manual/extending.md#a-save-storage)).
 - **`Game.InitializeForTest(platform, seed, saves)`** takes the medium of the game's saves, for a test that starts
   a game twice over the same saves.
 - **The samples have no save folder parameter.** The examples and Gem Garden no longer take a `saveDirectory` nor

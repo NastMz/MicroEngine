@@ -232,8 +232,10 @@ public static void Configure(HostBuilder host)
 A game that used `Saves` in its constructor has its store before any run could say where it goes; a scripted run or
 a test of such a game throws `InvalidOperationException` instead of using the player's saves.
 
-In a browser page a scripted run (development packages only) keeps the page's storage: what it starts from is the
-browser profile the page is opened in, and a new profile is an empty store.
+The browser is the one place where this does not hold. A scripted run in a page (`?script=`, development packages
+only) reads and writes the page's `localStorage` like any other run of the page: what it starts from is the browser
+profile the page is opened in. For a run that starts from nothing, open the page in a new profile or a private
+window, or clear the site's storage first.
 
 ## `ISaveStorage`
 
@@ -555,7 +557,8 @@ and achievements in `"achievements"` ([Achievements](achievements.md)).
 
 The web host reports storage problems to the player: "Progress will not be kept" when the browser blocks site
 storage (a session-only store is used), and "Progress could not be saved: site storage is full" on a quota error.
-Closing or reloading the page ends the run properly so progress written at shutdown is saved. Browser storage
+Closing or reloading the page ends the run properly so progress written at shutdown is saved. A scripted run in a
+page uses the same storage ([Scripted runs and tests](#scripted-runs-and-tests)). Browser storage
 holds about 5 MB per origin, can be evicted and is discarded by private windows; see
 [Requirements and limitations](../reference/limitations.md#saves).
 

@@ -12,7 +12,7 @@ namespace Samples.Tests;
 [TestClass]
 public sealed class LocalizationExampleTests
 {
-    private static (ExamplesGame Game, GameSession Platform, LocalizationExample Scene) Open(MicroEngine.Core.MemorySaveStorage? saves = null)
+    private static (ExamplesGame Game, GameSession Platform, LocalizationExample Scene) Open(MemorySaveStorage? saves = null)
     {
         // A session runs whole frames, drawing included: drawing is what places a label's lines.
         var session = new GameSession(() => new ExamplesGame(), game =>
@@ -106,7 +106,7 @@ public sealed class LocalizationExampleTests
     [TestMethod]
     public void TheChoiceIsSavedAndLeavingRestoresEnglishForTheOtherExamples()
     {
-        var saves = new MicroEngine.Core.MemorySaveStorage();   // the same saves for the second launch
+        var saves = new MemorySaveStorage();   // the same saves for the second launch
         var (game, platform, _) = Open(saves);
         Press(game, platform, "confirm");
         Assert.AreEqual("es", game.Localization.Language);
