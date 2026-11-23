@@ -55,8 +55,25 @@ public sealed class CaptureAudioDevice : MixerAudioDevice
         base.Play(sound, volume, pitch, pan);
     }
 
+    /// <summary>Plays the clip and records it in <see cref="Played"/> under its <see cref="AudioClip.Name"/> ("" for a clip without one).</summary>
+    public override void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5f)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        Played.Add((clip.Name ?? "", Duration, volume, pitch, pan));
+        base.Play(clip, volume, pitch, pan);
+    }
+
+    /// <summary>Plays the clip as a voice and records it in <see cref="Played"/> under its <see cref="AudioClip.Name"/>.</summary>
+    public override VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        Played.Add((clip.Name ?? "", Duration, parameters.Volume, parameters.Pitch, parameters.Pan));
+        return base.PlayVoice(clip, parameters);
+    }
+
     /// <summary>Plays the sound as a voice and records it in <see cref="Played"/>.</summary>
     public override VoiceHandle PlayVoice(SoundHandle sound, in PlayParameters parameters)
+
     {
         ArgumentNullException.ThrowIfNull(sound);
         Played.Add((sound.Name, Duration, parameters.Volume, parameters.Pitch, parameters.Pan));

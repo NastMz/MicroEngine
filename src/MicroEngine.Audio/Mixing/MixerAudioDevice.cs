@@ -5,8 +5,9 @@ namespace MicroEngine.Audio;
 /// <summary>
 /// An <see cref="IAudioDevice"/> over the engine's one mixer (<see cref="AudioEngine"/>) and a PCM sink: every backend
 /// device is one of these with its own sink, so voices, priorities, stealing, music and fades behave the same
-/// everywhere. Music decodes in managed code: WAV, OGG Vorbis (streamed, decoded ahead outside the simulation step), and
-/// formats a backend adds (<see cref="AddDecoder"/>).
+/// everywhere. Music decodes in managed code, streamed and decoded ahead outside the simulation step: the formats of
+/// <see cref="AudioDecoders"/> (WAV, OGG Vorbis, MP3 and what a game registers), and formats a backend adds for itself
+/// (<see cref="AddDecoder"/>).
 /// </summary>
 /// <remarks>
 /// Sound effects play on the "sfx" bus with priority 0, music on the "music" bus with the highest priority, so the voice
@@ -15,8 +16,10 @@ namespace MicroEngine.Audio;
 /// </remarks>
 public class MixerAudioDevice : IAudioDevice, IDisposable
 {
-    private readonly List<AudioClip> _sounds = [];
-    private readonly List<Music> _music = [];
+    // Loaded sounds and music by handle id; an unloaded one leaves its place free for the next.
+    private readonly List<AudioClip?> _sounds = [];
+    private readonly List<Music?> _music = [];
+    private readonly Stack<int> _freeSounds = new(), _freeMusic = new();
     private readonly Dictionary<string, Func<byte[], IAudioStream>> _decoders = new(StringComparer.OrdinalIgnoreCase);
     private VoiceHandle _musicVoice;
     private MusicHandle? _current;
@@ -27,7 +30,6 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
         settings ??= new AudioEngineSettings();
         // A game's mix is kept within full scale unless the settings say otherwise.
         Engine = new AudioEngine(sink, settings with { Limiter = settings.Limiter ?? true });
-        _decoders["ogg"] = VorbisStream.Open;
     }
 
     /// <summary>The mixer, for what <see cref="IAudioDevice"/> does not cover: buses, handles, priorities.</summary>
@@ -36,10 +38,18 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     /// <summary>True: the sink plays. A backend whose device could not open uses a <see cref="SilentAudioDevice"/> instead.</summary>
     public virtual bool IsAvailable => true;
 
-    /// <summary>The formats <see cref="LoadMusicStream"/> decodes, lower case: "wav", "ogg" and any a backend added.</summary>
-    public IReadOnlyList<string> MusicFormats => ["wav", .. _decoders.Keys.Select(k => k.ToLowerInvariant()).Order(StringComparer.Ordinal)];
+    /// <summary>
+    /// The formats <see cref="LoadMusicStream"/> decodes, lower case in alphabetical order: those of
+    /// <see cref="AudioDecoders"/> ("mp3", "ogg", "wav" and what a game registered) and any this backend added.
+    /// </summary>
+    public IReadOnlyList<string> MusicFormats =>
+        [.. AudioDecoders.Formats.Concat(_decoders.Keys.Select(k => k.ToLowerInvariant())).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
-    /// <summary>Adds a music format the device decodes (a backend's native decoder, for example).</summary>
+    /// <summary>
+    /// Adds a music format only this device decodes (a backend's native decoder), for a format
+    /// <see cref="AudioDecoders"/> does not have: a format registered there is decoded by that decoder on every
+    /// device, so a file sounds the same on all of them.
+    /// </summary>
     /// <param name="format">The file extension without the dot.</param>
     /// <param name="open">Opens a stream over the file's bytes; throws <see cref="InvalidDataException"/> for bytes it cannot decode.</param>
     protected void AddDecoder(string format, Func<byte[], IAudioStream> open)
@@ -62,40 +72,97 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     public SoundHandle LoadSound(string name, AudioClip clip)
     {
         ArgumentNullException.ThrowIfNull(clip);
-        _sounds.Add(clip);
-        return new SoundHandle(_sounds.Count - 1, name);
+        return new SoundHandle(Keep(_sounds, _freeSounds, clip), name);
     }
 
     /// <inheritdoc/>
     public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true)
     {
         ArgumentNullException.ThrowIfNull(clip);
-        _music.Add(new Music(clip, null, null, loop));
-        return new MusicHandle(_music.Count - 1, name);
+        return new MusicHandle(Keep(_music, _freeMusic, new Music(clip, null, null, loop)), name);
     }
 
-    /// <summary>Loads music to stream: "wav" is decoded now; "ogg" and the formats a backend added are decoded while they play.</summary>
+    private static int Keep<T>(List<T?> list, Stack<int> free, T item) where T : class
+    {
+        if (free.TryPop(out int id))
+        {
+            list[id] = item;
+            return id;
+        }
+        list.Add(item);
+        return list.Count - 1;
+    }
+
+    /// <summary>
+    /// Forgets a loaded sound: the device no longer holds its samples, and its handle plays nothing from now on. A
+    /// voice already playing it plays on to its end.
+    /// </summary>
+    public void UnloadSound(SoundHandle sound)
+    {
+        ArgumentNullException.ThrowIfNull(sound);
+        if ((uint)sound.Id >= (uint)_sounds.Count || _sounds[sound.Id] is null) return;
+        _sounds[sound.Id] = null;
+        _freeSounds.Push(sound.Id);
+    }
+
+    /// <summary>
+    /// Forgets loaded music: the device no longer holds its samples or its file's bytes, and its handle plays nothing
+    /// from now on. If it is the music playing, it stops; a voice playing it beside the music plays on to its end.
+    /// </summary>
+    public void UnloadMusic(MusicHandle music)
+    {
+        ArgumentNullException.ThrowIfNull(music);
+        if ((uint)music.Id >= (uint)_music.Count || _music[music.Id] is null) return;
+        if (ReferenceEquals(_current, music)) StopMusic();
+        _music[music.Id] = null;
+        _freeMusic.Push(music.Id);
+    }
+
+    /// <summary>Sounds and music loaded now (unloaded ones not counted).</summary>
+    public (int Sounds, int Music) Loaded => (_sounds.Count - _freeSounds.Count, _music.Count - _freeMusic.Count);
+
+    /// <summary>
+    /// Loads music to stream, decoded while it plays: any format of <see cref="MusicFormats"/> ("wav" is decoded now).
+    /// A format of <see cref="AudioDecoders"/> is decoded by that decoder; a backend's own decoder serves only a
+    /// format that list lacks.
+    /// </summary>
     /// <exception cref="NotSupportedException">The format is not one of <see cref="MusicFormats"/>.</exception>
     /// <exception cref="InvalidDataException">The bytes cannot be decoded as that format.</exception>
     public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true)
     {
         ArgumentNullException.ThrowIfNull(encoded);
-        format = format.TrimStart('.').ToLowerInvariant();
+        format = AudioDecoders.Normalize(format);
         if (format == "wav") return LoadMusic(name, AudioClip.FromWav(encoded), loop);
-        if (!_decoders.TryGetValue(format, out var open))
+        if (!AudioDecoders.TryGet(format, out var open) && !_decoders.TryGetValue(format, out open))
             throw new NotSupportedException($"Music '{name}': this audio device decodes {string.Join(", ", MusicFormats)}, not {format}.");
-        try { open(encoded).Dispose(); }
-        catch (Exception e) when (e is ArgumentException or InvalidDataException or EndOfStreamException or NotSupportedException)
+        try { AudioDecoders.Open(encoded, format, open).Dispose(); }
+        catch (InvalidDataException e)
         {
-            throw new InvalidDataException($"Music '{name}' could not be decoded as {format}: {e.Message}", e);
+            throw new InvalidDataException($"Music '{name}': {e.Message}", e);
         }
-        _music.Add(new Music(null, encoded, open, loop));
-        return new MusicHandle(_music.Count - 1, name);
+        return new MusicHandle(Keep(_music, _freeMusic, new Music(null, encoded, open, loop)), name);
     }
 
     /// <inheritdoc/>
-    public virtual void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan = 0.5f) =>
-        Engine.Play(_sounds[sound.Id], new PlayParameters { Volume = volume, Pitch = pitch, Pan = pan });
+    public virtual void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan = 0.5f)
+    {
+        if (Sound(sound) is { } clip) Engine.Play(clip, new PlayParameters { Volume = volume, Pitch = pitch, Pan = pan });
+    }
+
+    /// <summary>Plays a clip that was not loaded into the device: it holds the clip only while a voice plays it.</summary>
+    public virtual void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5f) =>
+        Engine.Play(clip, new PlayParameters { Volume = volume, Pitch = pitch, Pan = pan });
+
+    /// <summary>
+    /// Plays a clip that was not loaded into the device as a voice of the mixer, exactly as
+    /// <paramref name="parameters"/> say; the device holds the clip only while the voice plays it.
+    /// </summary>
+    /// <returns>Its handle, or <see cref="VoiceHandle.None"/> when the voice policy refused it.</returns>
+    /// <exception cref="KeyNotFoundException">The bus does not exist.</exception>
+    public virtual VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters) => Engine.Play(clip, parameters);
+
+    private AudioClip? Sound(SoundHandle sound) => (uint)sound.Id < (uint)_sounds.Count ? _sounds[sound.Id] : null;
+    private Music? Track(MusicHandle music) => (uint)music.Id < (uint)_music.Count ? _music[music.Id] : null;
 
     /// <summary>
     /// Plays a loaded sound as a voice of the mixer, exactly as <paramref name="parameters"/> say (loop, bus and
@@ -107,7 +174,7 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     public virtual VoiceHandle PlayVoice(SoundHandle sound, in PlayParameters parameters)
     {
         ArgumentNullException.ThrowIfNull(sound);
-        return Engine.Play(_sounds[sound.Id], parameters);
+        return Sound(sound) is { } clip ? Engine.Play(clip, parameters) : VoiceHandle.None;
     }
 
     /// <summary>
@@ -120,7 +187,7 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     public virtual VoiceHandle PlayMusicVoice(MusicHandle music, in PlayParameters parameters)
     {
         ArgumentNullException.ThrowIfNull(music);
-        var track = _music[music.Id];
+        if (Track(music) is not { } track) return VoiceHandle.None;
         return track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
     }
 
@@ -128,7 +195,7 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     public void PlayMusic(MusicHandle music, float volume = 1)
     {
         StopMusic();
-        var track = _music[music.Id];
+        if (Track(music) is not { } track) return;
         var parameters = new PlayParameters { Volume = volume, Loop = track.Loop, Bus = AudioEngine.MusicBus, Priority = int.MaxValue };
         _musicVoice = track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
         _current = music;
@@ -143,7 +210,12 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
     {
         ArgumentNullException.ThrowIfNull(music);
         Engine.Stop(_musicVoice, seconds);
-        var track = _music[music.Id];
+        if (Track(music) is not { } track)
+        {
+            (_musicVoice, _current) = (VoiceHandle.None, null);
+            return;
+        }
+
         var parameters = new PlayParameters { Volume = volume, Loop = track.Loop, Bus = AudioEngine.MusicBus, Priority = int.MaxValue, FadeIn = seconds };
         _musicVoice = track.Clip is { } clip ? Engine.Play(clip, parameters) : Engine.Play(track.Open!(track.Encoded!), parameters);
         _current = music;
@@ -190,10 +262,20 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
 }
 
 /// <summary>OGG Vorbis decoded in managed code (NVorbis), the same on every backend.</summary>
-internal sealed class VorbisStream(NVorbis.VorbisReader reader) : ISeekableAudioStream
+/// <remarks>
+/// The decoder's own seek lands some hundreds of samples away from the place asked for, which a loop would hear as a
+/// seam and a game following its music as drift. So a seek here is exact by construction: forward it decodes and
+/// drops what lies between, backward it starts the file again first (<see cref="ExactSeekStream"/>).
+/// </remarks>
+internal sealed class VorbisStream(NVorbis.VorbisReader reader) : IAudioStream
 {
+    public static IAudioStream Open(byte[] encoded)
+    {
+        var first = new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded, writable: false), closeOnDispose: true));
+        return new ExactSeekStream(first, () => new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded, writable: false), closeOnDispose: true)), first.Frames, first.LoopRegion);
+    }
+
     public long Frames => reader.TotalSamples;
-    public void Seek(long frame) => reader.SamplePosition = Math.Clamp(frame, 0, Math.Max(0, reader.TotalSamples));
 
     /// <summary>
     /// The loop the file's comments name, in the convention game tools write: LOOPSTART with LOOPLENGTH or LOOPEND, in
@@ -217,9 +299,8 @@ internal sealed class VorbisStream(NVorbis.VorbisReader reader) : ISeekableAudio
             && long.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out value) && value >= 0;
     }
 
-    public static IAudioStream Open(byte[] encoded) => new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded), closeOnDispose: true));
-
     public int Channels => reader.Channels;
+
     public int SampleRate => reader.SampleRate;
     public int Read(Span<float> buffer) => reader.ReadSamples(buffer[..(buffer.Length / Channels * Channels)]);
     public void Rewind() => reader.SamplePosition = 0;

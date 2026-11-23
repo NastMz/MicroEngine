@@ -36,8 +36,9 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
 ## Tasks
 
 - [x] T1 S1 Mix graph, effects, limiter, ramps, crossfade. PR #199 (`feat/audio-2`).
-- [ ] T4 S2, S5, S6 Position, seek, scheduled start, loop regions, the music's clock. Route: inline. Commit: see Log.
-- [ ] T5 S3, S5, S6 Decoder registry, OGG sound effects, MP3, streamed or decoded music, unloading. Route: inline.
+- [x] T4 S2, S5, S6 Position, seek, scheduled start, loop regions, the music's clock. Route: inline. Commit 2673b795.
+- [x] T5 S3, S5, S6 Decoder registry, OGG sound effects, MP3, streamed or decoded music, unloading. Route: inline.
+  Commit: the one after 2673b795 (`feat(audio): one list of decoders...`).
 - [ ] T6 S4, S5, S6 Listener and emitters as a scene system. Route: inline.
 - [ ] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline.
 
@@ -65,3 +66,16 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
   the time it had been paused (`End = Start + Produced`), so music paused and resumed was "over" early for
   `IsPlaying` and `CurrentMusic`; the end now comes from the position, which pauses and seeks move. The baseline hashes
   are unchanged by both.
+- L4 (2026-11-22, T5) Measured before choosing how streams seek (a probe project outside the repository, a chirp so
+  that positions cannot alias): NVorbis 0.10.5 `SamplePosition = n` lands off the place asked for (short mono file:
+  +239 frames, and at frame 512 for `SamplePosition = 0` after reading; 20 s stereo file: -128 and +128 frames, exact
+  only at 0); NVorbis 1.0.0-rc.2 lands on the frame but gives samples up to 1.3 away from a straight decode (louder
+  than the signal) for the first 600 to 3600 samples; NLayer 3.0.1 gives silence and then differing samples after
+  `Position = n`. None can serve a loop seam or a clock a game follows. Decoding speed, same probe: NVorbis decodes
+  20 s of 44.1 kHz stereo in 117 to 219 ms and 98 s (Neon Rift's city.ogg) in 255 to 358 ms after the first run.
+  Hence `ExactSeekStream`: forward by decoding and dropping, backward from the file's start, and a second decoder
+  brought to a loop's start while the loop plays. Tested against the whole decode at 1e-6.
+- L5 (2026-11-22, T5) NLayer 3.0.1 (MIT, no dependencies, net8.0 and netstandard2.0 builds): a console project
+  referencing it was published trimmed (`TrimMode=full`, `TrimmerSingleWarn=false`, self-contained, win-x64) with no
+  IL warning and decoded an MP3 file correctly when run. NativeAOT was not published: this machine has no platform
+  linker. Not run in a browser.

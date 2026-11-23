@@ -19,6 +19,8 @@
   <!-- OGG Vorbis decoding, managed and MIT (THIRD-PARTY-NOTICES.md): music streams decode the same on every backend. -->
   <ItemGroup>
     <PackageReference Include="NVorbis" Version="[0.10.5]" />
+    <!-- MP3 decoding, managed and MIT (THIRD-PARTY-NOTICES.md): the same on every backend. -->
+    <PackageReference Include="NLayer" Version="[3.0.1]" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />

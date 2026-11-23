@@ -89,7 +89,7 @@ protected override void Load()
 | `Material(path, fallback?)` | a `Material2D` from a compiled fragment shader (`.frag.shader`), to draw through with `renderer.PushState` ([Render targets and shaders](../guide/render-targets-and-shaders.md)); cached per path and fallback |
 | `RenderTarget(name, width, height, filter?)` | a `RenderTarget2D` to draw into and then draw like a texture. No file describes it: it is known by the name the game gives it, and cached per name, size and filter |
 | `Shader(path)` | a compiled shader file (`.shader`) as a `CompiledShader`, for games that create shaders on the graphics device themselves; a material needs only `Material` |
-| `Sound(path)`, `Music(path)` | a PCM WAV decoded into an `AudioClip`; a music file (OGG, WAV, MP3 on raylib) as `EncodedAudio`, decoded while it plays. Play them with `Audio.AddSound(name, clip)` and `Audio.AddMusic(name, music)` |
+| `Sound(path)`, `Music(path)` | a sound file (WAV, OGG, MP3) decoded into an `AudioClip`; a music file as `EncodedAudio`, decoded while it plays. Play them with `Audio.Play(clip)` or `Audio.AddSound(name, clip)`, and `Audio.AddMusic(name, music)` ([releasing them](audio.md#files-from-content-and-releasing-them)) |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
 | `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`), load times, loads during play |
@@ -399,7 +399,8 @@ Audio.AddSound("jump", Assets.Store.Get(jump));
 
 **Loaders.** Each kind of asset has one loader in `Assets.Loaders`: `texture`, `atlas`, `sheet` (the frames and clips of a `.sheet` description, as pixels), `folder atlas`, `font`,
 `shader`, `material`, `render target` (created from its options, a `RenderTargetSize`, and its name: a loader need not
-read a file, and the content folder is opened only when one does), `sound` (a PCM WAV decoded into an `AudioClip`) and
+read a file, and the content folder is opened only when one does), `sound` (a WAV, OGG or MP3 file decoded into an `AudioClip`) and
+
 `music` (a music file's bytes as `EncodedAudio`, decoded while it plays). A game adds a kind of its own, or replaces one, by registering an `IAssetLoader<T>` (or an
 `AssetLoader<T>` built from a function) before the first load of that kind:
 
@@ -450,9 +451,9 @@ virtual file system at `/Content`, so the same code works unchanged ([web builds
 
 ## Audio files
 
-`AudioMixer.AddSoundFile` decodes PCM WAV (8/16/24-bit, mono or stereo). `AddMusicFile` decodes WAV the same way
-and hands any other extension to the device to stream: `.ogg` everywhere, `.mp3` on the raylib platform only. See
-[Audio](audio.md#sound-and-music-files).
+`AudioMixer.AddSoundFile` and `AddMusicFile` take WAV (PCM, 8/16/24-bit, mono or stereo), OGG Vorbis and MP3 files,
+and any format a game registers, the same on every platform. Sound effects are decoded whole; music is decoded while
+it plays unless the game asks for it whole. See [Audio](audio.md#sound-and-music-files).
 
 ## Credits convention
 

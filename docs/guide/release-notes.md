@@ -178,6 +178,17 @@ modelled as components and systems.
   part of the sound after an intro that plays once: `LoopRegion`, read from a WAV file's sampler chunk and an OGG
   file's `LOOPSTART` comments, set on an `AudioClip`, or given per play. A decoder that can seek implements
   `ISeekableAudioStream`. The Examples sample has "Music time".
+- Sound and music formats ([Sound and music files](../manual/audio.md#sound-and-music-files)): OGG Vorbis and MP3
+  files are sound effects as well as music (`Audio.AddSoundFile`, `Assets.Sound`), and MP3 plays on every platform,
+  decoded in managed code like OGG. `AudioDecoders.Add(extension, open)` registers a format of the game's own for
+  all of them ([an audio format](../manual/extending.md#an-audio-format)). Music is streamed or decoded whole, per
+  piece: `Audio.AddMusicFile(name, path, loop, AudioLoadMode.Decoded)`.
+- Releasing sounds: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)` unregister and free a sound, and
+  registering a name again frees what had it. `Audio.Play(clip)` and `Audio.PlayVoice(clip, parameters)` play a clip
+  without registering it, so a sound loaded by an asset scope is freed with the scope
+  ([Files from content, and releasing them](../manual/audio.md#files-from-content-and-releasing-them)).
+- Fixed: looping OGG music could go back to a few hundred samples after its beginning instead of to it (the decoder's
+  seek); a loop and a seek now land on the exact sample.
 - Fixed: streamed music that does not loop played all but its last sample; and music paused for a while was reported
   as ended (`CurrentMusic`, `IsPlaying`) that much before it stopped sounding.
 

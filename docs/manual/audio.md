@@ -1,10 +1,10 @@
 # Audio
 
 MicroEngine audio has two halves. The core synthesizes sound effects (`Synth`) and step-sequenced music (`Song`)
-into `AudioClip`s, and decodes PCM WAV files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
+into `AudioClip`s, and decodes WAV, OGG and MP3 files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
 sounds and music, plays them by name, fades and crossfades music, and groups sounds in buses that carry effects (a
 reverb, a filter, music that drops under a voice line). Playback itself is done by the backend's
-`IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only. Every
+`IAudioDevice`, which also streams music while it plays. Every
 device is the engine's one mixer playing through the platform's output
 ([One mixer on every platform](#one-mixer-on-every-platform)).
 
@@ -75,8 +75,10 @@ registering it.
 | Member | Behaviour |
 | --- | --- |
 | `AddSound(name, clip)`, `AddMusic(name, clip, loop)` | Register clips |
-| `AddSoundFile(name, path)` | Decode a PCM WAV file as a sound |
-| `AddMusicFile(name, path, loop)` | WAV is decoded in managed code; any other extension is streamed by the device |
+| `AddSoundFile(name, path)` | Decode a WAV, OGG or MP3 file as a sound |
+| `AddMusicFile(name, path, loop, mode)` | A WAV, OGG or MP3 file as music, decoded while it plays or whole ([Sound and music files](#sound-and-music-files)) |
+| `RemoveSound(name)`, `RemoveMusic(name)` | Unregister, releasing what the mixer holds |
+| `Play(clip, ...)`, `PlayVoice(clip, parameters)` | Play a clip that is not registered (one held by an asset scope) |
 | `Play(name, volume, pitch, pitchJitter, pan)` | Plays a sound; unknown names throw. The same sound is not retriggered twice in one step |
 | `TryPlay(...)` | Same, but returns `false` for unregistered names |
 | `PlayMusic(name, fadeSeconds = 0.4f)` | Switches track (see below); playing the current track again does nothing |
@@ -182,7 +184,7 @@ nothing and returns `false`. `PlayVoice` returns `VoiceHandle.None` when every v
 plays: rain under the theme, a second layer of the same piece that fades in when the fight starts. It returns a
 `VoiceHandle` like any voice, so `Set` and `Stop(voice, fadeSeconds)` fade it. Name the `music` bus in its parameters
 to keep it with the music; it loops when the parameters say so. `MusicVolume`, `CurrentMusic` and the fades of
-`PlayMusic` are those of the music track only. Streamed music (OGG) keeps its own pitch.
+`PlayMusic` are those of the music track only. Streamed music keeps its own pitch.
 
 ## Buses and effects
 
@@ -495,19 +497,64 @@ bus in its handler of `Lifecycle.FocusChanged`.
 
 ## Sound and music files
 
+Every format works for sound effects and for music, and is decoded by the same managed code on every platform, so a
+file sounds the same everywhere.
+
 | Format | Support |
 | --- | --- |
-| WAV | PCM 8, 16 or 24-bit, mono or stereo, decoded in managed code (`AudioClip.FromWav`); other WAV encodings throw `NotSupportedException` |
-| OGG | Music only, through `AddMusicFile`; streamed and decoded in managed code (NVorbis) on every platform, ahead of playback and outside the simulation step |
-| MP3 | Music only, and **raylib only** (decoded by raylib, whole, when it is loaded): the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
-
-Sound and music files can also come through `Game.Assets`, from any content source (a zip
-archive too), shared and released by scopes like any asset:
+| WAV | PCM 8, 16 or 24-bit, mono or stereo; other WAV encodings throw `NotSupportedException`. Always decoded whole. Loop points from its sampler chunk |
+| OGG | Vorbis. Loop points from its `LOOPSTART` and `LOOPLENGTH` (or `LOOPEND`) comments. The format for music that loops |
+| MP3 | MPEG layers 1 to 3. No loop points, and its encoder pads both ends with a few milliseconds of silence, so a loop has a gap |
+| your own | `AudioDecoders.Add("ext", bytes => stream)` ([a decoder of your own](extending.md#an-audio-format)) |
 
 ```csharp
-Audio.AddSound("jump", Assets.Sound("sfx/jump.wav"));
+Audio.AddSoundFile("jump", "Content/sfx/jump.ogg");                 // a sound effect: decoded whole, now
+Audio.AddMusicFile("city", "Content/music/city.ogg");               // music: decoded while it plays
+Audio.AddMusicFile("sting", "Content/music/sting.mp3", loop: false, AudioLoadMode.Decoded);
+```
+
+Music is kept one of two ways, chosen per piece:
+
+| `AudioLoadMode` | Memory | While it plays | Use it for |
+| --- | --- | --- | --- |
+| `Streamed` (the default) | the file's bytes and half a second of sound | decodes a little every frame, outside the simulation step; plays at its own pitch; a seek decodes up to the place asked for | long tracks |
+| `Decoded` | the whole sound: about ten megabytes per minute of stereo at 44.1 kHz | nothing to decode; changes pitch; seeks at once | short pieces, stings, anything played many times at once |
+
+Sound effects are always decoded whole. A long ambience is better registered as music and played beside the track
+with `PlayMusicVoice`, which streams it.
+
+A seek in streamed OGG or MP3 lands on the exact sample, by decoding and dropping what lies between: forward from
+where the music is, or from the file's beginning when it goes back, at a few milliseconds per second of music
+skipped. A loop that goes back to the same place again and again does not pay for it: the place is prepared while
+the loop plays.
+
+### Files from content, and releasing them
+
+Sound and music files also come through `Game.Assets`, from any content source (a zip archive too), shared and
+released by scopes like any asset:
+
+```csharp
+Audio.AddSound("jump", Assets.Sound("sfx/jump.ogg"));
 Audio.AddMusic("city", Assets.Music("music/city.ogg"));
 ```
+
+A registered sound stays in memory until it is removed: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)`
+release what the mixer holds (music that was playing stops; a sound that was playing plays on to its end), and
+registering a name again releases what had it.
+
+For the sounds of one level there is nothing to register or remove: play the clip itself, and the level's scope is
+its only owner.
+
+```csharp
+_level = Assets.CreateScope("forest");
+_owl = _level.Sound("forest/owl.ogg");        // decoded once, held by the scope
+
+Audio.Play(_owl, volume: 0.6f);               // or Audio.PlayVoice(_owl, parameters) for a handle
+_level.Dispose();                             // the clip is freed once its last voice has ended
+```
+
+`Assets.Statistics.AudioBytes` tells how much decoded sound and encoded music the assets hold.
+
 
 Neon Rift registers every effect and track that way:
 
@@ -571,9 +618,14 @@ sound and resumes it when shown again.
   its position on through its loops.
 - A loop wraps at a whole sample of the sound; played at another pitch or rate, the fraction of a sample across the
   seam holds the last sample before it.
+- Streamed music keeps its own pitch; register it with `AudioLoadMode.Decoded` to change it.
+- A seek backward in streamed OGG or MP3 decodes from the file's beginning to the place asked for, and a seek forward
+  from where the music is: a few milliseconds per second of music skipped, on the game's thread. Decoded music
+  seeks at once.
+- MP3 has no loop points, and an MP3 file that loops has a short gap at the seam (the padding of its encoder).
+- A sound registered by name stays in memory until `RemoveSound`; a clip played without a name is held only while
+  it plays.
 
-- Streamed music keeps its own pitch.
-- Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
 - Sound is not instant: it is heard after the queue that keeps pauses from being heard, 60 ms on the SDL platform
   and 100 ms in browsers. On the SDL platform a sound reaches the device about 65 ms after the update that played it
   at 60 or more frames per second and about 75 ms at 30, before the device's own buffer; a slow frame adds up to its

@@ -87,6 +87,39 @@ public sealed class ExampleTests
 public sealed class ExtendingTests
 {
     [TestMethod]
+    public void AFormatOfTheGamesOwnIsASoundAndStreamedMusic()
+    {
+        MicroEngine.Audio.AudioDecoders.Add("pcm16", bytes => new Pcm16Stream(bytes));
+        try
+        {
+            // A second of a square wave, 16-bit little endian.
+            var file = new byte[44100 * 2];
+            for (int i = 0; i < 44100; i++) BitConverter.TryWriteBytes(file.AsSpan(i * 2), (short)(i % 200 < 100 ? 8192 : -8192));
+            string path = Path.Combine(Directory.CreateTempSubdirectory("examples-pcm16-").FullName, "square.pcm16");
+            File.WriteAllBytes(path, file);
+            var device = new MicroEngine.Audio.CaptureAudioDevice(60);
+            var audio = new MicroEngine.Audio.AudioMixer(device) { SfxVolume = 1 };
+            audio.AddSoundFile("square", path);
+            audio.AddMusicFile("square-music", path, loop: false);
+            audio.Play("square", pan: 0);
+            for (int i = 0; i < 6; i++) { audio.Pump(); audio.Update(1 / 60f); }
+            Assert.AreEqual(0.25f, device.Output.Samples[2 * 50], 1e-4f, "the file as a sound effect");
+            Assert.AreEqual(-0.25f, device.Output.Samples[2 * 150], 1e-4f);
+            audio.PlayMusic("square-music", fadeSeconds: 0);
+            Assert.AreEqual(1.0, audio.MusicDuration, 1e-9, "the stream tells its length");
+            Assert.IsTrue(audio.SeekMusic(0.5), "and can be sought");
+            for (int i = 0; i < 6; i++) { audio.Pump(); audio.Update(1 / 60f); }
+            Assert.AreEqual(0.6, audio.MusicPosition, 1e-9);
+            Assert.AreEqual(0.25f, device.Output.Samples[2 * (6 * 735 + 10) + 1], 1e-4f, "the file as streamed music from its middle, on the right too");
+        }
+        finally
+        {
+            MicroEngine.Audio.AudioDecoders.Remove("pcm16");
+        }
+    }
+
+
+    [TestMethod]
     public void AGameSavesThroughACustomStorage()
     {
         string folder = Directory.CreateTempSubdirectory("examples-storage-").FullName;

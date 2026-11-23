@@ -243,13 +243,17 @@ public sealed class AssetCache : IDisposable
     public ScalableFont Font(string path, FontOptions? options = null) =>
         _scope.Acquire<ScalableFont>(FontKey(path, options));
 
-    /// <summary>The PCM WAV file at <paramref name="path"/> decoded into a clip, shared and released like any asset; play it with <c>Audio.AddSound(name, clip)</c>.</summary>
-    /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not an 8, 16 or 24-bit PCM WAV.</exception>
+    /// <summary>
+    /// The sound file at <paramref name="path"/> (WAV, OGG, MP3 or a format registered in <c>AudioDecoders</c>) decoded
+    /// whole into a clip, shared and released like any asset. Play it with <c>Audio.Play(clip)</c>, which keeps nothing
+    /// once it has played, or register it with <c>Audio.AddSound(name, clip)</c>.
+    /// </summary>
+    /// <exception cref="AssetLoadException">The file is missing, wrongly cased or cannot be decoded as its format.</exception>
     public Audio.AudioClip Sound(string path) =>
         _scope.Acquire<Audio.AudioClip>(PlainKey(Audio.AudioAssetLoaders.Sound, path));
 
     /// <summary>
-    /// The music file at <paramref name="path"/> (OGG, WAV; MP3 on raylib), read whole and decoded while it plays; play
+    /// The music file at <paramref name="path"/> (OGG, MP3, WAV or a format registered in <c>AudioDecoders</c>), read whole and decoded while it plays; play
     /// it with <c>Audio.AddMusic(name, music)</c>.
     /// </summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>

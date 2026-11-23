@@ -195,3 +195,37 @@ public sealed class Tremolo : AudioEffect
     }
 }
 #endregion
+
+#region audio-decoder
+/// <summary>
+/// An audio format of your own: ".pcm16" files hold mono 16-bit samples at 44100 Hz and nothing else. Registered once,
+/// before content loads: <c>AudioDecoders.Add("pcm16", bytes => new Pcm16Stream(bytes))</c>; from then on such a file
+/// is a sound effect, streamed music or a "sound" asset like any other.
+/// </summary>
+public sealed class Pcm16Stream(byte[] file) : ISeekableAudioStream
+{
+    private int _frame;
+
+    public int Channels => 1;
+    public int SampleRate => 44100;
+    public long Frames => file.Length / 2;
+
+    // Fills the buffer with the next samples, from -1 to 1; 0 at the end. Called on the game's thread, never on the
+    // audio thread, so it may read and allocate.
+    public int Read(Span<float> buffer)
+    {
+        int count = (int)Math.Min(buffer.Length, Frames - _frame);
+        for (int i = 0; i < count; i++)
+            buffer[i] = BitConverter.ToInt16(file, (_frame + i) * 2) / 32768f;
+        _frame += count;
+        return count;
+    }
+
+    public void Rewind() => _frame = 0;
+
+    // Optional (ISeekableAudioStream): with it the music can be sought, started from the middle and loop over a part.
+    public void Seek(long frame) => _frame = (int)Math.Clamp(frame, 0, Frames);
+
+    public void Dispose() { }
+}
+#endregion

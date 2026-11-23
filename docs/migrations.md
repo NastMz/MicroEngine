@@ -108,6 +108,35 @@ parameter each (`Rotated`, `Loop`).
 `Assets.Preload("music/theme.ogg")` and other files that are not images, atlases or fonts no longer throw
 `ArgumentException`: they load. A file whose extension no loader reads still throws, naming the file. A preload by
 path of a `.json` file still treats it as an atlas.
+### Audio: formats are one list, and MP3 is decoded by the engine
+
+Source compiles unchanged; code compiled against an earlier package must be rebuilt, because these signatures
+changed:
+
+| Member | Before | Now |
+| --- | --- | --- |
+| `AudioMixer.AddMusic(name, EncodedAudio, loop)`, `AudioMixer.AddMusicFile(name, path, loop)` | three parameters | an optional `AudioLoadMode mode` |
+| `AudioMixer.Play`, `PlayVoice`, `AddSound` | one overload each | a second overload each (an `AudioClip`, an `EncodedAudio`); a method group passed as a delegate may need a cast |
+| `PlayParameters` | | new `StartAt`, `Delay` and `LoopRegion` properties |
+| `IAudioDevice` | | `Play(AudioClip, ...)`, `UnloadSound` and `UnloadMusic`, each with a default that does nothing: a device of your own compiles unchanged, and implements them to play unregistered clips and to free memory |
+
+Behaviour that changed:
+
+- **MP3 on raylib** is decoded by the engine's managed decoder, as on every other platform, instead of by raylib:
+  it is streamed while it plays instead of decoded whole when loaded, and its samples differ slightly from before.
+  `MixerAudioDevice.AddDecoder` (for a backend's own decoder) now serves only formats `AudioDecoders` does not have.
+- **`.mp3` and `.ogg` given to `AddSoundFile` or `Assets.Sound`** used to fail as "not a WAV file"; they now load.
+  A file that is not what its extension says fails with `InvalidDataException` naming the format.
+- **Looping OGG music** goes back to its exact first sample. Before, depending on the file, the decoder's seek landed up to a few hundred
+  samples in, so a loop was that much shorter; captures of looping OGG music differ after the first pass.
+- **A WAV file with a sampler chunk** (`smpl`) and **an OGG file with `LOOPSTART` comments** now loop over that
+  region when played looping, instead of over the whole file. To loop the whole file anyway:
+  `new PlayParameters { Loop = true, LoopRegion = new LoopRegion(0) }`, or strip the loop points from the file.
+- **Registering a sound or music name again** releases the earlier one in the device. Handles from
+  `IAudioDevice.LoadSound` kept by a game for a name it replaced through `AudioMixer` no longer play.
+- **Streamed music that does not loop** plays one sample more (its last), and music that was paused ends when it
+  stops sounding instead of earlier by the length of the pause.
+
 ### Audio: buses are objects, and the mixer has a limiter
 
 Source that calls `Audio.AddBus`, `Audio.SetBusVolume`, `Audio.Set` or `Audio.PlayMusic` compiles unchanged; code
