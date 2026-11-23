@@ -46,6 +46,20 @@ public enum PhysicsCapabilities
     /// debug view needs to draw the world. Both built-in backends declare it.
     /// </summary>
     ShapeInspection = 1 << 12,
+    /// <summary>
+    /// Queries beyond the closest ray and the rectangle overlap: every hit of a ray
+    /// (<see cref="IPhysicsWorld2D.RayCastAll"/>), a cast shape (<see cref="IPhysicsWorld2D.ShapeCast"/>), the shapes
+    /// under a box, a circle or a capsule (<see cref="IPhysicsWorld2D.Overlap(in QueryShape, System.Numerics.Vector2, in QueryFilter, Span{ShapeId})"/>)
+    /// or at a point (<see cref="IPhysicsWorld2D.OverlapPoint"/>), and the nearest surface
+    /// (<see cref="IPhysicsWorld2D.ClosestPoint"/>). Both built-in backends declare it.
+    /// </summary>
+    ShapeQueries = 1 << 13,
+    /// <summary>
+    /// What a contact of a dynamic body is made of: the impacts of a step with their speed and impulse
+    /// (<see cref="IPhysicsWorld2D.ContactImpacts"/>) and the points a body touches at now
+    /// (<see cref="IPhysicsWorld2D.ContactsOf"/>).
+    /// </summary>
+    ContactDetail = 1 << 14,
 }
 
 /// <summary>
@@ -69,7 +83,7 @@ public sealed class PhysicsCapabilityException : NotSupportedException
     /// <summary>The capabilities only the optional Box2D backend declares, and the ones only the tile backend declares.</summary>
     private const PhysicsCapabilities Box2DOnly = PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Joints
             | PhysicsCapabilities.Capsules | PhysicsCapabilities.Circles | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision
-            | PhysicsCapabilities.FrictionRestitution | PhysicsCapabilities.MassProperties,
+            | PhysicsCapabilities.FrictionRestitution | PhysicsCapabilities.MassProperties | PhysicsCapabilities.ContactDetail,
         TilesOnly = PhysicsCapabilities.MovingSolids;
 
     /// <summary>Which of the engine's backends declares what is missing, for the message.</summary>

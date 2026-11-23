@@ -183,11 +183,21 @@ modelled as components and systems.
     fixed rotation, sleep), `IsAwake`, `SetAwake`, `MassOf`, `CenterOfMassOf`, `InertiaOf`, `BoundsOf`.
   - Joints (`PhysicsCapabilities.Joints`, on Box2D): revolute, distance and rope, prismatic, weld, wheel and target
     joints, with limits, motors, springs, anchors, reaction forces and a break force.
+  - Queries on both backends (`PhysicsCapabilities.ShapeQueries`): `RayCastAll` (every hit of a ray, nearest first),
+    `ShapeCast` (the first thing a moving box, circle or capsule would touch), `Overlap` with a box, a circle or a
+    capsule, `OverlapPoint` and `ClosestPoint`. The shape of a query is a `QueryShape`, so the tile backend answers
+    circle and capsule queries although its bodies are boxes
+    ([Queries and contacts](../manual/physics.md#queries-and-contacts)).
+  - Contact detail on Box2D (`PhysicsCapabilities.ContactDetail`): `ContactImpacts` lists the hits of a step with
+    their point, speed and impulse (for impact sounds and damage), `ContactsOf(body, results)` the points a body
+    touches at and how hard it presses there, and a `ContactEvent` that begins has its `Point`.
+    `Box2DWorldOptions.ImpactSpeed` sets how fast a contact must be to count as an impact.
   - `AddTiles` and `TilesOf` are members of `IPhysicsWorld2D`, so debug drawing shows tile geometry on any backend.
   - A capability error names the backend that declares what is missing.
   - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
     could end the process).
-  - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels.
+  - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels, with sparks at
+    impacts, a beam that lists what is ahead and a blast.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene
   ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and

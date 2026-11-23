@@ -12,7 +12,7 @@ internal static unsafe partial class Native
 {
     public const string Library = "me_box2d";
     /// <summary>The <c>ME_API_VERSION</c> this assembly is written against.</summary>
-    public const int ApiVersion = 3;
+    public const int ApiVersion = 4;
 
     public const int Static = 0, Kinematic = 1, Dynamic = 2;
     public const int Box = 0, Circle = 1, Capsule = 2, Polygon = 3;
@@ -81,5 +81,22 @@ internal static unsafe partial class Native
     [LibraryImport(Library)]
     public static partial int me_sensor_events(nint world, int* outBegin, int maxBegin, int* outEnd, int maxEnd, int* outEndCount);
     [LibraryImport(Library)]
-    public static partial int me_contact_events(nint world, int* outBegin, float* outNormals, int maxBegin, int* outEnd, int maxEnd, int* outEndCount);
+    public static partial int me_contact_events(nint world, int* outBegin, float* outBegin4, int maxBegin, int* outEnd, int maxEnd, int* outEndCount);
+    [LibraryImport(Library)] public static partial void me_world_set_impact_speed(nint world, float speed);
+    [LibraryImport(Library)] public static partial int me_impact_events(nint world, int* outShapes, float* out6, int maxImpacts);
+    [LibraryImport(Library)] public static partial int me_body_contacts(nint world, int body, int* outShapes, float* out6, int maxPoints);
+
+    [LibraryImport(Library)]
+    public static partial int me_ray_cast_all(nint world, float x, float y, float dx, float dy, ulong category, ulong mask, int queryFlags,
+        int* outShapes, float* outHits5, int maxHits);
+    [LibraryImport(Library)]
+    public static partial int me_shape_cast(nint world, float hx, float hy, float radius, float x, float y, float dx, float dy,
+        ulong category, ulong mask, int queryFlags, float* out5);
+    [LibraryImport(Library)]
+    public static partial int me_overlap_shape(nint world, float hx, float hy, float radius, float x, float y, ulong category, ulong mask,
+        int queryFlags, int* outShapes, int maxShapes);
+    [LibraryImport(Library)]
+    public static partial int me_overlap_point(nint world, float x, float y, ulong category, ulong mask, int queryFlags, int* outShapes, int maxShapes);
+    [LibraryImport(Library)]
+    public static partial int me_closest_point(nint world, float x, float y, float maxDistance, ulong category, ulong mask, int queryFlags, float* out3);
 }

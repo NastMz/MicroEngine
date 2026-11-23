@@ -74,6 +74,8 @@ it; nothing is approximated silently.
 | `MassProperties` | `ShapeDescription.Density`, `MassOf`, `CenterOfMassOf`, `InertiaOf` | no | yes |
 | `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that pushes and carries kinematic bodies | yes | no |
 | `ShapeInspection` | `ShapesOf`, `DescriptionOf`, `BoundsOf`: what a debug view needs | yes | yes |
+| `ShapeQueries` | `RayCastAll`, `ShapeCast`, `Overlap` with a box, a circle or a capsule, `OverlapPoint`, `ClosestPoint` | yes | yes |
+| `ContactDetail` | `ContactImpacts` (speed and impulse of each hit), `ContactsOf` (the points a body touches at) | no | yes |
 
 ## The common core
 
@@ -209,18 +211,15 @@ Forces are mass × world units per second squared, impulses mass × world units 
 
 <!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#drive -->
 ```csharp
-public override void Update(float dt)
-{
-    if (Input.Pressed("pause")) { Game.Quit(); return; }
-    var world = Physics.World;
+if (Input.Pressed("pause")) { Game.Quit(); return; }
+var world = Physics.World;
 
-    // Throttle: the wheels' motors aim for a speed; the joints do the rest.
-    float throttle = Input.Axis("left", "right");
-    foreach (var wheel in _wheels) world.SetJointMotor(wheel, true, throttle * MotorSpeed, 9000);
+// Throttle: the wheels' motors aim for a speed; the joints do the rest.
+float throttle = Input.Axis("left", "right");
+foreach (var wheel in _wheels) world.SetJointMotor(wheel, true, throttle * MotorSpeed, 9000);
 
-    // A hop: an impulse through the centre of mass changes the velocity at once.
-    if (Input.Pressed("confirm")) world.ApplyImpulse(Chassis, world.Up * world.MassOf(Chassis) * 140);
-}
+// A hop: an impulse through the centre of mass changes the velocity at once.
+if (Input.Pressed("confirm")) world.ApplyImpulse(Chassis, world.Up * world.MassOf(Chassis) * 140);
 ```
 
 ## Joints
@@ -292,17 +291,100 @@ broke in the latest step. Destroying a body destroys its joints. Joints are part
 
 ## Queries and contacts
 
+Every backend answers these:
+
 | Query | Result |
 | --- | --- |
 | `RayCast(from, to, filter, out hit)` | the closest shape the segment enters: shape, owner, point, normal and fraction |
 | `Overlap(area, filter, results)` | the shapes that truly overlap a rectangle (sharing an edge does not count), written into your buffer |
 | `BoundsOf(shape)` | a shape's world bounds now |
 
-Queries leave sensors out unless the filter sets `IncludeSensors`.
+A backend that declares `ShapeQueries` (both of the engine's do) also answers these:
+
+| Query | Result |
+| --- | --- |
+| `RayCastAll(from, to, filter, hits)` | every shape the segment enters, nearest first, one hit per shape: a shot that goes through several targets |
+| `ShapeCast(shape, from, to, filter, out hit)` | the first shape a moving box, circle or capsule would touch: how far it gets (`Fraction`), where the two touch and the surface normal. "Is there room to stand up", "what would this dash hit" |
+| `Overlap(shape, center, filter, results)` | the shapes under a box, a circle or a capsule: an explosion's radius, a sword's reach |
+| `OverlapPoint(point, filter, results)` | the shapes that hold a point: what is under the pointer |
+| `ClosestPoint(point, maxDistance, filter, out hit)` | the nearest surface within a distance, with the point on it and how far it is |
+
+The shape of a query is a `QueryShape`: `QueryShape.Box(size)`, `QueryShape.Circle(radius)` or
+`QueryShape.Capsule(radius, height)` (a capsule stands along the world's up direction). It is not a shape of the
+world, so the tile backend takes circles and capsules in queries although its bodies have boxes only.
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#beam -->
+```csharp
+// A beam from the cart to the right wall: every shape it goes through, nearest first.
+var from = world.PositionOf(Chassis) + new Vector2(20, 0);
+_beamHits = Math.Min(world.RayCastAll(from, new Vector2(312, from.Y), default, _beam), _beam.Length);
+```
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#blast -->
+```csharp
+// A blast: every dynamic body within reach of the cart is thrown away from it, nearer ones harder.
+if (Input.Pressed("cancel"))
+{
+    var centre = world.PositionOf(Chassis);
+    Span<ShapeId> near = stackalloc ShapeId[32];
+    int count = Math.Min(world.Overlap(QueryShape.Circle(BlastRadius), centre, default, near), near.Length);
+    foreach (var shape in near[..count])
+    {
+        var body = world.BodyOf(shape);
+        if (body == Chassis || world.KindOf(body) != BodyKind.Dynamic) continue;
+        var away = world.PositionOf(body) - centre;
+        float reach = 1 - MathF.Min(1, away.Length() / BlastRadius);
+        world.ApplyImpulse(body, Vector2.Normalize(away) * (world.MassOf(body) * 220 * reach));
+    }
+    Blasts++;
+}
+```
+
+Rules they share:
+
+- Results go into a span you provide, and the count returned is the whole count: when it exceeds the span's length,
+  only the first ones were written.
+- Queries leave sensors out unless the filter sets `IncludeSensors`.
+- A cast shape does not hit what it overlaps where it starts, like `Move`, and hits a one-way platform only from
+  above, coming down. A ray does not hit a shape that holds its start.
+- Touching is not overlapping: a circle exactly one radius from a wall does not overlap it.
+- On the tile backend a cast stops flush against what it hits. On Box2D it stops within half a centimetre of the
+  surface (short of it for a box, up to that far into it for a circle or a capsule), and a surface less than a
+  millimetre from the shape where the cast starts counts as overlapped.
+- A tile grid is one shape: a ray that crosses several of its cells reports one hit, at the first one.
+
+### Contacts
 
 A kinematic body's contacts are in its `MoveResult` (and a character's in `LastMove`). `ContactEvents` reports the
-pairs with a dynamic body that began or stopped touching in the latest step, with the contact normal; `SensorEvents`
-reports entries and exits.
+pairs with a dynamic body that began or stopped touching in the latest step; a begin has the contact normal and the
+`Point` where the two touch. `SensorEvents` reports entries and exits.
+
+A backend that declares `ContactDetail` (Box2D) says what a contact is made of:
+
+- `ContactImpacts` lists the hits of the latest step: every pair whose surfaces met faster than the world's impact
+  speed, with the point, the normal, the `Speed` they approached at and the `Impulse` the contact applied. The impulse
+  grows with the masses as well as the speed, so it is the number for damage; the speed is the number for the
+  loudness of a sound. A body that bounces or rolls reports again each time it hits.
+- `ContactsOf(body, results)` lists the points at which a body touches other shapes now, each with the other shape,
+  the normal (pointing from the other shape towards the body: up for a body that rests on a floor), the separation
+  and the impulse the solver applied there in the latest step: how hard a crate presses on a plate, whether a
+  dynamic body stands on something.
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#impacts -->
+```csharp
+// Impacts of the step that just ran: how fast the two surfaces met and the impulse that stopped them.
+foreach (ref readonly var hit in world.ContactImpacts)
+{
+    Impacts++;
+    HardestImpact = MathF.Max(HardestImpact, hit.Impulse);
+    _sparks.Add((hit.Point, 0.25f));
+}
+```
+
+Events and impacts stay readable until the next step: a scene reads them in `Update`, which runs before its physics
+world steps again. The impact speed is `Box2DWorldOptions.ImpactSpeed` (one metre per second by default); contacts
+slower than that are not impacts. On the tile backend `ContactImpacts` is empty and `ContactsOf` is refused: it has
+no dynamic bodies.
 
 ## Tile levels
 

@@ -48,6 +48,36 @@ public sealed class PhysicsPlaygroundTests
     }
 
     [TestMethod]
+    public void Impacts_are_counted_the_beam_lists_what_is_ahead_and_a_blast_throws_the_crates()
+    {
+        var (game, scene) = Start();
+        var world = scene.Physics.World;
+        Step(game, 120);
+        Assert.IsTrue(scene.Impacts >= 1, $"the cart and the crates landed: {scene.Impacts} impacts");
+        Assert.IsTrue(scene.HardestImpact > 0);
+        Assert.IsTrue(scene.Beam.Length >= 2, $"the beam goes through the crates to the wall: {scene.Beam.Length}");
+        for (int i = 1; i < scene.Beam.Length; i++)
+            Assert.IsTrue(scene.Beam[i].Fraction >= scene.Beam[i - 1].Fraction, "nearest first");
+        Assert.AreEqual(BodyKind.Static, world.KindOf(world.BodyOf(scene.Beam[^1].Shape)), "the last thing it reaches is the room");
+
+        // Drive up to the crates, then blast: they fly away from the cart.
+        game.Input.SetForced("right", true);
+        Step(game, 60);
+        game.Input.SetForced("right", false);
+        var crates = new List<BodyId>();
+        foreach (var body in world.Bodies)
+            if (world.KindOf(body) == BodyKind.Dynamic && Math.Abs(world.MassOf(body) - 0.5f * 144 / 256) < 0.01f) crates.Add(body);
+        Assert.AreEqual(3, crates.Count);
+        float before = crates.Max(c => world.VelocityOf(c).Length());
+        game.Input.SetForced("cancel", true);
+        Step(game, 1);
+        game.Input.SetForced("cancel", false);
+        Assert.AreEqual(1, scene.Blasts);
+        float after = crates.Max(c => world.VelocityOf(c).Length());
+        Assert.IsTrue(after > before + 40, $"the blast threw a crate: {before} -> {after}");
+    }
+
+    [TestMethod]
     public void The_same_run_gives_the_same_state_hash_and_the_world_ends_with_the_scene()
     {
         ulong Run(out PlaygroundGame game, out IPhysicsWorld2D world)

@@ -207,6 +207,8 @@ public abstract class PhysicsConformance
             (PhysicsCapabilities.FrictionRestitution, w => w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale) with { Friction = 0.5f })),
             (PhysicsCapabilities.MassProperties, w => w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale) with { Density = 2 })),
             (PhysicsCapabilities.ShapeInspection, w => w.DescriptionOf(w.AddShape(w.CreateBody(default, BodyDescription.Static()), ShapeDescription.Box(Vector2.One * Scale)))),
+            (PhysicsCapabilities.ShapeQueries, w => w.OverlapPoint(Vector2.Zero, default, [])),
+            (PhysicsCapabilities.ContactDetail, w => w.ContactsOf(w.CreateBody(default, BodyDescription.Static()), [])),
         };
         int refused = 0, accepted = 0;
         foreach (var (flag, request) in requests)

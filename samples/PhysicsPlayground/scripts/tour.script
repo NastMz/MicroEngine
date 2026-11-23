@@ -1,7 +1,9 @@
-# The chain and the lantern settle; the cart drives right into the crates and over the ramp, then hops.
+# The chain and the lantern settle; the cart drives right into the crates and over the ramp, hops, then blasts what is near.
 60 capture settled.png
 60 hold right 150
 150 capture driving.png
 215 press confirm
 230 capture hop.png
-300 quit
+250 press cancel
+262 capture blast.png
+320 quit

@@ -45,7 +45,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | --- | --- |
 | The default tile backend has axis-aligned boxes only: no slopes, dynamic bodies, rotation or joints. They need the optional `MicroEngine.Physics.Box2D` package | [Physics](../manual/physics.md#choosing-a-backend) |
 | The Box2D backend has no tile geometry (build levels from boxes) and no solids that push kinematic bodies | [Physics](../manual/physics.md#tile-levels) |
-| Queries are a closest-hit ray and a rectangle overlap: no shape casts, point queries or all-hits rays; contact events carry a normal, not points or impulses | [Physics](../manual/physics.md#queries-and-contacts) |
+| Impacts and contact points (`ContactImpacts`, `ContactsOf`) exist only between a dynamic body and something else, so only on the Box2D backend; a query shape is a box, a circle or a standing capsule, never a rotated or polygon shape | [Physics](../manual/physics.md#queries-and-contacts) |
 | Box2D on Android and iOS is experimental | [Physics](../manual/physics.md#what-differs-on-box2d) |
 
 ## Input

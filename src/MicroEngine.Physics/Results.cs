@@ -135,4 +135,8 @@ public enum ContactEventKind
 /// <param name="OwnerA">The entity owning <paramref name="A"/>'s body.</param>
 /// <param name="OwnerB">The entity owning <paramref name="B"/>'s body.</param>
 /// <param name="Normal">For a begin, the contact normal, unit length, pointing from <paramref name="A"/> to <paramref name="B"/>; zero for an end.</param>
-public readonly record struct ContactEvent(ContactEventKind Kind, ShapeId A, ShapeId B, EntityId OwnerA, EntityId OwnerB, Vector2 Normal);
+public readonly record struct ContactEvent(ContactEventKind Kind, ShapeId A, ShapeId B, EntityId OwnerA, EntityId OwnerB, Vector2 Normal)
+{
+    /// <summary>For a begin, where the two shapes touch (the middle of the contact when it has two points), a world point; zero for an end.</summary>
+    public Vector2 Point { get; init; }
+}

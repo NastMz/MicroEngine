@@ -220,7 +220,7 @@ public readonly record struct ShapeDescription
 }
 
 /// <summary>
-/// Which shapes a query (<see cref="IPhysicsWorld2D.RayCast"/>, <see cref="IPhysicsWorld2D.Overlap"/>) or a
+/// Which shapes a query (<see cref="IPhysicsWorld2D.RayCast"/>, <see cref="IPhysicsWorld2D.Overlap(in RectF, in QueryFilter, Span{ShapeId})"/>) or a
 /// <see cref="IPhysicsWorld2D.Move"/> considers. A shape matches when its category is in the filter's
 /// <see cref="Mask"/> and the filter's <see cref="Category"/> is in the shape's mask. <c>default</c> is
 /// <see cref="Default"/>: category <see cref="CollisionLayers.Default"/>, every layer, sensors left out.

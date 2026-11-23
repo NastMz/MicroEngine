@@ -10,8 +10,8 @@ public static class PhysicsContract
     /// <summary>
     /// 2: version 1 (the common core and capabilities of the first two backends) plus tile geometry as a contract member
     /// (<see cref="IPhysicsWorld2D.AddTiles"/>), dynamics control (forces, impulses, torque, angular velocity,
-    /// <see cref="BodyDynamics"/>, sleep, mass data), joints, shape casts, point and circle queries, all-hits rays and
-    /// contact details. Every member added since version 1 has a default that refuses with the capability it needs, so
+    /// <see cref="BodyDynamics"/>, sleep, mass data), joints, shape queries (cast shapes, every hit of a ray, shape and
+    /// point overlaps, the nearest surface) and contact detail (impacts, contact points). Every member added since version 1 has a default that refuses with the capability it needs, so
     /// a backend written for version 1 still compiles and declares what it implements.
     /// </summary>
     public const int Version = 2;
@@ -38,7 +38,7 @@ public static class PhysicsContract
 /// while the others go on. It may stop short of a surface by a gap of at most <see cref="Skin"/>, the tolerance the
 /// backend declares (0 on the tile backend). The body's contacts and its ground are in the <see cref="MoveResult"/>; a
 /// shape the box already overlaps when the move starts does not block it, so a body is never trapped.</item>
-/// <item><b>Queries.</b> <see cref="RayCast"/> returns the closest hit; <see cref="Overlap"/> is exact (shapes that
+/// <item><b>Queries.</b> <see cref="RayCast"/> returns the closest hit; <see cref="Overlap(in RectF, in QueryFilter, Span{ShapeId})"/> is exact (shapes that
 /// truly overlap the area, not their bounding boxes; sharing an edge is not overlapping). Both leave sensors out unless
 /// the filter includes them.</item>
 /// <item><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
@@ -321,6 +321,53 @@ public interface IPhysicsWorld2D
     /// </summary>
     int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results);
 
+    // ------------------------------------------------------------------ shape queries
+
+    /// <summary>
+    /// Writes into <paramref name="hits"/> every shape the segment from <paramref name="from"/> to <paramref name="to"/>
+    /// enters, nearest first (shapes at the same distance in creation order), one hit per shape, and returns how many
+    /// it enters (which may exceed the span's length: only the nearest ones are written). The rules of
+    /// <see cref="RayCast"/> apply to each: a shape holding <paramref name="from"/> is not hit. For a shot that goes
+    /// through several targets, or a line of sight that must skip some of them.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A point is not finite.</exception>
+    int RayCastAll(Vector2 from, Vector2 to, in QueryFilter filter, Span<RayHit> hits) => throw Refused(nameof(RayCastAll), PhysicsCapabilities.ShapeQueries);
+    /// <summary>
+    /// Moves <paramref name="shape"/> with its centre going from <paramref name="from"/> to <paramref name="to"/> and
+    /// returns the first shape it would touch: <see cref="RayHit.Fraction"/> is how far along the way its centre is
+    /// then, <see cref="RayHit.Point"/> where the two touch and <see cref="RayHit.Normal"/> the surface normal there. A
+    /// shape it overlaps where it starts is not hit (like <see cref="Move"/>, which this predicts: "is there room to
+    /// stand up", "what would this dash hit"); one-way platforms are hit only from above, coming down. The shape stops
+    /// within <see cref="Skin"/> of the exact place.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The shape is invalid (<see cref="QueryShape.Validate"/>) or a point is not finite.</exception>
+    bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit) => throw Refused(nameof(ShapeCast), PhysicsCapabilities.ShapeQueries);
+    /// <summary>
+    /// Writes into <paramref name="results"/> the shapes that truly overlap <paramref name="shape"/> centred at
+    /// <paramref name="center"/> (touching is not overlapping), in an order that depends only on the world's history,
+    /// and returns how many overlap, like <see cref="Overlap(in RectF, in QueryFilter, Span{ShapeId})"/>: an explosion's
+    /// radius, a sword's reach.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The shape is invalid or the centre is not finite.</exception>
+    int Overlap(in QueryShape shape, Vector2 center, in QueryFilter filter, Span<ShapeId> results) => throw Refused(nameof(Overlap), PhysicsCapabilities.ShapeQueries);
+    /// <summary>
+    /// Writes into <paramref name="results"/> the shapes that hold <paramref name="point"/> (inside them, not on their
+    /// edge) and returns how many do: what is under the pointer.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The point is not finite.</exception>
+    int OverlapPoint(Vector2 point, in QueryFilter filter, Span<ShapeId> results) => throw Refused(nameof(OverlapPoint), PhysicsCapabilities.ShapeQueries);
+    /// <summary>
+    /// The surface nearest <paramref name="point"/> among the shapes within <paramref name="maxDistance"/> of it
+    /// (shapes at the same distance: the first created); a shape that holds the point is at distance 0.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The point is not finite, or the distance is negative or not finite.</exception>
+    bool ClosestPoint(Vector2 point, float maxDistance, in QueryFilter filter, out ClosestPointHit hit) => throw Refused(nameof(ClosestPoint), PhysicsCapabilities.ShapeQueries);
+
     /// <summary>
     /// Advances the world by <paramref name="dt"/> seconds: dynamic bodies move, and the events of this step replace the
     /// previous ones. No game code runs during it.
@@ -329,6 +376,21 @@ public interface IPhysicsWorld2D
     void Step(float dt);
     /// <summary>The contacts that began or ended in the latest step (pairs with a dynamic body only).</summary>
     ReadOnlySpan<ContactEvent> ContactEvents { get; }
+    /// <summary>
+    /// The impacts of the latest step: every pair with a dynamic body whose surfaces met faster than the backend's
+    /// impact speed, with the point, the speed and the impulse (<see cref="PhysicsCapabilities.ContactDetail"/>). Empty
+    /// on a backend that does not declare it.
+    /// </summary>
+    ReadOnlySpan<ContactImpact> ContactImpacts => [];
+    /// <summary>
+    /// Writes into <paramref name="results"/> the points at which <paramref name="body"/> touches other shapes now
+    /// (up to two per pair of shapes), as the latest step left them, and returns how many there are (which may exceed
+    /// the span's length). Contacts exist between a dynamic body and anything else: how hard a crate presses on a
+    /// plate, whether a dynamic body stands on something.
+    /// </summary>
+    /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ContactDetail"/>.</exception>
+    /// <exception cref="InvalidOperationException">The id is stale.</exception>
+    int ContactsOf(BodyId body, Span<ContactPoint> results) => throw Refused(nameof(ContactsOf), PhysicsCapabilities.ContactDetail);
     /// <summary>The sensor entries and exits of the latest step.</summary>
     ReadOnlySpan<SensorEvent> SensorEvents { get; }
 }

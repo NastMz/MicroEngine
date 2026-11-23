@@ -100,6 +100,45 @@ public abstract class TileGeometryConformance : CapabilityConformance
     }
 
     [TestMethod]
+    public void Shape_queries_see_the_cells_of_a_grid()
+    {
+        var (world, tiles, _) = Map("....", "...#", "====", "....", "####");
+        if ((world.Capabilities & PhysicsCapabilities.ShapeQueries) == 0) Assert.Inconclusive("the backend has no shape queries");
+        float slack = world.Skin + Rounding;
+        // A circle of radius 4 falls onto the one-way row (top 32) and, passing it, onto the solid row (top 64).
+        Assert.IsTrue(world.ShapeCast(QueryShape.Circle(4), new Vector2(8, 8), new Vector2(8, 88), default, out var down));
+        Assert.AreEqual(tiles, down.Shape);
+        Assert.AreEqual(20f / 80, down.Fraction, slack / 80);
+        Assert.AreEqual(-1, down.Normal.Y, 1e-3f);
+        Assert.IsTrue(world.ShapeCast(QueryShape.Circle(4), new Vector2(8, 8), new Vector2(8, 88), new QueryFilter { PassOneWay = true }, out var through));
+        Assert.AreEqual(52f / 80, through.Fraction, slack / 80);
+        Assert.IsFalse(world.ShapeCast(QueryShape.Box(new Vector2(8, 8)), new Vector2(8, 56), new Vector2(8, 8), default, out _), "one-way cells are passed from below");
+        // A box going right in the second row stops against the solid cell at x 48.
+        Assert.IsTrue(world.ShapeCast(QueryShape.Box(new Vector2(8, 8)), new Vector2(8, 24), new Vector2(72, 24), default, out var right));
+        Assert.AreEqual(36f / 64, right.Fraction, slack / 64);
+        Assert.AreEqual(-1, right.Normal.X, 1e-3f);
+        Assert.AreEqual(48, right.Point.X, slack);
+
+        Span<ShapeId> found = stackalloc ShapeId[2];
+        Assert.AreEqual(0, world.Overlap(QueryShape.Circle(5), new Vector2(42, 10), default, found), "5 from the cell's corner (48, 16) is 7.2 away");
+        Assert.AreEqual(1, world.Overlap(QueryShape.Circle(5), new Vector2(45, 13), default, found));
+        Assert.AreEqual(tiles, found[0]);
+        Assert.AreEqual(1, world.OverlapPoint(new Vector2(56, 24), default, found), "inside the solid cell");
+        Assert.AreEqual(0, world.OverlapPoint(new Vector2(24, 24), default, found));
+        Assert.AreEqual(1, world.OverlapPoint(new Vector2(24, 72), default, found), "inside the solid row");
+
+        Assert.IsTrue(world.ClosestPoint(new Vector2(40, 24), 12, default, out var near));
+        Assert.AreEqual(tiles, near.Shape);
+        Assert.AreEqual(8, near.Distance, Rounding);
+        Assert.AreEqual(new Vector2(48, 24), near.Point);
+        Assert.IsFalse(world.ClosestPoint(new Vector2(8, 8), 10, default, out _));
+
+        Span<RayHit> hits = stackalloc RayHit[4];
+        Assert.AreEqual(1, world.RayCastAll(new Vector2(8, 0), new Vector2(8, 80), default, hits), "a grid is one shape: one hit");
+        Assert.AreEqual(32, hits[0].Point.Y, Rounding);
+    }
+
+    [TestMethod]
     public void Tiles_are_static_geometry_only()
     {
         var world = CreateWorld();

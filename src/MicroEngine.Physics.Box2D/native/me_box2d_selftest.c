@@ -142,14 +142,14 @@ static void contract_checks( void )
 	{
 		me_world_step( w, 1.0f / 60.0f );
 		int pairs[16], ends[16], endN = 0;
-		float cn[16];
+		float cn[32];
 		int b = me_contact_events( w, pairs, cn, 8, ends, 8, &endN );
 		for ( int j = 0; j < b && j < 8; ++j )
 			if ( ( pairs[2 * j] == crate && pairs[2 * j + 1] == ground ) || ( pairs[2 * j] == ground && pairs[2 * j + 1] == crate ) )
 			{
 				contactBegins += 1;
-				contactNormal[0] = cn[2 * j];
-				contactNormal[1] = cn[2 * j + 1];
+				contactNormal[0] = cn[4 * j];
+				contactNormal[1] = cn[4 * j + 1];
 			}
 	}
 	float s[6];
@@ -162,7 +162,7 @@ static void contract_checks( void )
 	me_shape_destroy( w, crate );
 	me_world_step( w, 1.0f / 60.0f );
 	int pairs[16], ends[16], endN = 0;
-	float cn[16];
+	float cn[32];
 	me_contact_events( w, pairs, cn, 8, ends, 8, &endN );
 	check( "events.destroyed-shape", endN == 1 && ( ends[0] == -1 || ends[1] == -1 ), DETAIL( "%d ends", endN ) );
 	me_body_destroy( w, 6 );
@@ -338,6 +338,57 @@ static void dynamics_and_joint_checks( void )
 	me_world_destroy( w );
 }
 
+// Every hit of a ray, cast shapes, shape and point overlaps, the nearest surface, impacts and contact points.
+static void query_checks( void )
+{
+	MeWorld* w = me_world_create( 0.0f, -10.0f, 4, 1 );
+	int ground = box( w, ME_STATIC, -10.0f, 10.0f, -0.5f, 0.0f, STATIC_LAYER, ALL, 0 );
+	int wall = box( w, ME_STATIC, 3.0f, 3.5f, 0.0f, 2.0f, STATIC_LAYER, ALL, 0 );
+	int far = box( w, ME_STATIC, 6.0f, 6.5f, 0.0f, 2.0f, STATIC_LAYER, ALL, 0 );
+	int shapes[8];
+	float hits[40], out[8];
+	int n = me_ray_cast_all( w, 0.0f, 1.0f, 8.0f, 0.0f, STATIC_LAYER, ALL, 0, shapes, hits, 8 );
+	check( "query.ray-all", n == 2 && shapes[0] == wall && shapes[1] == far && fabsf( hits[4] - 0.375f ) < 1e-4f && fabsf( hits[9] - 0.75f ) < 1e-4f,
+		DETAIL( "%d hits, fractions %.4f %.4f", n, hits[4], hits[9] ) );
+
+	int hit = me_shape_cast( w, 0.0f, 0.0f, 0.25f, 0.0f, 2.0f, 0.0f, -4.0f, STATIC_LAYER, ALL, 0, out );
+	check( "query.cast-circle", hit == ground && out[4] > 0.435f && out[4] < 0.44f && fabsf( out[3] - 1.0f ) < 1e-3f, DETAIL( "fraction %.4f", out[4] ) );
+	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 1.0f, 4.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	check( "query.cast-box", hit == wall && out[4] > 0.69f && out[4] <= 0.7001f && fabsf( out[2] + 1.0f ) < 1e-3f, DETAIL( "fraction %.4f", out[4] ) );
+	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 0.2f, 0.0f, -1.0f, STATIC_LAYER, ALL, 0, out );
+	check( "query.cast-overlapped", hit == -1, DETAIL( "%d", hit ) );
+
+	n = me_overlap_shape( w, 0.0f, 0.5f, 0.25f, 2.8f, 0.9f, STATIC_LAYER, ALL, 0, shapes, 8 );
+	int near = me_overlap_shape( w, 0.0f, 0.5f, 0.25f, 2.7f, 0.9f, STATIC_LAYER, ALL, 0, shapes + 4, 4 );
+	check( "query.overlap-capsule", n == 1 && shapes[0] == wall && near == 0, DETAIL( "%d, %d", n, near ) );
+	n = me_overlap_point( w, 3.2f, 1.0f, STATIC_LAYER, ALL, 0, shapes, 8 );
+	check( "query.overlap-point", n == 1 && shapes[0] == wall && me_overlap_point( w, 2.9f, 1.0f, STATIC_LAYER, ALL, 0, shapes, 8 ) == 0, DETAIL( "%d", n ) );
+	hit = me_closest_point( w, 2.0f, 1.5f, 2.0f, STATIC_LAYER, ALL, 0, out );
+	check( "query.closest-point", hit == wall && fabsf( out[0] - 3.0f ) < 1e-4f && fabsf( out[2] - 1.0f ) < 1e-4f && me_closest_point( w, 2.0f, 1.5f, 0.5f, STATIC_LAYER, ALL, 0, out + 4 ) == -1,
+		DETAIL( "x %.4f, distance %.4f", out[0], out[2] ) );
+
+	// A crate dropped from two metres: one impact at about 6 m/s, then two contact points that hold it up.
+	int crate = box( w, ME_DYNAMIC, -2.25f, -1.75f, 2.0f, 2.5f, STATIC_LAYER, ALL, 0 );
+	me_world_set_impact_speed( w, 1.0f );
+	int impacts = 0, pairs[8];
+	float impact[24] = { 0 }, first[6] = { 0 };
+	for ( int i = 0; i < 120; ++i )
+	{
+		me_world_step( w, 1.0f / 60.0f );
+		int k = me_impact_events( w, pairs, impact, 4 );
+		if ( k > 0 && impacts == 0 )
+			memcpy( first, impact, sizeof( first ) );
+		impacts += k;
+	}
+	check( "events.impact", impacts >= 1 && first[4] > 5.0f && first[4] < 7.0f && first[5] > 0.0f && fabsf( first[1] ) < 0.1f,
+		DETAIL( "%d impacts, speed %.3f, impulse %.4f, y %.4f", impacts, first[4], first[5], first[1] ) );
+	float points[24];
+	n = me_body_contacts( w, 3, pairs, points, 4 );
+	check( "body.contacts", n == 2 && pairs[0] == crate && pairs[1] == ground && fabsf( points[3] - 1.0f ) < 1e-3f && points[5] + points[11] > 0.0f,
+		DETAIL( "%d points, normal y %.3f, impulse %.5f", n, points[3], points[5] + points[11] ) );
+	me_world_destroy( w );
+}
+
 int main( int argc, char** argv )
 {
 	printf( "me_box2d api %d, Box2D %d, skin %.4f m\n", me_api_version(), me_box2d_version(), me_move_skin() );
@@ -345,6 +396,7 @@ int main( int argc, char** argv )
 	contract_checks();
 	capability_checks();
 	dynamics_and_joint_checks();
+	query_checks();
 	double ms;
 	uint64_t h = bench( 500, 600, &ms );
 	printf( "determinism %016llx (500 boxes, 600 steps)\n", (unsigned long long)h );
