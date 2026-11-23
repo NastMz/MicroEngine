@@ -22,12 +22,17 @@ actions it names beyond those are ignored.
 
 ### A scripted run, a headless run and a stepped game no longer use the player's saves
 
-`Game.Saves` is now on a store in memory, empty at start, in a run that has a script or advances in deterministic
-time (`--script`, `--time deterministic`, `--headless`, `GameRunner` or `InitializeForTest` on `HeadlessPlatform`),
-unless the run names a medium or the composition sets `host.Storage`
+`Game.Saves` and `host.SaveStore(gameId)` are now on a store in memory, empty at start, in a run nobody plays: one
+that has a script, advances in deterministic time, has no window or ends by itself (`--script`,
+`--time deterministic`, `--headless` in any time mode, `--frames N`, `RunOptions.MaxUpdates`, `GameRunner` or
+`InitializeForTest` on `HeadlessPlatform`), unless the run names a medium or the composition sets `host.Storage`
 ([Scripted runs and tests](manual/persistence.md#scripted-runs-and-tests)).
 
-- A script that relied on saves left by an earlier run names them: `--saves DIR`.
+- A script that relied on saves left by an earlier run names them: `--saves DIR`. So does a check that starts a
+  game with `--frames N` and then looks at the save folder.
+- The crash report of such a run is no longer in the game's folder under the user's data: it is in the captures'
+  folder (with a script) or the working directory, and its path is printed on standard error as before.
+  `HostEnvironment.CrashDirectory` still decides when it is set.
 - A test that started a game twice and expected the second to find the first one's saves in the default folder
   hands both the same medium: `game.InitializeForTest(platform, saves: storage)` with one `MemorySaveStorage`, or
   `RunOptions.Saves` for a run.

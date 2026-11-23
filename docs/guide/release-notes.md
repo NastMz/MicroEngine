@@ -8,9 +8,12 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ### Saves: a scripted run keeps its own
 
-- **A run nobody plays never touches the player's saves.** A run with an input script (`--script`) or in
-  deterministic time (`--time deterministic`, `--headless`, a game run or stepped on `HeadlessPlatform`) keeps its
-  saves in memory, empty at the start: progress, settings, achievements and key bindings. The same script gives the
+- **A run nobody plays never touches the player's saves.** A run with an input script (`--script`), in
+  deterministic time (`--time deterministic`), without a window (`--headless`, a game run or stepped on
+  `HeadlessPlatform`, in any time mode) or with an end of its own (`--frames N`) keeps its saves in memory, empty
+  at the start: progress, settings, achievements and key bindings. `host.SaveStore(gameId)` follows the same rule,
+  and the crash report of such a run is written beside its captures or in the working directory, not in the
+  player's folder. `LaunchRequest.IsUnattended` and `RunPreset.Unattended` say which runs these are. The same script gives the
   same captures whatever was played before, and a test needs no folder of its own
   ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
 - **`--saves DIR`** keeps the saves of one run in a folder, on every desktop launcher: a scripted run that starts

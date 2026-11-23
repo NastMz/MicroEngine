@@ -179,11 +179,28 @@ with.
 
 ### Scripted runs and tests
 
-A run nobody plays never reads or writes the player's saves. A run that has an input script (`--script`) or
-advances in deterministic time (`--time deterministic`, `--headless`, a game run or stepped on `HeadlessPlatform`)
-keeps its saves in a `MemorySaveStorage` of its own: empty when the run starts, gone when it ends. So a capture run
-shows the game as a new player sees it, two runs of the same script start from the same state, and a test needs no
-folder. Progress, settings, achievements and key bindings are all slots of the same store, so all of them follow.
+A run nobody plays never reads or writes the player's saves. It keeps them in a `MemorySaveStorage` of its own:
+empty when the run starts, gone when it ends. So a capture run shows the game as a new player sees it, two runs of
+the same script start from the same state, and a test needs no folder. Progress, settings, achievements and key
+bindings are all slots of the same store, so all of them follow.
+
+Nobody plays a run when any of these holds:
+
+| What the run has | On the command line | In code |
+| --- | --- | --- |
+| An input script, in any time mode | `--script FILE` | `RunOptions.Script` |
+| Deterministic time | `--time deterministic` | `RunOptions.TimeMode`, or a platform whose `RunPreset` states it |
+| No window, in any time mode | `--headless`, `--platform headless`, also with `--time realtime` | A run or a stepped game (`InitializeForTest`) on `HeadlessPlatform`; a platform of your own whose `RunPreset` has `Unattended` |
+| An end of its own after a number of updates | `--frames N` | `RunOptions.MaxUpdates` |
+
+`--hidden`, `--mute`, `--report` and `--seed` decide nothing: somebody may be playing such a run, so it uses the
+player's saves unless one of the rows above also holds. `LaunchRequest.IsUnattended` is the same rule for a launch,
+and `host.SaveStore(gameId)`, for a game that takes its store as a constructor argument, follows it and `--saves`
+exactly as `Game.Saves` does: in one launch both are the same saves.
+
+A run nobody plays that fails writes its crash report beside what it writes, not in the player's folder: in the
+captures' folder when it has a script, else in the folder it was started from. The path is printed on standard
+error either way.
 
 `--saves DIR` names a folder for the saves of one run, with or without a script:
 
@@ -194,7 +211,8 @@ dotnet run -- --script boss.script --hidden --captures captures --saves fixtures
 dotnet run -- --saves .saves/clean
 ```
 
-The folder is created when the game first saves. In code the same choice is `RunOptions.Saves`, and a test that
+The folder is created when the game first saves. A value that is blank, is not a path or names an existing file is
+refused before the game starts, with the usage text and exit code 2. In code the same choice is `RunOptions.Saves`, and a test that
 steps a game hands it to `InitializeForTest`. A test that starts the game twice over the same saves gives both the
 same medium:
 
@@ -215,7 +233,7 @@ Where the saves of a run go is decided when it starts, in this order:
 | --- | --- |
 | Names a medium (`--saves DIR`, `RunOptions.Saves`, `InitializeForTest(..., saves:)`) | That medium |
 | Its composition sets `host.Storage` | The composition's medium, in a scripted run too |
-| Has a script or is in deterministic time | A `MemorySaveStorage` of its own |
+| Nobody plays it (the table above) | A `MemorySaveStorage` of its own |
 | Any other | The platform's default: the player's saves |
 
 A composition that sets `host.Storage` decides for its scripted runs as well, because only it knows what its medium
@@ -229,7 +247,7 @@ public static void Configure(HostBuilder host)
 }
 ```
 
-A game that used `Saves` in its constructor has its store before any run could say where it goes; a scripted run or
+A game that used `Saves` in its constructor has its store before any run could say where it goes; a run nobody plays or
 a test of such a game throws `InvalidOperationException` instead of using the player's saves.
 
 The browser is the one place where this does not hold. A scripted run in a page (`?script=`, development packages

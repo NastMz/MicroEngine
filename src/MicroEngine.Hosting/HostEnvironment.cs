@@ -37,7 +37,8 @@ public sealed class HostEnvironment
     public string BaseDirectory { get; init; } = AppContext.BaseDirectory;
     /// <summary>
     /// Where the desktop launcher writes the crash report of a run that fails (<c>Core.CrashReport</c>), or null for
-    /// the game's save folder (<c>SaveStore.DefaultDirectory</c>).
+    /// the game's save folder (<c>SaveStore.DefaultDirectory</c>) in a run somebody plays, and for the captures' folder
+    /// (with a script) or the working directory in a run nobody plays (<see cref="LaunchRequest.IsUnattended"/>).
     /// </summary>
     public string? CrashDirectory { get; init; }
     /// <summary>A seed for runs that ask for none, from the clock by default (<see cref="LaunchRequest.ResolveSeed"/>).</summary>

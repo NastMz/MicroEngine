@@ -186,8 +186,9 @@ public abstract class Game : IEngineModule, IStateHashed
     /// created the first time it is used (<see cref="CreateSaves"/>). Where it keeps them is decided for the run, in
     /// this order: the medium the run names (<see cref="RunOptions.Saves"/>, the launcher's <c>--saves DIR</c>); the
     /// medium of the host's composition (<see cref="Hosting.HostBuilder.Storage"/>); a store of the run's own, in
-    /// memory and empty at start (<see cref="MemorySaveStorage"/>), when nobody plays the run: it has a script or
-    /// advances in deterministic time, as scripted runs, headless runs and tests do; else the platform's default medium:
+    /// memory and empty at start (<see cref="MemorySaveStorage"/>), when nobody plays the run: it has a script, ends by
+    /// itself after a number of updates, advances in deterministic time or has no window (the headless platform), as
+    /// scripted runs, checks and tests do; else the platform's default medium:
     /// files in the user's data folder, the page's localStorage in browsers. So a scripted run never reads or writes the
     /// player's saves, and two of them start from the same state. Use it from <see cref="Configure"/>,
     /// <see cref="Load"/> or later, not from the game's constructor: the run hands over its medium when it starts.
@@ -257,9 +258,9 @@ public abstract class Game : IEngineModule, IStateHashed
     /// </summary>
     internal void AttachHost(Hosting.HostBuilder host)
     {
-        if (host.Storage is not { } storage || ReferenceEquals(storage, _hostStorage)) return;
+        if (HostBuilderExtensions.RunStorage(host) is not { } storage || ReferenceEquals(storage, _hostStorage)) return;
         if (_saves is not null)
-            throw new InvalidOperationException("The game used Saves in its constructor, before the host could hand over the composition's save medium (HostBuilder.Storage), so its saves would not be kept there. Use Saves from Configure, Load or later; declare achievements from Configure.");
+            throw new InvalidOperationException("The game used Saves in its constructor, before the host could hand over the save medium of this launch (the composition's HostBuilder.Storage, the folder of --saves, or the store of its own a scripted, headless or --frames run keeps), so its saves would not be kept there. Use Saves from Configure, Load or later; declare achievements from Configure.");
         _hostStorage = storage;
     }
 
@@ -404,16 +405,16 @@ public abstract class Game : IEngineModule, IStateHashed
     /// <paramref name="host"/>'s additions and the run's <paramref name="mode"/>), resolves the services from it and runs
     /// <see cref="Load"/>.
     /// </summary>
-    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null, IStorage? saves = null, bool scripted = false)
+    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null, IStorage? saves = null, bool unattended = false)
     {
         _platform = platform;
         var builder = new EngineBuilder();
         // A preset the composition states (the headless platform's: deterministic) comes first; the game's Configure and the
         // run's choice win over it.
         platform.TryGetCapability<RunPreset>(out var preset);
-        // Nobody plays a run with a script or in deterministic time (as the run or the platform's preset says, before the
-        // game's own Configure): it keeps its saves to itself.
-        AttachRun(saves, unattended: scripted || (mode ?? preset?.TimeMode) == TimeMode.Deterministic);
+        // Nobody plays a run with a script or an end of its own (the loop says so), in deterministic time (as the run or
+        // the platform's preset says, before the game's own Configure) or without a window: it keeps its saves to itself.
+        AttachRun(saves, unattended || preset is { Unattended: true } || (mode ?? preset?.TimeMode) == TimeMode.Deterministic);
         builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate, Mode = preset?.TimeMode ?? time.Mode });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);

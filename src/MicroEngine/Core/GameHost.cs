@@ -49,15 +49,36 @@ public static class HostBuilderExtensions
     }
 
     /// <summary>
-    /// A save store for <paramref name="gameId"/> on the composition's medium (<see cref="HostBuilder.Storage"/>), else the
-    /// platform's default (<see cref="SaveStore.DefaultStorage(string)"/>): for a game that takes its store as a
-    /// constructor argument. A game that uses <see cref="Game.Saves"/> gets the same medium without it.
+    /// A save store for <paramref name="gameId"/> on the medium of this launch, for a game that takes its store as a
+    /// constructor argument: the folder the launch names (<see cref="LaunchRequest.SaveDirectory"/>), else the
+    /// composition's medium (<see cref="HostBuilder.Storage"/>), else a store in memory when nobody plays the launch
+    /// (<see cref="LaunchRequest.IsUnattended"/>), else the platform's default
+    /// (<see cref="SaveStore.DefaultStorage(string)"/>). A game that uses <see cref="Game.Saves"/> gets the same medium
+    /// without it: in one launch both are the same saves.
     /// </summary>
     public static SaveStore SaveStore(this HostBuilder host, string gameId)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
-        return new SaveStore(host.Storage?.Invoke(gameId) ?? Core.SaveStore.DefaultStorage(gameId));
+        return new SaveStore(RunStorage(host)?.Invoke(gameId) ?? Core.SaveStore.DefaultStorage(gameId));
+    }
+
+    /// <summary>
+    /// Where the saves of this launch go, by save id, or null for the platform's default: the launch's folder, the
+    /// composition's medium, or one store in memory per id for a launch nobody plays.
+    /// </summary>
+    internal static Func<string, IStorage>? RunStorage(HostBuilder host)
+    {
+        var parts = Parts(host);
+        if (host.Request.SaveDirectory is { } directory) return parts.Folder ??= Folder(directory);
+        if (host.Storage is { } composed) return composed;
+        return host.Request.IsUnattended ? parts.Memory : null;
+
+        static Func<string, IStorage> Folder(string directory)
+        {
+            var storage = new FileSaveStorage(Path.GetFullPath(directory));
+            return _ => storage;
+        }
     }
 
     internal static GameParts Parts(HostBuilder host)
@@ -73,6 +94,11 @@ public static class HostBuilderExtensions
         public Func<Game>? CreateGame;
         public PlatformCatalog Catalog = new();
         public readonly List<Func<PlatformRequest, PlatformRequest>> RequestChanges = [];
+        public Func<string, IStorage>? Folder;
+        public readonly Func<string, IStorage> Memory;
+        private readonly Dictionary<string, IStorage> _memory = new(StringComparer.Ordinal);
+
+        public GameParts() => Memory = id => _memory.TryGetValue(id, out var storage) ? storage : _memory[id] = new MemorySaveStorage();
     }
 }
 
@@ -82,8 +108,9 @@ public static class HostBuilderExtensions
 /// files are), the game's <c>Configure</c> entry point composes the rest (<see cref="HostBuilder"/>), and the
 /// <see cref="LaunchRequest"/> decides the run: a script means deterministic time and seed 1 on every host; a run in
 /// deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-/// one, and keeps its saves to itself (<see cref="Game.Saves"/>) unless the launch names a folder; a real-time run whose
-/// game shows a start screen starts gamepads after the first frame.
+/// one; a run nobody plays (<see cref="LaunchRequest.IsUnattended"/>: a script, deterministic time, no window, or an
+/// end of its own with <c>--frames</c>) keeps its saves to itself (<see cref="Game.Saves"/>) unless the launch names
+/// a folder; a real-time run whose game shows a start screen starts gamepads after the first frame.
 /// </summary>
 /// <example>
 /// A test that runs a game headless through the same path as the desktop launcher:
@@ -130,10 +157,12 @@ public sealed class GameHost
     }
 
     /// <summary>
-    /// A new game, built by the composition's <see cref="HostBuilderExtensions.UseGame"/> and given the composition's
-    /// save medium (<see cref="HostBuilder.Storage"/>) for its <see cref="Game.Saves"/>.
+    /// A new game, built by the composition's <see cref="HostBuilderExtensions.UseGame"/> and given the save medium of
+    /// this launch for its <see cref="Game.Saves"/>: the folder the launch names, else the composition's
+    /// (<see cref="HostBuilder.Storage"/>), else a store in memory when nobody plays the launch
+    /// (<see cref="LaunchRequest.IsUnattended"/>).
     /// </summary>
-    /// <exception cref="InvalidOperationException">The factory returned null, or the game used <see cref="Game.Saves"/> in its constructor while the composition has a save medium.</exception>
+    /// <exception cref="InvalidOperationException">The factory returned null, or the game used <see cref="Game.Saves"/> in its constructor while the launch has a save medium for it.</exception>
     public Game CreateGame()
     {
         var game = _parts.CreateGame!() ?? throw new InvalidOperationException("The composition's game factory returned null.");
@@ -152,8 +181,8 @@ public sealed class GameHost
 
     /// <summary>
     /// The run's options for <paramref name="game"/>: the graphics options with the launch's overrides, the script, its
-    /// captures, the frame limit, the seed, mute, pacing, the time mode (<see cref="LaunchRequest.EffectiveTime"/>) and
-    /// the folder of the saves when the launch names one (<see cref="LaunchRequest.SaveDirectory"/>).
+    /// captures, the frame limit, the seed, mute, pacing and the time mode (<see cref="LaunchRequest.EffectiveTime"/>).
+    /// Where the game's saves go is the composition's part: <see cref="CreateGame"/> hands it to the game.
     /// </summary>
     /// <exception cref="FormatException">The script is invalid.</exception>
     public RunOptions CreateRunOptions(Game game, FrameProfiler? profiler = null, InputScript? script = null)
@@ -171,7 +200,6 @@ public sealed class GameHost
             Seed = arguments.Seed,
             Mute = arguments.Mute,
             TimeMode = arguments.Time,
-            Saves = arguments.SaveDirectory is { } saves ? new FileSaveStorage(Path.GetFullPath(saves)) : null,
             // Section hashes too, so two traces that differ name the part of the state that diverged first.
             StateTrace = arguments.StateTracePath is null ? null : new StateTrace { Sections = true },
         };
@@ -239,12 +267,20 @@ public sealed class GameHost
         }
     }
 
-    /// <summary>Writes the crash report of a failed run and names it on <paramref name="errors"/>; a report that cannot be written is reported instead.</summary>
+    /// <summary>
+    /// Writes the crash report of a failed run and names it on <paramref name="errors"/>; a report that cannot be written
+    /// is reported instead. It goes to the host's crash folder when it states one, else, for a run somebody plays, to the
+    /// game's folder in the user's data (where a player can be asked to look). A run nobody plays leaves nothing
+    /// there: its report is beside what the run writes, the captures' folder with a script, else the folder the run
+    /// was started from, which is where the developer or the check that started it looks.
+    /// </summary>
     private void WriteCrashReport(Game game, Exception error, TextWriter errors)
     {
         try
         {
-            var directory = _environment.CrashDirectory ?? SaveStore.DefaultDirectory(AppIdentity.Of(game)?.Id ?? game.Settings.Title);
+            var directory = _environment.CrashDirectory
+                ?? (!Request.IsUnattended ? SaveStore.DefaultDirectory(AppIdentity.Of(game)?.Id ?? game.Settings.Title)
+                    : Path.GetFullPath(Request.HasScript ? Request.CaptureDirectory : "."));
             errors.WriteLine($"crash report: {CrashReport.Write(game, error, directory)}");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)

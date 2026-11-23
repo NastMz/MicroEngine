@@ -41,7 +41,7 @@ with code 2.
 | --- | --- |
 | `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies deterministic time unless `--time realtime`, and seed 1 unless `--seed` is given |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
-| `--saves DIR` | Keeps the game's saves in that folder for this run, created when the game first saves. Without it, a run with `--script` or in deterministic time (`--time deterministic`, `--headless`) keeps them in memory, empty at start, and any other run uses the player's saves ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)) |
+| `--saves DIR` | Keeps the game's saves in that folder for this run, created when the game first saves. A blank value or an existing file is an argument error. Without it, a run nobody plays (`--script`, `--time deterministic`, `--headless` or `--platform headless` in any time mode, `--frames N`) keeps them in memory, empty at start, and any other run uses the player's saves ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)) |
 | `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else every platform that can run here except `headless`, in order, until one starts, printing why each one failed |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
 | `--hidden` | Renders in a hidden window; captures still work. A hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute` |

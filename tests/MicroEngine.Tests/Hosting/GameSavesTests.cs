@@ -67,8 +67,8 @@ public sealed partial class GameSavesTests
         public override void Configure(EngineBuilder builder) => TrackAchievements(Catalog);
     }
 
-    private static GameHost Host(Func<Game> create, Func<string, IStorage>? storage) =>
-        GameHost.Create(new HostEnvironment(HostKind.Test) { Out = new StringWriter(), Error = new StringWriter() }, new LaunchRequest { Headless = true },
+    private static GameHost Host(Func<Game> create, Func<string, IStorage>? storage, LaunchRequest? request = null) =>
+        GameHost.Create(new HostEnvironment(HostKind.Test) { Out = new StringWriter(), Error = new StringWriter() }, request ?? new LaunchRequest { Headless = true },
             h => { h.Storage = storage; h.UseGame(create); });
 
     [TestMethod]
@@ -89,7 +89,8 @@ public sealed partial class GameSavesTests
     [TestMethod]
     public void Without_a_composition_medium_the_store_is_the_platforms_default()
     {
-        var hosted = Host(() => new NamedGame(), storage: null).CreateGame();
+        // A launch somebody plays (a headless one keeps its saves to itself: RunSavesTests).
+        var hosted = Host(() => new NamedGame(), storage: null, new LaunchRequest()).CreateGame();
         Assert.AreEqual(SaveStore.DefaultDirectory("com.example.named"), hosted.Saves.Directory);
 
         var alone = new NamedGame();
@@ -129,7 +130,7 @@ public sealed partial class GameSavesTests
         var error = Assert.ThrowsExactly<InvalidOperationException>(() => host.CreateGame());
         StringAssert.Contains(error.Message, "constructor");
 
-        _ = Host(() => new EagerGame(), storage: null).CreateGame(); // no medium to miss: nothing to report
+        _ = Host(() => new EagerGame(), storage: null, new LaunchRequest()).CreateGame(); // no medium to miss: nothing to report
     }
 
     [TestMethod]

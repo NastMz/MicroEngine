@@ -121,8 +121,9 @@ tests compose the same way and decide a run the same way. A host states its defa
 files are), the game's <code>Configure</code> entry point composes the rest ([HostBuilder](MicroEngine.Hosting.HostBuilder.md)), and the
 [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) decides the run: a script means deterministic time and seed 1 on every host; a run in
 deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-one, and keeps its saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) unless the launch names a folder; a real-time run whose
-game shows a start screen starts gamepads after the first frame.
+one; a run nobody plays ([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended): a script, deterministic time, no window, or an
+end of its own with <code>--frames</code>) keeps its saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) unless the launch names
+a folder; a real-time run whose game shows a start screen starts gamepads after the first frame.
 
  [GameLauncher](MicroEngine.Core.GameLauncher.md)
 
@@ -131,8 +132,10 @@ The command line every desktop game accepts, on any backend: a thin caller of th
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
 <code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--saves DIR</code> keep the game's saves in that folder for this run ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves)). Without
-it a run with a script or in deterministic time keeps them in memory, empty at start, and never touches the
-player's; any other run uses the game's usual saves.</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
+it a run nobody plays (<code>--script</code>, <code>--time deterministic</code>, <code>--headless</code> or <code>--platform headless</code>
+in any time mode, <code>--frames N</code>) keeps them in memory, empty at start, and never touches the player's; any
+other run uses the game's usual saves. The crash report of such a run is written beside its captures, or in the
+working directory without a script.</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>. A
 headless run is in deterministic time unless <code>--time</code> says otherwise (the headless platform's
 [RunPreset](MicroEngine.Core.RunPreset.md)).</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the

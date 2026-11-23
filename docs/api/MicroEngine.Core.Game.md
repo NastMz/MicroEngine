@@ -384,8 +384,9 @@ The game's saves: one [SaveStore](MicroEngine.Core.SaveStore.md) for its slots (
 created the first time it is used ([CreateSaves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateSaves)). Where it keeps them is decided for the run, in
 this order: the medium the run names ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves), the launcher's <code>--saves DIR</code>); the
 medium of the host's composition ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); a store of the run's own, in
-memory and empty at start ([MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md)), when nobody plays the run: it has a script or
-advances in deterministic time, as scripted runs, headless runs and tests do; else the platform's default medium:
+memory and empty at start ([MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md)), when nobody plays the run: it has a script, ends by
+itself after a number of updates, advances in deterministic time or has no window (the headless platform), as
+scripted runs, checks and tests do; else the platform's default medium:
 files in the user's data folder, the page's localStorage in browsers. So a scripted run never reads or writes the
 player's saves, and two of them start from the same state. Use it from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_),
 [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later, not from the game's constructor: the run hands over its medium when it starts.

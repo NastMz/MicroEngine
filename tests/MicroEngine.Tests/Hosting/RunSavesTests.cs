@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Hosting;
@@ -127,15 +128,179 @@ public sealed partial class RunSavesTests
         Assert.AreNotSame(first.Saves.Storage, second.Saves.Storage);
     }
 
+    /// <summary>
+    /// A platform somebody sits in front of, as far as the run can tell: the headless one without what marks it as
+    /// a platform nobody plays on (its run preset).
+    /// </summary>
+    private sealed class PlayedPlatform(HeadlessPlatform inner) : IPlatform
+    {
+        public IRenderer BeginFrame() => inner.BeginFrame();
+        public void EndFrame() => inner.EndFrame();
+        public IGraphicsDevice Graphics => inner.Graphics;
+        public MicroEngine.Audio.IAudioDevice Audio => inner.Audio;
+        public MicroEngine.Input.IInputSource Input => inner.Input;
+        public IMonotonicClock Clock => inner.Clock;
+        public bool PumpEvents(IEngineEventSink sink) => inner.PumpEvents(sink);
+        public ISurface? MainSurface => inner.MainSurface;
+        public bool CanBlock => inner.CanBlock;
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class
+        {
+            capability = null;
+            return typeof(T) != typeof(RunPreset) && inner.TryGetCapability(out capability);
+        }
+        public Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
+        public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
+        public void ToggleFullscreen() => inner.ToggleFullscreen();
+        public void Dispose() => inner.Dispose();
+    }
+
     [TestMethod]
     public void A_run_somebody_plays_uses_the_platforms_default_medium()
     {
-        // Real time and no script: the store is the player's. Asking where it is writes nothing.
+        // A window, real time, no script, no end of its own: the store is the player's. Asking where it is writes nothing.
         var game = new ProbeGame(_id);
-        Run(game, new RunOptions { TimeMode = TimeMode.RealTime, MaxUpdates = 2 }, new RunPreset());
+        using var platform = new PlayedPlatform(new HeadlessPlatform());
+        game.InitializeForTest(platform);
 
         Assert.AreEqual(SaveStore.DefaultDirectory(_id), game.Saves.Directory);
         Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)), "the test saved nothing there");
+    }
+
+    [TestMethod]
+    public void A_headless_run_keeps_its_saves_to_itself_whatever_its_time_mode()
+    {
+        // "--headless --time realtime": no window is nobody playing, with the wall clock or without.
+        var game = new CountingGame(_id);
+        game.InitializeForTest(new HeadlessPlatform { Preset = new RunPreset() });
+        Assert.IsInstanceOfType<MemorySaveStorage>(game.Saves.Storage, "a headless platform that states no time mode");
+
+        var chosen = new CountingGame(_id);
+        Run(chosen, new RunOptions { TimeMode = TimeMode.RealTime, Script = Script, Mute = true, CaptureDirectory = _folder });
+        Assert.IsInstanceOfType<MemorySaveStorage>(chosen.Saves.Storage);
+        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)));
+    }
+
+    [TestMethod]
+    public void A_run_that_ends_by_itself_keeps_its_saves_to_itself()
+    {
+        // "--frames N" on a window, in real time: a run that stops after N updates is a check, not somebody playing.
+        var game = new CountingGame(_id);
+        using var platform = new PlayedPlatform(new HeadlessPlatform());
+        var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = TimeMode.RealTime, MaxUpdates = 2 });
+        Assert.IsNull(result.Error, result.Error?.ToString());
+
+        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)), "nothing was written where the player's saves are");
+        Assert.IsInstanceOfType<MemorySaveStorage>(game.Saves.Storage);
+    }
+
+    [TestMethod]
+    public void The_launch_says_whether_somebody_plays()
+    {
+        Assert.IsFalse(LaunchRequest.Parse([]).IsUnattended);
+        Assert.IsFalse(LaunchRequest.Parse(["--hidden", "--mute", "--report", "--seed", "4"]).IsUnattended, "a hidden window, a report or a seed decide nothing");
+        Assert.IsFalse(LaunchRequest.Parse(["--time", "realtime"]).IsUnattended);
+        foreach (var args in new string[][]
+        {
+            ["--script", "x.script"], ["--script", "x.script", "--time", "realtime"], ["--time", "deterministic"], ["--headless"],
+            ["--headless", "--time", "realtime"], ["--platform", "Headless"], ["--frames", "3"], ["--hidden", "--frames", "30", "--report"],
+        })
+            Assert.IsTrue(LaunchRequest.Parse(args, _ => true).IsUnattended, string.Join(' ', args));
+    }
+
+    [TestMethod]
+    public void A_store_asked_of_the_composition_follows_the_launch()
+    {
+        SaveStore? asked = null;
+        GameHost Compose(string[] args, Func<string, IStorage>? storage = null) =>
+            GameHost.Create(new HostEnvironment(HostKind.Test) { Out = new StringWriter(), Error = new StringWriter() }, LaunchRequest.Parse(args, _ => true),
+                h =>
+                {
+                    h.Storage = storage;
+                    asked = h.SaveStore(_id);
+                    h.UseGame(() => new CountingGame(_id)).UsePlatforms(new PlatformCatalog().Add(HeadlessPlatform.Profile));
+                });
+
+        // A launch with a script: a store in memory, and the one the game's own Saves are on.
+        var host = Compose(["--script", "x.script"]);
+        Assert.AreNotEqual(SaveStore.DefaultDirectory(_id), asked!.Directory, "not the player's folder");
+        Assert.IsInstanceOfType<MemorySaveStorage>(asked.Storage);
+        Assert.AreSame(asked.Storage, host.CreateGame().Saves.Storage, "the same saves as Game.Saves in that launch");
+        Assert.AreNotSame(asked.Storage, host.Builder.SaveStore(_id + ".other").Storage, "another game id has its own");
+
+        Compose(["--frames", "3"]);
+        Assert.IsInstanceOfType<MemorySaveStorage>(asked.Storage, "a run that ends by itself");
+
+        // The folder the launch names, over the composition's medium too.
+        string saves = Path.Combine(_folder, "asked");
+        Compose(["--script", "x.script", "--saves", saves], _ => new MemorySaveStorage());
+        Assert.AreEqual(Path.GetFullPath(saves), asked.Directory);
+
+        // The composition's medium, in a scripted launch as in any other.
+        var composed = new MemorySaveStorage();
+        Compose(["--script", "x.script"], _ => composed);
+        Assert.AreSame(composed, asked.Storage);
+
+        // A launch somebody plays: the player's saves.
+        Compose([]);
+        Assert.AreEqual(SaveStore.DefaultDirectory(_id), asked.Directory);
+        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)));
+    }
+
+    private sealed class CrashingGame(string id) : CountingGame(id)
+    {
+        protected override void Load() => throw new InvalidOperationException("the level is missing");
+    }
+
+    [TestMethod]
+    public void The_crash_report_of_a_run_nobody_plays_is_beside_its_output_not_in_the_players_folder()
+    {
+        string scriptPath = Path.Combine(_folder, "run.script");
+        File.WriteAllText(scriptPath, "2 press confirm\n4 quit\n");
+        string captures = Path.Combine(_folder, "out");
+        var errors = new StringWriter();
+        // Where a played run's report goes: the folder of the application id, which is not the save id.
+        string players = SaveStore.DefaultDirectory(AppIdentity.Of(new CrashingGame(_id))?.Id ?? "Run saves");
+        int Reports() => Directory.Exists(players) ? Directory.GetFiles(players, "crash-*.txt").Length : 0;
+        int before = Reports();
+        GameHost Compose(string[] args) =>
+            GameHost.Create(new HostEnvironment(HostKind.Test) { Out = new StringWriter(), Error = errors }, LaunchRequest.Parse(args),
+                h => h.UseGame(() => new CrashingGame(_id)).UsePlatforms(new PlatformCatalog().Add(HeadlessPlatform.Profile)));
+
+        // With a script: where its captures go.
+        Assert.AreEqual(1, Compose(["--script", scriptPath, "--headless", "--captures", captures]).Run());
+        Assert.AreEqual(before, Reports(), "nothing in the player's folder");
+        string report = Directory.GetFiles(captures, "crash-*.txt").Single();
+        StringAssert.Contains(errors.ToString(), $"crash report: {report}");
+        StringAssert.Contains(File.ReadAllText(report), "the level is missing");
+
+        // Without one: the folder the run was started from.
+        errors.GetStringBuilder().Clear();
+        string started = Environment.CurrentDirectory;
+        string work = Directory.CreateDirectory(Path.Combine(_folder, "work")).FullName;
+        try
+        {
+            Environment.CurrentDirectory = work;
+            Assert.AreEqual(1, Compose(["--headless", "--frames", "3"]).Run());
+        }
+        finally { Environment.CurrentDirectory = started; }
+        Assert.AreEqual(1, Directory.GetFiles(work, "crash-*.txt").Length, errors.ToString());
+        Assert.IsFalse(Directory.Exists(SaveStore.DefaultDirectory(_id)));
+        Assert.AreEqual(before, Reports(), "no report was added to the player's folder");
+    }
+
+    [TestMethod]
+    public void A_saves_option_that_names_no_folder_is_refused_when_the_launch_is_read()
+    {
+        string file = Path.Combine(_folder, "a-file.json");
+        File.WriteAllText(file, "{}");
+        foreach (var value in new[] { "", "   ", "sav\0es", file })
+        {
+            var error = Assert.ThrowsExactly<FormatException>(() => LaunchRequest.Parse(["--saves", value]), $"'{value}'");
+            StringAssert.Contains(error.Message, "--saves");
+        }
+        StringAssert.Contains(Assert.ThrowsExactly<FormatException>(() => LaunchRequest.Parse(["--saves", file])).Message, "is a file");
+        Assert.AreEqual(Path.Combine(_folder, "new"), LaunchRequest.Parse(["--saves", Path.Combine(_folder, "new")]).SaveDirectory, "a folder that does not exist yet is created by the first save");
+        Assert.AreEqual(_folder, LaunchRequest.Parse(["--saves", _folder]).SaveDirectory);
     }
 
     private sealed class ProbeGame(string id) : CountingGame(id)

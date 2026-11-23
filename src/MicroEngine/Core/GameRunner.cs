@@ -60,8 +60,9 @@ public sealed record RunOptions
     /// <summary>
     /// Where the game keeps its saves in this run (the launcher's <c>--saves</c>: a folder), or null (the default) for
     /// the run's rule: a store of its own, in memory and empty at start, for a run nobody plays (one that has a
-    /// <see cref="Script"/> or advances in deterministic time), else the medium of the game's composition, else the
-    /// platform's default. A test that plays a game twice over the same saves gives both runs the same
+    /// <see cref="Script"/>, ends by itself after <see cref="MaxUpdates"/>, advances in deterministic time or is on a
+    /// platform without a window, <see cref="RunPreset.Unattended"/>), else the medium of the game's composition, else
+    /// the platform's default. A test that plays a game twice over the same saves gives both runs the same
     /// <see cref="MemorySaveStorage"/> or folder (<see cref="FileSaveStorage"/>). See <see cref="Game.Saves"/>.
     /// </summary>
     public IStorage? Saves { get; init; }
@@ -77,9 +78,14 @@ public sealed record RunOptions
 public sealed record RunPreset
 {
     /// <summary>The preset for testing compositions: one fixed step per frame.</summary>
-    public static RunPreset Testing { get; } = new() { TimeMode = Kernel.TimeMode.Deterministic };
+    public static RunPreset Testing { get; } = new() { TimeMode = Kernel.TimeMode.Deterministic, Unattended = true };
     /// <summary>The time mode of runs that choose none; null leaves the default, real time.</summary>
     public Kernel.TimeMode? TimeMode { get; init; }
+    /// <summary>
+    /// Whether nobody plays a run on this composition, whatever its time mode (false by default): the headless
+    /// platform's preset always says so. Such a run keeps the game's saves to itself (<see cref="Game.Saves"/>).
+    /// </summary>
+    public bool Unattended { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -195,7 +201,7 @@ public sealed class GameLoop
             _realTime = (_options.TimeMode ?? preset?.TimeMode ?? Kernel.TimeMode.RealTime) == Kernel.TimeMode.RealTime;
             ShowStartScreen();
             profiler?.Phase("start screen");
-            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems, _options.Saves, scripted: _options.Script is not null);
+            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems, _options.Saves, unattended: _options.Script is not null || _options.MaxUpdates > 0);
             _engine = _game.Engine;
             _realTime = _engine.Clock.Mode == Kernel.TimeMode.RealTime;
             profiler?.Phase("load");

@@ -11,8 +11,10 @@ namespace MicroEngine.Core;
 /// <c>--time</c> says otherwise.</item>
 /// <item><c>--captures DIR</c> directory for script captures (default ./captures).</item>
 /// <item><c>--saves DIR</c> keep the game's saves in that folder for this run (<see cref="RunOptions.Saves"/>). Without
-/// it a run with a script or in deterministic time keeps them in memory, empty at start, and never touches the
-/// player's; any other run uses the game's usual saves.</item>
+/// it a run nobody plays (<c>--script</c>, <c>--time deterministic</c>, <c>--headless</c> or <c>--platform headless</c>
+/// in any time mode, <c>--frames N</c>) keeps them in memory, empty at start, and never touches the player's; any
+/// other run uses the game's usual saves. The crash report of such a run is written beside its captures, or in the
+/// working directory without a script.</item>
 /// <item><c>--platform NAME</c> run on that platform of the catalog (default: <c>MICROENGINE_PLATFORM</c>, else the
 /// first one that can run here); <c>--list-platforms</c> prints them and exits.</item>
 /// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>. A

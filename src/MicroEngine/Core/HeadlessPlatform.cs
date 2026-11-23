@@ -83,12 +83,14 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture, ISc
     /// <see cref="GameLoop"/>, <see cref="GameSession"/> or <see cref="Game.InitializeForTest"/> advances one fixed step
     /// per frame with no option. The run's <see cref="RunOptions.TimeMode"/> and the game's <see cref="Game.Configure"/>
     /// win over it; <c>Preset = new RunPreset()</c> when creating the platform makes runs that choose nothing real-time.
-    /// The platform behaves the same either way.
+    /// The platform behaves the same either way, and its preset always says that nobody plays
+    /// (<see cref="RunPreset.Unattended"/>): a run on it keeps the game's saves to itself in any time mode.
     /// </summary>
     public RunPreset Preset
     {
         get => _preset;
-        init => _capabilities.Replace(_preset = value ?? throw new ArgumentNullException(nameof(value)));
+        // No window is nobody playing, whatever time mode the preset states.
+        init => _capabilities.Replace(_preset = (value ?? throw new ArgumentNullException(nameof(value))) with { Unattended = true });
     }
     private RunPreset _preset = RunPreset.Testing;
 

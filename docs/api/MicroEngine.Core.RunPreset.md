@@ -59,6 +59,19 @@ public TimeMode? TimeMode { get; init; }
 
  [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
+### <a id="MicroEngine_Core_RunPreset_Unattended"></a> Unattended
+
+Whether nobody plays a run on this composition, whatever its time mode (false by default): the headless
+platform's preset always says so. Such a run keeps the game's saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)).
+
+```csharp
+public bool Unattended { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ## Methods
 
 ### <a id="MicroEngine_Core_RunPreset__Clone__"></a> <Clone\>$\(\)

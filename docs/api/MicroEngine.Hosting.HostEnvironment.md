@@ -62,7 +62,8 @@ public Func<int> ClockSeed { get; init; }
 ### <a id="MicroEngine_Hosting_HostEnvironment_CrashDirectory"></a> CrashDirectory
 
 Where the desktop launcher writes the crash report of a run that fails (<code>Core.CrashReport</code>), or null for
-the game's save folder (<code>SaveStore.DefaultDirectory</code>).
+the game's save folder (<code>SaveStore.DefaultDirectory</code>) in a run somebody plays, and for the captures' folder
+(with a script) or the working directory in a run nobody plays ([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended)).
 
 ```csharp
 public string? CrashDirectory { get; init; }

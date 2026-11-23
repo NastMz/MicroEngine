@@ -19,10 +19,21 @@ changed the captures of the examples' tour on the reference machine.
 - **Where `Game.Saves` keeps its slots is decided when the run starts**, in this order: the medium the run names
   (`RunOptions.Saves`); the medium of the composition (`host.Storage`); a store of the run's own when nobody plays
   it; the platform's default.
-- **Nobody plays a run that has a script or advances in deterministic time**, by the run's choice
-  (`--time deterministic`) or the platform's preset (the headless platform's). This is what the run knows before
-  the game configures itself, and it is the set of runs that already get no sound device. It covers
-  `--script`, `--headless`, `GameRunner` on the headless platform and a game stepped with `InitializeForTest`.
+- **Nobody plays a run that has a script, advances in deterministic time, has no window or ends by itself.**
+  Deterministic time is the run's choice (`--time deterministic`) or the platform's preset; no window is the
+  headless platform in any time mode (`RunPreset.Unattended`, which its preset always states, and `--headless` or
+  `--platform headless` on a launch); an end of its own is `--frames N` (`RunOptions.MaxUpdates`): a run that stops
+  after N updates is a check. `--hidden`, `--mute` and `--report` decide nothing, because a person may be playing
+  such a run. `LaunchRequest.IsUnattended` is the rule for a launch; `Game.Initialize` applies the same to a run
+  without a host. This is what a run knows before the game configures itself.
+- **`host.SaveStore(gameId)` follows the launch** exactly as `Game.Saves` does, and in one launch both are the
+  same saves (one store in memory per save id, kept by the composition).
+- **The crash report of a run nobody plays is written beside its output**: the captures' folder with a script,
+  else the working directory. The saves folder of `--saves` was not chosen: it may be a fixture that is read, and a
+  report is an output. A played run keeps writing it in the game's folder under the user's data, where a player
+  can be asked to look.
+- **`--saves` is checked when the launch is read**: a blank value, something that is not a path and an existing
+  file are argument errors (usage text, exit code 2).
 - **The run's own store is in memory** (`MemorySaveStorage`, public, in `MicroEngine.Saves`): empty at start, gone
   at the end, no folder to clean or find, the same on every host. It takes the slot names the file storage takes
   and keeps no time of writing.

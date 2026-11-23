@@ -143,3 +143,58 @@ Quoted fragments are the issue's text (L1).
   `ExtendingTests.AGameSavesThroughACustomStorage` covers it; the samples' tests use the SDK's `MemorySaveStorage`
   without qualifying. The persistence page and the limitations page state that a scripted run in a browser page
   uses the page's storage.
+- L10 (2026-11-23) Correction to L6. "kept their dates of 2026-11-20" was true when it was observed (2026-11-22
+  19:36, right after the two tour runs of this branch) and stopped being true eleven minutes later: the three files
+  of `%LOCALAPPDATA%\MicroEngine\MicroEngineExamples` are dated 2026-11-22 19:47:19 to 19:47:24. What wrote them was
+  not this branch. A set of tour captures in the temporary folder `tmp.hvjg7UH72v` was written in the same seconds
+  (19:47:18 to 19:47:25); it has 47 captures, ending in `41-music-time.png` and `42-spatial-sound.png`, examples
+  that exist only in the audio writer's worktree (`MicroEngine-worktrees/audio-3`), whose branch does not contain
+  a3b1e9d0. A tour run from a tree without the rule reads and rewrites the real folder, and writes the whole map
+  (1042 bytes), which is what is there. This branch's tour runs wrote 45 captures to `tmp.DJbiyp0CLs` at 19:36 and
+  its bindings file has two actions. Not established: the process itself (inferred from the files' times and
+  names, nobody was asked).
+  The red-run experiments of L8 did not write that folder: they ran `MicroEngine.Tests` only, with save ids of
+  their own, and removed their folders.
+  One write to the player's data folder is this branch's and is stated plainly: on 2026-11-23 15:12 the red run of
+  `The_crash_report_of_a_run_nobody_plays_is_beside_its_output_not_in_the_players_folder` (the behaviour not yet
+  written) created `%LOCALAPPDATA%\MicroEngine\com.example.identitytest\` with one `crash-*.txt`: the crash
+  folder is named by the application id of the test project, not by the save id the test made unique. It was left
+  in place (nothing in that folder is deleted from here). The test now counts the reports of that folder before
+  and after, so it fails if one is added.
+- L11 (2026-11-23) Coordinator's correction batch, the points verbatim in short: "`--headless --time realtime
+  --frames 3`, and `RunOptions.TimeMode = RealTime` on `HeadlessPlatform`, use the platform default";
+  "`host.SaveStore(gameId)` [...] returns the platform default in a `--script` launch and ignores `--saves`";
+  "a scripted run that crashes writes its report under the real `%LOCALAPPDATA%\MicroEngine\<id>` folder";
+  "`--hidden --frames N --report` without a script is a real-time run on the real folder"; "`--saves \"\"`, `\"   \"`
+  or a path with a NUL character: unhandled `ArgumentException`"; "A `--saves` path that is an existing FILE
+  currently exits 0"; "State in the persistence page the full list of what decides \"nobody plays\", in one table".
+  Decisions: a headless platform is unattended in any time mode (`RunPreset.Unattended`, always stated by the
+  headless platform's preset); `--frames N` (`RunOptions.MaxUpdates`) makes a run unattended and `--report` does
+  not (it only prints two lines of a run somebody may be playing); `LaunchRequest.IsUnattended` is the launch's
+  rule and `HostBuilderExtensions.RunStorage` the one place a launch's medium is decided, for `Game.Saves` and
+  `host.SaveStore` alike; the crash report of an unattended run goes to the captures' folder with a script, else the
+  working directory (not the `--saves` folder: it may be a fixture, and a report is an output); `--saves` is
+  checked in `LaunchRequest.Parse`. `sdk/tests/external.mjs` passes `--saves` to the two packaged runs.
+  Red run, with `IsUnattended` present and false and nothing else written (6 failed of 23 in `RunSavesTests` and
+  `GameSavesTests`):
+  - `A_headless_run_keeps_its_saves_to_itself_whatever_its_time_mode`: "Expected value to be of type
+    MemorySaveStorage".
+  - `A_run_that_ends_by_itself_keeps_its_saves_to_itself`: "Se esperaba que la condición fuera false" (the default
+    folder existed).
+  - `A_store_asked_of_the_composition_follows_the_launch`: "Se esperaba que los valores variaran" (its folder was
+    the player's).
+  - `The_crash_report_of_a_run_nobody_plays_is_beside_its_output_not_in_the_players_folder`: an exception of the
+    test method, not an assertion (there was no captures folder to list: the report had gone to the player's).
+  - `A_saves_option_that_names_no_folder_is_refused_when_the_launch_is_read`: "Expected exception of exact type
+    FormatException but no exception was thrown".
+  - `The_launch_says_whether_somebody_plays`: "Se esperaba que la condición fuera true".
+  After: `dotnet build MicroEngine.slnx -c Release` 0 warnings, 0 errors. `dotnet test MicroEngine.slnx -c Release
+  --no-build`: every assembly passed except one test of `MicroEngine.Tests`,
+  `A_strength_or_brightness_without_limit_is_clamped_and_the_effect_ends` (10 s, a post-processing test this batch
+  does not touch), while other programs were running on the machine; alone it passes (49 ms), and `MicroEngine.Tests`
+  run again whole: 1351 passed, 1 skipped, 0 failed. Samples.Tests 109 passed; the demos 67, 75, 73 and 132.
+  From the command line (`Examples.exe`): `--saves ""`, `--saves "   "` and `--saves <a file>` print the reason and
+  the usage text and exit with 2; `--headless --time realtime --frames 3` and `--platform sdl-software --hidden
+  --frames 30 --report` end normally and the files of the two Examples folders under `%LOCALAPPDATA%\MicroEngine`
+  keep their dates. Not run: `sdk/tests/external.mjs` (it packs and installs the SDK), the browser suite, the phone
+  hosts, the site build.
