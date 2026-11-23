@@ -78,6 +78,61 @@ public sealed class PhysicsPlaygroundTests
     }
 
     [TestMethod]
+    public void The_classic_character_skids_clears_a_corner_and_finds_the_hidden_block()
+    {
+        var (game, _) = Start();
+        var scene = new ClassicScene();
+        game.Scenes.Push(scene);
+        Step(game, 30);
+        var hero = scene.Hero;
+        Assert.IsTrue(hero.IsGrounded);
+        float floor = hero.Position.Y;
+
+        // Run right, then reverse: a skid.
+        game.Input.SetForced("right", true);
+        Step(game, 40);
+        game.Input.SetForced("right", false);
+        game.Input.SetForced("left", true);
+        Step(game, 6);
+        game.Input.SetForced("left", false);
+        Assert.IsTrue(scene.SkidSteps >= 2, $"reversing at speed skids: {scene.SkidSteps} steps");
+        Step(game, 40);
+
+        // Under the edge of the ledge (x 90..150): the head would clip 2 pixels of it and is nudged past.
+        hero.Teleport(new Vector2(86, floor));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 5);
+        game.Input.SetForced("confirm", true);
+        float highest = floor;
+        for (int i = 0; i < 40; i++)
+        {
+            Step(game, 1);
+            highest = MathF.Min(highest, hero.Position.Y);
+        }
+        game.Input.SetForced("confirm", false);
+        Assert.AreEqual(1, scene.Corrections, "nudged past the corner once");
+        Assert.IsTrue(highest < 110, $"the jump went on past the ledge: {highest}");
+        Step(game, 90);
+
+        // The hidden block (x 202..218, y 110..126): falling onto it goes through; a head from below finds it.
+        hero.Teleport(new Vector2(210, 90));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 90);
+        Assert.AreEqual(floor, hero.Position.Y, 0.5f, "it fell through the hidden block to the floor");
+        Assert.IsFalse(scene.Revealed);
+        game.Input.SetForced("confirm", true);
+        Step(game, 30);
+        game.Input.SetForced("confirm", false);
+        Assert.IsTrue(scene.Revealed, "the head found it");
+        Step(game, 60);
+        hero.Teleport(new Vector2(210, 90));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 90);
+        Assert.AreEqual(103, hero.Position.Y, 0.5f, "found, it is a block to stand on");
+        Assert.IsTrue(scene.HardestLanding > 100, $"landings report their speed: {scene.HardestLanding}");
+    }
+
+    [TestMethod]
     public void The_same_run_gives_the_same_state_hash_and_the_world_ends_with_the_scene()
     {
         ulong Run(out PlaygroundGame game, out IPhysicsWorld2D world)

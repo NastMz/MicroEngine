@@ -44,6 +44,13 @@ public sealed class TileShapeQueryConformance : ShapeQueryConformance
     protected override IPhysicsWorld2D CreateWorld() => new TilePhysicsWorld2D();
 }
 
+/// <summary>The tile backend declares filter predicates.</summary>
+[TestClass]
+public sealed class TileFilterPredicateConformance : FilterPredicateConformance
+{
+    protected override IPhysicsWorld2D CreateWorld() => new TilePhysicsWorld2D();
+}
+
 /// <summary>The character controllers run on the tile backend.</summary>
 [TestClass]
 public sealed class TileCharacterControllerConformance : CharacterControllerConformance
@@ -126,7 +133,7 @@ public sealed class TilePhysicsWorldTests
     public void It_declares_tile_geometry_one_way_platforms_and_moving_solids_a_zero_skin_and_y_down()
     {
         var world = new TilePhysicsWorld2D();
-        Assert.AreEqual(PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids | PhysicsCapabilities.ShapeInspection | PhysicsCapabilities.ShapeQueries, world.Capabilities);
+        Assert.AreEqual(PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids | PhysicsCapabilities.ShapeInspection | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.FilterPredicates, world.Capabilities);
         Assert.AreEqual(0, world.Skin);
         Assert.AreEqual(new Vector2(0, -1), world.Up);
         Assert.AreEqual("tiles", world.Backend);

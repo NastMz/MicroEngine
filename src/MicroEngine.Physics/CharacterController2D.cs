@@ -22,6 +22,10 @@ public enum CharacterEvents
     HitWall = 16,
     /// <summary>It started falling through the one-way platform it stood on.</summary>
     DroppedThrough = 32,
+    /// <summary>It skidded in this step: on the ground, braking against its motion before it turns.</summary>
+    Skidded = 64,
+    /// <summary>Its rise was about to clip the corner of a ceiling and it was moved sideways past it.</summary>
+    CornerCorrected = 128,
 }
 
 /// <summary>
@@ -82,6 +86,34 @@ public sealed record CharacterMotion
     /// </summary>
     public float GroundSnap { get; init; }
 
+    /// <summary>
+    /// Gravity is multiplied by this near the top of a jump, while the vertical speed is under
+    /// <see cref="ApexSpeed"/>: on the way up unless the jump was released, and on the way down while jump is held.
+    /// Under 1 it makes the top of a jump float; 1 (the default) has no such phase.
+    /// </summary>
+    public float ApexGravityScale { get; init; } = 1;
+    /// <summary>The vertical speed under which <see cref="ApexGravityScale"/> applies, in units per second; 0 (the default) turns the phase off.</summary>
+    public float ApexSpeed { get; init; }
+    /// <summary>
+    /// How fast a character on the ground brakes when the intent is against its motion and it moves faster than
+    /// <see cref="SkidSpeed"/>, in units per second squared: it skids to that speed before it turns
+    /// (<see cref="CharacterController2D.IsSkidding"/>). 0 (the default) turns skidding off: a reversal is ordinary
+    /// acceleration.
+    /// </summary>
+    public float SkidDeceleration { get; init; }
+    /// <summary>The sideways speed above which reversing is a skid, in units per second.</summary>
+    public float SkidSpeed { get; init; }
+    /// <summary>
+    /// How far a rising character is moved sideways to get past the corner of a ceiling that only its edge would
+    /// clip, in units; 0 (the default) turns it off. It is moved the least of four equal parts of this that frees the
+    /// way, and only where there is room for it.
+    /// </summary>
+    public float CornerCorrection { get; init; }
+    /// <summary>The downward speed a character leaves a ceiling with, in units per second; 0 (the default) leaves it to gravity.</summary>
+    public float CeilingReboundSpeed { get; init; }
+    /// <summary>Extra jump speed at full <see cref="MoveSpeed"/>, in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher.</summary>
+    public float RunJumpBonus { get; init; }
+
     /// <summary>Throws when a value is out of range.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A negative or not-a-number value, a non-finite speed or time, or an air control outside 0..1.</exception>
     public void Validate()
@@ -104,6 +136,13 @@ public sealed record CharacterMotion
         Finite(WallJumpSpeed.Y, nameof(WallJumpSpeed));
         Finite(WallJumpLockTime, nameof(WallJumpLockTime));
         Finite(GroundSnap, nameof(GroundSnap));
+        Finite(ApexGravityScale, nameof(ApexGravityScale));
+        Finite(ApexSpeed, nameof(ApexSpeed));
+        Finite(SkidDeceleration, nameof(SkidDeceleration));
+        Finite(SkidSpeed, nameof(SkidSpeed));
+        Finite(CornerCorrection, nameof(CornerCorrection));
+        Finite(CeilingReboundSpeed, nameof(CeilingReboundSpeed));
+        Finite(RunJumpBonus, nameof(RunJumpBonus));
     }
 
     internal static void NotNegative(float value, string name)
@@ -144,7 +183,8 @@ public sealed class CharacterController2D : IStateHashed
     private readonly Vector2 _up, _right;
     private CharacterMotion _motion;
     private float _run, _rise;
-    private float _coyote, _buffer, _drop, _lock;
+    private float _coyote, _buffer, _drop, _lock, _air;
+    private Func<ShapeId, bool>? _where;
     private int _airJumps;
     private BodyId _groundBody;
     private Vector2 _groundAt, _restAt;
@@ -238,6 +278,24 @@ public sealed class CharacterController2D : IStateHashed
     public Vector2 WallNormal { get; private set; }
     /// <summary>Whether a jump is rising and can still be cut short by releasing jump.</summary>
     public bool IsJumping { get; private set; }
+    /// <summary>Whether it skids: on the ground, braking against its motion before it turns (<see cref="CharacterMotion.SkidDeceleration"/>).</summary>
+    public bool IsSkidding { get; private set; }
+    /// <summary>
+    /// How long it has been in the air, in seconds; in the step it lands, the length of the flight that ended (for a
+    /// landing effect); 0 on the ground after that.
+    /// </summary>
+    public float AirTime => _air;
+    /// <summary>The downward speed it had when it last landed, in units per second (for a landing's dust, sound or damage).</summary>
+    public float LandingSpeed { get; private set; }
+    /// <summary>
+    /// Decides, shape by shape, what is solid for this character, beyond what the layers of <see cref="Filter"/> say:
+    /// it is asked about each shape near the character before each of its moves, with the character as it is then
+    /// (its <see cref="Velocity"/> is the one it is about to move with), and a shape it returns false for is passed
+    /// through. For solids that depend on how they are met: a hidden block that only a head coming from below finds,
+    /// a gate that lets one character through. Null (the default) asks nothing. It needs a backend that declares
+    /// <see cref="PhysicsCapabilities.FilterPredicates"/>; it may read the world but not query or change it.
+    /// </summary>
+    public Func<CharacterController2D, ShapeId, bool>? Solid { get; set; }
     /// <summary>What happened in the latest <see cref="Step"/>.</summary>
     public CharacterEvents Events { get; private set; }
     /// <summary>The result of the latest step's move: every surface the character touches.</summary>
@@ -283,14 +341,25 @@ public sealed class CharacterController2D : IStateHashed
         float axis = float.IsNaN(input.Move) ? 0 : Math.Clamp(input.Move, -1, 1);
         float control = wasGrounded ? 1 : m.AirControl;
         _lock = MathF.Max(0, _lock - dt);
-        if (control > 0 && _lock <= 0) _run = MathX.Approach(_run, axis * m.MoveSpeed, (axis != 0 ? m.Acceleration : m.Deceleration) * control * dt);
+        IsSkidding = false;
+        if (control > 0 && _lock <= 0)
+        {
+            if (wasGrounded && m.SkidDeceleration > 0 && axis * _run < 0 && MathF.Abs(_run) > m.SkidSpeed)
+            {
+                // Reversing at speed: brake before turning.
+                _run = MathX.Approach(_run, 0, m.SkidDeceleration * dt);
+                IsSkidding = true;
+                Events |= CharacterEvents.Skidded;
+            }
+            else _run = MathX.Approach(_run, axis * m.MoveSpeed, (axis != 0 ? m.Acceleration : m.Deceleration) * control * dt);
+        }
 
         // Timers: the drop window, coyote time and the jump buffer.
         _drop = MathF.Max(0, _drop - dt);
         _coyote = wasGrounded ? m.CoyoteTime : MathF.Max(0, _coyote - dt);
         _buffer = input.JumpPressed ? m.JumpBuffer : MathF.Max(0, _buffer - dt);
         bool acted = false;
-        if (input.Drop && wasGrounded && !World.Move(Body, Vector2.Zero, Filter with { PassOneWay = true }).OnGround)
+        if (input.Drop && wasGrounded && !World.Move(Body, Vector2.Zero, Active(passOneWay: true)).OnGround)
         {
             // Only one-way platforms hold it up: fall through them.
             _drop = m.DropThroughTime;
@@ -302,7 +371,7 @@ public sealed class CharacterController2D : IStateHashed
         }
         else if (input.JumpPressed || _buffer > 0)
         {
-            if (wasGrounded || _coyote > 0) acted = Jump(m.JumpSpeed);
+            if (wasGrounded || _coyote > 0) acted = Jump(m.JumpSpeed + (m.MoveSpeed > 0 ? m.RunJumpBonus * MathF.Min(1, MathF.Abs(_run) / m.MoveSpeed) : 0));
             else if (input.JumpPressed && wasOnWall && m.WallJumpSpeed != Vector2.Zero)
             {
                 _run = MathF.Sign(Vector2.Dot(WallNormal, _right)) * m.WallJumpSpeed.X;
@@ -316,17 +385,24 @@ public sealed class CharacterController2D : IStateHashed
             }
         }
 
-        var filter = _drop > 0 ? Filter with { PassOneWay = true } : Filter;
+        var filter = Active(_drop > 0);
         MoveResult result;
         // A character at rest is probed, not moved: it neither sinks nor creeps down a slope.
         if (!(wasGrounded && !acted && !carried && _run == 0 && _rise <= 0 && (result = World.Move(Body, Vector2.Zero, filter)).OnGround))
         {
-            float scale = _rise > 0 ? (IsJumping && !input.JumpHeld ? m.JumpReleaseGravityScale : 1) : m.FallGravityScale;
+            // Gravity by phase: rising, rising with jump released, near the top, falling.
+            float scale = _rise > 0
+                ? (IsJumping && !input.JumpHeld ? m.JumpReleaseGravityScale : _rise < m.ApexSpeed ? m.ApexGravityScale : 1)
+                : (input.JumpHeld && !wasGrounded && -_rise < m.ApexSpeed ? m.ApexGravityScale : m.FallGravityScale);
             _rise = MathF.Max(_rise - m.Gravity * scale * dt, -m.MaxFallSpeed);
             if (m.WallSlideSpeed > 0 && wasOnWall && !wasGrounded && _rise < 0 && axis * Vector2.Dot(WallNormal, _right) < 0)
                 _rise = MathF.Max(_rise, -m.WallSlideSpeed);
             if (_rise <= 0) IsJumping = false;
-            result = World.Move(Body, _right * (_run * dt) + _up * (_rise * dt), filter);
+            var delta = _right * (_run * dt) + _up * (_rise * dt);
+            var from = m.CornerCorrection > 0 && _rise > 0 ? World.PositionOf(Body) : default;
+            result = World.Move(Body, delta, filter);
+            if (m.CornerCorrection > 0 && _rise > 0 && result.HitCeiling && CorrectCorner(from, delta, filter, ref result))
+                Events |= CharacterEvents.CornerCorrected;
         }
 
         // Walls: the first one touched, and no speed into any of them.
@@ -346,7 +422,7 @@ public sealed class CharacterController2D : IStateHashed
 
         if (result.HitCeiling && _rise > 0)
         {
-            _rise = 0;
+            _rise = m.CeilingReboundSpeed > 0 ? -m.CeilingReboundSpeed : 0;
             IsJumping = false;
             Events |= CharacterEvents.HitCeiling;
         }
@@ -366,12 +442,21 @@ public sealed class CharacterController2D : IStateHashed
         }
         if (grounded)
         {
+            if (!wasGrounded)
+            {
+                Events |= CharacterEvents.Landed;
+                LandingSpeed = MathF.Max(0, -_rise);
+            }
+            else _air = 0;
             if (_rise < 0) _rise = 0;
-            if (!wasGrounded) Events |= CharacterEvents.Landed;
             _airJumps = 0;
             IsJumping = false;
         }
-        else if (wasGrounded) Events |= CharacterEvents.LeftGround;
+        else
+        {
+            if (wasGrounded) Events |= CharacterEvents.LeftGround;
+            _air = wasGrounded ? dt : _air + dt;
+        }
 
         IsGrounded = grounded;
         Ground = grounded ? result.Ground : ShapeId.None;
@@ -405,11 +490,45 @@ public sealed class CharacterController2D : IStateHashed
         if (delta == Vector2.Zero) return false;
         // Already moved since its step (a pushing solid carries its riders, a teleport): nothing to add.
         if (World.PositionOf(Body) != _restAt) return true;
-        World.Move(Body, delta, Filter);
+        World.Move(Body, delta, Active(passOneWay: false));
         return true;
     }
 
-    /// <summary>Adds the character's state: velocity, ground, wall and jump state, timers, air jumps used and the latest events.</summary>
+    /// <summary>The filter of this step's moves: the character's, with what <see cref="Solid"/> leaves out.</summary>
+    private QueryFilter Active(bool passOneWay)
+    {
+        var filter = passOneWay ? Filter with { PassOneWay = true } : Filter;
+        if (Solid is null) return filter;
+        _where ??= shape => (Filter.Where is null || Filter.Where(shape)) && (Solid is null || Solid(this, shape));
+        return filter with { Where = _where };
+    }
+
+    /// <summary>
+    /// A rise that a ceiling cut short: tries the same move from a little to each side, nearest first, and keeps the
+    /// first that meets no ceiling. False (and the body where the blocked move left it) when none does.
+    /// </summary>
+    private bool CorrectCorner(Vector2 from, Vector2 delta, in QueryFilter filter, ref MoveResult result)
+    {
+        var blocked = result.Position;
+        float reach = _motion.CornerCorrection;
+        for (int step = 1; step <= 4; step++)
+        for (int side = -1; side <= 1; side += 2)
+        {
+            var nudge = _right * (side * reach * step / 4);
+            World.SetPosition(Body, from);
+            var across = World.Move(Body, nudge, filter);
+            // The nudge itself must be free: no wall on that side.
+            if (Vector2.DistanceSquared(across.Delta, nudge) > 1e-6f * nudge.LengthSquared()) continue;
+            var up = World.Move(Body, delta, filter);
+            if (up.HitCeiling) continue;
+            result = up;
+            return true;
+        }
+        World.SetPosition(Body, blocked);
+        return false;
+    }
+
+    /// <summary>Adds the character's state: velocity, ground, wall, jump and skid state, timers, air time, the last landing's speed, air jumps used and the latest events.</summary>
     public void HashState(StateHasher hash)
     {
         ArgumentNullException.ThrowIfNull(hash);
@@ -429,6 +548,9 @@ public sealed class CharacterController2D : IStateHashed
         hash.Add((long)Ground.Generation);
         hash.Add(_groundAt);
         hash.Add(_restAt);
+        hash.Add(IsSkidding);
+        hash.Add(_air);
+        hash.Add(LandingSpeed);
     }
 }
 

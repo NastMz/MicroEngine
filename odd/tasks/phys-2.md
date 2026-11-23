@@ -34,7 +34,7 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
 | --- | --- | --- | --- | --- |
 | T1 | Shape queries and contact detail on the contract, both backends, native layer 4 | S1, S2, S6 | inline | [x] |
 | T2 | Tile levels on Box2D (chains, one-way runs, slopes) and the native world | S3, S4, S6 | inline | [ ] |
-| T3 | Character rules: gravity phases, skid, corner correction, conditional solids | S5 | inline | [ ] |
+| T3 | Character rules: gravity phases, skid, corner correction, conditional solids | S5 | inline | [x] |
 
 ## Log
 
@@ -69,3 +69,25 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
   at (sparks at impacts, the beam's hits, a crate thrown by the blast). Found on the way: Box2D's shape cast stops a
   slop short of a surface for a polygon and a slop into it for a round shape, so the contract promises the place
   within `Skin`.
+- L4 (2026-11-22) T3 done, before T2 (it shares no code with it). What Meadow Run needs was read from
+  `games/MeadowRun/Gameplay/Player.cs` and `PlayerTuning.cs` and turned into rules, not copied: `ApexGravityScale` and
+  `ApexSpeed` (its third and fourth gravities), `SkidDeceleration` and `SkidSpeed`, `CornerCorrection` (written over
+  `Move` and `SetPosition` only: the same move is tried from four distances to each side, so it works on both
+  backends and costs nothing unless a rising character hits a ceiling), `CeilingReboundSpeed` (its head bump leaves at
+  20), `RunJumpBonus`, `AirTime` and `LandingSpeed` (its land impact). Conditional solids: a predicate on the filter,
+  `QueryFilter.Where`, under a new capability `FilterPredicates`, and `CharacterController2D.Solid` over it. A
+  callback cannot cross into the native layer (the browser's interpreter mishandles function pointers), so the Box2D
+  backend asks the predicate about the shapes near the move before it runs and hands the layer a list of handles to
+  leave out (`me_world_set_ignored`, native layer 5); the tile backend asks while it gathers obstacles. Rejected:
+  generalizing `OneWay` to a direction per shape (four backends' worth of rules for one use), and filtering contacts
+  after the move (a rejected contact needs the move again without that shape, which needs the same exclusion). Not
+  made a rule: Meadow Run's air momentum that is never slowed toward a lower cap and its separate air drag; the
+  manual says how a game writes a sideways model of its own (acceleration 0 and `Velocity`). Its stage has no physics
+  world: `Physics.World.AddTiles` is that setup and needs nothing new. The proof is
+  `The_rules_of_a_classic_platformer_fit_together` and the six rule tests in
+  `tests/Shared/Physics/CharacterRulesConformance.cs`, run on tiles and on Box2D in metres and pixels, and the
+  `ClassicScene` of `samples/PhysicsPlayground` with its test and scripted captures (skid dust, the block found:
+  looked at). The character's state hash gained three values (skid, air time, landing speed). Checks:
+  `tests/MicroEngine.Tests --filter Physics` 100 passed; `tests/MicroEngine.Physics.Box2D.Tests` 241 passed;
+  `Samples.Tests --filter PhysicsPlayground` 4 passed; native self-test all passed. The rule tests were written before
+  the rules but could not fail first as tests: they did not compile until the members existed.

@@ -6,4 +6,13 @@
 230 capture hop.png
 250 press cancel
 262 capture blast.png
-320 quit
+# The character room: run, reverse (a skid), walk under the hidden block and jump: the head finds it.
+280 press up
+300 hold right 70
+370 hold left 6
+374 capture classic-skid.png
+376 hold right 52
+440 hold confirm 20
+446 capture classic-jump.png
+520 capture classic-found.png
+530 quit

@@ -60,6 +60,11 @@ public enum PhysicsCapabilities
     /// (<see cref="IPhysicsWorld2D.ContactsOf"/>).
     /// </summary>
     ContactDetail = 1 << 14,
+    /// <summary>
+    /// A predicate on a filter (<see cref="QueryFilter.Where"/>) that leaves single shapes out of a move or a query.
+    /// Both built-in backends declare it; a backend that does not refuses a filter that has one.
+    /// </summary>
+    FilterPredicates = 1 << 15,
 }
 
 /// <summary>

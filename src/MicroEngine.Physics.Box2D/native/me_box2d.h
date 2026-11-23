@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 4
+#define ME_API_VERSION 5
 
 typedef struct MeWorld MeWorld;
 
@@ -85,6 +85,9 @@ ME_API void me_world_destroy( MeWorld* world );
 // Advances the world by timeStep seconds (0 is allowed: events are recomputed, nothing moves). The events of the
 // step replace the previous ones.
 ME_API void me_world_step( MeWorld* world, float timeStep );
+// The shapes every query and move leaves out until this is called again (count 0 clears the list): how a predicate
+// of the caller reaches the callbacks of this layer without a function pointer. The handles are copied.
+ME_API void me_world_set_ignored( MeWorld* world, const int* shapes, int count );
 // bodies, shapes, contacts, awake bodies.
 ME_API void me_world_counters( MeWorld* world, int* out4 );
 

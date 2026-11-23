@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine.Physics;
 using MicroEngine.Scenes;
+using MicroEngine;
 
 namespace MicroEngine.Testing.Physics;
 
@@ -382,5 +383,84 @@ public abstract class ContactDetailConformance : SolverConformance
         }
         world.DestroyBody(light);
         Assert.ThrowsExactly<InvalidOperationException>(() => world.ContactsOf(light, []));
+    }
+}
+
+/// <summary>
+/// Filter predicates (<see cref="PhysicsCapabilities.FilterPredicates"/>): <see cref="QueryFilter.Where"/> leaves
+/// single shapes out of a move or a query, whatever their layers.
+/// </summary>
+public abstract class FilterPredicateConformance : CapabilityConformance
+{
+    protected override PhysicsCapabilities Capability => PhysicsCapabilities.FilterPredicates;
+
+    [TestMethod]
+    public void A_move_passes_the_shapes_the_predicate_leaves_out_and_stops_at_the_others()
+    {
+        var world = CreateWorld();
+        Box(world, BodyDescription.Static(), -200, 200, -16, 0);
+        var gate = Box(world, BodyDescription.Static(), 40, 44, 0, 40).Shape;
+        var wall = Box(world, BodyDescription.Static(), 100, 116, 0, 40).Shape;
+        var (player, _) = Box(world, BodyDescription.Kinematic(default), -6, 6, 0, 14);
+        var blocked = world.Move(player, By(world, 200, 0));
+        Assert.AreEqual(34, XOf(blocked.Position), Tolerance(world), "the gate stops it");
+        world.SetPosition(player, At(world, 0, 7));
+        int asked = 0;
+        var through = world.Move(player, By(world, 200, 0), new QueryFilter
+        {
+            Where = shape =>
+            {
+                asked++;
+                return shape != gate;
+            },
+        });
+        Assert.AreEqual(94, XOf(through.Position), Tolerance(world), "left out, the gate is passed; the wall still stops it");
+        Assert.IsTrue(asked > 0, "the predicate was asked");
+        bool touchesWall = false, touchesGate = false;
+        foreach (var contact in through.Contacts)
+        {
+            touchesWall |= contact.Shape == wall;
+            touchesGate |= contact.Shape == gate;
+        }
+        Assert.IsTrue(touchesWall && !touchesGate, through.ToString());
+        Assert.IsTrue(through.OnGround, "the floor, which the predicate accepts, is still ground");
+    }
+
+    [TestMethod]
+    public void Queries_skip_the_shapes_the_predicate_leaves_out()
+    {
+        var world = CreateWorld();
+        if ((world.Capabilities & PhysicsCapabilities.ShapeQueries) == 0) Assert.Inconclusive("the backend has no shape queries");
+        var near = Box(world, BodyDescription.Static(), 20, 30, 0, 20).Shape;
+        var far = Box(world, BodyDescription.Static(), 50, 60, 0, 20).Shape;
+        var notNear = new QueryFilter { Where = shape => shape != near };
+        var nothing = new QueryFilter { Where = _ => false };
+        Vector2 from = At(world, 0, 10), to = At(world, 100, 10);
+
+        Assert.IsTrue(world.RayCast(from, to, notNear, out var ray));
+        Assert.AreEqual(far, ray.Shape, "the ray goes on to the next shape");
+        Assert.AreEqual(0.5f, ray.Fraction, Rounding);
+        Assert.IsFalse(world.RayCast(from, to, nothing, out _));
+
+        Span<RayHit> hits = stackalloc RayHit[4];
+        Assert.AreEqual(1, world.RayCastAll(from, to, notNear, hits));
+        Assert.AreEqual(far, hits[0].Shape);
+
+        Assert.IsTrue(world.ShapeCast(QueryShape.Circle(4 * Scale), from, to, notNear, out var cast));
+        Assert.AreEqual(far, cast.Shape);
+        Assert.IsFalse(world.ShapeCast(QueryShape.Circle(4 * Scale), from, to, nothing, out _));
+
+        Span<ShapeId> found = stackalloc ShapeId[4];
+        var area = new RectF(MathF.Min(from.X, to.X), MathF.Min(At(world, 0, 5).Y, At(world, 0, 15).Y), MathF.Abs(to.X - from.X), 10 * Scale);
+        Assert.AreEqual(2, world.Overlap(area, default, found));
+        Assert.AreEqual(1, world.Overlap(area, notNear, found));
+        Assert.AreEqual(far, found[0]);
+        Assert.AreEqual(1, world.Overlap(QueryShape.Box(new Vector2(100, 10) * Scale), At(world, 50, 10), notNear, found));
+        Assert.AreEqual(far, found[0]);
+        Assert.AreEqual(0, world.OverlapPoint(At(world, 25, 10), notNear, found));
+        Assert.AreEqual(1, world.OverlapPoint(At(world, 55, 10), notNear, found));
+        Assert.IsTrue(world.ClosestPoint(At(world, 15, 10), 60 * Scale, notNear, out var closest));
+        Assert.AreEqual(far, closest.Shape, "the nearest among the shapes the predicate accepts");
+        Assert.AreEqual(35, closest.Distance / Scale, Rounding);
     }
 }

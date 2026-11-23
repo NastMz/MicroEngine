@@ -358,6 +358,12 @@ static void query_checks( void )
 	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 0.2f, 0.0f, -1.0f, STATIC_LAYER, ALL, 0, out );
 	check( "query.cast-overlapped", hit == -1, DETAIL( "%d", hit ) );
 
+	me_world_set_ignored( w, &wall, 1 );
+	n = me_ray_cast_all( w, 0.0f, 1.0f, 8.0f, 0.0f, STATIC_LAYER, ALL, 0, shapes, hits, 8 );
+	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 1.0f, 8.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	me_world_set_ignored( w, NULL, 0 );
+	check( "query.ignored", n == 1 && shapes[0] == far && hit == far && me_ray_cast( w, 0.0f, 1.0f, 8.0f, 0.0f, STATIC_LAYER, ALL, 0, out ) == wall, DETAIL( "%d hits, cast %d", n, hit ) );
+
 	n = me_overlap_shape( w, 0.0f, 0.5f, 0.25f, 2.8f, 0.9f, STATIC_LAYER, ALL, 0, shapes, 8 );
 	int near = me_overlap_shape( w, 0.0f, 0.5f, 0.25f, 2.7f, 0.9f, STATIC_LAYER, ALL, 0, shapes + 4, 4 );
 	check( "query.overlap-capsule", n == 1 && shapes[0] == wall && near == 0, DETAIL( "%d, %d", n, near ) );

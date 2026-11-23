@@ -76,6 +76,7 @@ it; nothing is approximated silently.
 | `ShapeInspection` | `ShapesOf`, `DescriptionOf`, `BoundsOf`: what a debug view needs | yes | yes |
 | `ShapeQueries` | `RayCastAll`, `ShapeCast`, `Overlap` with a box, a circle or a capsule, `OverlapPoint`, `ClosestPoint` | yes | yes |
 | `ContactDetail` | `ContactImpacts` (speed and impulse of each hit), `ContactsOf` (the points a body touches at) | no | yes |
+| `FilterPredicates` | `QueryFilter.Where`: a predicate that leaves single shapes out of a move or a query | yes | yes |
 
 ## The common core
 
@@ -162,10 +163,15 @@ player and an AI drive it the same way. What it does with it:
 | Air jumps | `AirJumps` (1: a double jump) |
 | Wall slide and wall jump | `WallSlideSpeed`, `WallJumpSpeed`, `WallJumpLockTime` (off by default) |
 | Staying on ground that falls away (slopes, steps) | `GroundSnap` |
+| A gravity for the top of a jump: it floats while jump is held | `ApexGravityScale`, `ApexSpeed` |
+| A skid: reversing at speed brakes before it turns | `SkidDeceleration`, `SkidSpeed` |
+| Corner correction: a head that would clip the corner of a ceiling is moved past it | `CornerCorrection` |
+| A ceiling that sends the character down at once | `CeilingReboundSpeed` |
+| A run-up that jumps higher | `RunJumpBonus` |
 
 What a game reads back, without deriving it again: `IsGrounded`, `Ground`, `IsOnWall`, `WallNormal`, `IsJumping`,
-`Velocity`, `LastMove`, and `Events` for the step (`Landed`, `LeftGround`, `Jumped`, `HitCeiling`, `HitWall`,
-`DroppedThrough`). `Launch(velocity)` throws the character (a spring, a knock-back); `Teleport` places it.
+`IsSkidding`, `AirTime`, `LandingSpeed`, `Velocity`, `LastMove`, and `Events` for the step (`Landed`, `LeftGround`,
+`Jumped`, `HitCeiling`, `HitWall`, `DroppedThrough`, `Skidded`, `CornerCorrected`). `Launch(velocity)` throws the character (a spring, a knock-back); `Teleport` places it.
 
 A character standing on a body the game moved (a platform moved with `SetPosition` or `Move`) is carried by it. A
 character at rest is not moved at all. On Box2D a capsule character walks up and down slopes; give it a `GroundSnap`
@@ -180,6 +186,85 @@ hero.Step(dt, new Vector2(Input.Axis("left", "right"), Input.Axis("up", "down"))
 ```
 
 Both controllers are deterministic; `Physics.Track(controller)` adds one to the scene's state hash.
+
+### A feel of its own
+
+How a character feels is its numbers. A platform game with four gravities (rising, rising with jump released, the
+top of the jump, falling), a skid, corner correction and a run-up bonus is one `CharacterMotion`:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#motion -->
+```csharp
+// Every number of the character's feel, in pixels and seconds.
+private static readonly CharacterMotion Walk = new()
+{
+    MoveSpeed = 92, Acceleration = 520, Deceleration = 620, AirControl = 0.8f,
+    SkidDeceleration = 1500, SkidSpeed = 30,             // reversing above 30 px/s brakes hard before it turns
+    JumpSpeed = 302, RunJumpBonus = 26,                  // a run-up adds up to 26 px/s to the jump
+    Gravity = 640,                                       // while it rises with jump held
+    JumpReleaseGravityScale = 1900f / 640,               // while it rises with jump released: a tap is a hop
+    ApexGravityScale = 380f / 640, ApexSpeed = 48,       // under 48 px/s near the top: the jump floats
+    FallGravityScale = 1050f / 640, MaxFallSpeed = 270,  // falling
+    CoyoteTime = 0.1f, JumpBuffer = 0.12f,
+    CornerCorrection = 4,                                // up to 4 px sideways past a corner
+    CeilingReboundSpeed = 20,                            // a bumped head comes down at once
+};
+// Running is another record: the game swaps them, the controller keeps its state.
+private static readonly CharacterMotion Run = Walk with { MoveSpeed = 152, Acceleration = 600 };
+```
+
+`Motion` can be replaced at any time (running, water, a power-up): the controller keeps its state. Each step the
+game sends intent and reads what happened, for its own effects:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#step -->
+```csharp
+Hero.Motion = Input.Down("cancel") ? Run : Walk;
+Hero.Step(dt, new CharacterInput(Input.Axis("left", "right"), Input.Pressed("confirm"), Input.Down("confirm")));
+
+// What the step did, for the game's effects.
+var feet = Hero.Position + new Vector2(0, Size.Y / 2);
+if (Hero.IsSkidding) { SkidSteps++; _dust.Add((feet, 0.2f)); }
+if ((Hero.Events & CharacterEvents.CornerCorrected) != 0) Corrections++;
+if ((Hero.Events & CharacterEvents.Landed) != 0)
+{
+    HardestLanding = MathF.Max(HardestLanding, Hero.LandingSpeed);
+    if (Hero.AirTime > 0.3f) _dust.Add((feet, 0.35f));
+}
+if ((Hero.Events & CharacterEvents.HitCeiling) != 0)
+    foreach (var contact in Hero.LastMove.Contacts)
+        if (contact.Shape == _hidden) Revealed = true;                    // the head found the block
+```
+
+Solids that depend on how the character meets them are a rule of the character, `Solid`: it is asked about each
+shape near the character before each of its moves, and a shape it returns false for is passed through. A hidden block
+that only a head coming from below finds is an ordinary shape and one rule:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#hidden -->
+```csharp
+// A hidden block is a shape like any other. What makes it hidden is the character's rule for it: it is solid
+// only for a head that comes up from below, until it has been found.
+_hidden = world.AddShape(_room, ShapeDescription.Box(new Vector2(16, 16), new Vector2(210, 118)));
+Hero = Physics.Track(CharacterController2D.Create(world, default, new Vector2(40, 161), Size, Walk));
+Hero.Solid = (hero, shape) =>
+{
+    if (shape != _hidden || Revealed) return true;
+    float head = hero.Position.Y - Size.Y / 2, under = world.BoundsOf(_hidden).Bottom;
+    return hero.Velocity.Y < 0 && head >= under - 1;
+};
+```
+
+What the parameters do not cover, the game writes over the controller instead of replacing it:
+
+- **A sideways model of its own** (momentum kept in the air, ice, conveyor belts): set `Acceleration` and
+  `Deceleration` to 0, so the controller never changes the sideways speed, and write `Velocity` before each step.
+  Walls still stop it.
+- **Another gravity for a while** (gliding, water, a low-gravity room): replace `Motion`.
+- **Solids by state** (a character that passes enemies while it flashes, blocks of a colour that is switched off):
+  change the mask of `Filter`; layers are cheaper than a rule.
+- **A world for a game that has only a tile grid**: `Physics.World.AddTiles(body, grid, columns, rows)` on the
+  scene's world is the whole setup, and moving platforms are kinematic bodies the character is carried by.
+
+A rule of `Solid` sees one shape at a time, so a conditional solid is a shape of its own, not a cell of a tile grid.
+It may read the world (`BoundsOf`, `PositionOf`) but must not query or change it.
 
 ## Bodies and forces
 
@@ -212,6 +297,7 @@ Forces are mass × world units per second squared, impulses mass × world units 
 <!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#drive -->
 ```csharp
 if (Input.Pressed("pause")) { Game.Quit(); return; }
+if (Input.Pressed("up")) { Game.Scenes.Push(new ClassicScene()); return; }   // the character room
 var world = Physics.World;
 
 // Throttle: the wheels' motors aim for a speed; the joints do the rest.
@@ -345,6 +431,10 @@ Rules they share:
 - Results go into a span you provide, and the count returned is the whole count: when it exceeds the span's length,
   only the first ones were written.
 - Queries leave sensors out unless the filter sets `IncludeSensors`.
+- Layers decide which shapes a move or a query sees; `QueryFilter.Where` leaves single shapes out
+  (`new QueryFilter { Where = shape => world.BodyOf(shape) != self }` for a ray that must not hit the body that fires
+  it). It is asked once per shape near the query, before it runs; keep the delegate in a field rather than making one
+  each step.
 - A cast shape does not hit what it overlaps where it starts, like `Move`, and hits a one-way platform only from
   above, coming down. A ray does not hit a shape that holds its start.
 - Touching is not overlapping: a circle exactly one radius from a wall does not overlap it.

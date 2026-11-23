@@ -84,6 +84,8 @@ public sealed class Box2DPixelConformance : PhysicsConformance
 [TestClass] public sealed class Box2DPixelShapeQueryConformance : ShapeQueryConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 [TestClass] public sealed class Box2DContactDetailConformance : ContactDetailConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DPixelContactDetailConformance : ContactDetailConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
+[TestClass] public sealed class Box2DFilterPredicateConformance : FilterPredicateConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
+[TestClass] public sealed class Box2DPixelFilterPredicateConformance : FilterPredicateConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 [TestClass] public sealed class Box2DCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(); protected override float Scale => 1 / Box2DTesting.PixelsPerMeter; }
 [TestClass] public sealed class Box2DPixelCharacterControllerConformance : CharacterControllerConformance { [TestCleanup] public void Free() => Box2DTesting.Free(); protected override IPhysicsWorld2D CreateWorld() => Box2DTesting.Create(Box2DTesting.Pixels); }
 
@@ -111,7 +113,7 @@ public sealed class Box2DPhysicsWorldTests
         Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules
             | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
             | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
-            | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail, world.Capabilities);
+            | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail | PhysicsCapabilities.FilterPredicates, world.Capabilities);
         Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids)));
         Assert.AreEqual(0.015f, world.Skin, 1e-6f);
         Assert.AreEqual(new Vector2(0, 1), world.Up);

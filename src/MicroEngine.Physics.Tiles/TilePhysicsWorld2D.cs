@@ -33,7 +33,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 {
     /// <summary>The capabilities this backend declares.</summary>
     public const PhysicsCapabilities Declared = PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids
-        | PhysicsCapabilities.ShapeInspection | PhysicsCapabilities.ShapeQueries;
+        | PhysicsCapabilities.ShapeInspection | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.FilterPredicates;
 
     /// <summary>The distance within which a surface counts as touching a box at the end of a move (the ground probe).</summary>
     public const float ContactDistance = 0.01f;
@@ -470,7 +470,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || s.Body == bodySlot || s.Body == exclude || s.Description.IsSensor) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             var owner = _bodySlots[s.Body];
             if (s.Grid is not null) _grids.Add(new GridObstacle(s.Grid, owner.Position, i));
             else _boxes.Add(new BoxObstacle(BoxOf(owner.Position, s.Description), s.Description.OneWay, i));
@@ -539,7 +539,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         }
         if (shape < 0) return false;
         var d = _shapeSlots[shape].Description;
-        if (!filter.Accepts(d.Category, d.Mask)) return false;
+        if (!filter.Accepts(d.Category, d.Mask) || !filter.Considers(IdOf(shape))) return false;
         box = BoxOf(o.Position, d);
         return true;
     }
@@ -559,7 +559,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             var owner = _bodySlots[s.Body];
             bool any = s.Grid is not null
                 ? TileRay.Cast(s.Grid, owner.Position, from, dir, filter.PassOneWay, out float t, out var normal)
@@ -579,7 +579,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             if (s.Description.OneWay && filter.PassOneWay) continue;
             var position = _bodySlots[s.Body].Position;
             bool overlaps = s.Grid is not null ? GridOverlaps(s.Grid, position, area, filter.PassOneWay) : BoxOf(position, s.Description).Intersects(area);
@@ -618,7 +618,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     {
         s = _shapeSlots[i];
         if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) return false;
-        return filter.Accepts(s.Description.Category, s.Description.Mask);
+        return filter.Accepts(s.Description.Category, s.Description.Mask) && filter.Considers(IdOf(i));
     }
 
     /// <inheritdoc/>

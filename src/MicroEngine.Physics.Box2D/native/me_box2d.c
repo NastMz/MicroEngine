@@ -76,6 +76,8 @@ struct MeWorld
 	int hitCapacity;
 	b2ContactData* contacts;
 	int contactCapacity;
+	int* ignored; // the shapes the query or move that runs next leaves out (me_world_set_ignored)
+	int ignoredCount, ignoredCapacity;
 };
 
 static void* grow( void* p, int* capacity, int needed, size_t size )
@@ -113,6 +115,14 @@ static int is_live_shape( MeWorld* w, int shape )
 static int is_live_body( MeWorld* w, int body )
 {
 	return body >= 0 && body < w->bodyCount && w->bodies[body].alive;
+}
+
+static int is_ignored( MeWorld* w, int shape )
+{
+	for ( int i = 0; i < w->ignoredCount; ++i )
+		if ( w->ignored[i] == shape )
+			return 1;
+	return 0;
 }
 
 // ---------------------------------------------------------------------------------------------------- one-way rule
@@ -195,7 +205,18 @@ ME_API void me_world_destroy( MeWorld* w )
 	free( w->joints );
 	free( w->hits );
 	free( w->contacts );
+	free( w->ignored );
 	free( w );
+}
+
+ME_API void me_world_set_ignored( MeWorld* w, const int* shapes, int count )
+{
+	if ( count < 0 || shapes == NULL )
+		count = 0;
+	w->ignored = (int*)grow( w->ignored, &w->ignoredCapacity, count, sizeof( int ) );
+	if ( count > 0 )
+		memcpy( w->ignored, shapes, (size_t)count * sizeof( int ) );
+	w->ignoredCount = count;
 }
 
 ME_API void me_world_step( MeWorld* w, float timeStep )
@@ -854,7 +875,7 @@ static float ray_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fractio
 {
 	RayContext* c = (RayContext*)context;
 	int h = shape_handle( id );
-	if ( h < 0 )
+	if ( h < 0 || is_ignored( c->w, h ) )
 		return -1.0f;
 	int flags = c->w->shapes[h].flags;
 	if ( ( flags & ME_SENSOR ) && ( c->queryFlags & ME_QUERY_SENSORS ) == 0 )
@@ -900,7 +921,7 @@ static bool overlap_result( b2ShapeId id, void* context )
 {
 	OverlapContext* c = (OverlapContext*)context;
 	int h = shape_handle( id );
-	if ( h < 0 )
+	if ( h < 0 || is_ignored( c->w, h ) )
 		return true;
 	int flags = c->w->shapes[h].flags;
 	if ( ( flags & ME_SENSOR ) && ( c->queryFlags & ME_QUERY_SENSORS ) == 0 )
@@ -944,7 +965,7 @@ ME_API int me_overlap_box( MeWorld* w, float minX, float minY, float maxX, float
 static int query_skips( MeWorld* w, int h, int queryFlags, int skipPassedOneWay )
 {
 	int flags = w->shapes[h].flags;
-	if ( ( flags & ME_SENSOR ) && ( queryFlags & ME_QUERY_SENSORS ) == 0 )
+	if ( is_ignored( w, h ) || ( ( flags & ME_SENSOR ) && ( queryFlags & ME_QUERY_SENSORS ) == 0 ) )
 		return 1;
 	return skipPassedOneWay && ( flags & ME_ONE_WAY ) && ( queryFlags & ME_QUERY_PASS_ONE_WAY );
 }
@@ -1308,7 +1329,7 @@ typedef struct
 static int axis_blocks( AxisCast* c, b2ShapeId id, int h, float fraction )
 {
 	MeShape* s = c->w->shapes + h;
-	if ( s->body == c->body || ( s->flags & ME_SENSOR ) )
+	if ( s->body == c->body || ( s->flags & ME_SENSOR ) || is_ignored( c->w, h ) )
 		return 0;
 	b2AABB a = id_bounds( id );
 	const b2AABB* m = &c->box;
@@ -1458,7 +1479,7 @@ typedef struct
 static int mover_ignores( MeWorld* w, b2ShapeId id, int h, int body, int queryFlags, float dy, float bottom, b2Vec2 normal )
 {
 	MeShape* s = w->shapes + h;
-	if ( s->body == body || ( s->flags & ME_SENSOR ) )
+	if ( s->body == body || ( s->flags & ME_SENSOR ) || is_ignored( w, h ) )
 		return 1;
 	if ( s->flags & ME_ONE_WAY )
 	{

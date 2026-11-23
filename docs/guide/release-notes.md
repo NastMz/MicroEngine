@@ -188,6 +188,14 @@ modelled as components and systems.
     capsule, `OverlapPoint` and `ClosestPoint`. The shape of a query is a `QueryShape`, so the tile backend answers
     circle and capsule queries although its bodies are boxes
     ([Queries and contacts](../manual/physics.md#queries-and-contacts)).
+  - Character rules for a feel of the game's own, on `CharacterMotion`: a gravity for the top of a jump
+    (`ApexGravityScale`, `ApexSpeed`), a skid when reversing at speed (`SkidDeceleration`, `SkidSpeed`), corner
+    correction (`CornerCorrection`), a ceiling rebound (`CeilingReboundSpeed`) and a run-up bonus (`RunJumpBonus`).
+    The controller reports `IsSkidding`, `AirTime`, `LandingSpeed` and the events `Skidded` and `CornerCorrected`,
+    and `CharacterController2D.Solid` decides shape by shape what is solid for a character (a hidden block that only
+    a head from below finds) ([A feel of its own](../manual/physics.md#a-feel-of-its-own)).
+  - `QueryFilter.Where` leaves single shapes out of a move or a query on both backends
+    (`PhysicsCapabilities.FilterPredicates`): a ray that skips the body that fires it.
   - Contact detail on Box2D (`PhysicsCapabilities.ContactDetail`): `ContactImpacts` lists the hits of a step with
     their point, speed and impulse (for impact sounds and damage), `ContactsOf(body, results)` the points a body
     touches at and how hard it presses there, and a `ContactEvent` that begins has its `Point`.
@@ -197,7 +205,8 @@ modelled as components and systems.
   - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
     could end the process).
   - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels, with sparks at
-    impacts, a beam that lists what is ahead and a blast.
+    impacts, a beam that lists what is ahead and a blast, and a room with a character that has the feel of a classic
+    platform game.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene
   ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and

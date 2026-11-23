@@ -39,7 +39,8 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules | PhysicsCapabilities.Polygons
         | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
         | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
-        | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail;
+        | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail
+        | PhysicsCapabilities.FilterPredicates;
 
     /// <summary>The most vertices a polygon may have (Box2D's limit).</summary>
     public const int MaxPolygonVertices = 8;
@@ -102,6 +103,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private readonly List<ContactEvent> _contactEvents = [];
     private readonly List<ContactImpact> _impacts = [];
     private int[] _overlap = new int[64];
+    private int[] _nearby = new int[64], _left = new int[16];
     private readonly List<Joint> _jointSlots = [];
     private readonly Stack<int> _freeJoints = new();
     private JointId[] _liveJoints = new JointId[8];
@@ -856,8 +858,16 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         float* xy = stackalloc float[2];
         int* shapes = stackalloc int[MaxMoveContacts];
         float* normals = stackalloc float[2 * MaxMoveContacts];
+        bool left = false;
+        if (filter.Where is not null)
+        {
+            float* bounds = stackalloc float[4];
+            Native.me_shape_bounds(World, _shapeSlots[mover].Native, bounds);
+            left = LeaveOut(filter, new Vector2(bounds[0] + MathF.Min(d.X, 0), bounds[1] + MathF.Min(d.Y, 0)), new Vector2(bounds[2] + MathF.Max(d.X, 0), bounds[3] + MathF.Max(d.Y, 0)));
+        }
         int count = Native.me_move(World, b.Native, _shapeSlots[mover].Native, d.X, d.Y, filter.Category, filter.Mask,
             filter.PassOneWay ? Native.QueryPassOneWay : 0, xy, shapes, normals, MaxMoveContacts);
+        Restore(left);
         int kept = Math.Min(count, MaxMoveContacts);
         Span<MoveContact> contacts = stackalloc MoveContact[kept];
         int n = 0;
@@ -873,6 +883,48 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
 
     // ------------------------------------------------------------------ queries
 
+    // How far beyond what a move or a query sweeps the predicate's candidates are looked for, in metres: more than
+    // the mover's skin and the distance at which Box2D's casts report a shape.
+    private const float PredicateMargin = 0.05f;
+
+    /// <summary>
+    /// Asks <see cref="QueryFilter.Where"/> about every shape that reaches the area (metres, corners in any order) and
+    /// hands the native layer the ones it leaves out; false, and nothing to undo, without a predicate or when it leaves
+    /// none out. The caller ends with <see cref="Restore"/>.
+    /// </summary>
+    private bool LeaveOut(in QueryFilter filter, Vector2 a, Vector2 b)
+    {
+        if (filter.Where is not { } where) return false;
+        var world = World;
+        float minX = MathF.Min(a.X, b.X) - PredicateMargin, minY = MathF.Min(a.Y, b.Y) - PredicateMargin;
+        float maxX = MathF.Max(a.X, b.X) + PredicateMargin, maxY = MathF.Max(a.Y, b.Y) + PredicateMargin;
+        int total;
+        while (true)
+        {
+            fixed (int* found = _nearby)
+                total = Native.me_overlap_box(world, minX, minY, maxX, maxY, filter.Category, filter.Mask, filter.IncludeSensors ? Native.QuerySensors : 0, found, _nearby.Length);
+            if (total <= _nearby.Length) break;
+            _nearby = new int[Math.Max(total, _nearby.Length * 2)];
+        }
+        int count = 0;
+        for (int i = 0; i < total; i++)
+        {
+            int slot = SlotOf(_nearby[i]);
+            if (slot < 0 || where(IdOf(slot))) continue;
+            if (count == _left.Length) Array.Resize(ref _left, _left.Length * 2);
+            _left[count++] = _nearby[i];
+        }
+        if (count == 0) return false;
+        fixed (int* left = _left) Native.me_world_set_ignored(world, left, count);
+        return true;
+    }
+
+    /// <summary>Ends what <see cref="LeaveOut"/> began.</summary>
+    private void Restore(bool left)
+    {
+        if (left) Native.me_world_set_ignored(_world, null, 0);
+    }
+
     private static int QueryFlags(in QueryFilter filter) =>
         (filter.IncludeSensors ? Native.QuerySensors : 0) | (filter.PassOneWay ? Native.QueryPassOneWay : 0);
 
@@ -884,7 +936,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         var a = ToMeters(from);
         var t = ToMeters(to) - a;
         float* r = stackalloc float[5];
+        bool left = LeaveOut(filter, a, a + t);
         int native = Native.me_ray_cast(World, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), r);
+        Restore(left);
         int slot = SlotOf(native);
         if (slot < 0)
         {
@@ -903,6 +957,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         var a = ToMeters(area.Position);
         var c = ToMeters(new Vector2(area.Right, area.Bottom));
         var world = World;
+        bool left = LeaveOut(filter, a, c);
         int total;
         while (true)
         {
@@ -912,6 +967,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             if (total <= _overlap.Length || _overlap.Length >= results.Length) break;
             _overlap = new int[Math.Max(total, _overlap.Length * 2)];
         }
+        Restore(left);
         int written = 0;
         for (int i = 0; i < Math.Min(total, _overlap.Length) && written < results.Length; i++)
         {
@@ -936,9 +992,11 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         int room = Math.Max(hits.Length, 1);
         int* shapes = stackalloc int[HitBatch];
         float* values = stackalloc float[5 * HitBatch];
+        bool left = LeaveOut(filter, a, a + t);
         if (room <= HitBatch)
         {
             int total = Native.me_ray_cast_all(world, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), shapes, values, room);
+            Restore(left);
             WriteHits(shapes, values, Math.Min(total, room), hits);
             return total;
         }
@@ -948,6 +1006,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         fixed (float* pv = manyValues)
         {
             int total = Native.me_ray_cast_all(world, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), ps, pv, room);
+            Restore(left);
             WriteHits(ps, pv, Math.Min(total, room), hits);
             return total;
         }
@@ -986,7 +1045,10 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         var a = ToMeters(from);
         var t = ToMeters(to) - a;
         float* r = stackalloc float[5];
+        var reach = new Vector2(hx + radius, hy + radius);
+        bool left = LeaveOut(filter, Vector2.Min(a, a + t) - reach, Vector2.Max(a, a + t) + reach);
         int slot = SlotOf(Native.me_shape_cast(World, hx, hy, radius, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), r));
+        Restore(left);
         if (slot < 0)
         {
             hit = default;
@@ -1017,6 +1079,8 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private int Overlaps(bool shape, float hx, float hy, float radius, Vector2 c, in QueryFilter filter, Span<ShapeId> results)
     {
         var world = World;
+        var reach = new Vector2(hx + radius, hy + radius);
+        bool left = LeaveOut(filter, c - reach, c + reach);
         int flags = QueryFlags(filter), total;
         while (true)
         {
@@ -1027,6 +1091,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             if (total <= _overlap.Length || _overlap.Length >= results.Length) break;
             _overlap = new int[Math.Max(total, _overlap.Length * 2)];
         }
+        Restore(left);
         int written = 0;
         for (int i = 0; i < Math.Min(total, _overlap.Length) && written < results.Length; i++)
         {
@@ -1043,7 +1108,10 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (!(maxDistance >= 0) || float.IsInfinity(maxDistance)) throw new ArgumentOutOfRangeException(nameof(maxDistance), maxDistance, "The distance must be finite and zero or more.");
         var p = ToMeters(point);
         float* r = stackalloc float[3];
+        var reach = new Vector2(Meters(maxDistance));
+        bool left = LeaveOut(filter, p - reach, p + reach);
         int slot = SlotOf(Native.me_closest_point(World, p.X, p.Y, Meters(maxDistance), filter.Category, filter.Mask, QueryFlags(filter), r));
+        Restore(left);
         if (slot < 0)
         {
             hit = default;
