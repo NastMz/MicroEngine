@@ -29,17 +29,8 @@ they are written in one piece.
 ```csharp title="MainGame.cs"
 private const string SaveSlot = "progress";
 
-private readonly string? _saveDirectory;
-
-/// <param name="saveDirectory">A folder for the save file, for tests; null keeps it in the player's save folder.</param>
-public MainGame(string? saveDirectory = null) => _saveDirectory = saveDirectory;
-
 /// <summary>The id the saves are kept under: it names the save folder, so it never changes once players have saves.</summary>
 protected override string SaveId => "GemGarden";
-
-/// <summary>The store behind <c>Saves</c>: the one every game comes with, or one in the folder a test asked for.</summary>
-protected override SaveStore CreateSaves() =>
-    _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
 
 public int BestScore { get; private set; }
 ```
@@ -72,15 +63,12 @@ protected override void Unload() => Sprites.Dispose();
   `~/.local/share/MicroEngine/GemGarden` on Linux (or `$XDG_DATA_HOME`),
   `~/Library/Application Support/MicroEngine/GemGarden` on macOS, the app's own storage on phones, and
   `localStorage` in a browser. Each slot is `<slot>.json` there.
-- `CreateSaves` is where a game builds its store by hand. Gem Garden does it only when a folder was asked for: the
-  optional `saveDirectory` lets tests use a temporary folder instead of the player's saves. Without it, the game gets
-  the store it comes with.
+- That is where the saves are when somebody plays. A run with an input script and a test keep them in memory
+  instead, empty at the start, so they never read or change the player's saves and the game needs no code for it
+  ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
 - `Saves.Load<SaveData>("progress")` returns the saved object, or `null` when there is no save yet. `?.BestScore ?? 0`
   turns "no save" into a best score of 0.
 - Use `Saves` from `Load` or later, not from the constructor.
-
-Because `MainGame` now has a constructor with an optional parameter, `Configure` (`new MainGame()`) and `Program.cs`
-still work unchanged.
 
 ## Saving
 

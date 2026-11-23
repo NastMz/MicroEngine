@@ -8,12 +8,12 @@ namespace GemGarden.Tests;
 [TestClass]
 public sealed class GemGardenTests
 {
-    private static (MainGame Game, string Saves) Start()
+    /// <summary>A new game with a store of its own, in memory and empty: a test never reads or writes the player's saves.</summary>
+    private static MainGame Start()
     {
-        var saves = Directory.CreateTempSubdirectory("gemgarden-").FullName;
-        var game = new MainGame(saves);
+        var game = new MainGame();
         game.InitializeForTest(new HeadlessPlatform());
-        return (game, saves);
+        return game;
     }
 
     private static void Hold(Game game, string action, int steps)
@@ -41,19 +41,18 @@ public sealed class GemGardenTests
     [TestMethod]
     public void WalkingRightPicksUpTheFirstGem()
     {
-        var (game, saves) = Start();
+        var game = Start();
         var play = Play(game);
         Assert.AreEqual(0, play.Gems);
         Assert.AreEqual(24, play.TotalGems);
         Hold(game, "right", 70);
         Assert.AreEqual(1, play.Gems, "the gem five tiles to the right of the start");
-        Directory.Delete(saves, true);
     }
 
     [TestMethod]
     public void PauseFreezesTheRoundAndResumes()
     {
-        var (game, saves) = Start();
+        var game = Start();
         var play = Play(game);
         Hold(game, "pause", 2);
         Assert.IsInstanceOfType<PauseScene>(game.Scenes.Current);
@@ -64,35 +63,35 @@ public sealed class GemGardenTests
         Assert.AreSame(play, game.Scenes.Current);
         Step(game, 60);
         Assert.IsLessThan(frozen, play.TimeLeft);
-        Directory.Delete(saves, true);
     }
 
     [TestMethod]
     public void TheRoundEndsWhenTimeRunsOutAndTheBestScoreIsSaved()
     {
-        var (game, saves) = Start();
+        // The same saves for this game and the next one: what a second launch finds.
+        var saves = new MemorySaveStorage();
+        var game = new MainGame();
+        game.InitializeForTest(new HeadlessPlatform(), saves: saves);
         Play(game);
         Hold(game, "right", 70);
         Step(game, (int)(PlayScene.RoundSeconds * 60) + 60);
         Assert.IsInstanceOfType<ResultsScene>(game.Scenes.Current);
         Assert.AreEqual(1, game.BestScore);
-        Assert.IsTrue(File.Exists(Path.Combine(saves, "progress.json")), "SaveStore writes <slot>.json in the save folder");
+        Assert.IsTrue(saves.Exists("progress"), "the game saved its slot");
 
-        var relaunched = new MainGame(saves);
-        relaunched.InitializeForTest(new HeadlessPlatform());
+        var relaunched = new MainGame();
+        relaunched.InitializeForTest(new HeadlessPlatform(), saves: saves);
         Assert.AreEqual(1, relaunched.BestScore, "the next session loads the best score");
         Assert.IsFalse(relaunched.RecordScore(1), "an equal score is not a new best");
         Assert.IsTrue(relaunched.RecordScore(2));
-        Directory.Delete(saves, true);
     }
 
     [TestMethod]
     public void QuitFromTheTitleEndsTheGame()
     {
-        var (game, saves) = Start();
+        var game = Start();
         Hold(game, "down", 2);
         Hold(game, "confirm", 2);
         Assert.IsTrue(game.QuitRequested);
-        Directory.Delete(saves, true);
     }
 }

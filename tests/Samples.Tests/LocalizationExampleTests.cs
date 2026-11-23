@@ -12,17 +12,16 @@ namespace Samples.Tests;
 [TestClass]
 public sealed class LocalizationExampleTests
 {
-    private static (ExamplesGame Game, GameSession Platform, LocalizationExample Scene) Open(string? saves = null)
+    private static (ExamplesGame Game, GameSession Platform, LocalizationExample Scene) Open(MicroEngine.Core.MemorySaveStorage? saves = null)
     {
-        saves ??= Directory.CreateTempSubdirectory("examples-").FullName;
         // A session runs whole frames, drawing included: drawing is what places a label's lines.
-        var session = new GameSession(() => new ExamplesGame(saves), game =>
+        var session = new GameSession(() => new ExamplesGame(), game =>
         {
             var platform = HeadlessPlatform.For(game.Settings, rasterize: false);
             platform.Resize(960, 540);
             return platform;
         });
-        Assert.IsTrue(session.Start());
+        Assert.IsTrue(session.Start(new RunOptions { Saves = saves }));
         var examples = (ExamplesGame)session.Game!;
         var scene = new LocalizationExample();
         examples.Scenes.Push(scene);
@@ -107,7 +106,7 @@ public sealed class LocalizationExampleTests
     [TestMethod]
     public void TheChoiceIsSavedAndLeavingRestoresEnglishForTheOtherExamples()
     {
-        string saves = Directory.CreateTempSubdirectory("examples-").FullName;
+        var saves = new MicroEngine.Core.MemorySaveStorage();   // the same saves for the second launch
         var (game, platform, _) = Open(saves);
         Press(game, platform, "confirm");
         Assert.AreEqual("es", game.Localization.Language);

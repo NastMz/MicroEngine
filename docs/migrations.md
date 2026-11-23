@@ -6,6 +6,20 @@ it. Newest first.
 
 ## Next release
 
+### Saved bindings: later formats are refused, and a screen saves its own actions
+
+`InputBindingSet.FromJson` throws `FormatException` for a set whose `version` is above
+`InputBindingSet.CurrentVersion` (or below 1); `LoadBindings` returns false for such a file and sets it aside, and
+`ImportBindings` returns 0 for such a set. Before, it was applied as "every action, no control". `ImportBindings`
+no longer replaces an action whose saved controls are all unknown to this version: the action keeps its controls and
+is not counted in the result. An action saved with an empty list is still unbound.
+
+The four methods have an optional `actions` parameter. A rebinding screen should pass the actions it offers,
+`Input.SaveBindings(storage, actions: Rebindable)` and `Input.LoadBindings(storage, actions: Rebindable)`: a file
+written without it holds every action of the map, and loading it back replaces what the game binds in code,
+including bindings a newer version of the game changed. A file saved before loads with `actions` as well; the
+actions it names beyond those are ignored.
+
 ### A scripted run, a headless run and a stepped game no longer use the player's saves
 
 `Game.Saves` is now on a store in memory, empty at start, in a run that has a script or advances in deterministic

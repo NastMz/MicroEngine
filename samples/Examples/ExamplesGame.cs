@@ -12,7 +12,7 @@ namespace Examples;
 /// A list of small examples, one screen each. Every example is an ordinary scene pushed over the list; Esc, P or the
 /// gamepad's Start (the "pause" action) pops it and returns here.
 /// </summary>
-public sealed class ExamplesGame(string? saveDirectory = null) : Game
+public sealed class ExamplesGame : Game
 {
     /// <summary>
     /// The game's composition for browser, Android and iOS builds; the desktop Program.cs runs the game with a platform
@@ -67,15 +67,6 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
 
     /// <summary>The id the examples' saves have always been kept under; without it, it would be the project's application id.</summary>
     protected override string SaveId => "MicroEngineExamples";
-
-    #region saves
-    /// <summary>
-    /// The store behind <c>Saves</c>, built by hand when a folder was asked for (tests pass a temporary one); without
-    /// one it is the store every game comes with, on the medium of the platform it runs on.
-    /// </summary>
-    protected override SaveStore CreateSaves() =>
-        saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
-    #endregion
 
     // The widgets' UI view at three window pixels per unit, the scale of the 320×180 canvas in the default window, so
     // the widget examples read at the size of everything else.

@@ -18,8 +18,7 @@ public sealed class ExampleTests
     [TestMethod]
     public void EveryExampleOpensRunsAndReturnsToTheList()
     {
-        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
-        var game = new ExamplesGame(saves);
+        var game = new ExamplesGame();
         game.InitializeForTest(new HeadlessPlatform());
         foreach (var (name, _) in ExamplesGame.All)
         {
@@ -39,14 +38,12 @@ public sealed class ExampleTests
             game.Input.SetForced("down", false);
             game.StepForTest();
         }
-        Directory.Delete(saves, true);
     }
 
     [TestMethod]
     public void TheSavingExampleWritesAndReadsItsSlot()
     {
-        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
-        var game = new ExamplesGame(saves);
+        var game = new ExamplesGame();
         game.InitializeForTest(new HeadlessPlatform());
         game.Scenes.Push(new SaveExample());
         game.StepForTest();
@@ -57,11 +54,11 @@ public sealed class ExampleTests
             game.Input.SetForced(action, false);
             game.StepForTest();
         }
-        var saved = new SaveStore("MicroEngineExamples", saves).Load<SaveExample.Progress>("example");
+        // The game's saves are in memory for a test; another store on the same medium reads what the example wrote.
+        var saved = new SaveStore(game.Saves.Storage).Load<SaveExample.Progress>("example");
         Assert.IsNotNull(saved);
         Assert.AreEqual(2, saved.Coins);
         Assert.HasCount(1, saved.Visited);
-        Directory.Delete(saves, true);
     }
 
     [TestMethod]
@@ -462,7 +459,7 @@ public sealed class SettingsExampleTests
     /// <param name="audio">The audio device to play through (a capture device, to check what is heard); null for the silent one.</param>
     internal static (ExamplesGame Game, HeadlessPlatform Platform) Start(Scene scene, Func<MicroEngine.Audio.IAudioDevice>? audio = null)
     {
-        var game = new ExamplesGame(Directory.CreateTempSubdirectory("examples-").FullName);
+        var game = new ExamplesGame();
         var platform = audio is null
             ? HeadlessPlatform.For(game.Settings, rasterize: false)
             : HeadlessPlatform.For(new PlatformRequest(game.Settings) { Audio = audio });
@@ -611,9 +608,8 @@ public sealed class RebindExampleTests
     [TestMethod]
     public void TheScreenRebindsWithTheNextPressSavesItAndEscapeKeepsTheBinding()
     {
-        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
         var platform = new HeadlessPlatform();
-        var game = new ExamplesGame(saves);
+        var game = new ExamplesGame();
         game.InitializeForTest(platform);
         game.Scenes.Push(new RebindExample());
         game.StepForTest();
@@ -644,9 +640,10 @@ public sealed class RebindExampleTests
         Assert.IsInstanceOfType<RebindExample>(game.Scenes.Current, "and does not leave the screen");
 
         var reloaded = Defaults();
-        Assert.IsTrue(reloaded.LoadBindings(new FileSaveStorage(saves)));
+        Assert.IsTrue(reloaded.LoadBindings(game.Saves.Storage));
         CollectionAssert.AreEqual(new[] { "Q" }, Keys(reloaded, "jump"), "the change was saved");
-        Directory.Delete(saves, true);
+        var written = MicroEngine.Input.InputBindingSet.FromJson(game.Saves.Storage.Read(MicroEngine.Input.InputMap.BindingsSlot)!);
+        CollectionAssert.AreEqual(new[] { "fire", "jump" }, written.Actions.Select(a => a.Action).ToArray(), "the actions the screen offers, and no menu action");
     }
 }
 
@@ -774,10 +771,18 @@ public sealed class SaveVersionTests
     }
 }
 
-/// <summary>The samples keep the save folders they have always had.</summary>
+/// <summary>The samples keep the save folders they have always had, and a test of one never uses them.</summary>
 [TestClass]
 public sealed class SampleSaveIdTests
 {
+    [TestMethod]
+    public void AStartedExampleKeepsItsSavesInMemory()
+    {
+        var game = new ExamplesGame();
+        game.InitializeForTest(new HeadlessPlatform());
+        Assert.IsInstanceOfType<MicroEngine.Core.MemorySaveStorage>(game.Saves.Storage);
+    }
+
     [TestMethod]
     public void TheExamplesKeepTheirSaveFolder() =>
         Assert.AreEqual(SaveStore.DefaultDirectory("MicroEngineExamples"), new ExamplesGame().Saves.Directory);
@@ -842,7 +847,7 @@ public sealed class PlatformerExampleTests
     [TestMethod]
     public void TheLevelPlacesItsFourCoinsAndKeepsThoseThePlayerDoesNotTouch()
     {
-        var game = new ExamplesGame(Path.GetTempPath());
+        var game = new ExamplesGame();
         game.InitializeForTest(new HeadlessPlatform());
         var scene = new PlatformerExample();
         game.Scenes.Push(scene);
@@ -855,7 +860,7 @@ public sealed class PlatformerExampleTests
     [TestMethod]
     public void JumpsUpThroughAOneWayPlatformLandsOnItAndDropsBack()
     {
-        var game = new ExamplesGame(Path.GetTempPath());
+        var game = new ExamplesGame();
         game.InitializeForTest(new HeadlessPlatform());
         var scene = new PlatformerExample();
         game.Scenes.Push(scene);
@@ -881,7 +886,7 @@ public sealed class DiagnosticsExampleTests
     [TestMethod]
     public void TheToggleTurnsOnMeasuringAndDrawingAndLeavingTheExampleTurnsThemOff()
     {
-        var game = new ExamplesGame(Path.GetTempPath());
+        var game = new ExamplesGame();
         game.InitializeForTest(new HeadlessPlatform());
         var scene = new DiagnosticsExample();
         game.Scenes.Push(scene);

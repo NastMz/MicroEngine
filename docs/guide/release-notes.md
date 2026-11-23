@@ -19,6 +19,12 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - **`MemorySaveStorage`** is a save medium in memory, for tests and tools: `new SaveStore(new MemorySaveStorage())`.
 - **`Game.InitializeForTest(platform, seed, saves)`** takes the medium of the game's saves, for a test that starts
   a game twice over the same saves.
+- **The samples have no save folder parameter.** The examples and Gem Garden no longer take a `saveDirectory` nor
+  override `CreateSaves`; their tests start them as a player would.
+- **Saved key bindings cannot empty a map.** `SaveBindings`, `LoadBindings`, `ExportBindings` and `ImportBindings`
+  take the actions a rebinding screen offers (`actions:`), so the menus' and the engine's actions always follow the
+  game's code. A file of a later format is not applied (it is set aside), and an action whose saved controls are
+  all unknown to this version keeps the controls it has ([A rebinding screen](../manual/input.md#a-rebinding-screen)).
 
 ### Graphics: draw order, post-processing, the window stage and mip levels
 

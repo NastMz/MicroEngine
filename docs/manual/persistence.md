@@ -63,21 +63,10 @@ A scene reaches it as `Game.Saves`, the game itself as `Saves`. One store holds 
 | --- | --- |
 | `Saves` | The game's store, on the medium of the run: the player's saves when somebody plays, a store of the run's own for a scripted run or a test ([Where saves live](#where-saves-live), [Scripted runs and tests](#scripted-runs-and-tests)). Use it from `Configure`, `Load` or later, not from the game's constructor |
 | `SaveId` (protected, virtual) | The id the saves are kept under: the application id of the game's project ([Application identity](../guide/app-identity.md)), else the title. It names the save folder and the browser's key prefix, so a game that changes its application id after release overrides `SaveId` with the old one and its players keep their saves |
-| `CreateSaves()` (protected, virtual) | Creates `Saves`, once. Override it to build the store by hand |
+| `CreateSaves()` (protected, virtual) | Creates `Saves`, once. Override it only for a game that must keep its saves in one place whatever the run says: a store built there is the game's own, and neither `--saves` nor a scripted run's own store reaches it |
 
-Building the store by hand is the explicit alternative, for a test or a tool that wants its own folder or medium:
-
-<!-- code: samples/Examples/ExamplesGame.cs#saves -->
-```csharp
-/// <summary>
-/// The store behind <c>Saves</c>, built by hand when a folder was asked for (tests pass a temporary one); without
-/// one it is the store every game comes with, on the medium of the platform it runs on.
-/// </summary>
-protected override SaveStore CreateSaves() =>
-    saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
-```
-
-Tests pass a temporary folder this way, so they never touch the player's real saves.
+A game needs no code to keep its tests and its scripted runs away from the player's saves: the run decides
+([Scripted runs and tests](#scripted-runs-and-tests)).
 
 ## `SaveStore`
 

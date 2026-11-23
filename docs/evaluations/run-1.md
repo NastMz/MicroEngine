@@ -34,10 +34,10 @@ only when a run fails and are never read. The language and the clock were alread
 
 ## C. Alternatives
 
-No library applies: this is the engine's own launch model. What other engines do was the reference. Godot and Unity
-leave `user://` and `persistentDataPath` shared between the editor's test runs and play, and their test guides tell
-each project to redirect them by hand, which is what the SDK did. MonoGame has no notion of a scripted run. The
-options were therefore the engine's own:
+No library applies: this is the engine's own launch model. Other engines were the reference only in general terms
+(Unity's `persistentDataPath` and Godot's `user://` are one location per project, shared by play and by automated
+runs unless the project redirects them); nothing of theirs was measured or read in detail for this. The options
+were the engine's own:
 
 1. **Keep** the per-game parameter, and add `--saves DIR`. The command line gets a way out, but every game still
    writes the override and a run is isolated only when somebody remembers.
@@ -135,10 +135,10 @@ version 2 file in which `jump` and `fire` hold the rebinding example's defaults 
 
 What was established by running the code:
 
-- The examples' tour saves the bindings on every run: its second `confirm` in the rebinding example presses
-  "RESET TO DEFAULTS". A run on a temporary folder writes a healthy file, so the tour alone does not produce the
-  stale one.
-- `SaveBindings` writes every action of the map, and `LoadBindings` replaces every action the file names. So one
+- The examples' tour saves the bindings on every run: its presses in the rebinding example end on "RESET TO
+  DEFAULTS" (the capture `16-rebind.png` reads "DEFAULTS RESTORED"). A run on a temporary folder writes a healthy
+  file, so the tour alone does not produce the stale one.
+- `SaveBindings` wrote every action of the map, and `LoadBindings` replaces every action the file names. So one
   load that empties the menu actions is written back by the next tour and never heals. This is why `jump` and
   `fire` look right in the stale file (the reset rebinds them) and nothing else does.
 - A reader applies a file of a format it does not know as "every action, no control". The current reader did not
