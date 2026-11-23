@@ -17,7 +17,8 @@ export const upstream: { name: string; role: string }[] = [
   { name: 'SDL 3', role: 'Windows, input, sound and rendering on desktops and phones' },
   { name: 'raylib', role: 'The alternative desktop platform, and browsers in the published SDK' },
   { name: '.NET 10', role: 'The runtime, the build, and WebAssembly for browsers' },
-  { name: 'NVorbis', role: 'OGG music decoding' },
+  { name: 'NVorbis', role: 'OGG decoding' },
+  { name: 'NLayer', role: 'MP3 decoding' },
 ];
 
 /** Open sockets on the board: places where a game or host seats a module of its own. */

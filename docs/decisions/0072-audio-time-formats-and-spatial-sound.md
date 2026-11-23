@@ -97,9 +97,18 @@ by CONSOLIDATION-1.
   on (no native linker); a trimmed, self-contained publish with every trim warning shown was clean and ran.
 - A seek backward in a long streamed track costs a few milliseconds per second of music before the place asked for,
   on the game's thread. Decoded music seeks at once.
-- MP3 on raylib is now the managed decoder; the raylib device's own MP3 decoder is never reached.
+- MP3 on raylib is the managed decoder, and the raylib device's own MP3 decoder is removed: it could no longer be
+  reached, and it decoded a whole file at load and again at every play. A developer who prefers another decoder for a
+  format (a native one, a faster one) registers it with `AudioDecoders.Add`, which replaces the built-in one on
+  every device: precedence is explicit and in one place, the list. `MixerAudioDevice.AddDecoder` remains for a
+  backend that decodes a format the list does not have.
 - Binary-breaking signature changes and behaviour changes are in the migration guide.
-- Still open: `AudioEngine.CreateBus` writes the parent and volume of a new bus where the audio thread reads them
-  without a hand-over (found by the verification of ADR 0067; not touched here).
+- `AudioEngine.CreateBus` writes the parent and volume of a new bus in arrays the audio thread reads, without a
+  command of its own (reported by the verification of ADR 0067). It is left so, on purpose: nothing is mixed through
+  a bus before a command that names it (a sound started on it, its volume, its chain), every such command is posted
+  after those writes, and the post is the queue's volatile write, which the render function reads before it drains:
+  the writes are visible before their first use. Before that the render function only derives per-segment values
+  from the slot, for a bus nothing plays on. A command of its own would add a case to keep when the queue is full
+  and change nothing that is heard. A test plays on buses created in the same step and checks the first frame.
 - Not part of this record: sound blocked by walls, reverberation by place, effects per voice, nearest-first voice
   allocation for emitters, loop points in MP3.

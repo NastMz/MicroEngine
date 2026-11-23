@@ -171,7 +171,7 @@ measured: the path without effects is the previous one, and no doubt needed a nu
 | NVorbis (in use) | 0.10.5 pinned | MIT | none on .NET 10 | Kept. Decodes 20 s of 44.1 kHz stereo in 117 to 219 ms. Its seek is not exact (8.2) |
 | NVorbis | 1.0.0-rc.2 | MIT | none on .NET 10 | Not adopted: a prerelease, and after a seek its first 600 to 3600 samples differ from a straight decode by up to 1.3 (the signal was 0.3) |
 | NLayer | 3.0.1 (2026-11-04) | MIT | none | Adopted for MP3. Managed, `Span` API, net8.0 build. A trimmed self-contained publish (`TrimMode=full`, every warning shown) was clean and decoded correctly when run. Its seek gives silence and then differing samples (8.2) |
-| raylib's dr_mp3 (in use on one backend) | bundled | public domain | native | Was the only MP3 path: one backend, whole file decoded at load and again at each play. No longer reached |
+| raylib's dr_mp3 (was in use on one backend) | bundled | public domain | native | Was the only MP3 path: one backend, whole file decoded at load and again at each play. Removed from the raylib device |
 | NAudio.Core | 3.4.0-preview.1 | MIT | System.Numerics.Tensors | A device and file library; its MP3 path is NLayer or Windows codecs |
 | Native decoders through SDL_mixer or SDL_sound | n/a | zlib | native, per platform | A native dependency per platform and none in browsers' managed runtime, to decode what two managed libraries already decode |
 
@@ -189,6 +189,16 @@ measured: the path without effects is the previous one, and no doubt needed a nu
 - **I. Validation.** `AudioDecoderTests` (14 tests) on two small files made with ffmpeg and kept as base64: lengths,
   rates, the tone they were made from, garbage and wrong-format bytes, a custom format as effect and music, a decoder
   that throws, returns null or six channels; the sample's `Pcm16Stream`.
+
+**NLayer's licence and upkeep, read from the package and from nuget.org on 2026-11-23.** The package's `nlayer.nuspec`
+(NuGet cache, 3.0.1) declares `<license type="expression">MIT</license>`, authors "Mark Heath, Andrew Ward" and
+copyright "© Mark Heath 2026"; it carries no licence file of its own, the expression is the statement. Its project
+is `github.com/naudio/NLayer`, under the NAudio organisation. It is maintained: after years at 1.x it had six
+releases in 2026 (2.0.0 on 2026-06-28, 2.0.1 on 2026-07-06, 3.0.0 on 2026-08-27, 3.0.1 on 2026-11-04, the last
+one a decoding fix from a user's report). The version is pinned, so an abandoned or changed upstream changes
+nothing that ships. If it stopped being maintained: the decoder is one entry of `AudioDecoders`, so the engine or
+a game replaces it with one call (`AudioDecoders.Add("mp3", open)`), and OGG remains the format the manual
+recommends for music.
 
 ### 8.2 Seeking a compressed stream
 
@@ -261,5 +271,6 @@ decoder's seek to 0 landed. Tested: after seeks to several frames a stream gives
   No browser, Android, iOS, Linux or macOS run.
 - Decoding speed and seek cost were measured once, on one machine, with other builds running.
 - The `sdk/tests` checks (`packages.mjs` was taught the new dependency) were not run: they need a packed feed.
-- Left as it was: `AudioEngine.CreateBus` writes a new bus's parent and volume without a hand-over to the audio
-  thread.
+- `AudioEngine.CreateBus` and the audio thread: argued, not measured (ADR 0072, consequences). The test added for
+  it runs offline and checks the first frame of a bus used in the step that created it; it does not exercise two
+  threads.

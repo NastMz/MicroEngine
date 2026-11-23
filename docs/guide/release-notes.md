@@ -183,6 +183,8 @@ modelled as components and systems.
   decoded in managed code like OGG. `AudioDecoders.Add(extension, open)` registers a format of the game's own for
   all of them ([an audio format](../manual/extending.md#an-audio-format)). Music is streamed or decoded whole, per
   piece: `Audio.AddMusicFile(name, path, loop, AudioLoadMode.Decoded)`.
+- `microengine content check` no longer warns about MP3 files, which every platform now plays; an `.mp3` the
+  engine cannot decode is an error, like a WAV.
 - Releasing sounds: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)` unregister and free a sound, and
   registering a name again frees what had it. `Audio.Play(clip)` and `Audio.PlayVoice(clip, parameters)` play a clip
   without registering it, so a sound loaded by an asset scope is freed with the scope

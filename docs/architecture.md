@@ -293,7 +293,7 @@ the namespace they had in `MicroEngine.dll`.
 | `MicroEngine.Text` | (`MicroEngine.Graphics`) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`, the font loader |
 | `MicroEngine.Text.Shaping` | (`MicroEngine.Graphics`) | `ShapedFont`, `ShapedFontSize`, `ShapedGlyph`: HarfBuzz shaping, glyphs rasterized by index; an optional package of its own |
 | `MicroEngine.Input.Touch` | (`MicroEngine.Input`) | `ITouchScreen`, `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `TouchStyle`, `ITouchSkin` |
-| `MicroEngine.Audio` | `MicroEngine.Audio`, `MicroEngine.Audio.Retro` | `AudioEngine` (voices, buses, music streams, exact-frame scheduling), `AudioMixer`, `IAudioDevice`, `MixerAudioDevice`, `AudioClip` (incl. WAV and OGG decoding), `OfflineAudioSink`, `SilentAudioDevice`; in `MicroEngine.Audio.Retro`: `Synth`, `SfxParams`, `Wave` (retro sound effects), `Song`, `Instrument` (step sequencer) |
+| `MicroEngine.Audio` | `MicroEngine.Audio`, `MicroEngine.Audio.Retro` | `AudioEngine` (voices, buses, music streams, exact-frame scheduling), `AudioMixer`, `IAudioDevice`, `MixerAudioDevice`, `AudioClip`, `AudioDecoders` (WAV, OGG and MP3 decoding), `OfflineAudioSink`, `SilentAudioDevice`; in `MicroEngine.Audio.Retro`: `Synth`, `SfxParams`, `Wave` (retro sound effects), `Song`, `Instrument` (step sequencer) |
 | `MicroEngine.Saves` | `MicroEngine.Saves`, (`MicroEngine.Core`) | `SavesModule`; `SaveStore`, `ISaveStorage`, `FileSaveStorage` |
 | `MicroEngine.Achievements` | `MicroEngine.Achievements`, (`MicroEngine.Core`) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData`, `AchievementRecord` |
 | `MicroEngine.UI` | `MicroEngine.UI` | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `ScrollView`, `Grid`, `Layer`, `TextField`, `UiTheme` |
@@ -318,7 +318,7 @@ In short:
   decides what to load and when.
 - **Code-first content by default, files when a game wants them.** Sprites, tiles and fonts can be
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
-  no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG (or MP3 on raylib)
+  no binary assets. Games that use existing packs load PNG, WAV, OGG and MP3 in managed code and stream music
   through the audio device; Neon Rift does this with CC0 assets listed in its `CREDITS.md`.
   Games can also mix both per element: Courtyard Key loads its village houses, trees and one enemy from a CC0
   pack and keeps its ground, dungeon, characters and audio procedural; Trail Duel loads its village from a CC BY 4.0

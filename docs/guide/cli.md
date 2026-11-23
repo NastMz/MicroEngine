@@ -121,11 +121,11 @@ line names the file and says what to do; the command exits with 1 when there are
 
 | Reported as an error | Reported as a warning |
 | --- | --- |
-| An image, WAV, font or compiled shader the engine cannot read | A source file that would ship (`.psd`, `.xcf`, `.kra`, `.tps`, `.hlsl`...) or a file the system left behind |
+| An image, WAV, MP3, font or compiled shader the engine cannot read; a file named `.ogg` that is not an Ogg file | A source file that would ship (`.psd`, `.xcf`, `.kra`, `.tps`, `.hlsl`...) or a file the system left behind |
 | A sheet or atlas whose image is missing, misspelled in letter case, or smaller than its frames | An image above 4096 pixels on a side (an error above `--max-texture N` when given) |
-| A clip that names a frame the sheet does not have; two frames or clips of one name | MP3 music, which one platform decodes |
+| A clip that names a frame the sheet does not have; two frames or clips of one name | |
 | Two files or folders that differ only in letter case | |
-| An image or sound format no platform reads (`.webp`, `.tiff`, `.flac`...) | |
+| An image or sound format the engine does not read (`.webp`, `.tiff`, `.flac`...) | |
 | A string table or a message that cannot be read; a key a language lacks; a value a translation names and the others do not | A value a translation does not use; a plural without the forms its language uses |
 | A font a string table names that does not exist; a per-language variant whose tag is spelled with another letter case | Characters a language's fonts lack; a per-language variant without its original file |
 

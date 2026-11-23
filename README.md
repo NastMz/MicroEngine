@@ -101,7 +101,7 @@ all the way to a package for each platform.
 | Graphics | Pixel-art and HD 2D, sprite atlases, animation, particles, a camera with dead zone, bounds and shake, parallax, tile layers and autotiling |
 | Text | A built-in pixel font, TrueType and OpenType fonts, and optional shaping for Arabic, Hebrew and Indic scripts |
 | Input | Named actions over keyboard, gamepad, mouse and touch, on-screen controls for phones, and prompts that show the player's own buttons |
-| Audio | One mixer on every platform, streamed OGG music, and a retro synthesizer with a step sequencer for effects and songs in code |
+| Audio | One mixer on every platform with effects on buses, WAV, OGG and MP3 for effects and music (streamed or decoded), loop points, sounds with a place in a scene, and a retro synthesizer with a step sequencer for effects and songs in code |
 | Physics | Swept tile collision with one-way platforms, and physics worlds behind a contract |
 | UI | Widgets (labels, buttons, panels, stacks, grids, scroll views, text fields) with focus, pointer and gamepad navigation, and themes of your own |
 | Persistence | JSON saves in the right place on every platform, and achievements with saved progress |
@@ -160,4 +160,4 @@ except the third-party art and audio listed in each game's `CREDITS.md`, which k
 | Engine, tools, hosts, samples, site and docs | `src/`, `samples/`, `templates/`, `web/`, `platforms/`, `packaging/`, `site/`, `docs/`, `tests/MicroEngine*.Tests/` | [MIT](LICENSE) |
 | Demo games, their tests and builds | `games/<Name>/`, `tests/<Name>.Tests/` | [All rights reserved](games/LICENSE) |
 | Third-party art and audio of the demos | the files in each game's `CREDITS.md` | their own (CC0 1.0, CC BY) |
-| Third-party libraries | SDL 3, raylib, .NET, NVorbis, HarfBuzz and others | see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |
+| Third-party libraries | SDL 3, raylib, .NET, NVorbis, NLayer, HarfBuzz and others | see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |

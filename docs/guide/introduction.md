@@ -43,7 +43,7 @@ Each game has five achievements and saves its progress, and is packaged for desk
 
 | Principle | In practice | More |
 | --- | --- | --- |
-| Code-first content, files when wanted | `PixelImage`, palettes, noise and `Synth` build assets in code; `ContentFolder` loads PNG and WAV, and music streams from OGG | [Assets](../manual/assets.md) |
+| Code-first content, files when wanted | `PixelImage`, palettes, noise and `Synth` build assets in code; `Game.Assets` loads PNG images and WAV, OGG and MP3 sounds, and music streams while it plays | [Assets](../manual/assets.md) |
 | Scenes on a stack | Pause menus, dialogue and inventories are overlay scenes; transitions swap scenes at their midpoint | [Scenes](../manual/scenes.md) |
 | Plain entities by default | Entities with ids, transforms and attachments in a scene's `IWorld`; a game's own small classes attach to them. Components and systems are an optional package ([Entity Component Systems](entity-component-systems.md)) | [Architecture](../architecture.md) |
 | Actions, never keys | Games ask for `"jump"` or `"confirm"`; scripts and tests force the same actions | [Architecture](../architecture.md) |
@@ -58,7 +58,8 @@ Each game has five achievements and saves its progress, and is packaged for desk
 - Action-based input (keyboard, gamepad and on-screen touch controls, digital and analog) and scripted input playback.
 - Procedural pixel art (`PixelImage`, palettes, noise, dithering), sprite atlases, animation, particles,
   camera, parallax layers, a light map and a built-in pixel font.
-- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG music (and MP3 on raylib).
+- Managed PNG loading, grid sprite-sheet slicing, and WAV, OGG and MP3 files as sound effects and as music, streamed or
+  decoded whole, the same on every platform.
 - HD canvases with smooth scaling, and TrueType and OpenType fonts.
 - Tile layers, swept tile collision with one-way platforms, autotiling.
 - A scene world of entities with transform hierarchies, and physics worlds behind one contract with a tile backend.

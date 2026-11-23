@@ -169,8 +169,13 @@ public static class ContentTool
                     using var stream = File.OpenRead(full);
                     if (stream.Read(head) < 4 || !head.AsSpan().SequenceEqual("OggS"u8)) Error("not an Ogg file, whatever its name says. Export the music as OGG Vorbis.");
                 }
-                else if (ext == ".mp3") Warn("MP3 music plays on the raylib platform only; on SDL (the default on every system, phones and browsers) it does not decode. Convert it to OGG Vorbis.");
-                else if (UnreadAudio.Contains(ext)) Error($"no platform of the engine decodes {ext} audio. Convert effects to PCM WAV and music to OGG Vorbis.");
+                else if (ext == ".mp3")
+                {
+                    // The engine's own decoder, the one every platform plays it with.
+                    try { AudioDecoders.Open(File.ReadAllBytes(full), "mp3").Dispose(); }
+                    catch (InvalidDataException e) { Error($"not an MP3 file the engine decodes ({e.Message}). Export it again as MP3, or as OGG Vorbis."); }
+                }
+                else if (UnreadAudio.Contains(ext)) Error($"the engine does not decode {ext} audio. Convert it to PCM WAV, OGG Vorbis or MP3 (OGG for music that loops: it carries loop points and has no gap at the seam).");
                 else if (ext is ".ttf" or ".otf")
                 {
                     var head = new byte[4];

@@ -517,6 +517,11 @@ public sealed class AudioEngine : IDisposable
     private AudioBus CreateBus(string name, AudioBus? parent)
     {
         var bus = new AudioBus(this, _buses, _buses.Count, name, parent);
+        // Written here, read by the render function, and handed over by the queue all the same: nothing is mixed
+        // through a bus before a command that names it (a sound started on it, its volume, a chain), every such
+        // command is posted after these writes, and posting is a volatile write the render function reads before it
+        // drains, so it sees them first. Until then the render function only derives per-segment values from the
+        // slot, for a bus nothing plays on, and derives them again at the next segment.
         _busParent[bus.Index] = parent?.Index ?? -1;
         _busVolume[bus.Index] = 1;
         _buses.Add(bus);

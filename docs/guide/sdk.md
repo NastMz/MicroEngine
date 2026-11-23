@@ -17,7 +17,7 @@ Alpha means two things:
 
 | Package | Contains | Depends on |
 | --- | --- | --- |
-| `MicroEngine` | the engine as separate modules: `MicroEngine.dll` (the `Game` class, scenes and testing support) beside the kernel, platform contract, hosting, graphics (the device contract and 2D), text, content, input, touch controls, audio, the scene world, physics with its tile backend, UI, saves and achievements, each its own assembly; the headless platform and the [identity](app-identity.md) build targets | .NET only |
+| `MicroEngine` | the engine as separate modules: `MicroEngine.dll` (the `Game` class, scenes and testing support) beside the kernel, platform contract, hosting, graphics (the device contract and 2D), text, content, input, touch controls, audio, the scene world, physics with its tile backend, UI, saves and achievements, each its own assembly; the headless platform and the [identity](app-identity.md) build targets | .NET, and the managed libraries it brings: `StbImageSharp`, `FontStashSharp`, `NVorbis`, `NLayer` |
 | `MicroEngine.Sdl` | the SDL 3 platform for desktops, phones and browsers (SDL 3 compiled to WebAssembly comes inside it), and the opt-in SDL_GPU graphics device for desktops ([the graphics device](../manual/rendering.md#the-graphics-device)) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` |
 | `MicroEngine.Raylib` | the raylib platform (desktops only) | `MicroEngine`, `Raylib-cs` |
 | `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |

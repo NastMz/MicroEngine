@@ -140,8 +140,8 @@ export const capabilities: Capability[] = [
   // Audio.
   {
     id: 'audio', family: 'audio', status: 'available', name: 'Sound and music', contract: 'IAudioDevice',
-    summary: 'A retro synthesizer and step-sequencer music made in code, WAV effects and streamed OGG music, with music fades.',
-    builtOn: ['NVorbis'],
+    summary: 'A retro synthesizer and step-sequencer music made in code, WAV, OGG and MP3 files as effects and as streamed music, effects on buses, fades, loop points and sounds with a place.',
+    builtOn: ['NVorbis', 'NLayer'],
     docs: '/docs/manual/audio/',
   },
   {

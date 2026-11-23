@@ -40,7 +40,8 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
 - [x] T5 S3, S5, S6 Decoder registry, OGG sound effects, MP3, streamed or decoded music, unloading. Route: inline.
   Commit d2dce9be.
 - [x] T6 S4, S5, S6 Listener and emitters as a scene system. Route: inline. Commit eddfd3e1.
-- [x] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline. The commit after eddfd3e1.
+- [x] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline. Commit b1966aee.
+- [x] T8 S3, S5 Second batch: what T5 to T7 left contradicting (L8). Route: inline. The commit after b1966aee.
 
 ## Log
 
@@ -89,3 +90,13 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
   `docs/guide/introduction.md`, `docs/guide/cli.md`, `docs/guide/licensing.md`, `docs/reference/components.md`,
   `docs/manual/scenes.md`, `README.md` and the site's data still describe MP3 as raylib-only, OGG as music-only or do
   not list NLayer and `Scene.Sounds`. Left open as found: `AudioEngine.CreateBus` and the audio thread.
+- L8 (2026-11-23, T8, the coordinator's second batch, with the surface widened for it) Done: the content tool decodes
+  an `.mp3` and reports one it cannot decode as an error instead of warning that one platform plays it (its test was
+  changed first and seen failing); the raylib device's MP3 decoder is removed (no test in the repository played MP3
+  through raylib, so none changed); pages that said MP3 was raylib-only, OGG music-only, or listed third-party
+  libraries without NLayer were made true, and `docs/manual/scenes.md` names `Scene.Sounds`; NLayer's licence was
+  read from its nuspec; `CreateBus` is argued in ADR 0072 and commented in the code, not changed, with an offline
+  test of a bus used in the step that creates it. Edited beyond the widened list because item 3 asked for every
+  page: one line each in `docs/architecture.md` (two), `docs/howto.md`, `docs/tutorial/08-sound.md` and
+  `docs/manual/backends.md`. Anchors: 251 links with anchors in the 26 pages changed since `origin/main`, none
+  broken (a script outside the repository).

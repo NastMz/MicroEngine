@@ -210,7 +210,8 @@ A scene system is a part of a scene that the engine runs for it. Derive from `Sc
 `Systems.Add`, and the engine starts it, steps it before the scene's `Update` (and once more after it, in
 `LateUpdate`), adds its `HashState` to the scene's state hash and stops it when the scene leaves the stack. The scene
 writes none of those calls. `Timers` is one and so is `Machines`, which steps the scene's own
-[state machines](../guide/state-machines.md); a component store or a physics world are others.
+[state machines](../guide/state-machines.md); `Physics` is the scene's physics world and `Sounds` its listener and
+sound emitters ([Sounds with a place](audio.md#sounds-with-a-place)); a component store is another.
 
 <!-- code: samples/Examples/Examples/SystemsExample.cs#system -->
 ```csharp
