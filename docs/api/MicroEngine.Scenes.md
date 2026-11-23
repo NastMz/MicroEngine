@@ -24,6 +24,13 @@ A scene that ends by returning a value to whoever pushed it (a dialogue's choice
 answer): push it with [Push``1](MicroEngine.Scenes.SceneManager.md#MicroEngine_Scenes_SceneManager_Push__1_MicroEngine_Scenes_Scene___0__System_Action___0__MicroEngine_Scenes_Transition_) and
 end it with [Finish](MicroEngine.Scenes.md).
 
+ [SceneAudio](MicroEngine.Scenes.SceneAudio.md)
+
+A scene's sounds in space ([Sounds](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Sounds)): a listener and emitters in the scene's world units. After
+every [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) each emitter's volume follows its distance to the listener and its pan the side
+it is on, moved there over the step so nothing clicks; an emitter that follows an entity goes where the entity
+goes and stops when it is destroyed; every emitter stops when the scene leaves.
+
  [SceneManager](MicroEngine.Scenes.SceneManager.md)
 
 Manages the scene stack and the transitions between scenes.
@@ -68,6 +75,12 @@ tree, and one dense array per attachment type. Games program against [IWorld](Mi
 A screen of the game (title, level, battle, pause menu...). Scenes live on a stack:
 an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
 Each scene owns its coroutines, tweens and systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), which stop when it leaves the stack.
+
+ [SoundEmitter](MicroEngine.Scenes.SoundEmitter.md)
+
+A sound with a place in a scene's world ([Emit](MicroEngine.Scenes.SceneAudio.md#MicroEngine_Scenes_SceneAudio_Emit_System_String_MicroEngine_Scenes_EntityId_System_Boolean_System_Single_)): each step
+its volume follows its distance to the listener and its pan its side of the listener. Its properties can be
+changed while it plays.
 
  [SpatialIndex2D<T\>](MicroEngine.Scenes.SpatialIndex2D\-1.md)
 
@@ -169,5 +182,11 @@ An attachment told when its entity is released (at the end of the step its entit
 The objects of a scene: entities with an id, a transform (with an optional parent) and typed attachments. The world
 runs no game logic: it stores, identifies, orders, interpolates and destroys. Game code programs against this
 interface; the scene that owns the world drives its step and draw hooks ([SceneWorld](MicroEngine.Scenes.SceneWorld.md)).
+
+### Enums
+
+ [SoundRolloff](MicroEngine.Scenes.SoundRolloff.md)
+
+How a sound's volume falls between an emitter's [MinDistance](MicroEngine.Scenes.SoundEmitter.md#MicroEngine_Scenes_SoundEmitter_MinDistance) and its [MaxDistance](MicroEngine.Scenes.SoundEmitter.md#MicroEngine_Scenes_SoundEmitter_MaxDistance).
 
 </div>

@@ -97,6 +97,19 @@ public IAudioDevice Device { get; }
 
  [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
+### <a id="MicroEngine_Audio_AudioMixer_FailedStreams"></a> FailedStreams
+
+Music and streamed voices that ended because their file could not be decoded any further (see
+[FailedStreams](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_FailedStreams)); each is also written once to [Log](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Log).
+
+```csharp
+public int FailedStreams { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Audio_AudioMixer_Limiter"></a> Limiter
 
 The limiter after "master": on a device that plays, a mix louder than full scale is turned down instead of
@@ -110,12 +123,77 @@ public Limiter Limiter { get; }
 
  [Limiter](MicroEngine.Audio.Effects.Limiter.md)
 
+### <a id="MicroEngine_Audio_AudioMixer_Log"></a> Log
+
+Where the mixer reports what it could not play (a music file that turns out damaged while it plays): the
+engine's log when the mixer is a game's, standard error otherwise.
+
+```csharp
+public ILog? Log { get; set; }
+```
+
+#### Property Value
+
+ [ILog](MicroEngine.Kernel.ILog.md)?
+
+### <a id="MicroEngine_Audio_AudioMixer_MusicDuration"></a> MusicDuration
+
+The length of the music playing, in seconds; 0 with no music, on a device without voices and for a format whose decoder does not know it.
+
+```csharp
+public double MusicDuration { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Audio_AudioMixer_MusicHeardPosition"></a> MusicHeardPosition
+
+The position of the music the player hears at this update (see [HeardPosition](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_HeardPosition_MicroEngine_Audio_VoiceHandle_)): what a rhythm game
+judges input against and a cutscene cues its pictures from.
+
+```csharp
+public double MusicHeardPosition { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioMixer_MusicPaused"></a> MusicPaused
 
 Whether music was paused with [PauseMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PauseMusic_System_Boolean_).
 
 ```csharp
 public bool MusicPaused { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_AudioMixer_MusicPosition"></a> MusicPosition
+
+Where the music [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_System_Single_) plays is, in seconds from its beginning (see [Position](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Position_MicroEngine_Audio_VoiceHandle_));
+0 with no music. Save it to bring the music back to the same place with [SeekMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SeekMusic_System_Double_). On a device
+without voices ([SupportsVoices](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SupportsVoices)) it is the time the music has played, which does not come back
+when the music loops.
+
+```csharp
+public double MusicPosition { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Audio_AudioMixer_MusicSeeking"></a> MusicSeeking
+
+Whether the music is still on its way to the place [SeekMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SeekMusic_System_Double_) named (see [IsSeeking](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_IsSeeking_MicroEngine_Audio_VoiceHandle_)).
+
+```csharp
+public bool MusicSeeking { get; }
 ```
 
 #### Property Value
@@ -134,6 +212,20 @@ public float MusicVolume { get; set; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Audio_AudioMixer_OutputLatency"></a> OutputLatency
+
+Seconds between the mixer writing a frame and the player hearing it, as the device reports it (0 on a silent
+device and when rendering offline). [HeardPosition](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_HeardPosition_MicroEngine_Audio_VoiceHandle_) and [MusicHeardPosition](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_MusicHeardPosition) already
+take it into account.
+
+```csharp
+public double OutputLatency { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 ### <a id="MicroEngine_Audio_AudioMixer_SfxVolume"></a> SfxVolume
 
@@ -163,7 +255,7 @@ public AudioStatistics Statistics { get; }
 
 ### <a id="MicroEngine_Audio_AudioMixer_SupportsVoices"></a> SupportsVoices
 
-Whether sounds play as voices on this device ([PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__), [PlayMusicVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__)): true for
+Whether sounds play as voices on this device ([PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__), [PlayMusicVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__)): true for
 every device that plays through the engine's mixer, false for a silent one (headless, muted, no hardware), where
 those calls return [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None). Buses and their effects can be set up either way.
 
@@ -270,52 +362,70 @@ The song has no steps.
 
 A track has an invalid note or a drum track an unknown drum.
 
-### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_EncodedAudio_System_Boolean_"></a> AddMusic\(string, EncodedAudio, bool\)
+### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_EncodedAudio_System_Boolean_MicroEngine_Audio_AudioLoadMode_"></a> AddMusic\(string, EncodedAudio, bool, AudioLoadMode\)
 
-Registers a music file loaded from content (<code>Assets.Music(path)</code>) under <code class="paramref">name</code>: WAV is
-decoded here, other formats are decoded by the device while they play.
+Registers a music file loaded from content (<code>Assets.Music(path)</code>) under <code class="paramref">name</code>.
 
 ```csharp
-public void AddMusic(string name, EncodedAudio music, bool loop = true)
+public void AddMusic(string name, EncodedAudio music, bool loop = true, AudioLoadMode mode = AudioLoadMode.Streamed)
 ```
 
 #### Parameters
 
 `name` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_System_Single_).
+
 `music` [EncodedAudio](MicroEngine.Audio.EncodedAudio.md)
 
+The file's bytes and format.
+
 `loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the music restarts when it reaches its end (over its loop region, if the file names one).
+
+`mode` [AudioLoadMode](MicroEngine.Audio.AudioLoadMode.md)
+
+[Streamed](MicroEngine.Audio.AudioLoadMode.md) (the default) keeps the bytes and decodes them while the music plays;
+[Decoded](MicroEngine.Audio.AudioLoadMode.md) decodes the whole file now. WAV is always decoded whole; a format only the
+device decodes (not in [AudioDecoders](MicroEngine.Audio.AudioDecoders.md)) is always streamed.
 
 #### Exceptions
 
  [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
 
-The device does not decode that format (MP3 outside raylib, for example).
+No decoder is registered for the format.
 
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 
 The bytes cannot be decoded as their format.
 
-### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_"></a> AddMusicFile\(string, string, bool\)
+### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_MicroEngine_Audio_AudioLoadMode_"></a> AddMusicFile\(string, string, bool, AudioLoadMode\)
 
-Registers a music file. WAV is decoded here; other formats are streamed by the device.
+Registers a music file: WAV, OGG Vorbis, MP3 and any format registered in [AudioDecoders](MicroEngine.Audio.AudioDecoders.md), the same
+on every platform, chosen by the file's extension (WAV without one).
 
 ```csharp
-public void AddMusicFile(string name, string path, bool loop = true)
+public void AddMusicFile(string name, string path, bool loop = true, AudioLoadMode mode = AudioLoadMode.Streamed)
 ```
 
 #### Parameters
 
 `name` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_System_Single_).
+
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The file.
 
 `loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-#### Remarks
+Whether the music restarts when it reaches its end (over its loop region, if the file names one).
 
-Every device decodes OGG Vorbis; the raylib device also decodes mp3.
+`mode` [AudioLoadMode](MicroEngine.Audio.AudioLoadMode.md)
+
+Decoded while it plays (the default) or whole, now. WAV is always decoded whole.
 
 #### Exceptions
 
@@ -323,9 +433,18 @@ Every device decodes OGG Vorbis; the raylib device also decodes mp3.
 
 The file does not exist.
 
+ [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
+
+No decoder is registered for the extension.
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The file cannot be decoded as its format.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddSound_System_String_MicroEngine_Audio_AudioClip_"></a> AddSound\(string, AudioClip\)
 
-Registers <code class="paramref">clip</code> as the sound effect <code class="paramref">name</code>, replacing any sound with that name.
+Registers <code class="paramref">clip</code> as the sound effect <code class="paramref">name</code>, replacing any sound with that
+name (which is released as [RemoveSound](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_RemoveSound_System_String_) releases it).
 
 ```csharp
 public void AddSound(string name, AudioClip clip)
@@ -337,9 +456,35 @@ public void AddSound(string name, AudioClip clip)
 
 `clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
 
+### <a id="MicroEngine_Audio_AudioMixer_AddSound_System_String_MicroEngine_Audio_EncodedAudio_"></a> AddSound\(string, EncodedAudio\)
+
+Registers a sound file of any format in [AudioDecoders](MicroEngine.Audio.AudioDecoders.md) ("wav", "ogg", "mp3" and what the game
+registered) as the sound effect <code class="paramref">name</code>, decoded whole now.
+
+```csharp
+public void AddSound(string name, EncodedAudio sound)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`sound` [EncodedAudio](MicroEngine.Audio.EncodedAudio.md)
+
+#### Exceptions
+
+ [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
+
+No decoder is registered for the format.
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The bytes cannot be decoded as their format.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddSoundFile_System_String_System_String_"></a> AddSoundFile\(string, string\)
 
-Registers a WAV file as a sound effect.
+Registers a sound file as a sound effect, decoded whole now: WAV (8, 16 or 24-bit PCM), OGG Vorbis, MP3 and any
+format registered in [AudioDecoders](MicroEngine.Audio.AudioDecoders.md), chosen by the file's extension (WAV without one).
 
 ```csharp
 public void AddSoundFile(string name, string path)
@@ -359,7 +504,11 @@ The file does not exist.
 
  [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
 
-The WAV is not 8, 16 or 24-bit PCM, mono or stereo.
+No decoder is registered for the extension, or the WAV is not 8, 16 or 24-bit PCM, mono or stereo.
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The file cannot be decoded as its format.
 
 ### <a id="MicroEngine_Audio_AudioMixer_Bus_System_String_"></a> Bus\(string\)
 
@@ -405,6 +554,22 @@ public float BusVolume(string name)
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No such bus.
+
+### <a id="MicroEngine_Audio_AudioMixer_Duration_MicroEngine_Audio_VoiceHandle_"></a> Duration\(VoiceHandle\)
+
+The length in seconds of the sound <code class="paramref">voice</code> plays; 0 for a voice that is not playing or a stream that does not know its length.
+
+```csharp
+public double Duration(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 ### <a id="MicroEngine_Audio_AudioMixer_HasBus_System_String_"></a> HasBus\(string\)
 
@@ -454,12 +619,49 @@ public bool HasSound(string name)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Audio_AudioMixer_HeardPosition_MicroEngine_Audio_VoiceHandle_"></a> HeardPosition\(VoiceHandle\)
+
+The position of <code class="paramref">voice</code> the player hears at this update: [Position](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Position_MicroEngine_Audio_VoiceHandle_) less
+[OutputLatency](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_OutputLatency). Read it for anything shown or judged against the sound (a note reaching a line, a
+cutscene's cue). Negative while the sound's first frame is still on its way to the speaker.
+
+```csharp
+public double HeardPosition(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioMixer_IsPlaying_MicroEngine_Audio_VoiceHandle_"></a> IsPlaying\(VoiceHandle\)
 
 Whether <code class="paramref">voice</code> is still playing (or paused, or fading out).
 
 ```csharp
 public bool IsPlaying(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_AudioMixer_IsSeeking_MicroEngine_Audio_VoiceHandle_"></a> IsSeeking\(VoiceHandle\)
+
+Whether <code class="paramref">voice</code> is still on its way to a place [Seek](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) or
+[StartAt](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_StartAt) named. Only streamed OGG and MP3 take time to get somewhere far: a stream
+sought while it plays goes on where it was until then (and [Position](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Position_MicroEngine_Audio_VoiceHandle_) with it), and one started in
+its middle is silent until then. Sounds and decoded music are there at once.
+
+```csharp
+public bool IsSeeking(VoiceHandle voice)
 ```
 
 #### Parameters
@@ -529,6 +731,29 @@ public void Play(string name, float volume = 1, float pitch = 1, float pitchJitt
 
 No sound is registered under <code class="paramref">name</code>; use [TryPlay](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_TryPlay_System_String_System_Single_System_Single_System_Single_System_Single_) for optional sounds.
 
+### <a id="MicroEngine_Audio_AudioMixer_Play_MicroEngine_Audio_AudioClip_System_Single_System_Single_System_Single_System_Single_"></a> Play\(AudioClip, float, float, float, float\)
+
+Plays a clip that is not registered under a name: one a game holds itself, or one from <code>Assets.Sound(path)</code>
+held by an asset scope. Nothing keeps the clip after it has played, so releasing the scope frees it. Volume,
+pitch, jitter and pan are those of [Play](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Play_System_String_System_Single_System_Single_System_Single_System_Single_), and the same clip
+is not retriggered within one update.
+
+```csharp
+public void Play(AudioClip clip, float volume = 1, float pitch = 1, float pitchJitter = 0, float pan = 0.5)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitchJitter` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_System_Single_"></a> PlayMusic\(string, float, float\)
 
 Switches music. With a fade, the current track fades out before the new one starts; with
@@ -594,13 +819,40 @@ public VoiceHandle PlayMusicVoice(string name, in PlayParameters parameters)
 
  [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
 
-The voice, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) as [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__) returns it.
+The voice, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) as [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__) returns it.
 
 #### Exceptions
 
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No music is registered under <code class="paramref">name</code>, or the bus does not exist.
+
+### <a id="MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(AudioClip, in PlayParameters\)
+
+Plays a clip that is not registered under a name as a voice, exactly as <code class="paramref">parameters</code> say (see
+[PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__)). Nothing keeps the clip once the voice ends.
+
+```csharp
+public VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+The voice, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) as [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__) returns it.
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The bus does not exist.
 
 ### <a id="MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(string, in PlayParameters\)
 
@@ -632,6 +884,24 @@ has no mixer (headless, muted, no hardware); calls with that handle do nothing.
 
 No sound is registered under <code class="paramref">name</code>, or the bus does not exist.
 
+### <a id="MicroEngine_Audio_AudioMixer_Position_MicroEngine_Audio_VoiceHandle_"></a> Position\(VoiceHandle\)
+
+Where <code class="paramref">voice</code> is in its sound, in seconds from the sound's beginning: 0 as it starts, what
+[Seek](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) was given after a seek, back at the start of its loop region each time it loops. It follows
+the game's steps, so a scripted run reads the same values every time. 0 for a voice that is not playing.
+
+```csharp
+public double Position(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioMixer_Pump"></a> Pump\(\)
 
 The host frame's audio work, outside the simulation step: renders songs that render in slices (browsers), then
@@ -641,6 +911,86 @@ only for a mixer you created.
 ```csharp
 public void Pump()
 ```
+
+### <a id="MicroEngine_Audio_AudioMixer_RemoveMusic_System_String_"></a> RemoveMusic\(string\)
+
+Unregisters the music <code class="paramref">name</code>: the mixer and the device no longer hold its samples or its
+file's bytes. If it is the music playing (or about to play) it stops at once; a voice playing it beside the
+music plays on to its end.
+
+```csharp
+public bool RemoveMusic(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether music had that name.
+
+### <a id="MicroEngine_Audio_AudioMixer_RemoveSound_System_String_"></a> RemoveSound\(string\)
+
+Unregisters the sound effect <code class="paramref">name</code>: the mixer and the device no longer hold its samples, so
+they are freed once nothing else holds them (an asset scope, the game's own field). A voice playing it plays on
+to its end.
+
+```csharp
+public bool RemoveSound(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether a sound had that name.
+
+### <a id="MicroEngine_Audio_AudioMixer_Seek_MicroEngine_Audio_VoiceHandle_System_Double_"></a> Seek\(VoiceHandle, double\)
+
+Moves <code class="paramref">voice</code> to <code class="paramref">seconds</code> from its sound's beginning, from this update on
+(clamped to the sound's length; a time that is not a number changes nothing).
+
+```csharp
+public bool Seek(VoiceHandle voice, double seconds)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it moved: false for a voice that is not playing and for a stream whose decoder cannot seek.
+
+### <a id="MicroEngine_Audio_AudioMixer_SeekMusic_System_Double_"></a> SeekMusic\(double\)
+
+Moves the music playing to <code class="paramref">seconds</code> from its beginning, from this update on (clamped to its
+length; a time that is not a number changes nothing).
+
+```csharp
+public bool SeekMusic(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it moved: false with no music and for a format whose decoder cannot seek.
 
 ### <a id="MicroEngine_Audio_AudioMixer_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Nullable_System_Single__System_Single_"></a> Set\(VoiceHandle, float?, float?, float?, float\)
 
@@ -656,7 +1006,7 @@ public bool Set(VoiceHandle voice, float? volume = null, float? pan = null, floa
 
 `voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
 
-A handle from [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_System_String_MicroEngine_Audio_PlayParameters__) or [PlayMusicVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__).
+A handle from [PlayVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__) or [PlayMusicVoice](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusicVoice_System_String_MicroEngine_Audio_PlayParameters__).
 
 `volume` [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
@@ -706,6 +1056,28 @@ public void SetBusVolume(string name, float volume, float fadeSeconds = 0)
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No such bus.
+
+### <a id="MicroEngine_Audio_AudioMixer_SoundDuration_System_String_"></a> SoundDuration\(string\)
+
+The length in seconds of the registered sound <code class="paramref">name</code>, at its own pitch; the same on every device.
+
+```csharp
+public double SoundDuration(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No sound is registered under <code class="paramref">name</code>.
 
 ### <a id="MicroEngine_Audio_AudioMixer_Stop_MicroEngine_Audio_VoiceHandle_System_Single_"></a> Stop\(VoiceHandle, float\)
 

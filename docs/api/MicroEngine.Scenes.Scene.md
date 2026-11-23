@@ -273,6 +273,20 @@ public PostProcess PostProcess { get; }
 public override void Enter() => PostProcess.Add(new Bloom { Strength = 1.2f }).Add(new Vignette());
 ```
 
+### <a id="MicroEngine_Scenes_Scene_Sounds"></a> Sounds
+
+The scene's sounds in space ([SceneAudio](MicroEngine.Scenes.SceneAudio.md)), a system added the first time it is read: a listener and
+emitters in the world's units, whose volume and pan follow where they are after every [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) and
+which stop when the scene leaves. Read it first outside drawing, from [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) on.
+
+```csharp
+public SceneAudio Sounds { get; }
+```
+
+#### Property Value
+
+ [SceneAudio](MicroEngine.Scenes.SceneAudio.md)
+
 ### <a id="MicroEngine_Scenes_Scene_Systems"></a> Systems
 
 The scene's systems ([SceneSystem](MicroEngine.Scenes.SceneSystem.md)), created the first time it is read: parts of the scene that the

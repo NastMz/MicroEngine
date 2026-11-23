@@ -30,8 +30,12 @@ public sealed class CaptureAudioDevice : MixerAudioDevice, IAudioDevice, IDispos
 
 [MixerAudioDevice.LoadSound\(string, AudioClip\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_LoadSound\_System\_String\_MicroEngine\_Audio\_AudioClip\_), 
 [MixerAudioDevice.LoadMusic\(string, AudioClip, bool\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_LoadMusic\_System\_String\_MicroEngine\_Audio\_AudioClip\_System\_Boolean\_), 
+[MixerAudioDevice.UnloadSound\(SoundHandle\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_UnloadSound\_MicroEngine\_Audio\_SoundHandle\_), 
+[MixerAudioDevice.UnloadMusic\(MusicHandle\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_UnloadMusic\_MicroEngine\_Audio\_MusicHandle\_), 
 [MixerAudioDevice.LoadMusicStream\(string, byte\[\], string, bool\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_LoadMusicStream\_System\_String\_System\_Byte\_\_\_System\_String\_System\_Boolean\_), 
 [MixerAudioDevice.Play\(SoundHandle, float, float, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_Play\_MicroEngine\_Audio\_SoundHandle\_System\_Single\_System\_Single\_System\_Single\_), 
+[MixerAudioDevice.Play\(AudioClip, float, float, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_Play\_MicroEngine\_Audio\_AudioClip\_System\_Single\_System\_Single\_System\_Single\_), 
+[MixerAudioDevice.PlayVoice\(AudioClip, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayVoice\_MicroEngine\_Audio\_AudioClip\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayVoice\(SoundHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayVoice\_MicroEngine\_Audio\_SoundHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayMusicVoice\(MusicHandle, in PlayParameters\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusicVoice\_MicroEngine\_Audio\_MusicHandle\_MicroEngine\_Audio\_PlayParameters\_\_), 
 [MixerAudioDevice.PlayMusic\(MusicHandle, float\)](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_PlayMusic\_MicroEngine\_Audio\_MusicHandle\_System\_Single\_), 
@@ -46,6 +50,8 @@ public sealed class CaptureAudioDevice : MixerAudioDevice, IAudioDevice, IDispos
 [MixerAudioDevice.IsAvailable](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_IsAvailable), 
 [MixerAudioDevice.MusicFormats](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_MusicFormats), 
 [MixerAudioDevice.CurrentMusic](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_CurrentMusic), 
+[MixerAudioDevice.Loaded](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_Loaded), 
+[MixerAudioDevice.MusicVoice](MicroEngine.Audio.MixerAudioDevice.md\#MicroEngine\_Audio\_MixerAudioDevice\_MusicVoice), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -166,6 +172,42 @@ public override void Play(SoundHandle sound, float volume = 1, float pitch = 1, 
 `pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 `pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Audio_CaptureAudioDevice_Play_MicroEngine_Audio_AudioClip_System_Single_System_Single_System_Single_"></a> Play\(AudioClip, float, float, float\)
+
+Plays the clip and records it in [Played](MicroEngine.Audio.CaptureAudioDevice.md#MicroEngine_Audio_CaptureAudioDevice_Played) under its [Name](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_Name) ("" for a clip without one).
+
+```csharp
+public override void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Audio_CaptureAudioDevice_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(AudioClip, in PlayParameters\)
+
+Plays the clip as a voice and records it in [Played](MicroEngine.Audio.CaptureAudioDevice.md#MicroEngine_Audio_CaptureAudioDevice_Played) under its [Name](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_Name).
+
+```csharp
+public override VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
 
 ### <a id="MicroEngine_Audio_CaptureAudioDevice_PlayVoice_MicroEngine_Audio_SoundHandle_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(SoundHandle, in PlayParameters\)
 

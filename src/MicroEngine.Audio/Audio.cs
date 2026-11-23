@@ -15,6 +15,18 @@ public sealed class AudioClip
     public int Channels { get; }
     /// <summary>Length of the clip in seconds.</summary>
     public double Duration => Samples.Length / (double)(SampleRate * Channels);
+    /// <summary>
+    /// The part of the clip that repeats when it plays looping (an intro before it plays once), or null for the whole
+    /// clip. <see cref="FromWav"/> reads it from the file's sampler chunk; <see cref="PlayParameters.LoopRegion"/>
+    /// replaces it for one play.
+    /// </summary>
+    public LoopRegion? LoopRegion { get; init; }
+    /// <summary>A name for diagnostics (the content path of a clip loaded from a file), or null.</summary>
+    public string? Name { get; init; }
+    // The mixer that last played the clip without registering it, and at which of its updates: a clip is not played
+    // twice in one update.
+    internal AudioMixer? PlayedBy;
+    internal long PlayedFrame;
 
     /// <summary>Wraps existing samples in a clip without copying them.</summary>
     /// <param name="samples">Interleaved samples in -1..1; the length must be a multiple of <paramref name="channels"/>.</param>
@@ -36,12 +48,20 @@ public sealed class AudioClip
     /// <summary>The largest absolute sample value (0 for an empty clip). Computed on every read.</summary>
     public float Peak => Samples.Length == 0 ? 0 : Samples.Max(MathF.Abs);
 
-    /// <summary>Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo).</summary>
+    /// <summary>
+    /// Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo). The first loop of a sampler chunk ("smpl"),
+    /// which audio editors write for loop points, becomes the clip's <see cref="LoopRegion"/> when it is at least two
+    /// frames long and starts within the sound.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The bytes are not a WAV file, or it is cut short.</exception>
+    /// <exception cref="NotSupportedException">The WAV is not PCM, has more than two channels or another sample size.</exception>
     public static AudioClip FromWav(ReadOnlySpan<byte> data)
     {
         if (data.Length < 12 || !data[..4].SequenceEqual("RIFF"u8) || !data.Slice(8, 4).SequenceEqual("WAVE"u8))
             throw new InvalidDataException("Not a WAV file.");
         int channels = 0, rate = 0, bits = 0, format = 0;
+        float[]? decoded = null;
+        long loopStart = -1, loopEnd = -1;
         int p = 12;
         while (p + 8 <= data.Length)
         {
@@ -51,6 +71,7 @@ public sealed class AudioClip
             var body = data.Slice(p + 8, Math.Min(size, data.Length - p - 8));
             if (id.SequenceEqual("fmt "u8))
             {
+                if (body.Length < 16) throw new InvalidDataException("Corrupt WAV format chunk.");
                 format = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(body);
                 channels = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(body[2..]);
                 rate = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(body[4..]);
@@ -76,11 +97,26 @@ public sealed class AudioClip
                         _ => ((s[2] << 24 | s[1] << 16 | s[0] << 8) >> 8) / 8388608f,
                     };
                 }
-                return new AudioClip(samples, rate, channels);
+                decoded ??= samples;
             }
+            else if (id.SequenceEqual("smpl"u8) && body.Length >= 36 + 24
+                && System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(body[28..]) > 0)
+            {
+                // The first loop: its first frame and its last one (inclusive).
+                long start = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 8)..]);
+                long end = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 12)..]);
+                if (loopStart < 0) (loopStart, loopEnd) = (start, end);
+            }
+            // A chunk the file cuts short is the last one.
+            if (size > data.Length - p - 8) break;
             p += 8 + size + (size & 1);
         }
-        throw new InvalidDataException("WAV file has no data chunk.");
+        if (decoded is null) throw new InvalidDataException("WAV file has no data chunk.");
+        // A sampler loop that starts and ends on one frame, or lies past the sound, is a marker and not a loop.
+        long frames = decoded.Length / channels;
+        LoopRegion? loop = loopEnd > loopStart && loopStart < frames ? new LoopRegion(loopStart, Math.Min(loopEnd + 1, frames)) : null;
+        return new AudioClip(decoded, rate, channels) { LoopRegion = loop };
+
     }
 
     /// <summary>Encodes 16-bit PCM WAV bytes, the interchange format backends load from memory.</summary>
@@ -150,6 +186,15 @@ public interface IAudioDevice
     MusicHandle? CurrentMusic { get; }
     /// <summary>Called once per frame so streaming music keeps playing.</summary>
     void Update();
+    /// <summary>
+    /// Plays a clip that was not loaded into the device (<see cref="LoadSound"/>), which then holds it only while it
+    /// plays. A device that does not implement it plays nothing.
+    /// </summary>
+    void Play(AudioClip clip, float volume = 1f, float pitch = 1f, float pan = 0.5f) { }
+    /// <summary>Releases what <see cref="LoadSound"/> kept for <paramref name="sound"/>; the handle plays nothing afterwards. A device that does not implement it keeps the sound.</summary>
+    void UnloadSound(SoundHandle sound) { }
+    /// <summary>Releases what <see cref="LoadMusic"/> or <see cref="LoadMusicStream"/> kept for <paramref name="music"/>; the handle plays nothing afterwards. A device that does not implement it keeps the music.</summary>
+    void UnloadMusic(MusicHandle music) { }
 }
 
 /// <summary>Silent device used headlessly and as a fallback when no audio hardware is present.</summary>
@@ -170,6 +215,8 @@ public sealed class SilentAudioDevice : IAudioDevice
     public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true) => new(_next++, name);
     /// <summary>Records the sound's name in <see cref="Played"/>.</summary>
     public void Play(SoundHandle sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) => Played.Add(sound.Name);
+    /// <summary>Records the clip's <see cref="AudioClip.Name"/> ("" for a clip without one) in <see cref="Played"/>.</summary>
+    public void Play(AudioClip clip, float volume = 1f, float pitch = 1f, float pan = 0.5f) => Played.Add(clip?.Name ?? "");
     /// <inheritdoc/>
     public void PlayMusic(MusicHandle music, float volume = 1f) => CurrentMusic = music;
     /// <inheritdoc/>
@@ -184,7 +231,7 @@ public sealed class SilentAudioDevice : IAudioDevice
 
 /// <summary>
 /// Game-facing audio: a sound bank keyed by name plus music with fades.
-/// Games register synthesized clips once and then call <see cref="Play"/> by name.
+/// Games register synthesized clips once and then call <see cref="Play(string, float, float, float, float)"/> by name.
 /// </summary>
 /// <remarks>
 /// Every game has one in <c>Game.Audio</c>. Sounds and music are registered under names that are compared
@@ -227,7 +274,35 @@ public sealed class AudioMixer
 
     /// <summary>Creates a mixer over <paramref name="device"/>. Games use the one in <c>Game.Audio</c>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="device"/> is null.</exception>
-    public AudioMixer(IAudioDevice device) => _device = device ?? throw new ArgumentNullException(nameof(device));
+    public AudioMixer(IAudioDevice device)
+    {
+        _device = device ?? throw new ArgumentNullException(nameof(device));
+        if (Engine is { } engine) engine.StreamFailed += StreamFailed;
+    }
+
+    private static readonly MicroEngine.Kernel.ILog DefaultLog = new MicroEngine.Kernel.ConsoleLog();
+    // The name of the music the device was last told to play, for the report of a file that turns out damaged.
+    private string? _startedMusic;
+
+    /// <summary>A stream's decoder threw while it played: said once, as a warning; the sound has ended.</summary>
+    private void StreamFailed(VoiceHandle voice, Exception error)
+    {
+        string what = !voice.IsNone && voice == MusicVoice && _startedMusic is not null ? $"music '{_startedMusic}'" : "a streamed sound";
+        (Log ?? DefaultLog).Write(MicroEngine.Kernel.LogLevel.Warning, "audio",
+            $"{what} stopped: its file could not be decoded any further ({error.GetType().Name}: {error.Message}). The file is damaged; export it again.");
+    }
+
+    /// <summary>
+    /// Where the mixer reports what it could not play (a music file that turns out damaged while it plays): the
+    /// engine's log when the mixer is a game's, standard error otherwise.
+    /// </summary>
+    public MicroEngine.Kernel.ILog? Log { get; set; }
+
+    /// <summary>
+    /// Music and streamed voices that ended because their file could not be decoded any further (see
+    /// <see cref="AudioEngine.FailedStreams"/>); each is also written once to <see cref="Log"/>.
+    /// </summary>
+    public int FailedStreams => Engine?.FailedStreams ?? 0;
 
     /// <summary>The audio device the mixer plays through.</summary>
     public IAudioDevice Device => _device;
@@ -261,8 +336,76 @@ public sealed class AudioMixer
     public AudioStatistics Statistics => _device is MixerAudioDevice { Engine: var engine }
         ? new AudioStatistics(engine.ActiveVoices, engine.MaxVoices, engine.RefusedSounds)
         : default;
-    /// <summary>Registers <paramref name="clip"/> as the sound effect <paramref name="name"/>, replacing any sound with that name.</summary>
-    public void AddSound(string name, AudioClip clip) => _sounds[name] = _device.LoadSound(name, clip);
+    /// <summary>
+    /// Registers <paramref name="clip"/> as the sound effect <paramref name="name"/>, replacing any sound with that
+    /// name (which is released as <see cref="RemoveSound"/> releases it).
+    /// </summary>
+    public void AddSound(string name, AudioClip clip)
+    {
+        var handle = _device.LoadSound(name, clip);
+        if (_sounds.TryGetValue(name, out var old)) _device.UnloadSound(old);
+        _sounds[name] = handle;
+        _soundSeconds[name] = clip.Duration;
+    }
+
+    private readonly Dictionary<string, double> _soundSeconds = new(StringComparer.Ordinal);
+
+    /// <summary>The length in seconds of the registered sound <paramref name="name"/>, at its own pitch; the same on every device.</summary>
+    /// <exception cref="KeyNotFoundException">No sound is registered under <paramref name="name"/>.</exception>
+    public double SoundDuration(string name) =>
+        _soundSeconds.TryGetValue(name, out double seconds) ? seconds : throw new KeyNotFoundException($"Sound '{name}' is not registered.");
+
+    /// <summary>
+    /// Registers a sound file of any format in <see cref="AudioDecoders"/> ("wav", "ogg", "mp3" and what the game
+    /// registered) as the sound effect <paramref name="name"/>, decoded whole now.
+    /// </summary>
+    /// <exception cref="NotSupportedException">No decoder is registered for the format.</exception>
+    /// <exception cref="InvalidDataException">The bytes cannot be decoded as their format.</exception>
+    public void AddSound(string name, EncodedAudio sound)
+    {
+        ArgumentNullException.ThrowIfNull(sound);
+        AddSound(name, AudioDecoders.Decode(sound.Data, sound.Format, name));
+    }
+
+    /// <summary>
+    /// Unregisters the sound effect <paramref name="name"/>: the mixer and the device no longer hold its samples, so
+    /// they are freed once nothing else holds them (an asset scope, the game's own field). A voice playing it plays on
+    /// to its end.
+    /// </summary>
+    /// <returns>Whether a sound had that name.</returns>
+    public bool RemoveSound(string name)
+    {
+        if (!_sounds.Remove(name, out var handle)) return false;
+        _device.UnloadSound(handle);
+        _lastPlayedFrame.Remove(name);
+        _soundSeconds.Remove(name);
+        return true;
+    }
+
+    /// <summary>
+    /// Unregisters the music <paramref name="name"/>: the mixer and the device no longer hold its samples or its
+    /// file's bytes. If it is the music playing (or about to play) it stops at once; a voice playing it beside the
+    /// music plays on to its end.
+    /// </summary>
+    /// <returns>Whether music had that name.</returns>
+    public bool RemoveMusic(string name)
+    {
+        if (!HasMusic(name)) return false;
+        if (_waiting?.Name == name) _waiting = null;
+        if (_pendingMusic == name) _pendingMusic = "";
+        _songs.Remove(name);
+        _sliced.RemoveAll(s => s.Name == name);
+        if (_device.CurrentMusic?.Name == name) _device.StopMusic();
+        if (_music.Remove(name, out var handle)) _device.UnloadMusic(handle);
+        return true;
+    }
+
+    /// <summary>Puts <paramref name="handle"/> under <paramref name="name"/>, releasing the music that had the name.</summary>
+    private void Register(string name, MusicHandle handle)
+    {
+        if (_music.TryGetValue(name, out var old) && !ReferenceEquals(old, handle)) _device.UnloadMusic(old);
+        _music[name] = handle;
+    }
     /// <summary>Registers decoded music, such as a rendered <see cref="Song"/>, under <paramref name="name"/>.</summary>
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
     /// <param name="clip">The music samples.</param>
@@ -271,7 +414,7 @@ public sealed class AudioMixer
     {
         _songs.Remove(name);
         _sliced.RemoveAll(s => s.Name == name);
-        _music[name] = _device.LoadMusic(name, clip, loop);
+        Register(name, _device.LoadMusic(name, clip, loop));
     }
 
     /// <summary>
@@ -293,7 +436,7 @@ public sealed class AudioMixer
         ArgumentNullException.ThrowIfNull(song);
         // Mistakes in the song are reported here, in Load, not later when it first plays.
         song.Validate();
-        _music.Remove(name);
+        if (_music.Remove(name, out var old)) _device.UnloadMusic(old);
         _sliced.RemoveAll(s => s.Name == name);
         _songs.Remove(name);
         // Without threads (a browser) the song renders a few milliseconds per update instead of all at once in Load.
@@ -312,14 +455,14 @@ public sealed class AudioMixer
             _sliced.RemoveAt(sliced);
             AudioClip? clip = null;
             while (clip is null && slices.MoveNext()) clip = slices.Current;
-            _music[name] = _device.LoadMusic(name, clip!, loop);
+            Register(name, _device.LoadMusic(name, clip!, loop));
         }
         if (_songs.Remove(name, out var song))
         {
             AudioClip clip;
             try { clip = song.Render.GetAwaiter().GetResult(); }
             catch (Exception e) { throw new InvalidOperationException($"Music '{name}' could not be rendered: {e.Message}", e); }
-            _music[name] = _device.LoadMusic(name, clip, song.Loop);
+            Register(name, _device.LoadMusic(name, clip, song.Loop));
         }
         return _music[name];
     }
@@ -328,32 +471,52 @@ public sealed class AudioMixer
     /// <summary>Whether music is registered under <paramref name="name"/>.</summary>
     public bool HasMusic(string name) => _music.ContainsKey(name) || _songs.ContainsKey(name) || _sliced.Exists(s => s.Name == name);
 
-    /// <summary>Registers a WAV file as a sound effect.</summary>
+    /// <summary>
+    /// Registers a sound file as a sound effect, decoded whole now: WAV (8, 16 or 24-bit PCM), OGG Vorbis, MP3 and any
+    /// format registered in <see cref="AudioDecoders"/>, chosen by the file's extension (WAV without one).
+    /// </summary>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
-    /// <exception cref="NotSupportedException">The WAV is not 8, 16 or 24-bit PCM, mono or stereo.</exception>
-    public void AddSoundFile(string name, string path) => AddSound(name, AudioClip.FromWav(File.ReadAllBytes(path)));
-
-    /// <summary>Registers a music file. WAV is decoded here; other formats are streamed by the device.</summary>
-    /// <remarks>Every device decodes OGG Vorbis; the raylib device also decodes mp3.</remarks>
-    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
-    public void AddMusicFile(string name, string path, bool loop = true) =>
-        AddMusic(name, new EncodedAudio(File.ReadAllBytes(path), Path.GetExtension(path) is { Length: > 1 } e ? e : "wav"), loop);
+    /// <exception cref="NotSupportedException">No decoder is registered for the extension, or the WAV is not 8, 16 or 24-bit PCM, mono or stereo.</exception>
+    /// <exception cref="InvalidDataException">The file cannot be decoded as its format.</exception>
+    public void AddSoundFile(string name, string path) =>
+        AddSound(name, AudioDecoders.Decode(File.ReadAllBytes(path), Path.GetExtension(path) is { Length: > 1 } e ? e : "wav", name));
 
     /// <summary>
-    /// Registers a music file loaded from content (<c>Assets.Music(path)</c>) under <paramref name="name"/>: WAV is
-    /// decoded here, other formats are decoded by the device while they play.
+    /// Registers a music file: WAV, OGG Vorbis, MP3 and any format registered in <see cref="AudioDecoders"/>, the same
+    /// on every platform, chosen by the file's extension (WAV without one).
     /// </summary>
-    /// <exception cref="NotSupportedException">The device does not decode that format (MP3 outside raylib, for example).</exception>
+    /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
+    /// <param name="path">The file.</param>
+    /// <param name="loop">Whether the music restarts when it reaches its end (over its loop region, if the file names one).</param>
+    /// <param name="mode">Decoded while it plays (the default) or whole, now. WAV is always decoded whole.</param>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
+    /// <exception cref="NotSupportedException">No decoder is registered for the extension.</exception>
+    /// <exception cref="InvalidDataException">The file cannot be decoded as its format.</exception>
+    public void AddMusicFile(string name, string path, bool loop = true, AudioLoadMode mode = AudioLoadMode.Streamed) =>
+        AddMusic(name, new EncodedAudio(File.ReadAllBytes(path), Path.GetExtension(path) is { Length: > 1 } e ? e : "wav"), loop, mode);
+
+    /// <summary>
+    /// Registers a music file loaded from content (<c>Assets.Music(path)</c>) under <paramref name="name"/>.
+    /// </summary>
+    /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
+    /// <param name="music">The file's bytes and format.</param>
+    /// <param name="loop">Whether the music restarts when it reaches its end (over its loop region, if the file names one).</param>
+    /// <param name="mode">
+    /// <see cref="AudioLoadMode.Streamed"/> (the default) keeps the bytes and decodes them while the music plays;
+    /// <see cref="AudioLoadMode.Decoded"/> decodes the whole file now. WAV is always decoded whole; a format only the
+    /// device decodes (not in <see cref="AudioDecoders"/>) is always streamed.
+    /// </param>
+    /// <exception cref="NotSupportedException">No decoder is registered for the format.</exception>
     /// <exception cref="InvalidDataException">The bytes cannot be decoded as their format.</exception>
-    public void AddMusic(string name, EncodedAudio music, bool loop = true)
+    public void AddMusic(string name, EncodedAudio music, bool loop = true, AudioLoadMode mode = AudioLoadMode.Streamed)
     {
         ArgumentNullException.ThrowIfNull(music);
-        var handle = music.Format == "wav"
-            ? _device.LoadMusic(name, AudioClip.FromWav(music.Data), loop)
+        var handle = music.Format == "wav" || mode == AudioLoadMode.Decoded && AudioDecoders.Supports(music.Format)
+            ? _device.LoadMusic(name, AudioDecoders.Decode(music.Data, music.Format, name), loop)
             : _device.LoadMusicStream(name, music.Data, music.Format, loop);
         _songs.Remove(name);
         _sliced.RemoveAll(s => s.Name == name);
-        _music[name] = handle;
+        Register(name, handle);
     }
 
     /// <summary>Plays a sound. <paramref name="pitchJitter"/> randomizes pitch (+/-) to avoid repetition fatigue.
@@ -366,6 +529,36 @@ public sealed class AudioMixer
         _lastPlayedFrame[name] = (int)_frame;
         float p = pitch + (pitchJitter > 0 ? (float)(_random.NextDouble() * 2 - 1) * pitchJitter : 0);
         _device.Play(handle, Math.Clamp(volume * SfxVolume, 0, 1), p, Math.Clamp(pan, 0, 1));
+    }
+
+    /// <summary>
+    /// Plays a clip that is not registered under a name: one a game holds itself, or one from <c>Assets.Sound(path)</c>
+    /// held by an asset scope. Nothing keeps the clip after it has played, so releasing the scope frees it. Volume,
+    /// pitch, jitter and pan are those of <see cref="Play(string, float, float, float, float)"/>, and the same clip
+    /// is not retriggered within one update.
+    /// </summary>
+    public void Play(AudioClip clip, float volume = 1f, float pitch = 1f, float pitchJitter = 0f, float pan = 0.5f)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        if (ReferenceEquals(clip.PlayedBy, this) && clip.PlayedFrame == _frame) return;
+        (clip.PlayedBy, clip.PlayedFrame) = (this, _frame);
+        float p = pitch + (pitchJitter > 0 ? (float)(_random.NextDouble() * 2 - 1) * pitchJitter : 0);
+        _device.Play(clip, Math.Clamp(volume * SfxVolume, 0, 1), p, Math.Clamp(pan, 0, 1));
+    }
+
+    /// <summary>
+    /// Plays a clip that is not registered under a name as a voice, exactly as <paramref name="parameters"/> say (see
+    /// <see cref="PlayVoice(string, in PlayParameters)"/>). Nothing keeps the clip once the voice ends.
+    /// </summary>
+    /// <returns>The voice, or <see cref="VoiceHandle.None"/> as <see cref="PlayVoice(string, in PlayParameters)"/> returns it.</returns>
+    /// <exception cref="KeyNotFoundException">The bus does not exist.</exception>
+    public VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        RequireBus(parameters.Bus ?? AudioEngine.SfxBus);
+        if (_device is MixerAudioDevice mixer) return mixer.PlayVoice(clip, parameters);
+        _device.Play(clip, Math.Clamp(parameters.Volume, 0, 1), parameters.Pitch, Math.Clamp(parameters.Pan, 0, 1));
+        return VoiceHandle.None;
     }
 
     /// <summary>Plays a sound if it is registered; returns false otherwise (useful for optional cues).</summary>
@@ -385,7 +578,7 @@ public sealed class AudioMixer
     /// Plays a registered sound as a voice and returns its handle, to change or stop it while it plays: a loop that
     /// follows something (an engine, a siren), a sound to cut short, a sound on a bus of its own or with a priority.
     /// It plays exactly as <paramref name="parameters"/> say: <see cref="SfxVolume"/> and the once-per-frame rule of
-    /// <see cref="Play"/> do not apply (scale voices with their bus, <see cref="SetBusVolume"/>).
+    /// <see cref="Play(string, float, float, float, float)"/> do not apply (scale voices with their bus, <see cref="SetBusVolume"/>).
     /// </summary>
     /// <returns>
     /// The voice, or <see cref="VoiceHandle.None"/> when every voice is busy with sounds of higher priority or the device
@@ -409,7 +602,7 @@ public sealed class AudioMixer
     /// whatever the music was registered with); <see cref="MusicVolume"/> and music fades do not apply. Streamed music
     /// (OGG) keeps its own pitch.
     /// </summary>
-    /// <returns>The voice, or <see cref="VoiceHandle.None"/> as <see cref="PlayVoice"/> returns it.</returns>
+    /// <returns>The voice, or <see cref="VoiceHandle.None"/> as <see cref="PlayVoice(string, in PlayParameters)"/> returns it.</returns>
     /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>, or the bus does not exist.</exception>
     public VoiceHandle PlayMusicVoice(string name, in PlayParameters parameters)
     {
@@ -434,7 +627,7 @@ public sealed class AudioMixer
     /// update it follows something that moves: the pan and volume of a sound source crossing the screen, the pitch of
     /// an engine.
     /// </summary>
-    /// <param name="voice">A handle from <see cref="PlayVoice"/> or <see cref="PlayMusicVoice"/>.</param>
+    /// <param name="voice">A handle from <see cref="PlayVoice(string, in PlayParameters)"/> or <see cref="PlayMusicVoice"/>.</param>
     /// <param name="volume">Volume, 0..1.</param>
     /// <param name="pan">Stereo position, 0 (left) to 1 (right).</param>
     /// <param name="pitch">Playback speed factor, 1 for the original pitch (0.01..100); ignored by streamed music.</param>
@@ -448,6 +641,86 @@ public sealed class AudioMixer
         if (Engine is not { } engine || !engine.IsPlaying(voice)) return false;
         if (volume is not null || pan is not null) engine.Set(voice, volume, pan, seconds);
         if (pitch is { } p) engine.SetPitch(voice, p, seconds);
+        return true;
+    }
+
+    // ---- Time: where a sound is, and moving it
+
+    /// <summary>
+    /// Where <paramref name="voice"/> is in its sound, in seconds from the sound's beginning: 0 as it starts, what
+    /// <see cref="Seek"/> was given after a seek, back at the start of its loop region each time it loops. It follows
+    /// the game's steps, so a scripted run reads the same values every time. 0 for a voice that is not playing.
+    /// </summary>
+    public double Position(VoiceHandle voice) => Engine?.Position(voice) ?? 0;
+
+    /// <summary>
+    /// The position of <paramref name="voice"/> the player hears at this update: <see cref="Position"/> less
+    /// <see cref="OutputLatency"/>. Read it for anything shown or judged against the sound (a note reaching a line, a
+    /// cutscene's cue). Negative while the sound's first frame is still on its way to the speaker.
+    /// </summary>
+    public double HeardPosition(VoiceHandle voice) => Engine?.HeardPosition(voice) ?? 0;
+
+    /// <summary>The length in seconds of the sound <paramref name="voice"/> plays; 0 for a voice that is not playing or a stream that does not know its length.</summary>
+    public double Duration(VoiceHandle voice) => Engine?.Duration(voice) ?? 0;
+
+    /// <summary>
+    /// Moves <paramref name="voice"/> to <paramref name="seconds"/> from its sound's beginning, from this update on
+    /// (clamped to the sound's length; a time that is not a number changes nothing).
+    /// </summary>
+    /// <returns>Whether it moved: false for a voice that is not playing and for a stream whose decoder cannot seek.</returns>
+    public bool Seek(VoiceHandle voice, double seconds) => Engine?.Seek(voice, seconds) ?? false;
+
+    /// <summary>
+    /// Whether <paramref name="voice"/> is still on its way to a place <see cref="Seek"/> or
+    /// <see cref="PlayParameters.StartAt"/> named. Only streamed OGG and MP3 take time to get somewhere far: a stream
+    /// sought while it plays goes on where it was until then (and <see cref="Position"/> with it), and one started in
+    /// its middle is silent until then. Sounds and decoded music are there at once.
+    /// </summary>
+    public bool IsSeeking(VoiceHandle voice) => Engine?.IsSeeking(voice) ?? false;
+
+    /// <summary>Whether the music is still on its way to the place <see cref="SeekMusic"/> named (see <see cref="IsSeeking"/>).</summary>
+    public bool MusicSeeking => Engine?.IsSeeking(MusicVoice) ?? false;
+
+    /// <summary>
+    /// Seconds between the mixer writing a frame and the player hearing it, as the device reports it (0 on a silent
+    /// device and when rendering offline). <see cref="HeardPosition"/> and <see cref="MusicHeardPosition"/> already
+    /// take it into account.
+    /// </summary>
+    public double OutputLatency => Engine is { } engine ? (double)engine.DelayFrames / engine.Format.SampleRate : 0;
+
+    // The music's clock on a device without voices: the time it has played, so a game that follows its music runs
+    // the same headless.
+    private double _silentMusicTime;
+
+    private VoiceHandle MusicVoice => _device is MixerAudioDevice mixer ? mixer.MusicVoice : VoiceHandle.None;
+
+    /// <summary>
+    /// Where the music <see cref="PlayMusic"/> plays is, in seconds from its beginning (see <see cref="Position"/>);
+    /// 0 with no music. Save it to bring the music back to the same place with <see cref="SeekMusic"/>. On a device
+    /// without voices (<see cref="SupportsVoices"/>) it is the time the music has played, which does not come back
+    /// when the music loops.
+    /// </summary>
+    public double MusicPosition => Engine is { } engine ? engine.Position(MusicVoice) : _device.CurrentMusic is null ? 0 : _silentMusicTime;
+
+    /// <summary>
+    /// The position of the music the player hears at this update (see <see cref="HeardPosition"/>): what a rhythm game
+    /// judges input against and a cutscene cues its pictures from.
+    /// </summary>
+    public double MusicHeardPosition => Engine is { } engine ? engine.HeardPosition(MusicVoice) : MusicPosition;
+
+    /// <summary>The length of the music playing, in seconds; 0 with no music, on a device without voices and for a format whose decoder does not know it.</summary>
+    public double MusicDuration => Engine?.Duration(MusicVoice) ?? 0;
+
+    /// <summary>
+    /// Moves the music playing to <paramref name="seconds"/> from its beginning, from this update on (clamped to its
+    /// length; a time that is not a number changes nothing).
+    /// </summary>
+    /// <returns>Whether it moved: false with no music and for a format whose decoder cannot seek.</returns>
+    public bool SeekMusic(double seconds)
+    {
+        if (Engine is { } engine) return engine.Seek(MusicVoice, seconds);
+        if (_device.CurrentMusic is null) return false;
+        if (!double.IsNaN(seconds)) _silentMusicTime = Math.Max(0, seconds);
         return true;
     }
 
@@ -477,7 +750,7 @@ public sealed class AudioMixer
     }
 
     /// <summary>
-    /// Whether sounds play as voices on this device (<see cref="PlayVoice"/>, <see cref="PlayMusicVoice"/>): true for
+    /// Whether sounds play as voices on this device (<see cref="PlayVoice(string, in PlayParameters)"/>, <see cref="PlayMusicVoice"/>): true for
     /// every device that plays through the engine's mixer, false for a silent one (headless, muted, no hardware), where
     /// those calls return <see cref="VoiceHandle.None"/>. Buses and their effects can be set up either way.
     /// </summary>
@@ -527,7 +800,7 @@ public sealed class AudioMixer
 
     /// <summary>
     /// Sets the volume of everything playing through bus <paramref name="name"/> and the buses under it, clamped to
-    /// 0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of <see cref="Play"/> too,
+    /// 0..4, from this update on: "master" for the whole game, "sfx" for every sound (those of <see cref="Play(string, float, float, float, float)"/> too,
     /// on top of <see cref="SfxVolume"/>), "music" for the music track and the voices played on it. A value that is
     /// not a number is ignored. With <paramref name="fadeSeconds"/> the volume moves there over that time instead of
     /// at once.
@@ -577,6 +850,7 @@ public sealed class AudioMixer
             _pendingMusic = null;
             _waiting = null;
             (_fade, _fadeSpeed) = (1, 0);
+            _startedMusic = name;
             mixer.CrossfadeMusic(Music(name), _musicVolume, crossfade);
             return;
         }
@@ -622,6 +896,8 @@ public sealed class AudioMixer
         }
         _fade = fadeIn ? 0.05f : 1f;
         _fadeSpeed = fadeIn ? 4f : 0f;
+        _silentMusicTime = 0;
+        _startedMusic = name;
         _device.PlayMusic(Music(name), _musicVolume * _fade);
     }
 
@@ -644,8 +920,9 @@ public sealed class AudioMixer
             if (slices.Current is { } clip)
             {
                 _sliced.RemoveAt(0);
-                _music[name] = _device.LoadMusic(name, clip, loop);
-                if (_waiting is { } waiting && waiting.Name == name) StartMusic(name, waiting.FadeIn);
+                Register(name, _device.LoadMusic(name, clip, loop));
+                if (_waiting is { } waiting
+ && waiting.Name == name) StartMusic(name, waiting.FadeIn);
             }
         }
     }
@@ -695,7 +972,9 @@ public sealed class AudioMixer
             else if (_fadeSpeed > 0 && _fade >= 1) _fadeSpeed = 0;
             Apply();
         }
+        if (!MusicPaused && !double.IsNaN(dt) && dt > 0) _silentMusicTime += dt;
         _device.Update();
+
     }
 }
 

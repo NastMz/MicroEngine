@@ -169,6 +169,24 @@ public void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan
 
 `pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Audio_SilentAudioDevice_Play_MicroEngine_Audio_AudioClip_System_Single_System_Single_System_Single_"></a> Play\(AudioClip, float, float, float\)
+
+Records the clip's [Name](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_Name) ("" for a clip without one) in [Played](MicroEngine.Audio.SilentAudioDevice.md#MicroEngine_Audio_SilentAudioDevice_Played).
+
+```csharp
+public void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_SilentAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_"></a> PlayMusic\(MusicHandle, float\)
 
 Starts <code class="paramref">music</code> from the beginning, replacing the music that was playing.

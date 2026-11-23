@@ -309,8 +309,8 @@ running; a game with a start screen starts gamepad support once that screen is s
 Pads already connected are reported as usual.
 Keyboard and text input, mouse, every gamepad (each a device of its own, with rumble) and touch are read; on desktops
 F11 and Alt+Enter reach the engine's `fullscreen` action ([Full screen](input.md#full-screen)); losing focus releases
-keys and fingers. Audio uses SDL audio streams: wav and
-ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the
+keys and fingers. Audio uses SDL audio streams under the engine's
+mixer, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the
 display scale, vibrates the device on Android (SDL's haptic API) and draws the game's on-screen controls over the frame
 in window pixels (never into captures; [Touch controls](input.md#touch-controls)).
 `MICROENGINE_SDL_EVENT_LOGGING=1` makes SDL log the events it delivers. The package is

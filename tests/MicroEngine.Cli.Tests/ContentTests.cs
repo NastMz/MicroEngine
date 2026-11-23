@@ -54,7 +54,28 @@ public sealed class ContentTests
         .Text("ui/hud.json", """{"frames": {"heart.png": {"frame": {"x":0,"y":0,"w":8,"h":8}}, "coin.png": {"frame": {"x":8,"y":0,"w":8,"h":8}}}, "meta": {"image": "hud.png"}}""")
         .Bytes("sfx/jump.wav", Wav())
         .Bytes("music/theme.ogg", [.. "OggS"u8, 0, 2, 0, 0])
+        .Bytes("music/sting.mp3", Mp3)
         .Text("levels/1.txt", "###");
+
+    /// <summary>Half a second of a 441 Hz tone as a 16 kbit/s MP3 file (made with ffmpeg).</summary>
+    private static byte[] Mp3 => Convert.FromBase64String(
+        "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");
 
     [TestMethod]
     public void A_sound_content_folder_passes_and_the_command_exits_zero()
@@ -62,7 +83,7 @@ public sealed class ContentTests
         using var content = Good();
         var report = ContentTool.Check(content.Root);
         Assert.AreEqual(0, report.Errors.Count + report.Warnings.Count, string.Join("\n", report.Issues));
-        Assert.AreEqual(9, report.Files);
+        Assert.AreEqual(10, report.Files);
         Assert.AreEqual(0, Cli.RunAsync(["content", "check", "--content", content.Root]).Result);
     }
 
@@ -94,7 +115,8 @@ public sealed class ContentTests
         Error("sfx/adpcm.wav", "PCM");
         Error("items/photo.webp", "PNG");
         Error("items/big.png", "64x4");
-        Warning("music/boss.mp3", "OGG");
+        Error("music/boss.mp3", "not an MP3 file");
+        Assert.IsFalse(all.Contains("raylib"), "MP3 decodes on every platform: no warning about one");
         Warning("items/gem.psd", "source file");
         Warning("items/pack.tps", "source file");
         Assert.AreEqual(1, Cli.RunAsync(["content", "check", "--content", content.Root, "--max-texture", "32"]).Result, "errors fail the command");

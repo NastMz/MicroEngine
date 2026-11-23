@@ -215,7 +215,7 @@ public override void Update(float dt)
 }
 ```
 
-Music: WAV or OGG files on every platform, MP3 only on raylib, or songs made in code with `Song`. [Audio](manual/audio.md).
+Music: WAV, OGG or MP3 files on every platform, or songs made in code with `Song`. [Audio](manual/audio.md).
 `Synth`, `SfxParams`, `Wave`, `Song` and `Instrument` are in `MicroEngine.Audio.Retro` (`using MicroEngine.Audio.Retro;`).
 
 ## ...draw text?

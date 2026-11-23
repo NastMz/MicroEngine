@@ -79,7 +79,7 @@ like any other.
 
 | Limitation | More |
 | --- | --- |
-| Effects are on buses (32 at most), not on single voices; no playback position, seek or loop points; no listener and emitters | [Audio](../manual/audio.md#limitations) |
+| Effects are on buses (32 at most), not on single voices; a seek backward in streamed music decodes from the file's beginning; spatial sound is 2D, by volume and pan only | [Audio](../manual/audio.md#limitations) |
 | Sound starts only after the player's first click, tap or key press, and stops while the tab is hidden (the game pauses with it) | [Platforms](../guide/platforms.md#web-browsers) |
 | F11 is the browser's own fullscreen; the game's fullscreen is Alt+Enter or the page's button | [The browser host](../examples/embedding.md) |
 | The download includes the .NET runtime: about 2 MB compressed for a small game, more with large music or art | [Platforms](../guide/platforms.md#web-browsers) |

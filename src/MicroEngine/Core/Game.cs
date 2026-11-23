@@ -436,6 +436,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Localization = services.Get<GameLocalization>();
         StartupLog.Attach(engine.Log);
         Audio = services.Get<AudioMixer>();
+        Audio.Log = engine.Log;
         // Deterministic runs keep audio state on the simulation's timeline only (songs render when waited for, sounds
         // never re-anchor to the device), so two runs hash and sound the same.
         Audio.Deterministic = engine.Time.Mode == TimeMode.Deterministic;

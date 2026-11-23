@@ -40,6 +40,19 @@ public string Bus { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Audio_PlayParameters_Delay"></a> Delay
+
+Seconds from the current step's frame to the sound's first frame (0, the default: it starts with the step),
+exact to the output frame: a sound scheduled on a beat. A value that is not a number, or negative, counts as 0.
+
+```csharp
+public double Delay { get; init; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_PlayParameters_FadeIn"></a> FadeIn
 
 Seconds the sound takes to rise from silence to [Volume](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_Volume), frame by frame (0, the default: it starts
@@ -64,6 +77,21 @@ public bool Loop { get; init; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_PlayParameters_LoopRegion"></a> LoopRegion
+
+With [Loop](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_Loop), the part of the sound that repeats: it plays from where it starts to the region's end,
+then goes back to the region's start each time (an intro played once, then a loop). Null (the default) for the
+region the sound carries ([LoopRegion](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_LoopRegion), a stream's
+[LoopRegion](MicroEngine.Audio.ISeekableAudioStream.md#MicroEngine_Audio_ISeekableAudioStream_LoopRegion)), and the whole sound when it carries none.
+
+```csharp
+public LoopRegion? LoopRegion { get; init; }
+```
+
+#### Property Value
+
+ [LoopRegion](MicroEngine.Audio.LoopRegion.md)?
 
 ### <a id="MicroEngine_Audio_PlayParameters_Pan"></a> Pan
 
@@ -103,6 +131,20 @@ public int Priority { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Audio_PlayParameters_StartAt"></a> StartAt
+
+Where in the sound it starts, in seconds from its beginning (0, the default); clamped to its length. A value
+that is not a number, or negative, counts as 0. A stream starts there only when it can seek
+([ISeekableAudioStream](MicroEngine.Audio.ISeekableAudioStream.md)); another stream starts at its beginning.
+
+```csharp
+public double StartAt { get; init; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 ### <a id="MicroEngine_Audio_PlayParameters_Volume"></a> Volume
 

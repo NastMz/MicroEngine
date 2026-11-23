@@ -17,10 +17,15 @@ internal sealed class StreamFeed
     private bool _sourceDone;
     private volatile bool _finished;
 
-    public StreamFeed(IAudioStream source, bool loop, int outRate, int outChannels, int aheadFrames)
+    // Looping: the source frames that repeat (_loopEnd 0: up to the end) and the source frame the next read gives.
+    private readonly long _loopStart, _loopEnd;
+    private long _sourceFrame;
+
+    public StreamFeed(IAudioStream source, bool loop, int outRate, int outChannels, int aheadFrames, long from = 0, long loopStart = 0, long loopEnd = 0)
     {
         Source = source;
         Loop = loop;
+        (_sourceFrame, _loopStart, _loopEnd) = (from, loopStart, loopEnd);
         _capacity = aheadFrames;
         _ring = new float[aheadFrames * 2];
         _ratio = (double)source.SampleRate / outRate;
@@ -31,6 +36,21 @@ internal sealed class StreamFeed
     public bool Loop { get; }
     public int Slot;
     public uint Generation;
+    /// <summary>A feed that waits: nothing is decoded and nothing is played until another feed takes its place (a stream on its way to where it starts).</summary>
+    public bool Hold { get; init; }
+    /// <summary>What the stream's decoder threw (a damaged file), or null: the feed then ends with what it had decoded.</summary>
+    public Exception? Error { get; private set; }
+    /// <summary>Whether <see cref="Error"/> was reported (main thread).</summary>
+    public bool Reported;
+    /// <summary>Output frames decoded and not yet played (main thread; the render function reads on meanwhile).</summary>
+    public long Buffered => Math.Max(0, _written - Volatile.Read(ref _read));
+
+    /// <summary>The decoder threw outside the feed (a seek): the feed gives what it holds and ends.</summary>
+    public void Fail(Exception error)
+    {
+        Error ??= error;
+        _sourceDone = true;
+    }
     /// <summary>Output frames written so far (main thread).</summary>
     public long Produced => _written;
     /// <summary>Whether the stream ended and everything decoded was written (it never ends while looping).</summary>
@@ -39,7 +59,7 @@ internal sealed class StreamFeed
     /// <summary>Main thread: decodes until the ring holds its target.</summary>
     public void Fill()
     {
-        if (_finished) return;
+        if (_finished || Hold) return;
         int channels = Source.Channels;
         while (_written - Volatile.Read(ref _read) < _capacity)
         {
@@ -47,8 +67,11 @@ internal sealed class StreamFeed
             int i = (int)_position;
             while (i + 1 >= _decodedFrames && !_sourceDone)
             {
-                if (!Decode(channels)) break;
+                // The buffer moved, also when nothing more came: the last frame is then its only one, still to be played.
+                bool more = Decode(channels);
                 i = (int)_position;
+                if (!more) break;
+
             }
             if (i >= _decodedFrames)
             {
@@ -79,14 +102,45 @@ internal sealed class StreamFeed
             _position -= last;
             keep = 1;
         }
-        int read = Source.Read(_decoded.AsSpan(keep * channels));
-        if (read == 0 && Loop)
+        var into = _decoded.AsSpan(keep * channels);
+        int read = 0;
+        try
         {
-            Source.Rewind();
-            read = Source.Read(_decoded.AsSpan(keep * channels));
+            // A loop reads up to the end of its region, then goes back to the region's start; twice at most, so a
+            // stream that gives nothing there ends instead of spinning.
+            for (int attempt = 0; attempt < 2 && read == 0 && Error is null; attempt++)
+            {
+                var room = into;
+                if (Loop && _loopEnd > 0)
+                {
+                    long left = _loopEnd - _sourceFrame;
+                    room = left <= 0 ? default : into[..(int)Math.Min(into.Length, left * channels)];
+                }
+                if (!room.IsEmpty) read = Math.Clamp(Source.Read(room), 0, room.Length);
+                if (read > 0 || !Loop) break;
+                if (_loopStart > 0 && Source is ISeekableAudioStream seekable)
+                {
+                    seekable.Seek(_loopStart);
+                    _sourceFrame = _loopStart;
+                }
+                else
+                {
+                    Source.Rewind();
+                    _sourceFrame = 0;
+                }
+            }
         }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            // A damaged file, found while it plays: the stream ends here with what it had decoded. Nothing of a
+            // decoder may end the game.
+            Error = error;
+            read = 0;
+        }
+        _sourceFrame += read / channels;
         _decodedFrames = keep + read / channels;
-        if (read == 0) _sourceDone = true;
+
+        if (read == 0 || Error is not null) _sourceDone = true;
         return read > 0;
     }
 

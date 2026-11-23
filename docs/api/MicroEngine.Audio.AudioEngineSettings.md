@@ -84,6 +84,20 @@ public double StreamAheadSeconds { get; init; }
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
 
+### <a id="MicroEngine_Audio_AudioEngineSettings_StreamSeekSeconds"></a> StreamSeekSeconds
+
+Seconds of a compressed stream decoded and dropped per [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump) on the way to a place
+sought (0.25 by default): a seek further than this is spread over several host frames instead of holding one
+up ([IsSeeking](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_IsSeeking_MicroEngine_Audio_VoiceHandle_)).
+
+```csharp
+public double StreamSeekSeconds { get; init; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioEngineSettings_UpdateRate"></a> UpdateRate
 
 Simulation steps per second: the engine stamps each sound with the output frame of its step.
