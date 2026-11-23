@@ -245,5 +245,11 @@
 4920 press confirm
 4980 capture 41-music-time.png
 4986 press pause
-5000 quit
+5000 press down
+5010 press confirm
+5040 hold right 60
+5130 capture 42-spatial-sound.png
+5136 press pause
+5150 quit
+
 

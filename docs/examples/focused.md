@@ -1056,6 +1056,74 @@ private void SetPaused(bool paused)
 
 Manual: [Buses and effects](../manual/audio.md#buses-and-effects), [Fades and crossfades](../manual/audio.md#fades-and-crossfades).
 
+## Music time
+
+Music with an intro that plays once and a part that repeats, and four boxes that light up on the beat the player
+hears; a key plays the intro again, another jumps a beat ahead. Source:
+[`MusicTimeExample.cs`](../../samples/Examples/Examples/MusicTimeExample.cs).
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-setup -->
+```csharp
+public override void Enter()
+{
+    // The clip names the part that repeats; the music plays its intro once and then stays in that part.
+    if (!Audio.HasMusic("time-track"))
+        Audio.AddMusic("time-track", TimeSounds.Track(), loop: true);
+    Audio.PlayMusic("time-track", fadeSeconds: 0);
+}
+
+public override void Exit() => Audio.StopMusic(0.2f);
+```
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-follow -->
+```csharp
+// What the player hears at this update: the music's position less the time sound takes to reach the speaker.
+double heard = Audio.MusicHeardPosition;
+if (heard < IntroSeconds) (Beat, Phase) = (-1, 0);
+else
+{
+    double beats = (heard - IntroSeconds) / BeatSeconds;
+    Beat = (int)beats;
+    Phase = (float)(beats - Beat);
+}
+```
+
+Manual: [Time: position, seeking and loops](../manual/audio.md#time-position-seeking-and-loops).
+
+## Sounds with a place
+
+A listener that walks, a generator that hums where it stands, a drone that flies past and a knock at a place: each
+louder the closer it is, and heard from its side. Source:
+[`SpatialSoundExample.cs`](../../samples/Examples/Examples/SpatialSoundExample.cs).
+
+<!-- code: samples/Examples/Examples/SpatialSoundExample.cs#spatial-setup -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasSound("spatial-hum"))
+    {
+        Audio.AddSound("spatial-hum", SpatialSounds.Tone(SpatialSounds.Hum, 1f));
+        Audio.AddSound("spatial-drone", SpatialSounds.Tone(SpatialSounds.DroneTone, 1f));
+        Audio.AddSound("spatial-knock", SpatialSounds.Knock());
+    }
+    _listener = Objects.Create();
+    Objects.Local(_listener).Position2D = new Vector2(60, Ground);
+    _generator = Objects.Create();
+    Objects.Local(_generator).Position2D = new Vector2(250, Ground);
+    _drone = Objects.Create();
+
+    Sounds.Follow(_listener);                 // the listener is this entity
+    Sounds.MaxDistance = 220;                 // silent from here on, in the world's units
+    Sounds.PanDistance = 160;                 // half the view: a sound at the screen's edge is all on that side
+    Generator = Sounds.Emit("spatial-hum", _generator, loop: true, volume: 0.6f);   // this entity makes this sound
+    Drone = Sounds.Emit("spatial-drone", _drone, loop: true, volume: 0.5f);
+    Drone.Rolloff = SoundRolloff.Smooth;
+}
+```
+
+Manual: [Sounds with a place](../manual/audio.md#sounds-with-a-place).
+
+
 ## Languages
 
 A screen in English, Spanish, Russian and Arabic: widgets that follow the language, a count with each language's

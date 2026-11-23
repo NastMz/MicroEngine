@@ -64,6 +64,8 @@ public sealed class ExamplesGame : Game
         ("Screen effects (the whole window)", g => new ScreenEffectsExample()),
         ("Small pictures (mip levels)", g => new MipLevelsExample()),
         ("Music time (intro, loop, position)", g => new MusicTimeExample()),
+        ("Sounds with a place (listener, emitters)", g => new SpatialSoundExample()),
+
 
     ];
 

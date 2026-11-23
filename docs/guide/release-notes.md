@@ -187,6 +187,12 @@ modelled as components and systems.
   registering a name again frees what had it. `Audio.Play(clip)` and `Audio.PlayVoice(clip, parameters)` play a clip
   without registering it, so a sound loaded by an asset scope is freed with the scope
   ([Files from content, and releasing them](../manual/audio.md#files-from-content-and-releasing-them)).
+- Sounds with a place ([Sounds with a place](../manual/audio.md#sounds-with-a-place)): `Scene.Sounds` is a scene's
+  listener and emitters in world units. `Sounds.Emit("torch", entity, loop: true)` makes an entity the source of
+  a sound: its volume follows its distance to the listener (`MinDistance`, `MaxDistance`, a `SoundRolloff` or a
+  curve of the game's own) and its pan the side it is on, it goes where the entity goes, and it stops when the
+  entity is destroyed or the scene leaves. Emitters out of range hold no voice. `Sounds.Doppler` shifts pitch by
+  the speed of approach. The Examples sample has "Sounds with a place".
 - Fixed: looping OGG music could go back to a few hundred samples after its beginning instead of to it (the decoder's
   seek); a loop and a seek now land on the exact sample.
 - Fixed: streamed music that does not loop played all but its last sample; and music paused for a while was reported

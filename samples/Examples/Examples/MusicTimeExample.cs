@@ -67,7 +67,7 @@ public sealed class MusicTimeExample : Scene
             r.FillRect(box, beat == Beat ? theme.Accent.WithAlpha(1 - 0.7f * Phase) : theme.Muted.WithAlpha(0.3f));
         }
         Font.Draw(r, Beat < 0 ? "INTRO" : $"BEAT {Beat + 1} OF 4", new Vector2(16, 136), Beat < 0 ? theme.Muted : theme.Accent);
-        Font.Draw(r, $"MUSIC AT {Audio.MusicPosition:0.00} S   HEARD AT {Audio.MusicHeardPosition:0.00} S", new Vector2(16, 150), theme.Muted);
+        Font.Draw(r, FormattableString.Invariant($"MUSIC AT {Audio.MusicPosition:0.00} S   HEARD AT {Audio.MusicHeardPosition:0.00} S"), new Vector2(16, 150), theme.Muted);
         if (!Audio.SupportsVoices) Font.Draw(r, "(SILENT DEVICE: THE CLOCK RUNS, NOTHING PLAYS)", new Vector2(16, 164), theme.Muted);
         Heading.Draw(r, Font, "MUSIC TIME");
     }

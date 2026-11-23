@@ -419,6 +419,95 @@ To bring the music back where a saved game left it, save `MusicPosition` and cal
 play it as a voice with `StartAt`.
 
 
+## Sounds with a place
+
+A scene has a listener and emitters, in the units of its world (`Scene.Sounds`). After every update each emitter's
+volume follows its distance to the listener and its pan the side it is on; an emitter that follows an entity goes
+where the entity goes. Source:
+[`SpatialSoundExample.cs`](../../samples/Examples/Examples/SpatialSoundExample.cs).
+
+<!-- code: samples/Examples/Examples/SpatialSoundExample.cs#spatial-setup -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasSound("spatial-hum"))
+    {
+        Audio.AddSound("spatial-hum", SpatialSounds.Tone(SpatialSounds.Hum, 1f));
+        Audio.AddSound("spatial-drone", SpatialSounds.Tone(SpatialSounds.DroneTone, 1f));
+        Audio.AddSound("spatial-knock", SpatialSounds.Knock());
+    }
+    _listener = Objects.Create();
+    Objects.Local(_listener).Position2D = new Vector2(60, Ground);
+    _generator = Objects.Create();
+    Objects.Local(_generator).Position2D = new Vector2(250, Ground);
+    _drone = Objects.Create();
+
+    Sounds.Follow(_listener);                 // the listener is this entity
+    Sounds.MaxDistance = 220;                 // silent from here on, in the world's units
+    Sounds.PanDistance = 160;                 // half the view: a sound at the screen's edge is all on that side
+    Generator = Sounds.Emit("spatial-hum", _generator, loop: true, volume: 0.6f);   // this entity makes this sound
+    Drone = Sounds.Emit("spatial-drone", _drone, loop: true, volume: 0.5f);
+    Drone.Rolloff = SoundRolloff.Smooth;
+}
+```
+
+<!-- code: samples/Examples/Examples/SpatialSoundExample.cs#spatial-move -->
+```csharp
+// Entities move as they always do; their sounds follow, and stop when the scene leaves.
+ref var listener = ref Objects.Local(_listener);
+listener.Position2D = new Vector2(Math.Clamp(listener.Position2D.X + Input.Axis("left", "right") * Speed * dt, 10, 310), Ground);
+_droneX = _droneX > 360 ? -40 : _droneX + 70 * dt;
+Objects.Local(_drone).Position2D = new Vector2(_droneX, 50);
+
+// A sound at a place, once: nothing to keep, it is gone when it ends.
+if (Input.Pressed("action")) Sounds.Emit("spatial-knock", listener.Position2D + new Vector2(120, 0));
+```
+
+| Member | What it does |
+| --- | --- |
+| `Sounds.Emit(sound, entity, loop, volume)` | The entity is the source of a registered sound; the emitter stops when the entity is destroyed |
+| `Sounds.Emit(sound, position, loop, volume)` | A sound at a place; move it through the emitter's `Position` |
+| `Sounds.Emit(clip, ...)` | The same for a clip that is not registered (one held by an asset scope) |
+| `Sounds.Follow(entity)`, `Sounds.Listener = point` | Who listens. With neither, the centre of the scene's `WorldCamera`; without a camera, the world's origin |
+| `Sounds.MinDistance`, `MaxDistance`, `Rolloff`, `Bus` | What new emitters start with (16, 320, `Linear`, "sfx") |
+| `Sounds.PanDistance` | The horizontal distance at which a sound is all on one side (by default each emitter's `MaxDistance`) |
+| `Sounds.Doppler`, `Sounds.SpeedOfSound` | A pitch shift by how fast a sound comes closer or goes away (off by default) |
+| `Sounds.StopAll(fade)`, `emitter.Stop(fade)` | Stop them |
+
+An emitter (`SoundEmitter`) can be changed while it plays: `Position`, `Volume`, `Pitch`, `MinDistance`,
+`MaxDistance`, `Rolloff`, `Curve`, and `Bus` and `Priority` for the next time its sound starts. It reports what the
+last update gave it (`Gain`, `Pan`, `PlayedPitch`), whether it is still in the scene (`IsActive`) and whether a
+voice plays it (`IsAudible`).
+
+**Distance.** Within `MinDistance` a sound plays at its volume; from `MaxDistance` on it is silent; between the two
+`Rolloff` shapes the fall:
+
+| `SoundRolloff` | Shape | Use it for |
+| --- | --- | --- |
+| `Linear` | a straight line | small levels, where "half way is half as loud" is easy to tune |
+| `Inverse` | one over the distance, brought to silence at the maximum: fast near the source, slow far away | open spaces, sources heard from far |
+| `Smooth` | an S: nearly full for a while, then a fall, then a gentle end | ambiences that should fill a room and end at its door |
+
+`emitter.Curve = t => ...` replaces it with a curve of the game's own: `t` is 0 at the minimum distance and 1 at the
+maximum, the result is the gain.
+
+**Voices.** An emitter out of range holds no voice, so a level can have hundreds of emitters and only those within
+earshot count against the 32 voices. A looping emitter that comes into range starts where it would be had it played
+all along. A sound that plays once and is out of range when it happens is not heard at all. When more loops are in
+range than there are voices, the ones that came first keep theirs and the others wait for one to be free; sounds
+that play once take voices by the usual priority rule.
+
+**Lifetime.** Emitters stop when their entity is destroyed and when the scene leaves the stack, fading out over
+`Sounds.StopFade` (a tenth of a second). A sound that plays once removes its emitter when it ends.
+
+**Scripted runs.** Emitters are sound, not state: nothing of them is in the scene's state hash, and a run on a
+silent device computes the same gains and pans and plays nothing. Do not decide anything in the game by `IsAudible`,
+which is false on a silent device.
+
+**Doppler.** With `Sounds.Doppler = 1` a sound's pitch rises as its distance to the listener shrinks and falls as it
+grows, by the ratio of that speed to `Sounds.SpeedOfSound` (world units per second, 3400 by default), kept between
+half and twice the pitch. It needs sounds that can change pitch: clips, not streamed music.
+
 ## One mixer on every platform
 
 Every audio device of the engine is the same managed mixer,
@@ -601,8 +690,12 @@ sound and resumes it when shown again.
 
 ## Limitations
 
-- No listener or emitters: a sound's position is the `pan` and `volume` the game sets (once, with a time, or every
-  update).
+- Spatial sound is 2D and by volume and pan only: no filtering with distance, no sound blocked by walls, no
+  reverberation by place. Pan is by horizontal offset; a sound above or below the listener is in the middle.
+- Emitters of a scene that is not updated (under a pause overlay) keep sounding at their last volume and pan; to
+  silence them, lower or fade their bus.
+- With more looping emitters in range than voices, the ones in range first keep their voices, not the nearest.
+
 - Effects are on buses, not on single voices: a sound that needs processing of its own plays on a bus of its own, and
   there are 32 buses. A bus has a volume and effects but no pitch.
 - A crossfade and every ramp are straight lines in gain, so two unrelated tracks dip slightly in loudness half way
