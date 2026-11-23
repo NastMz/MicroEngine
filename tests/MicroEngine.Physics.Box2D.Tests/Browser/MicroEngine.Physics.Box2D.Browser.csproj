@@ -27,7 +27,7 @@
     <Compile Include="../../../samples/PhysicsSubstitution/Platformer.cs;../../../samples/PhysicsSubstitution/Crates.cs" LinkBase="Substitution" />
     <Compile Include="../*.cs" LinkBase="Tests" />
     <Compile Include="../../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
-    <Compile Include="../../Shared/Physics/*.cs" Exclude="../../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
+    <Compile Include="../../Shared/Physics/*.cs" LinkBase="Shared/Physics" />
   </ItemGroup>
   <!-- What the package's buildTransitive targets add for a browser build, from the repository's natives. -->
   <ItemGroup>
