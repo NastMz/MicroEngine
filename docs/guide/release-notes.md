@@ -170,6 +170,43 @@ modelled as components and systems.
   `int.MaxValue` output frames (over twelve hours); a longer or endless time is that long.
 - `Audio.SupportsVoices` tells whether `PlayVoice` returns voices on the current device (false headless, muted or
   without audio hardware). The Examples sample has "Effects on buses".
+- Time in a sound ([Time: position, seeking and loops](../manual/audio.md#time-position-seeking-and-loops)):
+  `Audio.MusicPosition` and `Audio.Position(voice)` read where a sound is, `Audio.MusicHeardPosition` and
+  `Audio.HeardPosition(voice)` where the player hears it (less `Audio.OutputLatency`), `Audio.SeekMusic` and
+  `Audio.Seek` move it, `Audio.MusicDuration` and `Audio.Duration` give its length. `PlayParameters.StartAt` starts a
+  sound from the middle and `PlayParameters.Delay` a moment later, exact to the output sample. A loop can repeat a
+  part of the sound after an intro that plays once: `LoopRegion`, read from a WAV file's sampler chunk and an OGG
+  file's `LOOPSTART` comments, set on an `AudioClip`, or given per play. A decoder that can seek implements
+  `ISeekableAudioStream`. The Examples sample has "Music time".
+- Sound and music formats ([Sound and music files](../manual/audio.md#sound-and-music-files)): OGG Vorbis and MP3
+  files are sound effects as well as music (`Audio.AddSoundFile`, `Assets.Sound`), and MP3 plays on every platform,
+  decoded in managed code like OGG. `AudioDecoders.Add(extension, open)` registers a format of the game's own for
+  all of them ([an audio format](../manual/extending.md#an-audio-format)). Music is streamed or decoded whole, per
+  piece: `Audio.AddMusicFile(name, path, loop, AudioLoadMode.Decoded)`.
+- Streamed music never holds a frame up: a far `SeekMusic` or `StartAt` in an OGG or MP3 file is reached over the
+  next frames (`Audio.MusicSeeking`, `Audio.IsSeeking(voice)`), on the exact sample and at the same update in every
+  run, and a loop after a long intro goes back to its start without decoding the intro again.
+- A music file that turns out damaged while it plays ends there instead of throwing: one warning in the game's log
+  (`Audio.Log`) and `Audio.FailedStreams`. Files that lie about their length or carry a tag larger than themselves
+  are refused when registered, without the memory they claim.
+- `Audio.SoundDuration(name)` gives a registered sound's length.
+- `microengine content check` no longer warns about MP3 files, which every platform now plays; an `.mp3` the
+  engine cannot decode is an error, like a WAV.
+- Releasing sounds: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)` unregister and free a sound, and
+  registering a name again frees what had it. `Audio.Play(clip)` and `Audio.PlayVoice(clip, parameters)` play a clip
+  without registering it, so a sound loaded by an asset scope is freed with the scope
+  ([Files from content, and releasing them](../manual/audio.md#files-from-content-and-releasing-them)).
+- Sounds with a place ([Sounds with a place](../manual/audio.md#sounds-with-a-place)): `Scene.Sounds` is a scene's
+  listener and emitters in world units. `Sounds.Emit("torch", entity, loop: true)` makes an entity the source of
+  a sound: its volume follows its distance to the listener (`MinDistance`, `MaxDistance`, a `SoundRolloff` or a
+  curve of the game's own) and its pan the side it is on, it goes where the entity goes, and it stops when the
+  entity is destroyed or the scene leaves. Emitters out of range hold no voice. `Sounds.Doppler` shifts pitch by
+  the speed of approach. The Examples sample has "Sounds with a place".
+- Fixed: looping OGG music could go back to a few hundred samples after its beginning instead of to it (the decoder's
+  seek); a loop and a seek now land on the exact sample.
+- Fixed: streamed music that does not loop played all but its last sample; and music paused for a while was reported
+  as ended (`CurrentMusic`, `IsPlaying`) that much before it stopped sounding.
+
 - [Physics](../manual/physics.md) for more kinds of game:
   - A scene has a physics world: `Scene.Physics` (`ScenePhysics`) is made on first use, stepped after the scene's
     `Update` on its world's clock, written to the owners' transforms, part of the state hash and disposed with the

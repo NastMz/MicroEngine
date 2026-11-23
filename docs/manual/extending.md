@@ -14,6 +14,7 @@ MicroEngine's tests.
 | keep saves somewhere else (one file, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)`, or `host.Storage` in the game's `Configure` |
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
 | process the sound of a group of sounds (a filter, a distortion, a meter) | subclass `AudioEffect` | `Audio.Bus(name).Add(effect)` ([an audio effect](#an-audio-effect)) |
+| load sound and music files of another format | `IAudioStream` | `AudioDecoders.Add(extension, open)` ([an audio format](#an-audio-format)) |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
 | a part of a scene that the engine steps, hashes and stops with it (a store, a world, a scheduler) | subclass `SceneSystem` | `Scene.Systems.Add(system)`, or `Scenes.AddSystem` for every scene ([Scene systems](scenes.md#scene-systems)) |
@@ -254,7 +255,67 @@ the effect's own properties. Keep
 `Process` independent of how its blocks are cut (count frames yourself rather than blocks), and the same game run
 gives the same samples on every platform.
 
+## An audio format
+
+A decoder is a stream over a whole file's bytes that gives samples when asked. Registered under a file extension, it
+serves every way a file reaches the mixer: sound effects (`Audio.AddSoundFile`, decoded whole), music
+(`Audio.AddMusicFile`, streamed or decoded), and the `sound` and `music` kinds of `Game.Assets`. WAV, OGG and MP3 are
+registered the same way ([Sound and music files](audio.md#sound-and-music-files)).
+
+<!-- code: samples/Examples/Extending.cs#audio-decoder -->
+```csharp
+/// <summary>
+/// An audio format of your own: ".pcm16" files hold mono 16-bit samples at 44100 Hz and nothing else. Registered once,
+/// before content loads: <c>AudioDecoders.Add("pcm16", bytes => new Pcm16Stream(bytes))</c>; from then on such a file
+/// is a sound effect, streamed music or a "sound" asset like any other.
+/// </summary>
+public sealed class Pcm16Stream(byte[] file) : ISeekableAudioStream
+{
+    private int _frame;
+
+    public int Channels => 1;
+    public int SampleRate => 44100;
+    public long Frames => file.Length / 2;
+
+    // Fills the buffer with the next samples, from -1 to 1; 0 at the end. Called on the game's thread, never on the
+    // audio thread, so it may read and allocate.
+    public int Read(Span<float> buffer)
+    {
+        int count = (int)Math.Min(buffer.Length, Frames - _frame);
+        for (int i = 0; i < count; i++)
+            buffer[i] = BitConverter.ToInt16(file, (_frame + i) * 2) / 32768f;
+        _frame += count;
+        return count;
+    }
+
+    public void Rewind() => _frame = 0;
+
+    // Optional (ISeekableAudioStream): with it the music can be sought, started from the middle and loop over a part.
+    public void Seek(long frame) => _frame = (int)Math.Clamp(frame, 0, Frames);
+
+    public void Dispose() { }
+}
+```
+
+```csharp
+AudioDecoders.Add("pcm16", bytes => new Pcm16Stream(bytes));   // once, before the game loads content
+Audio.AddMusicFile("theme", "Content/music/theme.pcm16");
+```
+
+| Member | Called | It must |
+| --- | --- | --- |
+| the function given to `Add` | when a file is registered (to check it) and each time it plays as a stream; from any thread | throw `InvalidDataException` for bytes it cannot decode |
+| `Read(buffer)` | on the game's thread, outside the simulation step, a little ahead of what plays | fill interleaved samples in -1..1 and return how many; 0 at the end |
+| `Rewind()` | when streamed music loops | go back to the first sample |
+| `Seek(frame)`, `Frames` (`ISeekableAudioStream`, optional) | on the game's thread | land on that exact frame; with them the music can be sought, started from the middle, tell its length and loop over a region |
+| `LoopRegion` (`ISeekableAudioStream`, optional) | once | give the loop the file itself names, or null |
+
+A stream has 1 or 2 channels at any rate; the mixer converts. The list of formats belongs to the process, not to one
+game object: register formats at start-up. A format registered again replaces the earlier decoder, the built-in
+ones included. Nothing of a decoder runs on the audio thread.
+
 ## A platform
+
 
 A platform is an `IPlatform`: time, events, a renderer per frame, the graphics, audio and input devices, screenshots,
 fullscreen and suspension. Writing one for a new library is a project of its own ([Writing a new

@@ -148,6 +148,25 @@ Playback speed factor; 1 is the original pitch.
 
 Stereo position, 0 (left) to 1 (right); 0.5 is centred.
 
+### <a id="MicroEngine_Audio_IAudioDevice_Play_MicroEngine_Audio_AudioClip_System_Single_System_Single_System_Single_"></a> Play\(AudioClip, float, float, float\)
+
+Plays a clip that was not loaded into the device ([LoadSound](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_)), which then holds it only while it
+plays. A device that does not implement it plays nothing.
+
+```csharp
+void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_IAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_"></a> PlayMusic\(MusicHandle, float\)
 
 Starts <code class="paramref">music</code> from the beginning, replacing the music that was playing.
@@ -181,6 +200,30 @@ Stops the music immediately.
 ```csharp
 void StopMusic()
 ```
+
+### <a id="MicroEngine_Audio_IAudioDevice_UnloadMusic_MicroEngine_Audio_MusicHandle_"></a> UnloadMusic\(MusicHandle\)
+
+Releases what [LoadMusic](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_) or [LoadMusicStream](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_) kept for <code class="paramref">music</code>; the handle plays nothing afterwards. A device that does not implement it keeps the music.
+
+```csharp
+void UnloadMusic(MusicHandle music)
+```
+
+#### Parameters
+
+`music` [MusicHandle](MicroEngine.Audio.MusicHandle.md)
+
+### <a id="MicroEngine_Audio_IAudioDevice_UnloadSound_MicroEngine_Audio_SoundHandle_"></a> UnloadSound\(SoundHandle\)
+
+Releases what [LoadSound](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_) kept for <code class="paramref">sound</code>; the handle plays nothing afterwards. A device that does not implement it keeps the sound.
+
+```csharp
+void UnloadSound(SoundHandle sound)
+```
+
+#### Parameters
+
+`sound` [SoundHandle](MicroEngine.Audio.SoundHandle.md)
 
 ### <a id="MicroEngine_Audio_IAudioDevice_Update"></a> Update\(\)
 

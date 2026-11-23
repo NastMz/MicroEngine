@@ -35,7 +35,7 @@ moment, so it belongs in `Load`, never in `Update`.
 | `AddSoundFile(name, path)` | a WAV file (PCM, 8, 16 or 24-bit, mono or stereo) as a sound effect |
 | `AddSound(name, clip)` | a sound made in code: `Synth.Render(new SfxParams { ... })` |
 | `AddMusic(name, clip)` | music made in code: `new Song(bpm).Track(...).Render()` |
-| `AddMusicFile(name, path)` | a music file: WAV everywhere, OGG on SDL and raylib, MP3 on raylib only |
+| `AddMusicFile(name, path)` | a music file: WAV, OGG or MP3, on every platform |
 
 `content.PathOf("pickup.wav")` gives the full path of a file in `Content`, and fails clearly if it is missing.
 

@@ -8,12 +8,12 @@ namespace MicroEngine.Raylib;
 
 /// <summary>
 /// raylib audio: the engine's mixer (<see cref="MixerAudioDevice"/>, the same voices, priorities and music on every
-/// backend) playing through a raylib audio stream topped up by a feeder thread. raylib also decodes MP3 music here (to
-/// memory, when it is loaded).
+/// backend) playing through a raylib audio stream topped up by a feeder thread. Files are decoded by the engine
+/// (<see cref="AudioDecoders"/>), not by raylib, so they sound the same as on every other backend.
 /// </summary>
 internal sealed class RaylibAudioDevice : MixerAudioDevice
 {
-    private RaylibAudioDevice(IAudioSink sink) : base(sink) => AddDecoder("mp3", DecodeMp3);
+    private RaylibAudioDevice(IAudioSink sink) : base(sink) { }
 
     public static IAudioDevice TryCreate() => TryCreate(new ConsoleLog());
 
@@ -32,40 +32,6 @@ internal sealed class RaylibAudioDevice : MixerAudioDevice
             log.Write(LogLevel.Warning, "audio", $"{e.Message}");
         }
         return new SilentAudioDevice();
-    }
-
-    /// <summary>MP3 through raylib's decoder, whole, into memory; streamed to the mixer from there.</summary>
-    private static unsafe IAudioStream DecodeMp3(byte[] encoded)
-    {
-        var type = stackalloc sbyte[] { (sbyte)'.', (sbyte)'m', (sbyte)'p', (sbyte)'3', 0 };
-        Raylib_cs.Wave wave;
-        fixed (byte* data = encoded) wave = Rl.LoadWaveFromMemory(type, data, encoded.Length);
-        if (wave.FrameCount == 0 || wave.Data == null) throw new InvalidDataException("raylib could not decode it as mp3.");
-        try
-        {
-            Rl.WaveFormat(ref wave, (int)wave.SampleRate, 32, (int)Math.Min(2, wave.Channels));
-            var samples = new float[wave.FrameCount * wave.Channels];
-            Marshal.Copy((nint)wave.Data, samples, 0, samples.Length);
-            return new ClipStream(new AudioClip(samples, (int)wave.SampleRate, (int)wave.Channels));
-        }
-        finally { Rl.UnloadWave(wave); }
-    }
-
-    /// <summary>A decoded clip read as a stream.</summary>
-    private sealed class ClipStream(AudioClip clip) : IAudioStream
-    {
-        private int _position;
-        public int Channels => clip.Channels;
-        public int SampleRate => clip.SampleRate;
-        public int Read(Span<float> buffer)
-        {
-            int n = Math.Min(buffer.Length / Channels * Channels, clip.Samples.Length - _position);
-            clip.Samples.AsSpan(_position, n).CopyTo(buffer);
-            _position += n;
-            return n;
-        }
-        public void Rewind() => _position = 0;
-        public void Dispose() { }
     }
 }
 

@@ -108,7 +108,14 @@ public abstract class Scene : IStateHashed
     /// <see cref="Update"/>, hashes it and disposes it. Read it first outside drawing, from <see cref="Enter"/> on.
     /// </summary>
     public ScenePhysics Physics => Systems.TryGet<ScenePhysics>(out var physics) ? physics : Systems.Add(new ScenePhysics(Game.PhysicsBackend()));
+    /// <summary>
+    /// The scene's sounds in space (<see cref="SceneAudio"/>), a system added the first time it is read: a listener and
+    /// emitters in the world's units, whose volume and pan follow where they are after every <see cref="Update"/> and
+    /// which stop when the scene leaves. Read it first outside drawing, from <see cref="Enter"/> on.
+    /// </summary>
+    public SceneAudio Sounds => Systems.GetOrAdd<SceneAudio>();
     /// <summary>Whether the scene is on the stack: from just before <see cref="Enter"/> until its systems stopped after <see cref="Exit"/>.</summary>
+
     public bool OnStack { get; private set; }
     private long _tickedAt = -1;
 

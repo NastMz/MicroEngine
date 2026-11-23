@@ -1,10 +1,10 @@
 # Audio
 
 MicroEngine audio has two halves. The core synthesizes sound effects (`Synth`) and step-sequenced music (`Song`)
-into `AudioClip`s, and decodes PCM WAV files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
+into `AudioClip`s, and decodes WAV, OGG and MP3 files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
 sounds and music, plays them by name, fades and crossfades music, and groups sounds in buses that carry effects (a
 reverb, a filter, music that drops under a voice line). Playback itself is done by the backend's
-`IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only. Every
+`IAudioDevice`, which also streams music while it plays. Every
 device is the engine's one mixer playing through the platform's output
 ([One mixer on every platform](#one-mixer-on-every-platform)).
 
@@ -75,8 +75,10 @@ registering it.
 | Member | Behaviour |
 | --- | --- |
 | `AddSound(name, clip)`, `AddMusic(name, clip, loop)` | Register clips |
-| `AddSoundFile(name, path)` | Decode a PCM WAV file as a sound |
-| `AddMusicFile(name, path, loop)` | WAV is decoded in managed code; any other extension is streamed by the device |
+| `AddSoundFile(name, path)` | Decode a WAV, OGG or MP3 file as a sound |
+| `AddMusicFile(name, path, loop, mode)` | A WAV, OGG or MP3 file as music, decoded while it plays or whole ([Sound and music files](#sound-and-music-files)) |
+| `RemoveSound(name)`, `RemoveMusic(name)` | Unregister, releasing what the mixer holds |
+| `Play(clip, ...)`, `PlayVoice(clip, parameters)` | Play a clip that is not registered (one held by an asset scope) |
 | `Play(name, volume, pitch, pitchJitter, pan)` | Plays a sound; unknown names throw. The same sound is not retriggered twice in one step |
 | `TryPlay(...)` | Same, but returns `false` for unregistered names |
 | `PlayMusic(name, fadeSeconds = 0.4f)` | Switches track (see below); playing the current track again does nothing |
@@ -182,7 +184,7 @@ nothing and returns `false`. `PlayVoice` returns `VoiceHandle.None` when every v
 plays: rain under the theme, a second layer of the same piece that fades in when the fight starts. It returns a
 `VoiceHandle` like any voice, so `Set` and `Stop(voice, fadeSeconds)` fade it. Name the `music` bus in its parameters
 to keep it with the music; it loops when the parameters say so. `MusicVolume`, `CurrentMusic` and the fades of
-`PlayMusic` are those of the music track only. Streamed music (OGG) keeps its own pitch.
+`PlayMusic` are those of the music track only. Streamed music keeps its own pitch.
 
 ## Buses and effects
 
@@ -335,6 +337,195 @@ ends a ramp that was running; a ramp stands still while its sound is paused.
 overlap: the new track is `CurrentMusic` at once and rises in a straight line while the old one falls. On a device
 without sound, and for a `Song` that is still being rendered in a browser, the music switches without the overlap.
 
+## Time: position, seeking and loops
+
+A game can read where a sound is, move it, start it from the middle or a moment later, and name the part of it that
+repeats.
+
+| Call | What it does |
+| --- | --- |
+| `Audio.MusicPosition`, `Audio.Position(voice)` | Seconds from the sound's beginning, at this update. A loop comes back to the start of its region |
+| `Audio.MusicHeardPosition`, `Audio.HeardPosition(voice)` | The same, less `Audio.OutputLatency`: what the player hears at this update |
+| `Audio.SeekMusic(seconds)`, `Audio.Seek(voice, seconds)` | Moves the sound there from this update on, exactly at the update's point in the output (streamed music far from the place gets there a few frames later: see below) |
+| `Audio.MusicSeeking`, `Audio.IsSeeking(voice)` | Whether streamed music is still on its way to the place asked for |
+| `Audio.MusicDuration`, `Audio.Duration(voice)` | The sound's length in seconds |
+| `new PlayParameters { StartAt = 12.5 }` | The sound starts that far into itself |
+| `new PlayParameters { Delay = 0.25 }` | The sound starts that long after this update, exact to the output sample. It holds a voice of its own while it waits, so sounds scheduled one after another all play |
+| `new PlayParameters { Loop = true, LoopRegion = ... }` | The part that repeats, for this play |
+
+### An intro, then a loop
+
+Music often has an opening that must play once and a body that repeats. That is one piece of music with a loop
+region: it plays from its beginning to the region's end, then goes back to the region's start every time.
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-setup -->
+```csharp
+public override void Enter()
+{
+    // The clip names the part that repeats; the music plays its intro once and then stays in that part.
+    if (!Audio.HasMusic("time-track"))
+        Audio.AddMusic("time-track", TimeSounds.Track(), loop: true);
+    Audio.PlayMusic("time-track", fadeSeconds: 0);
+}
+
+public override void Exit() => Audio.StopMusic(0.2f);
+```
+
+The region comes from the sound itself:
+
+- a WAV file's sampler chunk (`smpl`), which audio editors write when a loop is marked in them;
+- an OGG file's comments `LOOPSTART` with `LOOPLENGTH` or `LOOPEND`, in samples, as game audio tools write them;
+- `AudioClip.LoopRegion` for a clip made in code: `new AudioClip(samples) { LoopRegion = LoopRegion.FromSeconds(1, 0, rate) }`
+  (an end of 0 is the sound's end).
+
+`PlayParameters.LoopRegion` replaces it for one voice. A region is in samples of the sound, so it is exact whatever
+the output's rate; one that makes no sense (it starts past the end, or is empty) is the whole sound. MP3 files carry
+no loop points and are padded at both ends by their encoder: music that must loop without a gap is OGG or WAV.
+
+### Following the music
+
+Sound reaches the speaker later than the update that plays it (see `Audio.OutputLatency`). `MusicPosition` is where
+the music is in the mixer; `MusicHeardPosition` is where it is in the player's ears, and is the one to compare with
+what is on screen or with a key press:
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-follow -->
+```csharp
+// What the player hears at this update: the music's position less the time sound takes to reach the speaker.
+double heard = Audio.MusicHeardPosition;
+if (heard < IntroSeconds) (Beat, Phase) = (-1, 0);
+else
+{
+    double beats = (heard - IntroSeconds) / BeatSeconds;
+    Beat = (int)beats;
+    Phase = (float)(beats - Beat);
+}
+```
+
+Both follow the game's updates, not a clock of their own: an update later, the position is one update further (at
+the sound's pitch), and a scripted run reads the same values every time. A heard position is negative while a
+sound's first sample is still on its way, by the time left; so is the position of a sound waiting for its `Delay`.
+On a device without sound the music's position is the time it has played, so a game that follows its music behaves
+the same in a headless run until the music loops.
+
+The heard position is where the sound was one output latency ago, exactly. While the sound plays on it never goes
+back: after a pause it stands still that much later than the position does, after a resume it moves on that much
+later, and a change of pitch reaches it that much later. Two things make it jump, as they make the sound jump: a
+loop's seam, and a seek. After a seek the heard position goes on along the old place until the seek reaches the
+speaker, then is at the new one.
+
+Seeking is one call. A paused sound stays paused at the new place; a sound that does not loop ends as much sooner or
+later; a time past the end ends it, and past a loop's region lands inside the region:
+
+<!-- code: samples/Examples/Examples/MusicTimeExample.cs#time-seek -->
+```csharp
+if (Input.Pressed("action")) Audio.SeekMusic(0);                            // the intro again
+if (Input.Pressed("right")) Audio.SeekMusic(Audio.MusicPosition + BeatSeconds);   // one beat ahead
+```
+
+To bring the music back where a saved game left it, save `MusicPosition` and call `SeekMusic` after `PlayMusic`, or
+play it as a voice with `StartAt`.
+
+Sounds and decoded music are at the new place at once. Streamed OGG and MP3 reach a place by decoding up to it, and
+a place more than a quarter of a second of decoding away is reached over the next frames instead of holding one up:
+`SeekMusic` returns true, the music goes on playing where it was (`MusicPosition` with it), `Audio.MusicSeeking` is
+true, and a few frames later the music is at the new place, on the exact sample. Music started in its middle
+(`StartAt`) is silent until it gets there, with its position standing at the place asked for. The way is counted in
+sound, not in time (a quarter of a second of the file per frame), so a scripted run arrives at the same update every
+time: a place 90 seconds into a file is reached 360 frames later, six seconds at 60 frames per second. Register
+music with `AudioLoadMode.Decoded` when it must jump at once.
+
+
+## Sounds with a place
+
+A scene has a listener and emitters, in the units of its world (`Scene.Sounds`). After every update each emitter's
+volume follows its distance to the listener and its pan the side it is on; an emitter that follows an entity goes
+where the entity goes. Source:
+[`SpatialSoundExample.cs`](../../samples/Examples/Examples/SpatialSoundExample.cs).
+
+<!-- code: samples/Examples/Examples/SpatialSoundExample.cs#spatial-setup -->
+```csharp
+public override void Enter()
+{
+    if (!Audio.HasSound("spatial-hum"))
+    {
+        Audio.AddSound("spatial-hum", SpatialSounds.Tone(SpatialSounds.Hum, 1f));
+        Audio.AddSound("spatial-drone", SpatialSounds.Tone(SpatialSounds.DroneTone, 1f));
+        Audio.AddSound("spatial-knock", SpatialSounds.Knock());
+    }
+    _listener = Objects.Create();
+    Objects.Local(_listener).Position2D = new Vector2(60, Ground);
+    _generator = Objects.Create();
+    Objects.Local(_generator).Position2D = new Vector2(250, Ground);
+    _drone = Objects.Create();
+
+    Sounds.Follow(_listener);                 // the listener is this entity
+    Sounds.MaxDistance = 220;                 // silent from here on, in the world's units
+    Sounds.PanDistance = 160;                 // half the view: a sound at the screen's edge is all on that side
+    Generator = Sounds.Emit("spatial-hum", _generator, loop: true, volume: 0.6f);   // this entity makes this sound
+    Drone = Sounds.Emit("spatial-drone", _drone, loop: true, volume: 0.5f);
+    Drone.Rolloff = SoundRolloff.Smooth;
+}
+```
+
+<!-- code: samples/Examples/Examples/SpatialSoundExample.cs#spatial-move -->
+```csharp
+// Entities move as they always do; their sounds follow, and stop when the scene leaves.
+ref var listener = ref Objects.Local(_listener);
+listener.Position2D = new Vector2(Math.Clamp(listener.Position2D.X + Input.Axis("left", "right") * Speed * dt, 10, 310), Ground);
+_droneX = _droneX > 360 ? -40 : _droneX + 70 * dt;
+Objects.Local(_drone).Position2D = new Vector2(_droneX, 50);
+
+// A sound at a place, once: nothing to keep, it is gone when it ends.
+if (Input.Pressed("action")) Sounds.Emit("spatial-knock", listener.Position2D + new Vector2(120, 0));
+```
+
+| Member | What it does |
+| --- | --- |
+| `Sounds.Emit(sound, entity, loop, volume)` | The entity is the source of a registered sound; the emitter stops when the entity is destroyed |
+| `Sounds.Emit(sound, position, loop, volume)` | A sound at a place; move it through the emitter's `Position` |
+| `Sounds.Emit(clip, ...)` | The same for a clip that is not registered (one held by an asset scope) |
+| `Sounds.Follow(entity)`, `Sounds.Listener = point` | Who listens. With neither, the centre of the scene's `WorldCamera`; without a camera, the world's origin |
+| `Sounds.MinDistance`, `MaxDistance`, `Rolloff`, `Bus` | What new emitters start with (16, 320, `Linear`, "sfx") |
+| `Sounds.PanDistance` | The horizontal distance at which a sound is all on one side (by default each emitter's `MaxDistance`) |
+| `Sounds.Doppler`, `Sounds.SpeedOfSound` | A pitch shift by how fast a sound comes closer or goes away (off by default) |
+| `Sounds.StopAll(fade)`, `emitter.Stop(fade)` | Stop them |
+
+An emitter (`SoundEmitter`) can be changed while it plays: `Position`, `Volume`, `Pitch`, `MinDistance`,
+`MaxDistance`, `Rolloff`, `Curve`, and `Bus` and `Priority` for the next time its sound starts. It reports what the
+last update gave it (`Gain`, `Pan`, `PlayedPitch`), whether it is still in the scene (`IsActive`) and whether a
+voice plays it (`IsAudible`).
+
+**Distance.** Within `MinDistance` a sound plays at its volume; from `MaxDistance` on it is silent; between the two
+`Rolloff` shapes the fall:
+
+| `SoundRolloff` | Shape | Use it for |
+| --- | --- | --- |
+| `Linear` | a straight line | small levels, where "half way is half as loud" is easy to tune |
+| `Inverse` | one over the distance, brought to silence at the maximum: fast near the source, slow far away | open spaces, sources heard from far |
+| `Smooth` | an S: nearly full for a while, then a fall, then a gentle end | ambiences that should fill a room and end at its door |
+
+`emitter.Curve = t => ...` replaces it with a curve of the game's own: `t` is 0 at the minimum distance and 1 at the
+maximum, the result is the gain.
+
+**Voices.** An emitter out of range holds no voice, so a level can have hundreds of emitters and only those within
+earshot count against the 32 voices. A looping emitter that comes into range starts where it would be had it played
+all along, and so does a sound that plays once and comes into range part of the way through. When more loops are in
+range than there are voices, the ones that came first keep theirs and the others wait for one to be free; sounds
+that play once take voices by the usual priority rule.
+
+**Lifetime.** Emitters stop when their entity is destroyed and when the scene leaves the stack, fading out over
+`Sounds.StopFade` (a tenth of a second). A sound that plays once removes its emitter when the sound's length has
+passed on the scene's clock (at the emitter's pitch), whether it was heard or not: `IsActive` and `Emitters` are the
+same on a device that plays and on a silent one, at every update.
+
+**Scripted runs.** Emitters are sound, not state: nothing of them is in the scene's state hash, and a run on a
+silent device computes the same gains and pans and plays nothing. Do not decide anything in the game by `IsAudible`,
+which is false on a silent device.
+
+**Doppler.** With `Sounds.Doppler = 1` a sound's pitch rises as its distance to the listener shrinks and falls as it
+grows, by the ratio of that speed to `Sounds.SpeedOfSound` (world units per second, 3400 by default), kept between
+half and twice the pitch. It needs sounds that can change pitch: clips, not streamed music.
+
 ## One mixer on every platform
 
 Every audio device of the engine is the same managed mixer,
@@ -413,19 +604,76 @@ bus in its handler of `Lifecycle.FocusChanged`.
 
 ## Sound and music files
 
+Every format works for sound effects and for music, and is decoded by the same managed code on every platform, so a
+file sounds the same everywhere.
+
 | Format | Support |
 | --- | --- |
-| WAV | PCM 8, 16 or 24-bit, mono or stereo, decoded in managed code (`AudioClip.FromWav`); other WAV encodings throw `NotSupportedException` |
-| OGG | Music only, through `AddMusicFile`; streamed and decoded in managed code (NVorbis) on every platform, ahead of playback and outside the simulation step |
-| MP3 | Music only, and **raylib only** (decoded by raylib, whole, when it is loaded): the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
-
-Sound and music files can also come through `Game.Assets`, from any content source (a zip
-archive too), shared and released by scopes like any asset:
+| WAV | PCM 8, 16 or 24-bit, mono or stereo; other WAV encodings throw `NotSupportedException`. Always decoded whole. Loop points from its sampler chunk |
+| OGG | Vorbis. Loop points from its `LOOPSTART` and `LOOPLENGTH` (or `LOOPEND`) comments. The format for music that loops |
+| MP3 | MPEG layers 1 to 3. No loop points, and its encoder pads both ends with a few milliseconds of silence, so a loop has a gap |
+| your own | `AudioDecoders.Add("ext", bytes => stream)` ([a decoder of your own](extending.md#an-audio-format)) |
 
 ```csharp
-Audio.AddSound("jump", Assets.Sound("sfx/jump.wav"));
+Audio.AddSoundFile("jump", "Content/sfx/jump.ogg");                 // a sound effect: decoded whole, now
+Audio.AddMusicFile("city", "Content/music/city.ogg");               // music: decoded while it plays
+Audio.AddMusicFile("sting", "Content/music/sting.mp3", loop: false, AudioLoadMode.Decoded);
+```
+
+Music is kept one of two ways, chosen per piece:
+
+| `AudioLoadMode` | Memory | While it plays | Use it for |
+| --- | --- | --- | --- |
+| `Streamed` (the default) | the file's bytes and half a second of sound | decodes a little every frame, outside the simulation step; plays at its own pitch; a far seek arrives some frames later | long tracks |
+| `Decoded` | the whole sound: about ten megabytes per minute of stereo at 44.1 kHz | nothing to decode; changes pitch; seeks at once | short pieces, stings, anything played many times at once |
+
+Sound effects are always decoded whole. A long ambience is better registered as music and played beside the track
+with `PlayMusicVoice`, which streams it.
+
+A seek in streamed OGG or MP3 lands on the exact sample, by decoding up to it, a quarter of a second of the file per
+frame ([Following the music](#following-the-music)): no frame waits for a seek. A loop does not pay for going back
+either. In an OGG file the way back to the loop's start is found by the decoder's own seek and then made exact, so
+an intro of a minute before a loop of a few seconds costs no more than a loop over the whole file; the seam is on the
+exact sample. In an MP3 file, and for a decoder of the game's own, the way back is decoded again from the file's
+beginning while the loop plays, half a second of the file per frame: it is ready in time when the intro is at most
+thirty times as long as the loop at 60 frames per second, and beyond that the seam waits for it.
+
+A loop region of streamed music is at least a tenth of a second long: a shorter one (a file whose loop comments are
+wrong) is ignored and the whole file loops. Decoded sounds loop over regions of any length, down to two samples.
+
+**Damaged files.** A file that is not what its extension says, or is cut short or lies about its length, is refused
+when it is registered (`InvalidDataException`; `AssetLoadException` through `Game.Assets`), without decoding it and
+without allocating for the length it claims. A music file that is damaged further in is found while it plays: the
+music plays up to the damage and ends there, like a track that is over. Nothing is thrown into the game; the engine
+writes one warning naming the music to `Audio.Log` (the game's log), and `Audio.FailedStreams` counts it.
+
+### Files from content, and releasing them
+
+Sound and music files also come through `Game.Assets`, from any content source (a zip archive too), shared and
+released by scopes like any asset:
+
+```csharp
+Audio.AddSound("jump", Assets.Sound("sfx/jump.ogg"));
 Audio.AddMusic("city", Assets.Music("music/city.ogg"));
 ```
+
+A registered sound stays in memory until it is removed: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)`
+release what the mixer holds (music that was playing stops; a sound that was playing plays on to its end), and
+registering a name again releases what had it.
+
+For the sounds of one level there is nothing to register or remove: play the clip itself, and the level's scope is
+its only owner.
+
+```csharp
+_level = Assets.CreateScope("forest");
+_owl = _level.Sound("forest/owl.ogg");        // decoded once, held by the scope
+
+Audio.Play(_owl, volume: 0.6f);               // or Audio.PlayVoice(_owl, parameters) for a handle
+_level.Dispose();                             // the clip is freed once its last voice has ended
+```
+
+`Assets.Statistics.AudioBytes` tells how much decoded sound and encoded music the assets hold.
+
 
 Neon Rift registers every effect and track that way:
 
@@ -472,8 +720,12 @@ sound and resumes it when shown again.
 
 ## Limitations
 
-- No listener or emitters: a sound's position is the `pan` and `volume` the game sets (once, with a time, or every
-  update).
+- Spatial sound is 2D and by volume and pan only: no filtering with distance, no sound blocked by walls, no
+  reverberation by place. Pan is by horizontal offset; a sound above or below the listener is in the middle.
+- Emitters of a scene that is not updated (under a pause overlay) keep sounding at their last volume and pan; to
+  silence them, lower or fade their bus.
+- With more looping emitters in range than voices, the ones in range first keep their voices, not the nearest.
+
 - Effects are on buses, not on single voices: a sound that needs processing of its own plays on a bus of its own, and
   there are 32 buses. A bus has a volume and effects but no pitch.
 - A crossfade and every ramp are straight lines in gain, so two unrelated tracks dip slightly in loudness half way
@@ -483,10 +735,26 @@ sound and resumes it when shown again.
   bypass keeps it in place.
 - Without a time, volume, pan and pitch change in one step at the update that sets them: a large jump on a loud sound
   can click, so give `Set` a time or change them a little every update.
-- No playback position: a game cannot read where a sound or the music is, start it from the middle, schedule it for a
-  later moment or loop a part of it (an intro followed by a loop is two pieces of music).
-- Streamed music keeps its own pitch.
-- Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
+- A position follows the game's updates: it is exact at each update and does not move between two of them. Streamed
+  music that fell behind its decoding (a frame of several hundred milliseconds) is that much behind its position
+  until it is sought. A stream whose decoder does not know its length has no duration, cannot be sought and counts
+  its position on through its loops.
+- A loop wraps at a whole sample of the sound; played at another pitch or rate, the fraction of a sample across the
+  seam holds the last sample before it.
+- Streamed music keeps its own pitch; register it with `AudioLoadMode.Decoded` to change it.
+- A far seek in streamed OGG or MP3 is not instant: the music reaches the place four times faster than it would by
+  playing (a quarter of a second of the file per frame at 60 frames per second) and plays on where it was
+  meanwhile. Each of those frames decodes that much on the game's thread: 2 to 7 ms on a desktop for 44.1 kHz
+  stereo. `AudioEngineSettings.StreamSeekSeconds` changes the amount. Decoded music seeks at once.
+- A streamed MP3 loop whose intro is more than thirty times as long as the loop waits at the seam for the rest of
+  the way back to be decoded. OGG has no such limit.
+- The heard position remembers the last eight changes of a sound's motion (pause, resume, pitch, seek): with more
+  than eight within one output latency it is approximate until the latency has passed.
+
+- MP3 has no loop points, and an MP3 file that loops has a short gap at the seam (the padding of its encoder).
+- A sound registered by name stays in memory until `RemoveSound`; a clip played without a name is held only while
+  it plays.
+
 - Sound is not instant: it is heard after the queue that keeps pauses from being heard, 60 ms on the SDL platform
   and 100 ms in browsers. On the SDL platform a sound reaches the device about 65 ms after the update that played it
   at 60 or more frames per second and about 75 ms at 30, before the device's own buffer; a slow frame adds up to its

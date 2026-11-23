@@ -14,7 +14,7 @@ The same holds for the films about it ([films notice](../../media/LICENSE)).
 | Meadow Run, Courtyard Key, Trail Duel, Neon Rift: code, levels, characters, names, art and music made for them, and their browser builds and downloads | all rights reserved | play them, keep the copy you downloaded; read and build them to learn MicroEngine; reuse ideas, techniques and mechanics in original games. Not redistribute, sell, or republish them under another name |
 | The films about MicroEngine: their sources and the rendered videos | all rights reserved ([films notice](../../media/LICENSE)) | watch them, link to them, read their sources |
 | Third-party art and audio in the demos | CC0 1.0, credited on each game's credits page | what CC0 allows (anything) |
-| Third-party libraries: SDL 3, ppy.SDL3-CS, NVorbis, raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
+| Third-party libraries: SDL 3, ppy.SDL3-CS, NVorbis, NLayer, raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
 
 ## Making and selling games
 
@@ -28,7 +28,7 @@ you: every package has `THIRD-PARTY-NOTICES.txt` and a `licenses/` folder next t
 
 - MicroEngine: include the MIT License text with its copyright line, for example in a `licenses` folder or on a
   credits screen. You do not have to show "Made with MicroEngine" (it is welcome).
-- SDL 3, ppy.SDL3-CS, NVorbis, raylib, Raylib-cs, the .NET runtime and, for browser builds, Emscripten: include their notices. The
+- SDL 3, ppy.SDL3-CS, NVorbis, NLayer (the MP3 decoder, MIT), raylib, Raylib-cs, the .NET runtime and, for browser builds, Emscripten: include their notices. The
   [third-party notices](../../THIRD-PARTY-NOTICES.md) list them, with their licence texts.
 
 ## Forks and modified engines

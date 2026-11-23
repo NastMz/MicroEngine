@@ -8,8 +8,9 @@ Guide: [Audio](../manual/audio.md)
 
 An [IAudioDevice](MicroEngine.Audio.IAudioDevice.md) over the engine's one mixer ([AudioEngine](MicroEngine.Audio.AudioEngine.md)) and a PCM sink: every backend
 device is one of these with its own sink, so voices, priorities, stealing, music and fades behave the same
-everywhere. Music decodes in managed code: WAV, OGG Vorbis (streamed, decoded ahead outside the simulation step), and
-formats a backend adds ([AddDecoder](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_AddDecoder_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__)).
+everywhere. Music decodes in managed code, streamed and decoded ahead outside the simulation step: the formats of
+[AudioDecoders](MicroEngine.Audio.AudioDecoders.md) (WAV, OGG Vorbis, MP3 and what a game registers), and formats a backend adds for itself
+([AddDecoder](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_AddDecoder_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__)).
 
 ```csharp
 public class MixerAudioDevice : IAudioDevice, IDisposable
@@ -89,9 +90,22 @@ public virtual bool IsAvailable { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Audio_MixerAudioDevice_Loaded"></a> Loaded
+
+Sounds and music loaded now (unloaded ones not counted).
+
+```csharp
+public (int Sounds, int Music) Loaded { get; }
+```
+
+#### Property Value
+
+ \([int](https://learn.microsoft.com/dotnet/api/system.int32) [Sounds](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.sounds), [int](https://learn.microsoft.com/dotnet/api/system.int32) [Music](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.music)\)
+
 ### <a id="MicroEngine_Audio_MixerAudioDevice_MusicFormats"></a> MusicFormats
 
-The formats [LoadMusicStream](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_) decodes, lower case: "wav", "ogg" and any a backend added.
+The formats [LoadMusicStream](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_) decodes, lower case in alphabetical order: those of
+[AudioDecoders](MicroEngine.Audio.AudioDecoders.md) ("mp3", "ogg", "wav" and what a game registered) and any this backend added.
 
 ```csharp
 public IReadOnlyList<string> MusicFormats { get; }
@@ -101,11 +115,25 @@ public IReadOnlyList<string> MusicFormats { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
+### <a id="MicroEngine_Audio_MixerAudioDevice_MusicVoice"></a> MusicVoice
+
+The voice of the music [PlayMusic](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_) started, for the mixer's calls (its position, a seek); stale once the music stopped or ended.
+
+```csharp
+public VoiceHandle MusicVoice { get; }
+```
+
+#### Property Value
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Audio_MixerAudioDevice_AddDecoder_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__"></a> AddDecoder\(string, Func<byte\[\], IAudioStream\>\)
 
-Adds a music format the device decodes (a backend's native decoder, for example).
+Adds a music format only this device decodes (a backend's native decoder), for a format
+[AudioDecoders](MicroEngine.Audio.AudioDecoders.md) does not have: a format registered there is decoded by that decoder on every
+device, so a file sounds the same on all of them.
 
 ```csharp
 protected void AddDecoder(string format, Func<byte[], IAudioStream> open)
@@ -187,7 +215,9 @@ Whether the music restarts when it reaches its end.
 
 ### <a id="MicroEngine_Audio_MixerAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_"></a> LoadMusicStream\(string, byte\[\], string, bool\)
 
-Loads music to stream: "wav" is decoded now; "ogg" and the formats a backend added are decoded while they play.
+Loads music to stream, decoded while it plays: any format of [MusicFormats](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_MusicFormats) ("wav" is decoded now).
+A format of [AudioDecoders](MicroEngine.Audio.AudioDecoders.md) is decoded by that decoder; a backend's own decoder serves only a
+format that list lacks.
 
 ```csharp
 public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true)
@@ -273,6 +303,24 @@ Playback speed factor; 1 is the original pitch.
 
 Stereo position, 0 (left) to 1 (right); 0.5 is centred.
 
+### <a id="MicroEngine_Audio_MixerAudioDevice_Play_MicroEngine_Audio_AudioClip_System_Single_System_Single_System_Single_"></a> Play\(AudioClip, float, float, float\)
+
+Plays a clip that was not loaded into the device: it holds the clip only while a voice plays it.
+
+```csharp
+public virtual void Play(AudioClip clip, float volume = 1, float pitch = 1, float pan = 0.5)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Audio_MixerAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_"></a> PlayMusic\(MusicHandle, float\)
 
 Starts <code class="paramref">music</code> from the beginning, replacing the music that was playing.
@@ -300,6 +348,33 @@ public virtual VoiceHandle PlayMusicVoice(MusicHandle music, in PlayParameters p
 #### Parameters
 
 `music` [MusicHandle](MicroEngine.Audio.MusicHandle.md)
+
+`parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
+
+#### Returns
+
+ [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+Its handle, or [None](MicroEngine.Audio.VoiceHandle.md#MicroEngine_Audio_VoiceHandle_None) when the voice policy refused it.
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The bus does not exist.
+
+### <a id="MicroEngine_Audio_MixerAudioDevice_PlayVoice_MicroEngine_Audio_AudioClip_MicroEngine_Audio_PlayParameters__"></a> PlayVoice\(AudioClip, in PlayParameters\)
+
+Plays a clip that was not loaded into the device as a voice of the mixer, exactly as
+<code class="paramref">parameters</code> say; the device holds the clip only while the voice plays it.
+
+```csharp
+public virtual VoiceHandle PlayVoice(AudioClip clip, in PlayParameters parameters)
+```
+
+#### Parameters
+
+`clip` [AudioClip](MicroEngine.Audio.AudioClip.md)
 
 `parameters` [PlayParameters](MicroEngine.Audio.PlayParameters.md)
 
@@ -369,6 +444,32 @@ Stops the music immediately.
 ```csharp
 public void StopMusic()
 ```
+
+### <a id="MicroEngine_Audio_MixerAudioDevice_UnloadMusic_MicroEngine_Audio_MusicHandle_"></a> UnloadMusic\(MusicHandle\)
+
+Forgets loaded music: the device no longer holds its samples or its file's bytes, and its handle plays nothing
+from now on. If it is the music playing, it stops; a voice playing it beside the music plays on to its end.
+
+```csharp
+public void UnloadMusic(MusicHandle music)
+```
+
+#### Parameters
+
+`music` [MusicHandle](MicroEngine.Audio.MusicHandle.md)
+
+### <a id="MicroEngine_Audio_MixerAudioDevice_UnloadSound_MicroEngine_Audio_SoundHandle_"></a> UnloadSound\(SoundHandle\)
+
+Forgets a loaded sound: the device no longer holds its samples, and its handle plays nothing from now on. A
+voice already playing it plays on to its end.
+
+```csharp
+public void UnloadSound(SoundHandle sound)
+```
+
+#### Parameters
+
+`sound` [SoundHandle](MicroEngine.Audio.SoundHandle.md)
 
 ### <a id="MicroEngine_Audio_MixerAudioDevice_Update"></a> Update\(\)
 

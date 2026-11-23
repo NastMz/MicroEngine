@@ -472,7 +472,7 @@ The file is missing, wrongly cased, not a compiled shader, or not a fragment sha
 
 ### <a id="MicroEngine_Core_AssetCache_Music_System_String_"></a> Music\(string\)
 
-The music file at <code class="paramref">path</code> (OGG, WAV; MP3 on raylib), read whole and decoded while it plays; play
+The music file at <code class="paramref">path</code> (OGG, MP3, WAV or a format registered in <code>AudioDecoders</code>), read whole and decoded while it plays; play
 it with <code>Audio.AddMusic(name, music)</code>.
 
 ```csharp
@@ -667,7 +667,9 @@ The file or an image it names is missing or invalid, or no loader reads that kin
 
 ### <a id="MicroEngine_Core_AssetCache_Sound_System_String_"></a> Sound\(string\)
 
-The PCM WAV file at <code class="paramref">path</code> decoded into a clip, shared and released like any asset; play it with <code>Audio.AddSound(name, clip)</code>.
+The sound file at <code class="paramref">path</code> (WAV, OGG, MP3 or a format registered in <code>AudioDecoders</code>) decoded
+whole into a clip, shared and released like any asset. Play it with <code>Audio.Play(clip)</code>, which keeps nothing
+once it has played, or register it with <code>Audio.AddSound(name, clip)</code>.
 
 ```csharp
 public AudioClip Sound(string path)
@@ -685,7 +687,7 @@ public AudioClip Sound(string path)
 
  [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
-The file is missing, wrongly cased or not an 8, 16 or 24-bit PCM WAV.
+The file is missing, wrongly cased or cannot be decoded as its format.
 
 ### <a id="MicroEngine_Core_AssetCache_Text_System_String_"></a> Text\(string\)
 

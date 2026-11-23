@@ -47,7 +47,7 @@ public static class Synth
     /// <summary>Synthesizes a mono sound effect. The same parameters always produce the same samples.</summary>
     /// <param name="p">The sound description.</param>
     /// <param name="sampleRate">Samples per second of the result.</param>
-    /// <returns>A mono clip, ready for <see cref="AudioMixer.AddSound"/>.</returns>
+    /// <returns>A mono clip, ready for <see cref="AudioMixer.AddSound(string, AudioClip)"/>.</returns>
     public static AudioClip Render(SfxParams p, int sampleRate = AudioClip.DefaultSampleRate)
     {
         ArgumentNullException.ThrowIfNull(p);

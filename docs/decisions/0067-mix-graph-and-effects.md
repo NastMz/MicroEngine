@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-11-19). The SDK is in Alpha. Evidence: [AUDIO-2](../evaluations/audio-2.md). Issue
+Accepted (2026-11-19). Completed (2026-11-22) by [ADR 0072](0072-audio-time-formats-and-spatial-sound.md): playback
+position, loop regions, the decoder list, MP3, unloading and spatial sound. The SDK is in Alpha. Evidence: [AUDIO-2](../evaluations/audio-2.md). Issue
 NastMz/MicroEngine#177, part of [CONSOLIDATION-1](../evaluations/consolidation-1.md). Builds on
 [ADR 0033](0033-one-mixer-over-pcm-sinks.md), whose mixer, command queue and `IAudioSink` v1 are unchanged, and amends
 its "buses are volumes" consequence.

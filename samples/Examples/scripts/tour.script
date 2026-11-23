@@ -241,4 +241,15 @@
 4830 press confirm
 4890 capture 40-mip-levels.png
 4896 press pause
-4910 quit
+4910 press down
+4920 press confirm
+4980 capture 41-music-time.png
+4986 press pause
+5000 press down
+5010 press confirm
+5040 hold right 60
+5130 capture 42-spatial-sound.png
+5136 press pause
+5150 quit
+
+

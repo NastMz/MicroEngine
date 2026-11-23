@@ -41,7 +41,7 @@ public static class AudioAssetLoaders
     public static void Register(AssetLoaderRegistry loaders)
     {
         // Both touch only the content, so a preload decodes them on a worker thread.
-        loaders.Add(AssetLoader.Background<AudioClip>(Sound, c => AudioClip.FromWav(c.ReadBytes()), [".wav"], clip => clip.Samples.LongLength * sizeof(float)));
+        loaders.Add(AssetLoader.Background<AudioClip>(Sound, c => AudioDecoders.Decode(c.ReadBytes(), Path.GetExtension(c.Path) is { Length: > 1 } e ? e : "wav", c.Path), [".wav"], clip => clip.Samples.LongLength * sizeof(float)));
         loaders.Add(AssetLoader.Background<EncodedAudio>(Music, c => new EncodedAudio(c.ReadBytes(), Path.GetExtension(c.Path) is { Length: > 1 } e ? e : "wav"),
             [".ogg", ".mp3"], music => music.Data.LongLength));
     }

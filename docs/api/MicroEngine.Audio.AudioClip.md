@@ -91,6 +91,32 @@ public double Duration { get; }
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
 
+### <a id="MicroEngine_Audio_AudioClip_LoopRegion"></a> LoopRegion
+
+The part of the clip that repeats when it plays looping (an intro before it plays once), or null for the whole
+clip. [FromWav](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_FromWav_System_ReadOnlySpan_System_Byte__) reads it from the file's sampler chunk; [LoopRegion](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_LoopRegion)
+replaces it for one play.
+
+```csharp
+public LoopRegion? LoopRegion { get; init; }
+```
+
+#### Property Value
+
+ [LoopRegion](MicroEngine.Audio.LoopRegion.md)?
+
+### <a id="MicroEngine_Audio_AudioClip_Name"></a> Name
+
+A name for diagnostics (the content path of a clip loaded from a file), or null.
+
+```csharp
+public string? Name { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Audio_AudioClip_Peak"></a> Peak
 
 The largest absolute sample value (0 for an empty clip). Computed on every read.
@@ -131,7 +157,9 @@ public float[] Samples { get; }
 
 ### <a id="MicroEngine_Audio_AudioClip_FromWav_System_ReadOnlySpan_System_Byte__"></a> FromWav\(ReadOnlySpan<byte\>\)
 
-Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo).
+Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo). The first loop of a sampler chunk ("smpl"),
+which audio editors write for loop points, becomes the clip's [LoopRegion](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_LoopRegion) when it is at least two
+frames long and starts within the sound.
 
 ```csharp
 public static AudioClip FromWav(ReadOnlySpan<byte> data)
@@ -144,6 +172,16 @@ public static AudioClip FromWav(ReadOnlySpan<byte> data)
 #### Returns
 
  [AudioClip](MicroEngine.Audio.AudioClip.md)
+
+#### Exceptions
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The bytes are not a WAV file, or it is cut short.
+
+ [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
+
+The WAV is not PCM, has more than two channels or another sample size.
 
 ### <a id="MicroEngine_Audio_AudioClip_ToWav"></a> ToWav\(\)
 
