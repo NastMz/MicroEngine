@@ -15,6 +15,12 @@ public enum CharacterEvents
 
 ## Fields
 
+`CornerCorrected = 128` 
+
+Its rise was about to clip the corner of a ceiling and it was moved sideways past it.
+
+
+
 `DroppedThrough = 32` 
 
 It started falling through the one-way platform it stood on.
@@ -54,5 +60,11 @@ It stood on ground and no longer does (a jump, a drop, a ledge, a launch).
 `None = 0` 
 
 Nothing.
+
+
+
+`Skidded = 64` 
+
+It skidded in this step: on the ground, braking against its motion before it turns.
 
 </div>

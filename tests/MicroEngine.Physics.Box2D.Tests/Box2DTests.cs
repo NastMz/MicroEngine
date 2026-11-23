@@ -113,8 +113,9 @@ public sealed class Box2DPhysicsWorldTests
         Assert.AreEqual(PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Circles | PhysicsCapabilities.Capsules
             | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
             | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
-            | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail | PhysicsCapabilities.FilterPredicates, world.Capabilities);
-        Assert.AreEqual(0, (int)(world.Capabilities & (PhysicsCapabilities.TileGeometry | PhysicsCapabilities.MovingSolids)));
+            | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail | PhysicsCapabilities.FilterPredicates | PhysicsCapabilities.TileGeometry
+            | PhysicsCapabilities.TileSlopes, world.Capabilities);
+        Assert.AreEqual(0, (int)(world.Capabilities & PhysicsCapabilities.MovingSolids));
         Assert.AreEqual(0.015f, world.Skin, 1e-6f);
         Assert.AreEqual(new Vector2(0, 1), world.Up);
         Assert.AreEqual("3.2.0", Box2DPhysicsWorld2D.Box2DVersion);

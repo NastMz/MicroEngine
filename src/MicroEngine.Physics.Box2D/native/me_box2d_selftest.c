@@ -7,6 +7,8 @@
 //        me_box2d_selftest bench N S  N boxes, S steps: also prints the mean time per step (informative)
 #include "me_box2d.h"
 
+#include "box2d/base.h"
+
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -395,6 +397,67 @@ static void query_checks( void )
 	me_world_destroy( w );
 }
 
+// Tile geometry as chains: a mover lands on it and walks its whole length, a dynamic box slides along it without
+// catching, a ray hits it from outside, and Box2D's own API is exported next to the layer.
+static void tile_checks( void )
+{
+	const float tol = me_move_skin() + 1e-4f;
+	MeWorld* w = me_world_create( 0.0f, -10.0f, 4, 1 );
+	int level = me_body_create( w, ME_STATIC, 0.0f, 0.0f, 0.0f, 0 );
+	// A floor 8 m long and 0.5 m thick whose top is at y 0, with a step up at x 6, as one loop that keeps the solid
+	// on its left; and a one-way platform over it.
+	float points[12] = { 0.0f, -0.5f, 8.0f, -0.5f, 8.0f, 0.5f, 6.0f, 0.5f, 6.0f, 0.0f, 0.0f, 0.0f };
+	int counts[1] = { 6 }, oneWay = -1;
+	float platform[4] = { 1.0f, 1.375f, 3.0f, 1.5f };
+	int tiles = me_tiles_create( w, level, points, counts, 1, platform, 1, STATIC_LAYER, ALL, &oneWay );
+	int playerShape = box( w, ME_KINEMATIC, 0.8f, 1.2f, 0.4f, 0.8f, STATIC_LAYER, ALL, ME_SENSOR_EVENTS );
+	int player = 1;
+	float xy[2], normals[32], out[8];
+	int shapes[16], n;
+	me_move( w, player, playerShape, 0.0f, -1.0f, STATIC_LAYER, ALL, 0, xy, shapes, normals, 16 );
+	float gap = player_bottom( w, player );
+	n = me_move( w, player, playerShape, 6.0f, 0.0f, STATIC_LAYER, ALL, 0, xy, shapes, normals, 16 );
+	check( "tiles.mover", tiles >= 0 && oneWay >= 0 && gap >= 0 && gap <= tol && fabsf( xy[0] - 5.8f ) <= tol && has_contact( shapes, n, tiles ),
+		DETAIL( "gap %.5f, x %.4f", gap, xy[0] ) );
+	me_body_set_position( w, player, 2.0f, 2.0f );
+	me_move( w, player, playerShape, 0.0f, -1.0f, STATIC_LAYER, ALL, 0, xy, shapes, normals, 16 );
+	gap = player_bottom( w, player ) - 1.5f;
+	check( "tiles.one-way", gap >= 0 && gap <= tol, DETAIL( "gap %.5f", gap ) );
+
+	int hit = me_ray_cast( w, 4.0f, 2.0f, 0.0f, -4.0f, STATIC_LAYER, ALL, 0, out );
+	check( "tiles.ray", hit == tiles && fabsf( out[1] ) < 1e-4f && fabsf( out[3] - 1.0f ) < 1e-3f && me_ray_cast( w, 4.0f, -0.25f, 0.0f, 2.0f, STATIC_LAYER, ALL, 0, out ) == -1,
+		DETAIL( "hit %d at y %.4f", hit, out[1] ) );
+
+	// A box with no friction slides 5 m in a second along the floor: its speed and its height never change.
+	int body = me_body_create( w, ME_DYNAMIC, 0.5f, 0.25f, 0.0f, 0 );
+	float g[4] = { 0.25f, 0.25f, 0.0f, 0.0f };
+	me_shape_create( w, body, ME_BOX, g, 0, 0.0f, STATIC_LAYER, ALL, 0, -1.0f, 0.0f, -1.0f );
+	for ( int i = 0; i < 30; ++i )
+		me_world_step( w, 1.0f / 60.0f );
+	me_body_set_velocity( w, body, 5.0f, 0.0f );
+	float slowest = 5.0f, highest = 0.0f, s[6];
+	for ( int i = 0; i < 60; ++i )
+	{
+		me_world_step( w, 1.0f / 60.0f );
+		me_body_state( w, body, s );
+		slowest = fminf( slowest, s[3] );
+		highest = fmaxf( highest, fabsf( s[4] ) );
+	}
+	check( "tiles.slide", slowest > 4.99f && highest < 0.05f && fabsf( s[0] - 5.5f ) < 0.05f, DETAIL( "slowest %.4f, up %.4f, x %.4f", slowest, highest, s[0] ) );
+
+	// The ids of Box2D, and one of its own functions called through the library's exports.
+	unsigned char id[8] = { 0 };
+	int ok = me_native_id( w, 0, 0, id ) && me_native_id( w, 1, body, id ) && me_native_id( w, 2, tiles, id ) == 0;
+	b2Version v = b2GetVersion();
+	check( "native.ids", ok && v.major * 10000 + v.minor * 100 + v.revision == me_box2d_version(), DETAIL( "Box2D %d.%d.%d", v.major, v.minor, v.revision ) );
+
+	me_shape_destroy( w, tiles );
+	me_shape_destroy( w, oneWay );
+	hit = me_ray_cast( w, 4.0f, 2.0f, 0.0f, -4.0f, STATIC_LAYER, ALL, 0, out );
+	check( "tiles.destroyed", hit == -1, DETAIL( "%d", hit ) );
+	me_world_destroy( w );
+}
+
 int main( int argc, char** argv )
 {
 	printf( "me_box2d api %d, Box2D %d, skin %.4f m\n", me_api_version(), me_box2d_version(), me_move_skin() );
@@ -403,6 +466,7 @@ int main( int argc, char** argv )
 	capability_checks();
 	dynamics_and_joint_checks();
 	query_checks();
+	tile_checks();
 	double ms;
 	uint64_t h = bench( 500, 600, &ms );
 	printf( "determinism %016llx (500 boxes, 600 steps)\n", (unsigned long long)h );

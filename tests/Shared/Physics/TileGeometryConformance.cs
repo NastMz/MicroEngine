@@ -6,7 +6,8 @@ namespace MicroEngine.Testing.Physics;
 
 /// <summary>
 /// Tile geometry: tile grids fed directly into a world as static geometry. Solid cells block from every side, one-way
-/// cells are one-way platforms, other cells are not geometry, and changing a tile changes collisions at once.
+/// cells are one-way platforms, other cells are not geometry, and changing a tile changes collisions (at once on a
+/// backend that reads the grid at every query, after the tiles are added again on one that builds shapes from them).
 /// </summary>
 /// <remarks>Grids are 16-unit tiles in pixel space (Y down), so this suite runs at <see cref="PhysicsConformanceHelpers.Scale"/> 1.</remarks>
 public abstract class TileGeometryConformance : CapabilityConformance
@@ -15,6 +16,9 @@ public abstract class TileGeometryConformance : CapabilityConformance
 
     /// <summary>Adds <paramref name="grid"/> to the static <paramref name="body"/> with the backend's own call.</summary>
     protected abstract ShapeId AddTiles(IPhysicsWorld2D world, BodyId body, ICollisionGrid grid);
+
+    /// <summary>Whether the backend reads the grid at every query (true) or builds shapes from it when it is added.</summary>
+    protected virtual bool ReadsTilesLive => true;
 
     private static readonly Dictionary<char, int> Legend = new() { ['#'] = 1, ['='] = 2, ['^'] = 3 };
     private static readonly Dictionary<int, TileFlags> Flags = new() { [1] = TileFlags.Solid, [2] = TileFlags.OneWay, [3] = TileFlags.Hazard };
@@ -40,10 +44,10 @@ public abstract class TileGeometryConformance : CapabilityConformance
         var (world, tiles, _) = Map("......#", "......#", "#######");
         var player = Player(world, 2, 0);
         var land = world.Move(player, new Vector2(0, 40));
-        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Rounding, land.ToString());
+        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Tolerance(world), land.ToString());
         Assert.IsTrue(land.OnGround && land.Ground == tiles, land.ToString());
         var walk = world.Move(player, new Vector2(200, 0));
-        Assert.AreEqual(96 - 6, world.PositionOf(player).X, Rounding, "flush with the tile wall at x 96");
+        Assert.AreEqual(96 - 6, world.PositionOf(player).X, Tolerance(world), "flush with the tile wall at x 96");
         Assert.IsTrue(walk.HitWall && walk.OnGround, walk.ToString());
     }
 
@@ -53,7 +57,7 @@ public abstract class TileGeometryConformance : CapabilityConformance
         var (world, _, _) = Map(".", ".", ".", ".", ".", "#");
         var player = Player(world, 2, 0);
         var fall = world.Move(player, new Vector2(0, 500));
-        Assert.AreEqual(80 - 7, world.PositionOf(player).Y, Rounding, fall.ToString());
+        Assert.AreEqual(80 - 7, world.PositionOf(player).Y, Tolerance(world), fall.ToString());
     }
 
     [TestMethod]
@@ -62,23 +66,34 @@ public abstract class TileGeometryConformance : CapabilityConformance
         var (world, tiles, _) = Map("....", "....", "====", "....", "^^^^");
         var player = Player(world, 0, 10);
         var land = world.Move(player, new Vector2(0, 20));
-        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Rounding, $"lands on the one-way row: {land}");
+        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Tolerance(world), $"lands on the one-way row: {land}");
         Assert.IsTrue(land.OnGround && land.Ground == tiles);
         var drop = world.Move(player, new Vector2(0, 40), new QueryFilter { PassOneWay = true });
-        Assert.AreEqual(25 + 40, world.PositionOf(player).Y, Rounding, $"drops through, and through the hazards: {drop}");
+        Assert.AreEqual(25 + 40, world.PositionOf(player).Y, Tolerance(world), $"drops through, and through the hazards: {drop}");
         world.SetPosition(player, new Vector2(6, 60));
         var jump = world.Move(player, new Vector2(0, -40));
-        Assert.AreEqual(20, world.PositionOf(player).Y, Rounding, $"jumps up through: {jump}");
+        Assert.AreEqual(20, world.PositionOf(player).Y, Tolerance(world), $"jumps up through: {jump}");
     }
 
     [TestMethod]
     public void Changing_a_tile_changes_collisions_at_once()
     {
-        var (world, _, grid) = Map("....", "....", "....");
+        var (world, tiles, grid) = Map("....", "....", "....");
         var player = Player(world, 0, 0);
         grid.Layer[0, 2] = 1;
+        if (!ReadsTilesLive)
+        {
+            // The tiles were read when they were added: before they are added again nothing has changed.
+            var before = world.Move(player, new Vector2(0, 30));
+            Assert.AreEqual(37, world.PositionOf(player).Y, Tolerance(world), before.ToString());
+            world.SetPosition(player, new Vector2(6, 7));
+            var body = world.BodyOf(tiles);
+            world.RemoveShape(tiles);
+            Assert.IsFalse(world.IsAlive(tiles));
+            AddTiles(world, body, grid);
+        }
         world.Move(player, new Vector2(0, 40));
-        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Rounding);
+        Assert.AreEqual(32 - 7, world.PositionOf(player).Y, Tolerance(world));
     }
 
     [TestMethod]

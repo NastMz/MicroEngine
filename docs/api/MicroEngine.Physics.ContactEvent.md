@@ -128,6 +128,18 @@ public EntityId OwnerB { get; init; }
 
  [EntityId](MicroEngine.Scenes.EntityId.md)
 
+### <a id="MicroEngine_Physics_ContactEvent_Point"></a> Point
+
+For a begin, where the two shapes touch (the middle of the contact when it has two points), a world point; zero for an end.
+
+```csharp
+public Vector2 Point { get; init; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ## Methods
 
 ### <a id="MicroEngine_Physics_ContactEvent_Deconstruct_MicroEngine_Physics_ContactEventKind__MicroEngine_Physics_ShapeId__MicroEngine_Physics_ShapeId__MicroEngine_Scenes_EntityId__MicroEngine_Scenes_EntityId__System_Numerics_Vector2__"></a> Deconstruct\(out ContactEventKind, out ShapeId, out ShapeId, out EntityId, out EntityId, out Vector2\)

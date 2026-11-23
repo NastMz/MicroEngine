@@ -57,6 +57,22 @@ Blocks only bodies moving down onto its top edge (jump-through platform).
 
 
 
+`SlopeLeft = 512` 
+
+A slope that rises to the left: the half of the tile under the line from its upper left corner to its lower
+right one is solid. Geometry only on a backend that declares
+[TileSlopes](MicroEngine.Physics.PhysicsCapabilities.md).
+
+
+
+`SlopeRight = 256` 
+
+A slope that rises to the right: the half of the tile under the line from its lower left corner to its upper
+right one is solid. Geometry only on a backend that declares
+[TileSlopes](MicroEngine.Physics.PhysicsCapabilities.md).
+
+
+
 `Solid = 1` 
 
 Blocks movement from every side.

@@ -23,8 +23,8 @@ public static class PhysicsContract
 
 2: version 1 (the common core and capabilities of the first two backends) plus tile geometry as a contract member
 ([AddTiles](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_Int32_System_Int32_System_UInt64_System_UInt64_)), dynamics control (forces, impulses, torque, angular velocity,
-[BodyDynamics](MicroEngine.Physics.BodyDynamics.md), sleep, mass data), joints, shape casts, point and circle queries, all-hits rays and
-contact details. Every member added since version 1 has a default that refuses with the capability it needs, so
+[BodyDynamics](MicroEngine.Physics.BodyDynamics.md), sleep, mass data), joints, shape queries (cast shapes, every hit of a ray, shape and
+point overlaps, the nearest surface) and contact detail (impacts, contact points). Every member added since version 1 has a default that refuses with the capability it needs, so
 a backend written for version 1 still compiles and declares what it implements.
 
 ```csharp

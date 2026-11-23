@@ -98,6 +98,25 @@ public bool PassOneWay { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Physics_QueryFilter_Where"></a> Where
+
+Leaves single shapes out, whatever their layers: a move or a query considers a shape only when this returns
+true for it (null, the default, considers every shape the layers accept). For what layers cannot say: a ray
+that must skip the body that fires it, a block that is solid only for a character that comes from below. It
+needs [FilterPredicates](MicroEngine.Physics.PhysicsCapabilities.md), which both of the engine's backends declare. It is
+called before the move or the query runs, once per shape near it; it may read the world
+([BodyOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_BodyOf_MicroEngine_Physics_ShapeId_), [PositionOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_PositionOf_MicroEngine_Physics_BodyId_),
+[BoundsOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_BoundsOf_MicroEngine_Physics_ShapeId_)) but must not query or change it. Keep the delegate in a field: one made
+in every step allocates in every step.
+
+```csharp
+public Func<ShapeId, bool>? Where { get; init; }
+```
+
+#### Property Value
+
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[ShapeId](MicroEngine.Physics.ShapeId.md), [bool](https://learn.microsoft.com/dotnet/api/system.boolean)\>?
+
 ## Methods
 
 ### <a id="MicroEngine_Physics_QueryFilter_Accepts_System_UInt64_System_UInt64_"></a> Accepts\(ulong, ulong\)
@@ -113,6 +132,22 @@ public bool Accepts(ulong category, ulong mask)
 `category` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
 
 `mask` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Physics_QueryFilter_Considers_MicroEngine_Physics_ShapeId_"></a> Considers\(ShapeId\)
+
+Whether [Where](MicroEngine.Physics.QueryFilter.md#MicroEngine_Physics_QueryFilter_Where) leaves <code class="paramref">shape</code> in (true without a predicate).
+
+```csharp
+public bool Considers(ShapeId shape)
+```
+
+#### Parameters
+
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 #### Returns
 

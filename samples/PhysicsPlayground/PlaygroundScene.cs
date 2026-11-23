@@ -103,6 +103,7 @@ public sealed class PlaygroundScene : Scene
         #region drive
         if (Input.Pressed("pause")) { Game.Quit(); return; }
         if (Input.Pressed("up")) { Game.Scenes.Push(new ClassicScene()); return; }   // the character room
+        if (Input.Pressed("down")) { Game.Scenes.Push(new TileScene()); return; }    // the tile level
         var world = Physics.World;
 
         // Throttle: the wheels' motors aim for a speed; the joints do the rest.
@@ -204,7 +205,7 @@ public sealed class PlaygroundScene : Scene
             foreach (var hit in Beam) r.FillCircle(hit.Point, 2, Color.Hex("f4f4f4"));
         }
         foreach (var (at, left) in _sparks) r.FillCircle(at, 1 + left * 12, Color.Hex("ef7d57"));
-        Font.Draw(r, "DRIVE: LEFT/RIGHT   HOP: Z   BLAST: X   CHARACTER: UP", new Vector2(14, 12), Color.White);
+        Font.Draw(r, "DRIVE: LEFT/RIGHT   HOP: Z   BLAST: X   MORE: UP, DOWN", new Vector2(14, 12), Color.White);
         Font.Draw(r, $"IMPACTS {Impacts}", new Vector2(14, 22), Color.Hex("94b0c2"));
     }
 }

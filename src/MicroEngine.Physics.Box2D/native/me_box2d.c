@@ -24,6 +24,8 @@
 #define ME_TOUCH ( 0.1f * ME_SLOP + 1e-4f )
 #define ME_MAX_PLANES 16
 #define ME_MOVER_ITERATIONS 5
+// The kind of a handle made by me_tiles_create (after MeShapeKind's values).
+#define ME_TILES 4
 
 typedef struct
 {
@@ -34,11 +36,15 @@ typedef struct
 
 typedef struct
 {
-	b2ShapeId id;
+	b2ShapeId id; // the Box2D shape; for tile geometry, the first one-way box or null
 	int alive;
 	int body;
 	int kind;
 	int flags;
+	// Tile geometry (ME_TILES): a handle stands for many Box2D shapes, the segments of its chains or its boxes.
+	b2ChainId* chains;
+	b2ShapeId* parts;
+	int chainCount, partCount;
 } MeShape;
 
 typedef struct
@@ -199,6 +205,11 @@ ME_API void me_world_destroy( MeWorld* w )
 	if ( w == NULL )
 		return;
 	b2DestroyWorld( w->id );
+	for ( int i = 0; i < w->shapeCount; ++i )
+	{
+		free( w->shapes[i].chains );
+		free( w->shapes[i].parts );
+	}
 	free( w->bodies );
 	free( w->shapes );
 	free( w->scratch );
@@ -207,6 +218,34 @@ ME_API void me_world_destroy( MeWorld* w )
 	free( w->contacts );
 	free( w->ignored );
 	free( w );
+}
+
+ME_API int me_native_id( MeWorld* w, int kind, int handle, void* out8 )
+{
+	memset( out8, 0, 8 );
+	switch ( kind )
+	{
+		case 0:
+			memcpy( out8, &w->id, sizeof( b2WorldId ) );
+			return 1;
+		case 1:
+			if ( is_live_body( w, handle ) == 0 )
+				return 0;
+			memcpy( out8, &w->bodies[handle].id, sizeof( b2BodyId ) );
+			return 1;
+		case 2:
+			if ( is_live_shape( w, handle ) == 0 || B2_IS_NULL( w->shapes[handle].id ) )
+				return 0;
+			memcpy( out8, &w->shapes[handle].id, sizeof( b2ShapeId ) );
+			return 1;
+		case 3:
+			if ( handle < 0 || handle >= w->jointCount || w->joints[handle].alive == 0 )
+				return 0;
+			memcpy( out8, &w->joints[handle].id, sizeof( b2JointId ) );
+			return 1;
+		default:
+			return 0;
+	}
 }
 
 ME_API void me_world_set_ignored( MeWorld* w, const int* shapes, int count )
@@ -235,6 +274,8 @@ ME_API void me_world_counters( MeWorld* w, int* out4 )
 
 // ---------------------------------------------------------------------------------------------------- bodies
 
+static void release_tiles( MeShape* s, int destroy );
+
 ME_API int me_body_create( MeWorld* w, int type, float x, float y, float angle, int bullet )
 {
 	b2BodyDef def = b2DefaultBodyDef();
@@ -257,7 +298,10 @@ ME_API void me_body_destroy( MeWorld* w, int body )
 		return;
 	for ( int i = 0; i < w->shapeCount; ++i )
 		if ( w->shapes[i].alive && w->shapes[i].body == body )
+		{
 			w->shapes[i].alive = 0;
+			release_tiles( w->shapes + i, 0 ); // Box2D destroys the chains and shapes with the body
+		}
 	for ( int i = 0; i < w->jointCount; ++i )
 		if ( w->joints[i].alive && ( w->joints[i].bodyA == body || w->joints[i].bodyB == body ) )
 			w->joints[i].alive = 0; // Box2D destroys a body's joints with it
@@ -383,6 +427,8 @@ ME_API void me_body_mass_data( MeWorld* w, int body, float* out4 )
 
 // ---------------------------------------------------------------------------------------------------- shapes
 
+static void note_one_way( MeWorld* w );
+
 ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int pointCount, float radius,
 	uint64_t category, uint64_t mask, int flags, float density, float friction, float restitution )
 {
@@ -462,6 +508,7 @@ ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int 
 
 	w->shapes = (MeShape*)grow( w->shapes, &w->shapeCapacity, w->shapeCount + 1, sizeof( MeShape ) );
 	MeShape* s = w->shapes + w->shapeCount;
+	memset( s, 0, sizeof( MeShape ) );
 	s->id = id;
 	s->alive = 1;
 	s->body = body;
@@ -469,25 +516,20 @@ ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int 
 	s->flags = flags;
 	b2Shape_SetUserData( id, (void*)(intptr_t)( w->shapeCount + 1 ) );
 
-	if ( ( flags & ME_ONE_WAY ) && w->hasOneWay == 0 )
-	{
-		// The first one-way platform: dynamic shapes created before it need the pre-solve rule too.
-		w->hasOneWay = 1;
-		for ( int i = 0; i < w->shapeCount; ++i )
-		{
-			MeShape* o = w->shapes + i;
-			if ( o->alive && w->bodies[o->body].type == ME_DYNAMIC && ( o->flags & ME_SENSOR ) == 0 )
-				b2Shape_EnablePreSolveEvents( o->id, true );
-		}
-	}
-	return w->shapeCount++;
+	int handle = w->shapeCount++;
+	if ( flags & ME_ONE_WAY )
+		note_one_way( w );
+	return handle;
 }
 
 ME_API void me_shape_destroy( MeWorld* w, int shape )
 {
 	if ( is_live_shape( w, shape ) == 0 )
 		return;
-	b2DestroyShape( w->shapes[shape].id, true );
+	if ( w->shapes[shape].kind == ME_TILES )
+		release_tiles( w->shapes + shape, 1 );
+	else
+		b2DestroyShape( w->shapes[shape].id, true );
 	w->shapes[shape].alive = 0;
 }
 
@@ -539,6 +581,114 @@ ME_API void me_shape_bounds( MeWorld* w, int shape, float* out4 )
 	out4[1] = box.lowerBound.y;
 	out4[2] = box.upperBound.x;
 	out4[3] = box.upperBound.y;
+}
+
+// ---------------------------------------------------------------------------------------------------- tile geometry
+
+// The first one-way platform of a world: dynamic shapes created before it need the pre-solve rule too.
+static void note_one_way( MeWorld* w )
+{
+	if ( w->hasOneWay )
+		return;
+	w->hasOneWay = 1;
+	for ( int i = 0; i < w->shapeCount; ++i )
+	{
+		MeShape* o = w->shapes + i;
+		if ( o->alive && o->kind != ME_TILES && w->bodies[o->body].type == ME_DYNAMIC && ( o->flags & ME_SENSOR ) == 0 )
+			b2Shape_EnablePreSolveEvents( o->id, true );
+	}
+}
+
+static int new_tiles( MeWorld* w, int body, int flags )
+{
+	w->shapes = (MeShape*)grow( w->shapes, &w->shapeCapacity, w->shapeCount + 1, sizeof( MeShape ) );
+	MeShape* s = w->shapes + w->shapeCount;
+	memset( s, 0, sizeof( MeShape ) );
+	s->id = b2_nullShapeId;
+	s->alive = 1;
+	s->body = body;
+	s->kind = ME_TILES;
+	s->flags = flags;
+	return w->shapeCount++;
+}
+
+ME_API int me_tiles_create( MeWorld* w, int body, const float* points, const int* loopCounts, int loopCount,
+	const float* oneWayBoxes, int oneWayCount, uint64_t category, uint64_t mask, int* outOneWay )
+{
+	*outOneWay = -1;
+	if ( is_live_body( w, body ) == 0 )
+		return -1;
+	b2BodyId bodyId = w->bodies[body].id;
+	int solid = new_tiles( w, body, 0 );
+	if ( loopCount > 0 )
+	{
+		b2ChainId* chains = (b2ChainId*)malloc( (size_t)loopCount * sizeof( b2ChainId ) );
+		if ( chains == NULL )
+			abort();
+		const float* p = points;
+		int made = 0;
+		for ( int i = 0; i < loopCount; ++i )
+		{
+			int n = loopCounts[i];
+			if ( n >= 3 )
+			{
+				b2ChainDef def = b2DefaultChainDef();
+				def.points = (const b2Vec2*)p; // b2Vec2 is two floats
+				def.pointCount = n;
+				def.isLoop = true;
+				def.filter.categoryBits = category;
+				def.filter.maskBits = mask;
+				def.userData = (void*)(intptr_t)( solid + 1 );
+				chains[made++] = b2CreateChain( bodyId, &def );
+			}
+			p += 2 * n;
+		}
+		w->shapes[solid].chains = chains;
+		w->shapes[solid].chainCount = made;
+	}
+	if ( oneWayCount > 0 )
+	{
+		int oneWay = new_tiles( w, body, ME_ONE_WAY );
+		b2ShapeId* parts = (b2ShapeId*)malloc( (size_t)oneWayCount * sizeof( b2ShapeId ) );
+		if ( parts == NULL )
+			abort();
+		b2ShapeDef def = b2DefaultShapeDef();
+		def.filter.categoryBits = category;
+		def.filter.maskBits = mask;
+		def.enableSensorEvents = false;
+		def.userData = (void*)(intptr_t)( oneWay + 1 );
+		for ( int i = 0; i < oneWayCount; ++i )
+		{
+			const float* b = oneWayBoxes + 4 * i;
+			b2Polygon box = b2MakeOffsetBox( ( b[2] - b[0] ) * 0.5f, ( b[3] - b[1] ) * 0.5f,
+				( b2Vec2 ){ ( b[0] + b[2] ) * 0.5f, ( b[1] + b[3] ) * 0.5f }, b2Rot_identity );
+			parts[i] = b2CreatePolygonShape( bodyId, &def, &box );
+		}
+		w->shapes[oneWay].parts = parts;
+		w->shapes[oneWay].partCount = oneWayCount;
+		w->shapes[oneWay].id = parts[0];
+		note_one_way( w );
+		*outOneWay = oneWay;
+	}
+	return solid;
+}
+
+// Frees what a tile handle owns; with `destroy`, also the Box2D chains and shapes (not when their body goes with them).
+static void release_tiles( MeShape* s, int destroy )
+{
+	if ( destroy )
+	{
+		for ( int i = 0; i < s->chainCount; ++i )
+			b2DestroyChain( s->chains[i] );
+		for ( int i = 0; i < s->partCount; ++i )
+			b2DestroyShape( s->parts[i], false );
+	}
+	free( s->chains );
+	free( s->parts );
+	s->chains = NULL;
+	s->parts = NULL;
+	s->chainCount = 0;
+	s->partCount = 0;
 }
 
 // ---------------------------------------------------------------------------------------------------- joints
@@ -939,6 +1089,8 @@ static int compare_int( const void* a, const void* b )
 	return ( x > y ) - ( x < y );
 }
 
+static int write_overlaps( MeWorld* w, int count, int* outShapes, int maxShapes );
+
 ME_API int me_overlap_box( MeWorld* w, float minX, float minY, float maxX, float maxY, uint64_t category,
 	uint64_t mask, int queryFlags, int* outShapes, int maxShapes )
 {
@@ -952,10 +1104,7 @@ ME_API int me_overlap_box( MeWorld* w, float minX, float minY, float maxX, float
 	b2ShapeProxy proxy = b2MakeProxy( points, 4, 0.0f );
 	OverlapContext c = { w, queryFlags, 0 };
 	b2World_OverlapShape( w->id, b2Pos_zero, &proxy, make_query( category, mask ), overlap_result, &c );
-	qsort( w->scratch, (size_t)c.count, sizeof( int ), compare_int );
-	for ( int i = 0; i < c.count && i < maxShapes; ++i )
-		outShapes[i] = w->scratch[i];
-	return c.count;
+	return write_overlaps( w, c.count, outShapes, maxShapes );
 }
 
 // ---------------------------------------------------------------------------------------------------- shape queries

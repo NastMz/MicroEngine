@@ -12,7 +12,7 @@ internal static unsafe partial class Native
 {
     public const string Library = "me_box2d";
     /// <summary>The <c>ME_API_VERSION</c> this assembly is written against.</summary>
-    public const int ApiVersion = 5;
+    public const int ApiVersion = 6;
 
     public const int Static = 0, Kinematic = 1, Dynamic = 2;
     public const int Box = 0, Circle = 1, Capsule = 2, Polygon = 3;
@@ -38,6 +38,7 @@ internal static unsafe partial class Native
     [LibraryImport(Library)] public static partial void me_world_step(nint world, float timeStep);
     [LibraryImport(Library)] public static partial void me_world_counters(nint world, int* out4);
     [LibraryImport(Library)] public static partial void me_world_set_ignored(nint world, int* shapes, int count);
+    [LibraryImport(Library)] public static partial int me_native_id(nint world, int kind, int handle, void* out8);
 
     [LibraryImport(Library)] public static partial int me_body_create(nint world, int type, float x, float y, float angle, int bullet);
     [LibraryImport(Library)] public static partial void me_body_destroy(nint world, int body);
@@ -59,6 +60,9 @@ internal static unsafe partial class Native
     public static partial int me_shape_create(nint world, int body, int kind, float* geometry, int pointCount, float radius,
         ulong category, ulong mask, int flags, float density, float friction, float restitution);
     [LibraryImport(Library)] public static partial void me_shape_destroy(nint world, int shape);
+    [LibraryImport(Library)]
+    public static partial int me_tiles_create(nint world, int body, float* points, int* loopCounts, int loopCount, float* oneWayBoxes, int oneWayCount,
+        ulong category, ulong mask, int* outOneWay);
     [LibraryImport(Library)] public static partial void me_shape_bounds(nint world, int shape, float* out4);
 
     [LibraryImport(Library)] public static partial int me_joint_create(nint world, int kind, int bodyA, int bodyB, float* p17, int flags);

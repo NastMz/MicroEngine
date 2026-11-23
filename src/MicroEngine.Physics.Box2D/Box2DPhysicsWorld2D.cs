@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.World;
 
 namespace MicroEngine.Physics.Box2D;
 
@@ -10,9 +11,9 @@ namespace MicroEngine.Physics.Box2D;
 /// The Box2D v3 backend of <see cref="IPhysicsWorld2D"/>: native Box2D (the release its native layer pins) behind the
 /// engine's flat C layer, so no Box2D type reaches the game. It passes the common contract and declares
 /// <see cref="Declared"/>: dynamic bodies, rotation, circles, capsules, convex polygons, continuous collision,
-/// friction and restitution, mass properties, one-way platforms and joints. It declares neither
-/// <see cref="PhysicsCapabilities.TileGeometry"/> (build tile levels from boxes) nor
-/// <see cref="PhysicsCapabilities.MovingSolids"/>.
+/// friction and restitution, mass properties, one-way platforms, joints, shape queries, contact detail, filter
+/// predicates and tile geometry with slopes (a level is the outline of its tiles, as Box2D chains). It does not declare
+/// <see cref="PhysicsCapabilities.MovingSolids"/>. <see cref="NativeIds"/> is the way out to Box2D's own API.
 /// </summary>
 /// <remarks>
 /// <para>Units: Box2D works in metres with y up; <see cref="Box2DWorldOptions"/> maps the game's units onto them
@@ -40,7 +41,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         | PhysicsCapabilities.ContinuousCollision | PhysicsCapabilities.FrictionRestitution
         | PhysicsCapabilities.MassProperties | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.ShapeInspection
         | PhysicsCapabilities.Joints | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.ContactDetail
-        | PhysicsCapabilities.FilterPredicates;
+        | PhysicsCapabilities.FilterPredicates | PhysicsCapabilities.TileGeometry | PhysicsCapabilities.TileSlopes;
 
     /// <summary>The most vertices a polygon may have (Box2D's limit).</summary>
     public const int MaxPolygonVertices = 8;
@@ -66,6 +67,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         public int Body;
         public ShapeDescription Description;
         public int Native;
+        public Tiles? Tiles;                         // tile geometry: one shape that stands for many native ones
     }
 
     private sealed class Joint
@@ -97,6 +99,8 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private int _liveCount;
     private readonly List<Pair> _sensorPairs = [];
     private readonly List<Pair> _contactPairs = [];
+    private readonly List<int> _contactCounts = [];  // how many native contacts each pair has (tile geometry has one per segment)
+    private readonly List<int> _tileSlots = [];      // live tile shapes, ascending
     private readonly List<SensorEvent> _pendingSensorExits = [];
     private readonly List<ContactEvent> _pendingContactEnds = [];
     private readonly List<SensorEvent> _sensorEvents = [];
@@ -202,6 +206,35 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     public ReadOnlySpan<ContactEvent> ContactEvents => CollectionsMarshal.AsSpan(_contactEvents);
     /// <summary>The sensor entries and exits of the latest step: exits first, then entries, in the order Box2D reports them.</summary>
     public ReadOnlySpan<SensorEvent> SensorEvents => CollectionsMarshal.AsSpan(_sensorEvents);
+
+    // ------------------------------------------------------------------ the native world
+
+    private Box2DNative? _nativeIds;
+
+    /// <summary>
+    /// The Box2D ids behind this world, for calling Box2D's own API for what the contract does not cover
+    /// (<see cref="Box2DNative"/> says what that costs). Only for a world made with
+    /// <see cref="Box2DWorldOptions.NativeAccess"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The world was not made with <see cref="Box2DWorldOptions.NativeAccess"/>.</exception>
+    public Box2DNative NativeIds
+    {
+        get
+        {
+            if (!Options.NativeAccess)
+                throw new InvalidOperationException("This world was not made for native access: create it with Box2DWorldOptions.NativeAccess = true, and read what Box2DNative says it costs.");
+            return _nativeIds ??= new Box2DNative(this);
+        }
+    }
+
+    internal nint NativeWorld => World;
+    internal int NativeBody(BodyId body) => Resolve(body).Native;
+    internal int NativeJoint(JointId joint) => Resolve(joint).Native;
+    internal int NativeShape(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        return _shapeSlots[(int)shape.Index].Native;
+    }
 
     // ------------------------------------------------------------------ units
 
@@ -731,6 +764,11 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         int native = Native.me_shape_create(World, b.Native, kind, g, points, radius, shape.Category, shape.Mask, flags,
             shape.Density ?? -1, shape.Friction ?? -1, shape.Restitution ?? -1);
         if (native < 0) throw new ArgumentException("The vertices do not make a convex polygon of some area (Box2D could not build its hull).", nameof(shape));
+        return NewShape(body, b, shape, native);
+    }
+
+    private ShapeId NewShape(BodyId body, Body b, in ShapeDescription shape, int native)
+    {
         int slot;
         if (_freeShapes.Count > 0) slot = _freeShapes.Pop();
         else
@@ -744,6 +782,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         s.Body = (int)body.Index;
         s.Description = shape;
         s.Native = native;
+        s.Tiles = null;
         b.Shapes.Add(slot);
         while (_shapeOfNative.Count <= native) _shapeOfNative.Add(-1);
         _shapeOfNative[native] = slot;
@@ -756,9 +795,10 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (!IsAlive(shape)) return;
         var s = _shapeSlots[(int)shape.Index];
         _bodySlots[s.Body].Shapes.Remove((int)shape.Index);
-        int native = s.Native;
+        int native = s.Native, oneWay = s.Tiles?.OneWayNative ?? -1;
         Forget((int)shape.Index);
         Native.me_shape_destroy(World, native);
+        if (oneWay >= 0) Native.me_shape_destroy(World, oneWay);
     }
 
     /// <summary>Marks a shape dead and ends its sensor and contact pairs with events at the next step.</summary>
@@ -779,8 +819,15 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             if (p.A != id && p.B != id) continue;
             _pendingContactEnds.Add(new ContactEvent(ContactEventKind.End, p.A, p.B, p.OwnerA, p.OwnerB, Vector2.Zero));
             _contactPairs.RemoveAt(i);
+            _contactCounts.RemoveAt(i);
         }
         _shapeOfNative[s.Native] = -1;
+        if (s.Tiles is { } tiles)
+        {
+            if (tiles.OneWayNative >= 0) _shapeOfNative[tiles.OneWayNative] = -1;
+            _tileSlots.Remove(slot);
+            s.Tiles = null;
+        }
         s.Alive = false;
         _freeShapes.Push(slot);
     }
@@ -817,6 +864,13 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     public RectF BoundsOf(ShapeId shape)
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        if (_shapeSlots[(int)shape.Index] is { Tiles: { } tiles } tileShape)
+        {
+            // Like the tile backend: the area the tiles were added with, from the body's origin downward.
+            var origin = PositionOf(BodyOf(shape));
+            var far = origin + new Vector2(tiles.Columns, 0) * tiles.Grid.TileSize - Up * (tiles.Rows * tiles.Grid.TileSize);
+            return new RectF(MathF.Min(origin.X, far.X), MathF.Min(origin.Y, far.Y), MathF.Abs(far.X - origin.X), MathF.Abs(far.Y - origin.Y));
+        }
         float* b = stackalloc float[4];
         Native.me_shape_bounds(World, _shapeSlots[(int)shape.Index].Native, b);
         var a = FromMeters(b[0], b[1]);
@@ -830,6 +884,139 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private int SlotOf(int native) => native >= 0 && native < _shapeOfNative.Count ? _shapeOfNative[native] : -1;
 
     private EntityId OwnerOfShape(int slot) => _bodySlots[_shapeSlots[slot].Body].Owner;
+
+    // ------------------------------------------------------------------ tile geometry
+
+    /// <summary>The tiles a shape was built from: a copy of their flags, taken when they were added.</summary>
+    private sealed class Tiles
+    {
+        public required ICollisionGrid Grid;
+        public required TileFlags[] Flags;           // (Columns + 2) × (Rows + 2): the area and one tile around it
+        public int Columns, Rows, OneWayNative = -1;
+    }
+
+    /// <summary>The share of a tile, from its top, that a one-way tile's platform takes.</summary>
+    private const float OneWayThickness = 0.25f;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// <para>The tiles are read once, when this is called: the area and one tile around it. The solid tiles become
+    /// their outline, as Box2D chains: one smooth, one-sided boundary per region of open space, with no seam between
+    /// tiles for a sliding body to catch on, and one body for the whole level. <see cref="TileFlags.SlopeRight"/> and
+    /// <see cref="TileFlags.SlopeLeft"/> cells are part of that outline (<see cref="PhysicsCapabilities.TileSlopes"/>).
+    /// A run of <see cref="TileFlags.OneWay"/> tiles is one platform, the top quarter of its tiles.</para>
+    /// <para>After changing tiles, remove the shape and add the tiles again. The outline is hollow: a dynamic body
+    /// placed inside solid tiles is not pushed out, and nothing stops it leaving. Overlaps, point queries and the
+    /// nearest surface know the inside (a point inside solid tiles is held by them).</para>
+    /// </remarks>
+    public ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+        var b = Resolve(body);
+        if (b.Kind != BodyKind.Static) throw new InvalidOperationException($"Tiles are static geometry: {body} is {b.Kind}.");
+        int ts = grid.TileSize;
+        if (ts <= 0) throw new ArgumentOutOfRangeException(nameof(grid), ts, "The tile size must be positive.");
+        int width = columns + 2, height = rows + 2;
+        var flags = new TileFlags[width * height];
+        for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+            flags[y * width + x] = grid.FlagsAt(x - 1, y - 1);
+        var outline = TileOutline.Trace(flags, width, height, -1, -1);
+
+        // Tile (x, y) is x tiles sideways and y tiles downward from the body's origin: in Box2D's frame, y up.
+        float size = Meters(ts);
+        var points = new float[2 * outline.Points.Count];
+        for (int i = 0; i < outline.Points.Count; i++)
+        {
+            points[2 * i] = outline.Points[i].X * size;
+            points[2 * i + 1] = -outline.Points[i].Y * size;
+        }
+        var loops = outline.Loops.ToArray();
+        var boxes = new float[4 * outline.OneWay.Count];
+        for (int i = 0; i < outline.OneWay.Count; i++)
+        {
+            var (row, from, to) = outline.OneWay[i];
+            boxes[4 * i] = from * size;
+            boxes[4 * i + 1] = -(row + OneWayThickness) * size;
+            boxes[4 * i + 2] = to * size;
+            boxes[4 * i + 3] = -row * size;
+        }
+        int oneWay, native;
+        fixed (float* pp = points)
+        fixed (int* pl = loops)
+        fixed (float* pb = boxes)
+            native = Native.me_tiles_create(World, b.Native, pp, pl, loops.Length, pb, outline.OneWay.Count, category, mask, &oneWay);
+        if (native < 0) throw new InvalidOperationException("Box2D could not create the tile geometry.");
+
+        var description = ShapeDescription.Box(new Vector2(ts)).InLayers(category, mask) with { SensorEvents = false };
+        var id = NewShape(body, b, description, native);
+        var shape = _shapeSlots[(int)id.Index];
+        shape.Tiles = new Tiles { Grid = grid, Flags = flags, Columns = columns, Rows = rows, OneWayNative = oneWay };
+        if (oneWay >= 0)
+        {
+            while (_shapeOfNative.Count <= oneWay) _shapeOfNative.Add(-1);
+            _shapeOfNative[oneWay] = (int)id.Index;
+        }
+        _tileSlots.Add((int)id.Index);
+        _tileSlots.Sort();
+        return id;
+    }
+
+    /// <inheritdoc/>
+    public ICollisionGrid? TilesOf(ShapeId shape)
+    {
+        if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
+        return _shapeSlots[(int)shape.Index].Tiles?.Grid;
+    }
+
+    /// <summary>Whether a world point (in metres) is inside the solid tiles of <paramref name="shape"/>, as they were when they were added.</summary>
+    private bool InsideTiles(Shape shape, Vector2 point)
+    {
+        var tiles = shape.Tiles!;
+        float* s = stackalloc float[6];
+        State(_bodySlots[shape.Body], s);
+        float dx = point.X - s[0], dy = point.Y - s[1];
+        if (s[2] != 0)
+        {
+            (float sin, float cos) = MathF.SinCos(-s[2]);
+            (dx, dy) = (dx * cos - dy * sin, dx * sin + dy * cos);
+        }
+        float size = Meters(tiles.Grid.TileSize);
+        float tx = dx / size, ty = -dy / size;
+        int cx = (int)MathF.Floor(tx), cy = (int)MathF.Floor(ty);
+        if (cx < -1 || cy < -1 || cx > tiles.Columns || cy > tiles.Rows) return false;
+        var flags = tiles.Flags[(cy + 1) * (tiles.Columns + 2) + cx + 1];
+        if ((flags & TileFlags.Solid) != 0) return true;
+        float fx = tx - cx, fy = ty - cy;
+        if ((flags & TileFlags.SlopeRight) != 0) return fx + fy > 1;
+        return (flags & TileFlags.SlopeLeft) != 0 && fy > fx;
+    }
+
+    /// <summary>
+    /// The outline of tiles is hollow, so the native layer does not see a query that lies wholly inside solid tiles:
+    /// adds the tile shapes that hold <paramref name="centre"/> (metres) to the <paramref name="total"/> handles in
+    /// <c>_overlap</c>, keeping handle order, and returns the new total.
+    /// </summary>
+    private int AddTilesHolding(Vector2 centre, in QueryFilter filter, int total)
+    {
+        if (_tileSlots.Count == 0 || total > _overlap.Length) return total;
+        foreach (int slot in _tileSlots)
+        {
+            var shape = _shapeSlots[slot];
+            if (!filter.Accepts(shape.Description.Category, shape.Description.Mask) || !InsideTiles(shape, centre)) continue;
+            int at = 0;
+            while (at < total && _overlap[at] < shape.Native) at++;
+            if (at < total && _overlap[at] == shape.Native) continue;
+            if (!filter.Considers(IdOf(slot))) continue;
+            if (total == _overlap.Length) Array.Resize(ref _overlap, _overlap.Length * 2);
+            Array.Copy(_overlap, at, _overlap, at + 1, total - at);
+            _overlap[at] = shape.Native;
+            total++;
+        }
+        return total;
+    }
 
     // ------------------------------------------------------------------ moves
 
@@ -968,13 +1155,23 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             _overlap = new int[Math.Max(total, _overlap.Length * 2)];
         }
         Restore(left);
-        int written = 0;
-        for (int i = 0; i < Math.Min(total, _overlap.Length) && written < results.Length; i++)
+        total = AddTilesHolding((a + c) / 2, filter, total);
+        return WriteOverlaps(total, results);
+    }
+
+    /// <summary>Writes the live shapes of the <paramref name="total"/> handles in <c>_overlap</c>, each shape once (tile geometry has two handles), and returns how many there are.</summary>
+    private int WriteOverlaps(int total, Span<ShapeId> results)
+    {
+        int count = 0, previous = -1;
+        for (int i = 0; i < Math.Min(total, _overlap.Length); i++)
         {
             int slot = SlotOf(_overlap[i]);
-            if (slot >= 0) results[written++] = IdOf(slot);
+            if (slot < 0 || slot == previous) continue;
+            previous = slot;
+            if (count < results.Length) results[count] = IdOf(slot);
+            count++;
         }
-        return total;
+        return count + Math.Max(0, total - _overlap.Length);
     }
 
     // ------------------------------------------------------------------ shape queries
@@ -997,8 +1194,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         {
             int total = Native.me_ray_cast_all(world, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), shapes, values, room);
             Restore(left);
-            WriteHits(shapes, values, Math.Min(total, room), hits);
-            return total;
+            return total - Math.Min(total, room) + WriteHits(shapes, values, Math.Min(total, room), hits);
         }
         var manyShapes = new int[room];
         var manyValues = new float[5 * room];
@@ -1007,19 +1203,27 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         {
             int total = Native.me_ray_cast_all(world, a.X, a.Y, t.X, t.Y, filter.Category, filter.Mask, QueryFlags(filter), ps, pv, room);
             Restore(left);
-            WriteHits(ps, pv, Math.Min(total, room), hits);
-            return total;
+            return total - Math.Min(total, room) + WriteHits(ps, pv, Math.Min(total, room), hits);
         }
     }
 
-    private void WriteHits(int* shapes, float* values, int count, Span<RayHit> hits)
+    /// <summary>Writes the hits, one per shape, and returns how many shapes were hit among the <paramref name="count"/> handles.</summary>
+    private int WriteHits(int* shapes, float* values, int count, Span<RayHit> hits)
     {
-        for (int i = 0; i < count && i < hits.Length; i++)
+        int distinct = 0;
+        for (int i = 0; i < count; i++)
         {
             int slot = SlotOf(shapes[i]);
+            if (slot < 0) continue;
+            var id = IdOf(slot);
+            bool seen = false;
+            for (int k = 0; k < distinct && k < hits.Length && !seen; k++) seen = hits[k].Shape == id;   // the other handle of a tile shape
+            if (seen) continue;
             float* r = values + 5 * i;
-            hits[i] = slot < 0 ? default : new RayHit(IdOf(slot), OwnerOfShape(slot), FromMeters(r[0], r[1]), Direction(r[2], r[3]), r[4]);
+            if (distinct < hits.Length) hits[distinct] = new RayHit(id, OwnerOfShape(slot), FromMeters(r[0], r[1]), Direction(r[2], r[3]), r[4]);
+            distinct++;
         }
+        return distinct;
     }
 
     private void Rounded(in QueryShape shape, out float hx, out float hy, out float radius)
@@ -1092,13 +1296,8 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             _overlap = new int[Math.Max(total, _overlap.Length * 2)];
         }
         Restore(left);
-        int written = 0;
-        for (int i = 0; i < Math.Min(total, _overlap.Length) && written < results.Length; i++)
-        {
-            int slot = SlotOf(_overlap[i]);
-            if (slot >= 0) results[written++] = IdOf(slot);
-        }
-        return total;
+        total = AddTilesHolding(c, filter, total);
+        return WriteOverlaps(total, results);
     }
 
     /// <inheritdoc/>
@@ -1108,6 +1307,13 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (!(maxDistance >= 0) || float.IsInfinity(maxDistance)) throw new ArgumentOutOfRangeException(nameof(maxDistance), maxDistance, "The distance must be finite and zero or more.");
         var p = ToMeters(point);
         float* r = stackalloc float[3];
+        foreach (int tileSlot in _tileSlots)
+        {
+            var tiles = _shapeSlots[tileSlot];
+            if (!filter.Accepts(tiles.Description.Category, tiles.Description.Mask) || !InsideTiles(tiles, p) || !filter.Considers(IdOf(tileSlot))) continue;
+            hit = new ClosestPointHit(IdOf(tileSlot), OwnerOfShape(tileSlot), point, 0);
+            return true;
+        }
         var reach = new Vector2(Meters(maxDistance));
         bool left = LeaveOut(filter, p - reach, p + reach);
         int slot = SlotOf(Native.me_closest_point(World, p.X, p.Y, Meters(maxDistance), filter.Category, filter.Mask, QueryFlags(filter), r));
@@ -1294,8 +1500,10 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             ShapeId ia = IdOf(a), ib = IdOf(b);
             int at = _contactPairs.FindIndex(p => p.A == ia && p.B == ib || p.A == ib && p.B == ia);
             if (at < 0) continue;
+            if (--_contactCounts[at] > 0) continue;  // another segment of the same tile shape still touches
             var pair = _contactPairs[at];
             _contactPairs.RemoveAt(at);
+            _contactCounts.RemoveAt(at);
             _contactEvents.Add(new ContactEvent(ContactEventKind.End, pair.A, pair.B, pair.OwnerA, pair.OwnerB, Vector2.Zero));
         }
         for (int i = 0; i < beginCount; i++)
@@ -1303,7 +1511,14 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
             int a = SlotOf(begins[2 * i]), b = SlotOf(begins[2 * i + 1]);
             if (a < 0 || b < 0) continue;
             var pair = new Pair(IdOf(a), IdOf(b), OwnerOfShape(a), OwnerOfShape(b));
+            int known = _contactPairs.FindIndex(p => p.A == pair.A && p.B == pair.B || p.A == pair.B && p.B == pair.A);
+            if (known >= 0)
+            {
+                _contactCounts[known]++;             // one more segment of a tile shape the body already touches
+                continue;
+            }
             _contactPairs.Add(pair);
+            _contactCounts.Add(1);
             _contactEvents.Add(new ContactEvent(ContactEventKind.Begin, pair.A, pair.B, pair.OwnerA, pair.OwnerB, Direction(normals[4 * i], normals[4 * i + 1]))
             {
                 Point = FromMeters(normals[4 * i + 2], normals[4 * i + 3]),

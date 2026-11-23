@@ -204,7 +204,9 @@ which the contract's tile geometry names, are in the contract assembly);
 `MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; an optional package of its own) is the
 second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
 across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
-its package ([Choosing a backend](manual/physics.md#choosing-a-backend)).
+its package ([Choosing a backend](manual/physics.md#choosing-a-backend)). A tile level is the outline of its tiles
+there (Box2D chains traced in managed code), and the shared library also exports Box2D's own API, which a game
+reaches with the ids of a world made for it ([Box2D's own API](manual/physics.md#box2ds-own-api)).
 
 Saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds

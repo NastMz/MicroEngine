@@ -61,7 +61,7 @@ it; nothing is approximated silently.
 
 | Capability | Meaning | Tiles | Box2D |
 | --- | --- | --- | --- |
-| `TileGeometry` | `AddTiles`: a tile grid as static geometry | yes | no |
+| `TileGeometry` | `AddTiles`: a tile grid as static geometry | yes | yes |
 | `OneWayPlatforms` | `ShapeDescription.OneWay`, `QueryFilter.PassOneWay` | yes | yes |
 | `DynamicBodies` | bodies moved by the solver: gravity, velocities, forces, impulses, contact events | no | yes |
 | `Rotation` | rotated bodies, angular velocity, torque | no | yes |
@@ -77,6 +77,7 @@ it; nothing is approximated silently.
 | `ShapeQueries` | `RayCastAll`, `ShapeCast`, `Overlap` with a box, a circle or a capsule, `OverlapPoint`, `ClosestPoint` | yes | yes |
 | `ContactDetail` | `ContactImpacts` (speed and impulse of each hit), `ContactsOf` (the points a body touches at) | no | yes |
 | `FilterPredicates` | `QueryFilter.Where`: a predicate that leaves single shapes out of a move or a query | yes | yes |
+| `TileSlopes` | slope tiles in tile geometry: `TileFlags.SlopeRight`, `TileFlags.SlopeLeft` | no | yes |
 
 ## The common core
 
@@ -298,6 +299,7 @@ Forces are mass × world units per second squared, impulses mass × world units 
 ```csharp
 if (Input.Pressed("pause")) { Game.Quit(); return; }
 if (Input.Pressed("up")) { Game.Scenes.Push(new ClassicScene()); return; }   // the character room
+if (Input.Pressed("down")) { Game.Scenes.Push(new TileScene()); return; }    // the tile level
 var world = Physics.World;
 
 // Throttle: the wheels' motors aim for a speed; the joints do the rest.
@@ -478,10 +480,109 @@ no dynamic bodies.
 
 ## Tile levels
 
-`AddTiles(body, grid, columns, rows)` attaches a tile grid to a static body: solid cells block, one-way cells are
-platforms. On the tile backend the grid is read at every query, so changing a tile changes collisions at once. The
-Box2D backend does not declare `TileGeometry`: build the level from boxes there, merging runs of tiles (the
-`PhysicsSubstitution` sample's `LevelBoxes` does it).
+`AddTiles(body, grid, columns, rows)` attaches a tile grid to a static body, as one shape: solid cells block, one-way
+cells are platforms. Both backends take it, each in its own way:
+
+| | Tile backend | Box2D backend |
+| --- | --- | --- |
+| When the grid is read | at every query: changing a tile changes collisions at once | once, when the tiles are added: remove the shape and add the tiles again after changing them |
+| What the level is | its cells | the outline of its solid cells: one smooth boundary for each region of open space |
+| A body that slides along a row of tiles | rests and slides exactly | meets no seam between tiles: a flat row is one straight edge |
+| Slopes (`TileSlopes`) | refused when the tiles are added | `TileFlags.SlopeRight` (rising to the right) and `TileFlags.SlopeLeft` cells: half tiles cut along their diagonal; a row of them is one straight ramp |
+| One-way cells | their top edge | a run of them is one platform, the top quarter of its tiles |
+| The inside of solid tiles | solid | hollow: a dynamic body placed inside solid tiles is not pushed out. Overlaps, point queries and the nearest surface still answer that it is inside |
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#tiles -->
+```csharp
+private const int Tile = 16, Solid = 1, Ledge = 2, Up = 3, Down = 4;
+
+// '#' solid, '=' one-way platform, '/' a slope that rises to the right, '\' one that rises to the left.
+private static readonly string[] Rows =
+[
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#....====..........#",
+    "#..................#",
+    "#...........\\......#",
+    "#...........#\\.....#",
+    "#......../####\\....#",
+    "#......./######\\...#",
+    "#....../########\\..#",
+    "####################",
+];
+
+private readonly TileGrid _grid = new(
+    TileLayer.Parse(Rows, new Dictionary<char, int> { ['#'] = Solid, ['='] = Ledge, ['/'] = Up, ['\\'] = Down }),
+    Tile,
+    new Dictionary<int, TileFlags>
+    {
+        [Solid] = TileFlags.Solid, [Ledge] = TileFlags.OneWay, [Up] = TileFlags.SlopeRight, [Down] = TileFlags.SlopeLeft,
+    });
+```
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#world -->
+```csharp
+// This scene makes its own world instead of the game's: one whose Box2D ids the game may read.
+_world = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 16, YDown = true, NativeAccess = true });
+Systems.Add(new ScenePhysics(_world) { SyncTransforms = false });
+
+// The whole level is one shape of one static body: the outline of its tiles.
+var level = _world.CreateBody(default, BodyDescription.Static());
+Level = _world.AddTiles(level, _grid, _grid.Layer.Width, _grid.Layer.Height);
+```
+
+On Box2D a character on slopes is a capsule (`ShapeDescription.Capsule`) with a `GroundSnap` of a few units; a box
+character moves along x, then y, and climbs a slope as a staircase. A slope tile under a ceiling, steeper or gentler
+slopes and slopes on the tile backend are not there: build those from polygon shapes on Box2D.
+
+## Box2D's own API
+
+The physics contract covers what the engine's backends share and what most games need of Box2D. For the rest (an
+explosion, the surface speed of a conveyor belt, a motor joint that drives a velocity, wind) a game calls Box2D's C
+functions itself. The package's native library exports them; the world gives the ids they take, when it was made for
+it:
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#native -->
+```csharp
+// Box2D's own explosion: no member of the physics contract does this. The game declares the function it calls.
+[StructLayout(LayoutKind.Sequential)]
+private struct ExplosionDef
+{
+    public ulong MaskBits;
+    public Vector2 Position;                     // metres, y up: Box2D's units, not the game's
+    public float Radius, Falloff, ImpulsePerLength;
+}
+
+[DllImport(Box2DNative.Library)]
+private static extern void b2World_Explode(B2WorldId world, in ExplosionDef explosion);
+
+private void Explode(Vector2 at)
+{
+    var explosion = new ExplosionDef
+    {
+        MaskBits = ulong.MaxValue,
+        Position = new Vector2(at.X / 16, -at.Y / 16),
+        Radius = 3, Falloff = 2, ImpulsePerLength = 4,
+    };
+    b2World_Explode(_world.NativeIds.World, explosion);
+}
+```
+
+`Box2DWorldOptions.NativeAccess` is the switch, where the world is made; without it `NativeIds` throws. `NativeIds`
+gives `World`, `Body(body)`, `Shape(shape)` and `Joint(joint)` as `B2WorldId`, `B2BodyId`, `B2ShapeId` and
+`B2JointId`, laid out as Box2D declares them. What it costs:
+
+- **Units are Box2D's**: metres, radians, y up, whatever the world's options map the game's units to.
+- **The engine does not know what you changed.** It is not in the state hash and not in `DescriptionOf`; bodies,
+  shapes and joints created through Box2D have no engine id, so queries and events skip them. Never destroy through
+  Box2D what the engine created.
+- **Box2D's API changes between its releases.** `Box2DPhysicsWorld2D.Box2DVersion` says which one the package carries
+  (3.2.0); a later package may carry another.
+- **Platforms.** Windows, Linux, macOS and Android. Not the browser (the runtime there does not pass these ids), and
+  not iOS.
+- **No call while the world steps**, and none from another thread.
+- A tile shape is many Box2D shapes and has no id of its own: `Shape` refuses it.
 
 ## What differs on Box2D
 
@@ -509,10 +610,11 @@ normal for each contact that began in the latest step. See [diagnosing a game](d
 
 ## Limits
 
-- Tile backend: axis-aligned boxes only, no slopes, no dynamic bodies, no joints.
-- Box2D backend: no tile geometry (boxes instead), no solids that push kinematic bodies (the character controller
-  carries a character standing on a moved body on either backend).
-- One closest-hit ray and one rectangle overlap; no shape casts or point queries.
+- Tile backend: axis-aligned boxes only, no slopes, no dynamic bodies, no joints, no contact detail.
+- Box2D backend: no solids that push kinematic bodies (the character controller carries a character standing on a
+  moved body on either backend); tile geometry is read when it is added and is hollow inside; slope tiles are the two
+  diagonals of a tile.
+- A query shape is a box, a circle or a standing capsule: no rotated or polygon query shapes.
 - 2D only.
 
 ## Common mistakes

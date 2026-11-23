@@ -201,12 +201,19 @@ modelled as components and systems.
     touches at and how hard it presses there, and a `ContactEvent` that begins has its `Point`.
     `Box2DWorldOptions.ImpactSpeed` sets how fast a contact must be to count as an impact.
   - `AddTiles` and `TilesOf` are members of `IPhysicsWorld2D`, so debug drawing shows tile geometry on any backend.
+  - Tile levels on Box2D: `AddTiles` builds the outline of the solid tiles as one shape of one body (Box2D chains),
+    so a body that slides along a row of tiles meets no seam; one-way tiles are platforms, and
+    `TileFlags.SlopeRight` and `TileFlags.SlopeLeft` are slopes (`PhysicsCapabilities.TileSlopes`). The tile backend
+    refuses a level with slope tiles ([Tile levels](../manual/physics.md#tile-levels)).
+  - Box2D's own API for what the contract does not cover: a world made with `Box2DWorldOptions.NativeAccess` gives
+    the Box2D ids of its world, bodies, shapes and joints (`NativeIds`), and the package's native library exports
+    Box2D's functions ([Box2D's own API](../manual/physics.md#box2ds-own-api)).
   - A capability error names the backend that declares what is missing.
   - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
     could end the process).
   - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels, with sparks at
-    impacts, a beam that lists what is ahead and a blast, and a room with a character that has the feel of a classic
-    platform game.
+    impacts, a beam that lists what is ahead and a blast, a room with a character that has the feel of a classic
+    platform game, and a tile level with slopes and an explosion made with Box2D's own function.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene
   ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and

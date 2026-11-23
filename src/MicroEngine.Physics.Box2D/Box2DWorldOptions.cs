@@ -35,6 +35,13 @@ public sealed record Box2DWorldOptions
     /// </summary>
     public float? ImpactSpeed { get; init; }
 
+    /// <summary>
+    /// Whether the game may read the world's Box2D ids (<see cref="Box2DPhysicsWorld2D.NativeIds"/>) to call Box2D's
+    /// own API. False by default: it is a decision with costs (<see cref="Box2DNative"/>), made where the world is
+    /// made.
+    /// </summary>
+    public bool NativeAccess { get; init; }
+
     /// <summary>Throws when an option is out of range.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A scale that is not positive and finite, a gravity that is not finite, fewer than one sub-step, or an impact speed that is negative or not finite.</exception>
     public void Validate()

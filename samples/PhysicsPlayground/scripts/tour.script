@@ -15,4 +15,11 @@
 440 hold confirm 20
 446 capture classic-jump.png
 520 capture classic-found.png
-530 quit
+# The tile level: balls and crates over slopes and a one-way platform, then an explosion of Box2D.
+530 press pause
+540 press down
+580 capture tiles-falling.png
+760 capture tiles-settled.png
+762 press confirm
+775 capture tiles-explosion.png
+860 quit

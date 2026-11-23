@@ -133,6 +133,38 @@ public sealed class PhysicsPlaygroundTests
     }
 
     [TestMethod]
+    public void The_tile_level_holds_what_rolls_over_it_and_an_explosion_of_Box2D_throws_it()
+    {
+        var (game, _) = Start();
+        var scene = new TileScene();
+        game.Scenes.Push(scene);
+        Step(game, 1);
+        var world = scene.Physics.World;
+        Assert.AreEqual(PhysicsCapabilities.TileSlopes, world.Capabilities & PhysicsCapabilities.TileSlopes);
+        Step(game, 240);
+        foreach (var body in scene.Balls)
+        {
+            var at = world.PositionOf(body);
+            Assert.IsTrue(at.X > 16 && at.X < 304 && at.Y > 16 && at.Y < 160, $"inside the level, on its tiles: {at}");
+            Assert.IsTrue(world.VelocityOf(body).Length() < 30, $"come to rest or nearly: {world.VelocityOf(body)}");
+        }
+        Span<ShapeId> shapes = stackalloc ShapeId[4];
+        Assert.AreEqual(1, world.ShapesOf(world.BodyOf(scene.Level), shapes), "the whole level is one shape");
+        float before = scene.Balls.Max(b => world.VelocityOf(b).Length());
+        game.Input.SetForced("confirm", true);
+        Step(game, 2);
+        game.Input.SetForced("confirm", false);
+        Assert.AreEqual(1, scene.Explosions);
+        Assert.IsTrue(scene.Balls.Max(b => world.VelocityOf(b).Length()) > before + 20, "the explosion threw something");
+        Step(game, 120);
+        foreach (var body in scene.Balls)
+        {
+            var at = world.PositionOf(body);
+            Assert.IsTrue(at.X > 16 && at.X < 304 && at.Y > 16 && at.Y < 160, $"still inside the level: {at}");
+        }
+    }
+
+    [TestMethod]
     public void The_same_run_gives_the_same_state_hash_and_the_world_ends_with_the_scene()
     {
         ulong Run(out PlaygroundGame game, out IPhysicsWorld2D world)

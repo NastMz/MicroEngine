@@ -33,7 +33,7 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
 | ID | Task | Specs | Route | Status |
 | --- | --- | --- | --- | --- |
 | T1 | Shape queries and contact detail on the contract, both backends, native layer 4 | S1, S2, S6 | inline | [x] |
-| T2 | Tile levels on Box2D (chains, one-way runs, slopes) and the native world | S3, S4, S6 | inline | [ ] |
+| T2 | Tile levels on Box2D (chains, one-way runs, slopes) and the native world | S3, S4, S6 | inline | [x] |
 | T3 | Character rules: gravity phases, skid, corner correction, conditional solids | S5 | inline | [x] |
 
 ## Log
@@ -91,3 +91,25 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
   `tests/MicroEngine.Tests --filter Physics` 100 passed; `tests/MicroEngine.Physics.Box2D.Tests` 241 passed;
   `Samples.Tests --filter PhysicsPlayground` 4 passed; native self-test all passed. The rule tests were written before
   the rules but could not fail first as tests: they did not compile until the members existed.
+- L5 (2026-11-22) T2 done. Tiles: chains, not merged boxes (the reasoning is in the evaluation, section 7). The
+  outline is traced in managed code (`TileOutline`), so the native layer only takes loops and boxes
+  (`me_tiles_create`) and maps every segment to one handle; `exact_bounds` became `id_bounds` over Box2D's shape type
+  because a handle no longer has one Box2D shape. Slopes are two new `TileFlags` and a capability `TileSlopes`. The
+  native world: the ids (`me_native_id`) and Box2D's API exported from the shared library by linking it whole; the
+  self-test calls `b2GetVersion` so a platform that does not export it fails at link. Native layer 6. RED: the tile
+  conformance suite did not exist for Box2D (its file was excluded from the project); the first run of the new tests
+  had 5 failures, all mistakes of the tests' own scenes (two crates on one spot, a level with no wall, a ray that hit
+  the crate, a wrong function name), none of the code. The seam test discriminates: over one box per tile the same
+  box dips to 63.93 px/s and ends 0.2 px short, and the test's bounds (63.99, 0.05 px) fail there. Checks:
+  `tests/MicroEngine.Physics.Box2D.Tests` 261 passed; native self-test on win-x64 all passed, determinism hash
+  unchanged; `Samples.Tests --filter PhysicsPlayground` 5 passed; the tile scene's captures looked at (bodies at rest
+  on the platform, the plateau and the floor; a crate thrown by the explosion). Also built here: `build.sh android-x64` (NDK 27.3 clang and lld: the
+  shared library links whole and the self-test links against Box2D's exports, the way Linux does; not run, it needs a
+  device) and `build.sh browser-wasm` (the static archives; the self-test ran under Node, all passed, same
+  determinism hash). Not compiled here: Linux with gcc, macOS and iOS (CI builds them); on macOS the whole-archive
+  link is `-force_load` and was not seen to work.
+- L6 (2026-11-23) Close. `dotnet build MicroEngine.slnx -c Release`: 0 warnings. `dotnet test MicroEngine.slnx -c Release`: 17
+  projects, 0 failed, no host aborted (Box2D 261, MicroEngine.Tests 1350 and 1 skipped, Samples 113, Desktop 833 and 17
+  skipped). `docs/api` regenerated: 11 pages changed, 5 added; the Box2D package has no pages there
+  (`site/scripts/api-reference.mjs` does not list it). Not run: the site build, a browser build of a game with Box2D,
+  phones. Left to the owner: the row of T10 in `consolidation-1.md`, and CI for the natives of Linux, macOS and iOS.

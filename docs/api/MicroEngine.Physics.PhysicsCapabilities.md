@@ -30,6 +30,14 @@ Circle shapes ([Circle](MicroEngine.Physics.ShapeKind.md)).
 
 
 
+`ContactDetail = 16384` 
+
+What a contact of a dynamic body is made of: the impacts of a step with their speed and impulse
+([ContactImpacts](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactImpacts)) and the points a body touches at now
+([ContactsOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactsOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ContactPoint__)).
+
+
+
 `ContinuousCollision = 256` 
 
 Continuous collision for fast dynamic bodies ([Bullet](MicroEngine.Physics.BodyDescription.md#MicroEngine_Physics_BodyDescription_Bullet)).
@@ -39,6 +47,13 @@ Continuous collision for fast dynamic bodies ([Bullet](MicroEngine.Physics.BodyD
 `DynamicBodies = 4` 
 
 Dynamic bodies ([Dynamic](MicroEngine.Physics.BodyKind.md)) moved by the solver: velocities, gravity, contact events.
+
+
+
+`FilterPredicates = 32768` 
+
+A predicate on a filter ([Where](MicroEngine.Physics.QueryFilter.md#MicroEngine_Physics_QueryFilter_Where)) that leaves single shapes out of a move or a query.
+Both built-in backends declare it; a backend that does not refuses a filter that has one.
 
 
 
@@ -99,8 +114,26 @@ debug view needs to draw the world. Both built-in backends declare it.
 
 
 
+`ShapeQueries = 8192` 
+
+Queries beyond the closest ray and the rectangle overlap: every hit of a ray
+([RayCastAll](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_RayCastAll_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_RayHit__)), a cast shape ([ShapeCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ShapeCast_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__)), the shapes
+under a box, a circle or a capsule ([Overlap](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__))
+or at a point ([OverlapPoint](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_OverlapPoint_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__)), and the nearest surface
+([ClosestPoint](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ClosestPoint_System_Numerics_Vector2_System_Single_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_ClosestPointHit__)). Both built-in backends declare it.
+
+
+
 `TileGeometry = 1` 
 
 Grid-aligned static geometry fed directly from tile layers (the tile backend's own <code>AddTiles</code>).
+
+
+
+`TileSlopes = 65536` 
+
+Slope tiles in tile geometry ([SlopeRight](MicroEngine.World.TileFlags.md),
+[SlopeLeft](MicroEngine.World.TileFlags.md)). A backend that does not declare it refuses tiles that hold
+one when they are added with an area.
 
 </div>

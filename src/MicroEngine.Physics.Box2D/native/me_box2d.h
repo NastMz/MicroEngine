@@ -10,6 +10,9 @@
 // issues in creation order and never reuses within a world; a destroyed handle stays invalid. Results that name shapes
 // give handles, or -1 for a shape that no longer exists. A world is single-threaded (no Box2D task system), so the
 // same calls give the same bits on every target built with floating-point contraction off.
+//
+// The shared library (desktop, Android) also exports Box2D's own API (box2d/box2d.h), for the callers of
+// me_native_id; the static archives (browser, iOS) carry it as any archive does.
 #ifndef ME_BOX2D_H
 #define ME_BOX2D_H
 
@@ -28,7 +31,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 5
+#define ME_API_VERSION 6
 
 typedef struct MeWorld MeWorld;
 
@@ -88,6 +91,11 @@ ME_API void me_world_step( MeWorld* world, float timeStep );
 // The shapes every query and move leaves out until this is called again (count 0 clears the list): how a predicate
 // of the caller reaches the callbacks of this layer without a function pointer. The handles are copied.
 ME_API void me_world_set_ignored( MeWorld* world, const int* shapes, int count );
+// The Box2D id behind the world (kind 0; handle unused), a body (1), a shape (2) or a joint (3), copied as Box2D
+// declares it (b2WorldId is 4 bytes; b2BodyId, b2ShapeId and b2JointId are 8) into out8; returns 0, and zeros, when
+// the handle is not alive or stands for tile geometry. For callers that reach Box2D's own API, which the shared
+// library exports next to this layer; this layer does not know what they change.
+ME_API int me_native_id( MeWorld* world, int kind, int handle, void* out8 );
 // bodies, shapes, contacts, awake bodies.
 ME_API void me_world_counters( MeWorld* world, int* out4 );
 
@@ -123,6 +131,17 @@ ME_API void me_body_mass_data( MeWorld* world, int body, float* out4 );
 ME_API int me_shape_create( MeWorld* world, int body, int kind, const float* geometry, int pointCount, float radius,
 	uint64_t category, uint64_t mask, int flags, float density, float friction, float restitution );
 ME_API void me_shape_destroy( MeWorld* world, int shape );
+// Tile geometry on a static body: the outline of the solid tiles as closed chains (Box2D's chain shapes: smooth,
+// one-sided, no ghost collisions where tiles meet) and the one-way tiles as boxes. points holds the loops one after
+// another, x and y of each point, body-local; loopCounts the number of points of each (at least 3). A loop keeps the
+// solid on its left (counter-clockwise round solid ground, clockwise round a hole), so the segments face the open
+// space. oneWayBoxes holds min x, min y, max x, max y of each one-way box. Returns the handle that stands for the solid
+// geometry (queries and contacts name it for any of its segments) and writes to *outOneWay the handle of the one-way
+// boxes, or -1 when there are none; -1 when the body is not alive. me_shape_destroy takes either handle;
+// me_shape_bounds does not take them. The inside of the outline is hollow: a query wholly inside solid tiles finds
+// nothing.
+ME_API int me_tiles_create( MeWorld* world, int body, const float* points, const int* loopCounts, int loopCount,
+	const float* oneWayBoxes, int oneWayCount, uint64_t category, uint64_t mask, int* outOneWay );
 // The shape's world bounds: min x, min y, max x, max y.
 ME_API void me_shape_bounds( MeWorld* world, int shape, float* out4 );
 

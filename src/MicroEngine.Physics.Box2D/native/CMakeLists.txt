@@ -1,10 +1,11 @@
 # me_box2d: Box2D v3 (the source tree build.sh fetches at the pinned commit, box2d.env) plus the flat C layer
 # (me_box2d.c), and me_box2d_selftest, which exercises the layer on the build machine (or under Node for wasm).
-#   Desktop and Android: one shared library, me_box2d, with Box2D linked in statically and only the layer exported.
+#   Desktop and Android: one shared library, me_box2d, with Box2D linked in whole: it exports the layer and Box2D's
+#   own API (B2_API), which a game reaches through Box2DPhysicsWorld2D.Native for what the contract does not cover.
 #   Emscripten and iOS: two static archives, me_box2d and box2d (browser builds link them with NativeFileReference).
 # Determinism (box2d.org/posts/2024/08/determinism): no contraction of a*b+c into FMA for gcc and clang, the rule
 # Box2D's own CMakeLists applies to itself; MSVC does not contract by default. One thread: no task system is set.
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.24)
 project(me_box2d C)
 
 set(BOX2D_SOURCE "" CACHE PATH "Box2D v3 source tree at the pinned commit")
@@ -30,11 +31,20 @@ else()
 	set(ME_STATIC OFF)
 	add_library(me_box2d SHARED me_box2d.c)
 endif()
-target_link_libraries(me_box2d PRIVATE box2d)
+if(ME_STATIC)
+	target_link_libraries(me_box2d PRIVATE box2d)
+else()
+	# Box2D's API is exported: its objects are compiled as for a shared Box2D (B2_API becomes an export) and all of
+	# them are linked in, not only the ones the layer calls.
+	target_compile_definitions(box2d PRIVATE box2d_EXPORTS)
+	target_link_libraries(me_box2d PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,box2d>")
+endif()
 target_include_directories(me_box2d PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(me_box2d_selftest me_box2d_selftest.c)
 target_link_libraries(me_box2d_selftest PRIVATE me_box2d)
+# The self-test calls one Box2D function itself, so the build fails where the library does not export Box2D's API.
+target_include_directories(me_box2d_selftest PRIVATE "${BOX2D_SOURCE}/include")
 if(ME_STATIC)
 	target_link_libraries(me_box2d_selftest PRIVATE box2d)
 endif()
@@ -57,8 +67,9 @@ if(MSVC)
 	target_link_options(me_box2d PRIVATE /Brepro)
 endif()
 if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN AND NOT ME_STATIC)
-	# Linux and Android: strip symbols the layer does not export, and keep the library free of build paths.
-	target_link_options(me_box2d PRIVATE -s -Wl,--exclude-libs,ALL)
+	# Linux and Android: strip what is not exported (the layer and Box2D's API stay), and keep the library free of
+	# build paths.
+	target_link_options(me_box2d PRIVATE -s)
 	target_link_libraries(me_box2d PRIVATE m)
 	target_link_libraries(me_box2d_selftest PRIVATE m) # the self-test calls the math library itself
 endif()

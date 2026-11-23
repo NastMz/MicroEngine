@@ -233,11 +233,22 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     }
 
     /// <inheritdoc/>
-    /// <remarks>The grid is read at every query, inside and outside <paramref name="columns"/> × <paramref name="rows"/>.</remarks>
+    /// <remarks>
+    /// The grid is read at every query, inside and outside <paramref name="columns"/> × <paramref name="rows"/>. Slope
+    /// tiles are not geometry on this backend: the area and one tile around it are looked at once, here, and a slope
+    /// tile in them is refused (<see cref="PhysicsCapabilities.TileSlopes"/>); one that appears later is empty space.
+    /// </remarks>
+    /// <exception cref="PhysicsCapabilityException">A tile of the area is a slope.</exception>
     public ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+        ArgumentNullException.ThrowIfNull(grid);
+        // Slope tiles are not geometry here: a level that holds one is refused, not played without its slopes.
+        for (int y = -1; y <= rows; y++)
+        for (int x = -1; x <= columns; x++)
+            if ((grid.FlagsAt(x, y) & (TileFlags.SlopeRight | TileFlags.SlopeLeft)) != 0)
+                throw new PhysicsCapabilityException($"AddTiles (a slope tile at {x}, {y})", Name, PhysicsCapabilities.TileSlopes);
         var id = AddTiles(body, grid, category, mask);
         _shapeSlots[(int)id.Index].Columns = columns;
         _shapeSlots[(int)id.Index].Rows = rows;

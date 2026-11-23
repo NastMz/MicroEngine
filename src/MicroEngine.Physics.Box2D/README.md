@@ -2,8 +2,10 @@
 
 The Box2D v3 backend of MicroEngine's 2D physics contract (`IPhysicsWorld2D`): `Box2DPhysicsWorld2D`, native Box2D
 3.2.0 behind the engine's own flat C layer. Besides the common contract it declares dynamic bodies, rotation, circles,
-capsules, convex polygons, continuous collision, friction and restitution, mass properties and one-way platforms; an
-undeclared request throws `PhysicsCapabilityException`.
+capsules, convex polygons, continuous collision, friction and restitution, mass properties, one-way platforms,
+joints, shape queries, contact detail and tile levels with slopes; an undeclared request throws
+`PhysicsCapabilityException`. A world made with `NativeAccess` gives the Box2D ids of its objects, and the native
+library exports Box2D's own functions next to the engine's layer, for what the contract does not cover.
 
 ```csharp
 using var physics = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 32, YDown = true });

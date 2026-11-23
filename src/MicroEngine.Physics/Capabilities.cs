@@ -65,6 +65,12 @@ public enum PhysicsCapabilities
     /// Both built-in backends declare it; a backend that does not refuses a filter that has one.
     /// </summary>
     FilterPredicates = 1 << 15,
+    /// <summary>
+    /// Slope tiles in tile geometry (<see cref="MicroEngine.World.TileFlags.SlopeRight"/>,
+    /// <see cref="MicroEngine.World.TileFlags.SlopeLeft"/>). A backend that does not declare it refuses tiles that hold
+    /// one when they are added with an area.
+    /// </summary>
+    TileSlopes = 1 << 16,
 }
 
 /// <summary>
@@ -88,7 +94,8 @@ public sealed class PhysicsCapabilityException : NotSupportedException
     /// <summary>The capabilities only the optional Box2D backend declares, and the ones only the tile backend declares.</summary>
     private const PhysicsCapabilities Box2DOnly = PhysicsCapabilities.DynamicBodies | PhysicsCapabilities.Rotation | PhysicsCapabilities.Joints
             | PhysicsCapabilities.Capsules | PhysicsCapabilities.Circles | PhysicsCapabilities.Polygons | PhysicsCapabilities.ContinuousCollision
-            | PhysicsCapabilities.FrictionRestitution | PhysicsCapabilities.MassProperties | PhysicsCapabilities.ContactDetail,
+            | PhysicsCapabilities.FrictionRestitution | PhysicsCapabilities.MassProperties | PhysicsCapabilities.ContactDetail
+            | PhysicsCapabilities.TileSlopes,
         TilesOnly = PhysicsCapabilities.MovingSolids;
 
     /// <summary>Which of the engine's backends declares what is missing, for the message.</summary>

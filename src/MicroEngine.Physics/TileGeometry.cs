@@ -22,6 +22,18 @@ public enum TileFlags
     Custom3 = 64,
     /// <summary>Free for the game's own meaning.</summary>
     Custom4 = 128,
+    /// <summary>
+    /// A slope that rises to the right: the half of the tile under the line from its lower left corner to its upper
+    /// right one is solid. Geometry only on a backend that declares
+    /// <see cref="MicroEngine.Physics.PhysicsCapabilities.TileSlopes"/>.
+    /// </summary>
+    SlopeRight = 256,
+    /// <summary>
+    /// A slope that rises to the left: the half of the tile under the line from its upper left corner to its lower
+    /// right one is solid. Geometry only on a backend that declares
+    /// <see cref="MicroEngine.Physics.PhysicsCapabilities.TileSlopes"/>.
+    /// </summary>
+    SlopeLeft = 512,
 }
 
 /// <summary>

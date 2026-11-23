@@ -12,7 +12,7 @@
 # <rid>: win-x64 | linux-x64 | osx-arm64 | osx-x64 | android-arm64 | android-x64 | ios-arm64 | browser-wasm
 # <out>: default artifacts/box2d in the repository (ignored by Git), where src/MicroEngine.Physics.Box2D looks.
 # <work>: Box2D sources and build trees; default $MICROENGINE_BOX2D_WORK or ~/.microengine/box2d-work.
-# Needs: bash, git, CMake >= 3.22, and the compiler of the target: Visual Studio's C compiler (win-x64), gcc or clang
+# Needs: bash, git, CMake >= 3.24, and the compiler of the target: Visual Studio's C compiler (win-x64), gcc or clang
 # (linux-x64), Xcode (osx-*, ios-arm64), the Android NDK (android-*: ANDROID_NDK, or the newest under ANDROID_HOME,
 # ANDROID_SDK_ROOT or %LOCALAPPDATA%/Android/Sdk), or the web toolchain of web/setup.sh (browser-wasm: emscripten from
 # the .NET wasm-tools workload, the version .NET links with). Ninja is used when it is found.
