@@ -10,6 +10,9 @@ namespace MicroEngine.Core;
 /// <item><c>--script FILE</c> play scripted input (see <see cref="InputScript"/>); implies deterministic time unless
 /// <c>--time</c> says otherwise.</item>
 /// <item><c>--captures DIR</c> directory for script captures (default ./captures).</item>
+/// <item><c>--saves DIR</c> keep the game's saves in that folder for this run (<see cref="RunOptions.Saves"/>). Without
+/// it a run with a script or in deterministic time keeps them in memory, empty at start, and never touches the
+/// player's; any other run uses the game's usual saves.</item>
 /// <item><c>--platform NAME</c> run on that platform of the catalog (default: <c>MICROENGINE_PLATFORM</c>, else the
 /// first one that can run here); <c>--list-platforms</c> prints them and exits.</item>
 /// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>. A
@@ -212,6 +215,8 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     public string? ProfilePath { get; init; }
     /// <summary><c>--state-trace</c>: the file to write the per-step state hashes to (<see cref="RunOptions.StateTrace"/>), or null.</summary>
     public string? StateTracePath { get; init; }
+    /// <summary><c>--saves</c>: the folder the game keeps its saves in for this run (<see cref="RunOptions.Saves"/>), or null for the run's rule.</summary>
+    public string? SaveDirectory { get; init; }
 
     /// <summary>Parses command-line arguments (<see cref="LaunchRequest.Parse"/>).</summary>
     /// <exception cref="FormatException">An argument is unknown, misses its value or has an invalid one, <c>--headless</c> contradicts <c>--platform</c>, or the script file does not exist.</exception>
@@ -230,6 +235,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             AudioCapturePath = request.AudioCapturePath,
             ProfilePath = request.ProfilePath,
             StateTracePath = request.StateTracePath,
+            SaveDirectory = request.SaveDirectory,
             PaceToDisplay = request.PaceToDisplay,
             Time = request.EffectiveTime,
             Gpu = request.Gpu switch { null => null, "high-performance" => GpuPreference.HighPerformance, "power-saving" => GpuPreference.PowerSaving, _ => GpuPreference.Automatic },

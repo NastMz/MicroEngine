@@ -61,7 +61,7 @@ A scene reaches it as `Game.Saves`, the game itself as `Saves`. One store holds 
 
 | Member of `Game` | Behaviour |
 | --- | --- |
-| `Saves` | The game's store, on the medium the host composed for it, else the platform's default ([Where saves live](#where-saves-live)). Use it from `Configure`, `Load` or later, not from the game's constructor |
+| `Saves` | The game's store, on the medium of the run: the player's saves when somebody plays, a store of the run's own for a scripted run or a test ([Where saves live](#where-saves-live), [Scripted runs and tests](#scripted-runs-and-tests)). Use it from `Configure`, `Load` or later, not from the game's constructor |
 | `SaveId` (protected, virtual) | The id the saves are kept under: the application id of the game's project ([Application identity](../guide/app-identity.md)), else the title. It names the save folder and the browser's key prefix, so a game that changes its application id after release overrides `SaveId` with the old one and its players keep their saves |
 | `CreateSaves()` (protected, virtual) | Creates `Saves`, once. Override it to build the store by hand |
 
@@ -160,7 +160,8 @@ every system. `IOException` and `UnauthorizedAccessException` mean the medium fa
 | macOS (default) | `FileSaveStorage` | `~/Library/Application Support/MicroEngine/<save id>/<slot>.json` |
 | Android | `FileSaveStorage` | the app's private files folder, `files/MicroEngine/<save id>/<slot>.json` |
 | iOS | `FileSaveStorage` | `Library/Application Support/MicroEngine/<save id>/<slot>.json` |
-| Explicit directory (tests, dev tools) | `FileSaveStorage` | `<directory>/<slot>.json` |
+| A folder the run names (`--saves DIR`) | `FileSaveStorage` | `<directory>/<slot>.json` |
+| A scripted run, a run in deterministic time, a test | `MemorySaveStorage` | memory: empty when the run starts, gone when it ends |
 | Browser | `BrowserStorage` (`MicroEngine.Platform`) | `localStorage` key `microengine/<save id>/<slot>` |
 
 `SaveStore.DefaultDirectory(gameId)` returns that folder outside browsers. It is always an absolute path, also on a new account
@@ -186,6 +187,64 @@ public static void Configure(HostBuilder host)
 
 A store the game builds by hand (`new SaveStore(...)`) is outside the composition and keeps whatever it was built
 with.
+
+### Scripted runs and tests
+
+A run nobody plays never reads or writes the player's saves. A run that has an input script (`--script`) or
+advances in deterministic time (`--time deterministic`, `--headless`, a game run or stepped on `HeadlessPlatform`)
+keeps its saves in a `MemorySaveStorage` of its own: empty when the run starts, gone when it ends. So a capture run
+shows the game as a new player sees it, two runs of the same script start from the same state, and a test needs no
+folder. Progress, settings, achievements and key bindings are all slots of the same store, so all of them follow.
+
+`--saves DIR` names a folder for the saves of one run, with or without a script:
+
+```bash
+# Starts from the saves in fixtures/before-boss and leaves what it saved there to look at.
+dotnet run -- --script boss.script --hidden --captures captures --saves fixtures/before-boss
+# A second set of saves beside the player's: a clean start while developing.
+dotnet run -- --saves .saves/clean
+```
+
+The folder is created when the game first saves. In code the same choice is `RunOptions.Saves`, and a test that
+steps a game hands it to `InitializeForTest`. A test that starts the game twice over the same saves gives both the
+same medium:
+
+```csharp
+var saves = new MemorySaveStorage();
+var game = new MyGame();
+game.InitializeForTest(new HeadlessPlatform(), saves: saves);
+// ... play until the game saves ...
+var relaunched = new MyGame();
+relaunched.InitializeForTest(new HeadlessPlatform(), saves: saves);   // finds what the first one saved
+```
+
+`new FileSaveStorage(folder)` in its place keeps the files to open.
+
+Where the saves of a run go is decided when it starts, in this order:
+
+| The run | Its saves |
+| --- | --- |
+| Names a medium (`--saves DIR`, `RunOptions.Saves`, `InitializeForTest(..., saves:)`) | That medium |
+| Its composition sets `host.Storage` | The composition's medium, in a scripted run too |
+| Has a script or is in deterministic time | A `MemorySaveStorage` of its own |
+| Any other | The platform's default: the player's saves |
+
+A composition that sets `host.Storage` decides for its scripted runs as well, because only it knows what its medium
+is. To leave them their own store, set it only for a launch without a script:
+
+```csharp
+public static void Configure(HostBuilder host)
+{
+    if (!host.Request.HasScript) host.Storage = saveId => new MyCloudStorage(saveId);
+    host.UseGame(() => new MyGame());
+}
+```
+
+A game that used `Saves` in its constructor has its store before any run could say where it goes; a scripted run or
+a test of such a game throws `InvalidOperationException` instead of using the player's saves.
+
+In a browser page a scripted run (development packages only) keeps the page's storage: what it starts from is the
+browser profile the page is opened in, and a new profile is an empty store.
 
 ## `ISaveStorage`
 
@@ -222,7 +281,9 @@ hold and throws `ArgumentException` for the others ([Who checks the name](#who-c
 text for a storage that keeps text, and `LastWrite` is `null` when the storage does not know. A new medium (a cloud
 service, a console save API) implements this interface and is installed through the composition's `host.Storage`, or
 handed to one store with `new SaveStore(storage)` ([A save storage](extending.md#a-save-storage)).
-No such implementation exists today.
+The SDK has three: `FileSaveStorage`, `BrowserStorage` and `MemorySaveStorage`, which keeps its slots in memory,
+takes the names the file storage takes, reports no time of writing and keeps what `SetAside` took out of a slot
+(`ReadSetAside`).
 
 ## Failure handling
 

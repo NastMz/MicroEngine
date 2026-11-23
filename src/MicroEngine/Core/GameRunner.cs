@@ -57,6 +57,14 @@ public sealed record RunOptions
     /// section where two differ.
     /// </summary>
     public Kernel.StateTrace? StateTrace { get; init; }
+    /// <summary>
+    /// Where the game keeps its saves in this run (the launcher's <c>--saves</c>: a folder), or null (the default) for
+    /// the run's rule: a store of its own, in memory and empty at start, for a run nobody plays (one that has a
+    /// <see cref="Script"/> or advances in deterministic time), else the medium of the game's composition, else the
+    /// platform's default. A test that plays a game twice over the same saves gives both runs the same
+    /// <see cref="MemorySaveStorage"/> or folder (<see cref="FileSaveStorage"/>). See <see cref="Game.Saves"/>.
+    /// </summary>
+    public IStorage? Saves { get; init; }
 }
 
 /// <summary>
@@ -187,7 +195,7 @@ public sealed class GameLoop
             _realTime = (_options.TimeMode ?? preset?.TimeMode ?? Kernel.TimeMode.RealTime) == Kernel.TimeMode.RealTime;
             ShowStartScreen();
             profiler?.Phase("start screen");
-            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems);
+            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems, _options.Saves, scripted: _options.Script is not null);
             _engine = _game.Engine;
             _realTime = _engine.Clock.Mode == Kernel.TimeMode.RealTime;
             profiler?.Phase("load");

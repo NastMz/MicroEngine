@@ -25,7 +25,7 @@ public sealed record LaunchRequest
     public static IReadOnlyList<string> WindowWords { get; } = ["windowed", "fullscreen", "exclusive"];
 
     /// <summary>The one-line usage text desktop launchers print after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--saves DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]";
 
     /// <summary><c>--script</c>: the input script file to read, or null. Hosts that hold the text itself use <see cref="ScriptText"/>.</summary>
     public string? ScriptPath { get; init; }
@@ -37,6 +37,13 @@ public sealed record LaunchRequest
     public bool HasScript => ScriptText is not null || ScriptPath is not null;
     /// <summary><c>--captures</c>: where script captures are written ("captures" by default).</summary>
     public string CaptureDirectory { get; init; } = "captures";
+    /// <summary>
+    /// <c>--saves</c>: the folder the game keeps its saves in for this run (created when the game first saves), or null
+    /// for the run's rule: a store of its own, in memory and empty at start, for a run with a script or in
+    /// deterministic time; the game's usual saves otherwise. With a script it is how a run starts from given saves
+    /// and leaves what it saved to look at; without one it is a second set of saves beside the player's.
+    /// </summary>
+    public string? SaveDirectory { get; init; }
     /// <summary><c>--platform</c>: the platform profile to run on, or null to let the host choose.</summary>
     public string? Platform { get; init; }
     /// <summary><c>--list-platforms</c>: print the host's platforms and exit.</summary>
@@ -132,6 +139,7 @@ public sealed record LaunchRequest
             {
                 "--script" => request with { ScriptPath = Next() },
                 "--captures" => request with { CaptureDirectory = Next() },
+                "--saves" => request with { SaveDirectory = Next() },
                 "--platform" => request with { Platform = Next() },
                 "--list-platforms" => request with { ListPlatforms = true },
                 "--headless" => request with { Headless = true },

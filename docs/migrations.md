@@ -6,6 +6,26 @@ it. Newest first.
 
 ## Next release
 
+### A scripted run, a headless run and a stepped game no longer use the player's saves
+
+`Game.Saves` is now on a store in memory, empty at start, in a run that has a script or advances in deterministic
+time (`--script`, `--time deterministic`, `--headless`, `GameRunner` or `InitializeForTest` on `HeadlessPlatform`),
+unless the run names a medium or the composition sets `host.Storage`
+([Scripted runs and tests](manual/persistence.md#scripted-runs-and-tests)).
+
+- A script that relied on saves left by an earlier run names them: `--saves DIR`.
+- A test that started a game twice and expected the second to find the first one's saves in the default folder
+  hands both the same medium: `game.InitializeForTest(platform, saves: storage)` with one `MemorySaveStorage`, or
+  `RunOptions.Saves` for a run.
+- A game with a `saveDirectory` parameter and an override of `CreateSaves` for its tests can delete both. Until it
+  does, they keep working: the override's fallback to `base.CreateSaves()` follows the new rule.
+- A game that uses `Saves` in its constructor, with no store of its own, now throws `InvalidOperationException` in
+  such a run instead of using the player's saves. Use `Saves` from `Configure`, `Load` or later.
+- `Game.InitializeForTest` has a third, optional parameter (`saves`); a call with two arguments compiles as before.
+- The SDK now has a type named `MemorySaveStorage` in `MicroEngine.Core`. A game that copied the class of that name
+  from the examples and uses it from another namespace that also imports `MicroEngine.Core` gets an ambiguous
+  reference: delete the copy and use the SDK's, or name the one it means.
+
 ### `TextureFilter` has a third value, and two devices declare mip levels
 
 `TextureFilter.LinearMipmap` joins `Nearest` and `Linear`. Code that decides between two samplers with

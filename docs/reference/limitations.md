@@ -65,6 +65,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | --- | --- |
 | No cloud saves: files on desktops and phones, `localStorage` in browsers | [Persistence](../manual/persistence.md) |
 | `localStorage` holds about 5 MB per site, shared with everything on that site; browsers may evict it under storage pressure, private windows discard it, and Safari may delete it for sites not visited for seven days | [Persistence](../manual/persistence.md) |
+| A scripted run keeps its saves in memory on desktops and phones, not in a browser page, where it uses the page's storage; a slot kept in memory has no time of writing; a game that sets `host.Storage` decides where its scripted runs save | [Persistence](../manual/persistence.md#scripted-runs-and-tests) |
 
 When storage is full or blocked, the game keeps running and the page says progress could not be saved;
 `SaveStore` never overwrites a slot it could not read, nor a save written by a newer release of the game, with or

@@ -6,6 +6,20 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Saves: a scripted run keeps its own
+
+- **A run nobody plays never touches the player's saves.** A run with an input script (`--script`) or in
+  deterministic time (`--time deterministic`, `--headless`, a game run or stepped on `HeadlessPlatform`) keeps its
+  saves in memory, empty at the start: progress, settings, achievements and key bindings. The same script gives the
+  same captures whatever was played before, and a test needs no folder of its own
+  ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
+- **`--saves DIR`** keeps the saves of one run in a folder, on every desktop launcher: a scripted run that starts
+  from given saves and leaves what it saved to look at, or a second set of saves while developing. In code it is
+  `RunOptions.Saves`; `LaunchRequest.SaveDirectory` and `LaunchArguments.SaveDirectory` carry the option.
+- **`MemorySaveStorage`** is a save medium in memory, for tests and tools: `new SaveStore(new MemorySaveStorage())`.
+- **`Game.InitializeForTest(platform, seed, saves)`** takes the medium of the game's saves, for a test that starts
+  a game twice over the same saves.
+
 ### Graphics: draw order, post-processing, the window stage and mip levels
 
 - **Draw order that does not depend on call order.** A `SortedRenderer` keeps the draws made between `Begin` and

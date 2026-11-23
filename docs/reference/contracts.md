@@ -392,7 +392,7 @@ public readonly record struct SlotInfo(string Name, long Size, DateTimeOffset? L
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
 | Versioned save (`SaveSchema<T>`) | The version is the property `"@version"`, after the serializer's own leading properties; a save without one is version 1; a save reads the slot as a load would before replacing it: an older save is copied to `<slot>.v<version>.backup` (never over an existing copy) and replaced, a newer one or one its steps fail on is refused, text that is not a save is set aside; the calls without a schema refuse to write a slot that holds a version; protection follows the last load of the slot |
-| A game's store | `Game.Saves`: `SaveId` (the application id, else the title) on the composition's medium (`host.Storage`), else the platform's default; `Game.CreateSaves()` builds it by hand |
+| A game's store | `Game.Saves`: `SaveId` (the application id, else the title) on the medium the run names (`RunOptions.Saves`, `--saves`), else the composition's (`host.Storage`), else a `MemorySaveStorage` of its own in a run with a script or in deterministic time, else the platform's default; `Game.CreateSaves()` builds it by hand |
 | Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); Android and iOS folders are part of `DefaultDirectory`; `DefaultStorage(gameId)` returns the platform's default medium, `BrowserStorage` (`localStorage`) in browsers |
 
 Implementations: `FileSaveStorage` (`MicroEngine.Saves.dll`, carried by the `MicroEngine` package), `BrowserStorage` (`MicroEngine.Platform`). See

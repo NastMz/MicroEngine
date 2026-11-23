@@ -82,7 +82,8 @@ public static class HostBuilderExtensions
 /// files are), the game's <c>Configure</c> entry point composes the rest (<see cref="HostBuilder"/>), and the
 /// <see cref="LaunchRequest"/> decides the run: a script means deterministic time and seed 1 on every host; a run in
 /// deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-/// one; a real-time run whose game shows a start screen starts gamepads after the first frame.
+/// one, and keeps its saves to itself (<see cref="Game.Saves"/>) unless the launch names a folder; a real-time run whose
+/// game shows a start screen starts gamepads after the first frame.
 /// </summary>
 /// <example>
 /// A test that runs a game headless through the same path as the desktop launcher:
@@ -151,7 +152,8 @@ public sealed class GameHost
 
     /// <summary>
     /// The run's options for <paramref name="game"/>: the graphics options with the launch's overrides, the script, its
-    /// captures, the frame limit, the seed, mute, pacing and the time mode (<see cref="LaunchRequest.EffectiveTime"/>).
+    /// captures, the frame limit, the seed, mute, pacing, the time mode (<see cref="LaunchRequest.EffectiveTime"/>) and
+    /// the folder of the saves when the launch names one (<see cref="LaunchRequest.SaveDirectory"/>).
     /// </summary>
     /// <exception cref="FormatException">The script is invalid.</exception>
     public RunOptions CreateRunOptions(Game game, FrameProfiler? profiler = null, InputScript? script = null)
@@ -169,6 +171,7 @@ public sealed class GameHost
             Seed = arguments.Seed,
             Mute = arguments.Mute,
             TimeMode = arguments.Time,
+            Saves = arguments.SaveDirectory is { } saves ? new FileSaveStorage(Path.GetFullPath(saves)) : null,
             // Section hashes too, so two traces that differ name the part of the state that diverged first.
             StateTrace = arguments.StateTracePath is null ? null : new StateTrace { Sections = true },
         };

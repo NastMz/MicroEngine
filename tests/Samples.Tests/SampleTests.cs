@@ -1,6 +1,8 @@
 using Examples;
 using MicroEngine.Core;
 using MicroEngine.Scenes;
+// The storage the "extending" example writes by hand, not the engine's own (MicroEngine.Core.MemorySaveStorage).
+using MemorySaveStorage = Examples.MemorySaveStorage;
 
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
 

@@ -182,11 +182,15 @@ public abstract class Game : IEngineModule, IStateHashed
     /// </summary>
     public Camera2D CreateCamera() => new(Width, Height, Settings.Presentation);
     /// <summary>
-    /// The game's saves: one <see cref="SaveStore"/> for its slots (progress, settings, achievements), created the first
-    /// time it is used (<see cref="CreateSaves"/>). It keeps them where the host's composition says
-    /// (<see cref="Hosting.HostBuilder.Storage"/>), else in the platform's default medium: files in the user's data folder,
-    /// the page's localStorage in browsers. Use it from <see cref="Configure"/>, <see cref="Load"/> or later, not from
-    /// the game's constructor: the host hands over its medium once the game exists.
+    /// The game's saves: one <see cref="SaveStore"/> for its slots (progress, settings, achievements, key bindings),
+    /// created the first time it is used (<see cref="CreateSaves"/>). Where it keeps them is decided for the run, in
+    /// this order: the medium the run names (<see cref="RunOptions.Saves"/>, the launcher's <c>--saves DIR</c>); the
+    /// medium of the host's composition (<see cref="Hosting.HostBuilder.Storage"/>); a store of the run's own, in
+    /// memory and empty at start (<see cref="MemorySaveStorage"/>), when nobody plays the run: it has a script or
+    /// advances in deterministic time, as scripted runs, headless runs and tests do; else the platform's default medium:
+    /// files in the user's data folder, the page's localStorage in browsers. So a scripted run never reads or writes the
+    /// player's saves, and two of them start from the same state. Use it from <see cref="Configure"/>,
+    /// <see cref="Load"/> or later, not from the game's constructor: the run hands over its medium when it starts.
     /// </summary>
     /// <example>
     /// <code>
@@ -199,6 +203,8 @@ public abstract class Game : IEngineModule, IStateHashed
     public SaveStore Saves => _saves ??= CreateSaves() ?? throw new InvalidOperationException("CreateSaves returned null.");
     private SaveStore? _saves;
     private Func<string, IStorage>? _hostStorage;
+    private IStorage? _runStorage;
+    private bool _savesOnDefault;
     private string? _saveId;
 
     /// <summary>
@@ -212,12 +218,39 @@ public abstract class Game : IEngineModule, IStateHashed
     internal static string DefaultSaveId(string? applicationId, string title) => applicationId ?? FolderName(title);
 
     /// <summary>
-    /// Creates <see cref="Saves"/>, once. By default a store for <see cref="SaveId"/> on the composition's medium, else
-    /// on the platform's default (<see cref="SaveStore.DefaultStorage(string)"/>). Override it to build the store by hand:
-    /// a folder of the game's choice (<c>new SaveStore(SaveId, directory)</c>, as tests do) or a storage of its own
-    /// (<c>new SaveStore(storage)</c>).
+    /// Creates <see cref="Saves"/>, once. By default a store for <see cref="SaveId"/> on the medium of the run
+    /// (<see cref="Saves"/> says which), else on the platform's default
+    /// (<see cref="SaveStore.DefaultStorage(string)"/>). Override it to build the store by hand, for a game that must
+    /// keep its saves in one place whatever the run says (<c>new SaveStore(storage)</c>): a store built here is the
+    /// game's own, and neither <c>--saves</c> nor a scripted run's own store reaches it.
     /// </summary>
-    protected virtual SaveStore CreateSaves() => new(_hostStorage?.Invoke(SaveId) ?? SaveStore.DefaultStorage(SaveId));
+    protected virtual SaveStore CreateSaves()
+    {
+        if (_runStorage is { } run) return new(run);
+        if (_hostStorage?.Invoke(SaveId) is { } composed) return new(composed);
+        _savesOnDefault = true;
+        return new(SaveStore.DefaultStorage(SaveId));
+    }
+
+    /// <summary>
+    /// The run reaches the game before its engine is composed: <paramref name="saves"/> (the run's own medium) or, for a
+    /// run nobody plays and a composition that names no medium, a store in memory becomes the medium of
+    /// <see cref="Saves"/>.
+    /// </summary>
+    private void AttachRun(IStorage? saves, bool unattended)
+    {
+        var medium = saves ?? (unattended && _hostStorage is null ? new MemorySaveStorage() : null);
+        if (medium is null) return;
+        if (_saves is not null)
+        {
+            // A store the game built by hand (CreateSaves) or on its composition's medium stays; one that fell back to
+            // the platform's default before the run began would be the player's saves.
+            if (_savesOnDefault)
+                throw new InvalidOperationException("The game used Saves before its run began (in its constructor, or before it was initialized), so they are the player's saves in the platform's default folder and not the ones this run keeps (a scripted, deterministic or test run has a store of its own; --saves and RunOptions.Saves name one). Use Saves from Configure, Load or later.");
+            return;
+        }
+        _runStorage = medium;
+    }
 
     /// <summary>
     /// The host's composition reaches a game it created: its save medium becomes the medium of <see cref="Saves"/>.
@@ -366,20 +399,21 @@ public abstract class Game : IEngineModule, IStateHashed
         builder.Add(new Achievements.AchievementsModule(tracker));
     }
 
-    internal void Initialize(IPlatform platform, int seed) => Initialize(platform, seed, Settings.Graphics);
-
     /// <summary>
     /// Composes the engine (the built-in services and systems, then <see cref="Configure"/>, then
     /// <paramref name="host"/>'s additions and the run's <paramref name="mode"/>), resolves the services from it and runs
     /// <see cref="Load"/>.
     /// </summary>
-    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null)
+    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null, IStorage? saves = null, bool scripted = false)
     {
         _platform = platform;
         var builder = new EngineBuilder();
         // A preset the composition states (the headless platform's: deterministic) comes first; the game's Configure and the
         // run's choice win over it.
         platform.TryGetCapability<RunPreset>(out var preset);
+        // Nobody plays a run with a script or in deterministic time (as the run or the platform's preset says, before the
+        // game's own Configure): it keeps its saves to itself.
+        AttachRun(saves, unattended: scripted || (mode ?? preset?.TimeMode) == TimeMode.Deterministic);
         builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate, Mode = preset?.TimeMode ?? time.Mode });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
@@ -803,8 +837,15 @@ public abstract class Game : IEngineModule, IStateHashed
         return new StepHash(UpdateCount, hash.Value, sections ? hash.Sections : []);
     }
 
-    /// <summary>Test hook: initializes against a platform without running the loop.</summary>
-    public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
+    /// <summary>
+    /// Test hook: initializes against a platform without running the loop. The game's saves (<see cref="Saves"/>) go to
+    /// <paramref name="saves"/>; null follows the rule of every run: on a platform whose preset is deterministic time
+    /// (<see cref="HeadlessPlatform"/>) a store of the game's own, in memory and empty, so a test never reads or
+    /// writes the player's saves. A test that starts the game twice over the same saves hands both the same
+    /// <see cref="MemorySaveStorage"/>, or a <see cref="FileSaveStorage"/> on a temporary folder.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The game already used <see cref="Saves"/> on the platform's default medium, which this run does not keep its saves in.</exception>
+    public void InitializeForTest(IPlatform platform, int seed = 1, IStorage? saves = null) => Initialize(platform, seed, Settings.Graphics, saves: saves);
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
     /// <remarks>
     /// Runs the phases that come before drawing for one fixed step, with a frame that stands for exactly one step:
