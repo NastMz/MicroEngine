@@ -373,6 +373,41 @@ Stops the sink (it no longer renders after this returns) and the streams.
 public void Dispose()
 ```
 
+### <a id="MicroEngine_Audio_AudioEngine_Duration_MicroEngine_Audio_VoiceHandle_"></a> Duration\(VoiceHandle\)
+
+The length of the sound <code class="paramref">voice</code> plays, in seconds; 0 for a handle that is not playing and for a stream that does not know its length.
+
+```csharp
+public double Duration(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Audio_AudioEngine_HeardPosition_MicroEngine_Audio_VoiceHandle_"></a> HeardPosition\(VoiceHandle\)
+
+The position of <code class="paramref">voice</code> the player hears now: [Position](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Position_MicroEngine_Audio_VoiceHandle_) less the output's delay
+([DelayFrames](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DelayFrames), at least the sink's latency), which is how long a frame takes from the mixer to the
+speaker. What a game shows in step with the sound reads this: a note crossing a line, a cutscene's cue. It is
+negative while the sound's first frame is still on its way, by the time left until it is heard.
+
+```csharp
+public double HeardPosition(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioEngine_IsPlaying_MicroEngine_Audio_VoiceHandle_"></a> IsPlaying\(VoiceHandle\)
 
 Whether <code class="paramref">voice</code> is still playing (or paused, or fading out) on the mixer's timeline.
@@ -458,6 +493,26 @@ public VoiceHandle Play(IAudioStream stream, in PlayParameters parameters)
 
 The bus does not exist.
 
+### <a id="MicroEngine_Audio_AudioEngine_Position_MicroEngine_Audio_VoiceHandle_"></a> Position\(VoiceHandle\)
+
+Where <code class="paramref">voice</code> is in its sound, in seconds from the sound's beginning, at the current step's
+frame on the mixer's timeline: 0 right after it starts, what [Seek](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) was given right after a seek.
+A loop comes back to the start of its region. It follows the simulation's steps, so a deterministic run reads
+the same positions every time. 0 for a handle that is not playing. A stream that does not know its length
+(one that is not an [ISeekableAudioStream](MicroEngine.Audio.ISeekableAudioStream.md)) counts on through its loops.
+
+```csharp
+public double Position(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Audio_AudioEngine_Pump"></a> Pump\(\)
 
 The host frame's audio work, on the main thread outside the simulation step: decodes music streams ahead, frees
@@ -478,6 +533,30 @@ public void Render(Span<float> buffer)
 #### Parameters
 
 `buffer` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
+
+### <a id="MicroEngine_Audio_AudioEngine_Seek_MicroEngine_Audio_VoiceHandle_System_Double_"></a> Seek\(VoiceHandle, double\)
+
+Moves <code class="paramref">voice</code> to <code class="paramref">seconds</code> from its sound's beginning, from the current step's
+frame: clamped to the sound's length (a sound that does not loop then ends there), and brought into the loop
+region when it loops and the time is past the region's end. A paused sound stays paused, at the new place.
+
+```csharp
+public bool Seek(VoiceHandle voice, double seconds)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether it moved: false for a handle that is not playing, for a stream that cannot seek
+(one that is not an [ISeekableAudioStream](MicroEngine.Audio.ISeekableAudioStream.md)), and when the sink stopped reading
+([DroppedCommands](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_DroppedCommands)). A time that is not a number moves nothing and returns true.
 
 ### <a id="MicroEngine_Audio_AudioEngine_Set_MicroEngine_Audio_VoiceHandle_System_Nullable_System_Single__System_Nullable_System_Single__System_Double_"></a> Set\(VoiceHandle, float?, float?, double\)
 

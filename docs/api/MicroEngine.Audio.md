@@ -29,6 +29,13 @@ under a parent that already exists and is never moved, so there is no cycle.
 
 Uncompressed audio: interleaved float samples in -1..1.
 
+ [AudioDecoders](MicroEngine.Audio.AudioDecoders.md)
+
+The audio formats the engine decodes, by file extension: one list for every way a file reaches the mixer (sound
+effects decoded whole, music streamed while it plays, the "sound" and "music" asset kinds) and for every platform.
+"wav" (PCM), "ogg" (Vorbis) and "mp3" are built in and decoded in managed code; [Add](MicroEngine.Audio.AudioDecoders.md#MicroEngine_Audio_AudioDecoders_Add_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__) registers
+another, with no change to the mixer.
+
  [AudioEffect](MicroEngine.Audio.AudioEffect.md)
 
 A processor in a bus's effect chain ([Add](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Add_MicroEngine_Audio_AudioEffect_)): it changes the bus's mix in place, one block at a
@@ -66,8 +73,9 @@ decoded while it plays rather than all at once.
 
 An [IAudioDevice](MicroEngine.Audio.IAudioDevice.md) over the engine's one mixer ([AudioEngine](MicroEngine.Audio.AudioEngine.md)) and a PCM sink: every backend
 device is one of these with its own sink, so voices, priorities, stealing, music and fades behave the same
-everywhere. Music decodes in managed code: WAV, OGG Vorbis (streamed, decoded ahead outside the simulation step), and
-formats a backend adds ([AddDecoder](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_AddDecoder_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__)).
+everywhere. Music decodes in managed code, streamed and decoded ahead outside the simulation step: the formats of
+[AudioDecoders](MicroEngine.Audio.AudioDecoders.md) (WAV, OGG Vorbis, MP3 and what a game registers), and formats a backend adds for itself
+([AddDecoder](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_AddDecoder_System_String_System_Func_System_Byte___MicroEngine_Audio_IAudioStream__)).
 
  [MusicHandle](MicroEngine.Audio.MusicHandle.md)
 
@@ -93,6 +101,12 @@ An opaque handle to a loaded sound effect.
 
 What [Statistics](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Statistics) reports about the mixer's voices.
 
+ [LoopRegion](MicroEngine.Audio.LoopRegion.md)
+
+The part of a sound that repeats when it loops, in frames of the sound itself (not of the output):
+[Start](MicroEngine.Audio.LoopRegion.md#MicroEngine_Audio_LoopRegion_Start) is the first frame of the loop and [End](MicroEngine.Audio.LoopRegion.md#MicroEngine_Audio_LoopRegion_End) the frame after its last. What comes before
+[Start](MicroEngine.Audio.LoopRegion.md#MicroEngine_Audio_LoopRegion_Start) plays once.
+
  [PlayParameters](MicroEngine.Audio.PlayParameters.md)
 
 How a sound plays.
@@ -114,5 +128,18 @@ Backend audio device. Implementations must tolerate missing hardware by becoming
 
 Streamed audio (music decoded while it plays). The engine reads it only in [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump), on the main
 thread outside the simulation step, ahead of the sink.
+
+ [ISeekableAudioStream](MicroEngine.Audio.ISeekableAudioStream.md)
+
+A stream that knows its length and can be read from any frame: the mixer can then start it anywhere
+([StartAt](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_StartAt)), move it while it plays ([Seek](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Seek_MicroEngine_Audio_VoiceHandle_System_Double_)), repeat a part of it
+([LoopRegion](MicroEngine.Audio.ISeekableAudioStream.md#MicroEngine_Audio_ISeekableAudioStream_LoopRegion)) and tell how long it is. Like [Read](MicroEngine.Audio.IAudioStream.md#MicroEngine_Audio_IAudioStream_Read_System_Span_System_Single__), [Seek](MicroEngine.Audio.ISeekableAudioStream.md#MicroEngine_Audio_ISeekableAudioStream_Seek_System_Int64_) is called
+on the main thread only.
+
+### Enums
+
+ [AudioLoadMode](MicroEngine.Audio.AudioLoadMode.md)
+
+How a music file is kept once registered ([AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_)).
 
 </div>

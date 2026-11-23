@@ -38,9 +38,9 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
 - [x] T1 S1 Mix graph, effects, limiter, ramps, crossfade. PR #199 (`feat/audio-2`).
 - [x] T4 S2, S5, S6 Position, seek, scheduled start, loop regions, the music's clock. Route: inline. Commit 2673b795.
 - [x] T5 S3, S5, S6 Decoder registry, OGG sound effects, MP3, streamed or decoded music, unloading. Route: inline.
-  Commit: the one after 2673b795 (`feat(audio): one list of decoders...`).
-- [ ] T6 S4, S5, S6 Listener and emitters as a scene system. Route: inline.
-- [ ] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline.
+  Commit d2dce9be.
+- [x] T6 S4, S5, S6 Listener and emitters as a scene system. Route: inline. Commit eddfd3e1.
+- [x] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline. The commit after eddfd3e1.
 
 ## Log
 
@@ -79,3 +79,13 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
   referencing it was published trimmed (`TrimMode=full`, `TrimmerSingleWarn=false`, self-contained, win-x64) with no
   IL warning and decoded an MP3 file correctly when run. NativeAOT was not published: this machine has no platform
   linker. Not run in a browser.
+- L6 (2026-11-22, T6) Decided: emitters are not in the state hash (a test compares a silent and a capture run). A
+  loop waits for a free voice instead of stealing: the first version let equal-priority loops take voices from each
+  other at every step when more were in range than there are voices (seen in the two-hundred-emitter test).
+- L7 (2026-11-22) Looked at: captures `41-music-time.png` and `42-spatial-sound.png` of the examples' tour (hidden
+  window, muted, so on a silent device). Not heard on a device. Outside the allowed surface and left for the owner:
+  `src/MicroEngine.Cli/Content.cs` still warns that MP3 plays on raylib only (and `tests/MicroEngine.Cli.Tests`
+  expects it); `src/MicroEngine.Raylib/RaylibAudioDevice.cs` registers an MP3 decoder that is no longer reached;
+  `docs/guide/introduction.md`, `docs/guide/cli.md`, `docs/guide/licensing.md`, `docs/reference/components.md`,
+  `docs/manual/scenes.md`, `README.md` and the site's data still describe MP3 as raylib-only, OGG as music-only or do
+  not list NLayer and `Scene.Sounds`. Left open as found: `AudioEngine.CreateBus` and the audio thread.

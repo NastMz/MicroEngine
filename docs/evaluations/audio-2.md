@@ -1,7 +1,8 @@
-# AUDIO-2: bus effects, ramps and crossfades; what remains of position, formats and spatial sound
+# AUDIO-2: bus effects, ramps and crossfades; then position, formats and spatial sound
 
 Issue NastMz/MicroEngine#177, part of [CONSOLIDATION-1](consolidation-1.md) (task T7, specs S4 and S7). Date:
-2026-11-19. Decision: [ADR 0067](../decisions/0067-mix-graph-and-effects.md). The rule is the mission's: what must a
+2026-11-19 (sections 1 to 6) and 2026-11-22 (sections 7 to 10). Decisions: [ADR 0067](../decisions/0067-mix-graph-and-effects.md) and
+[ADR 0072](../decisions/0072-audio-time-formats-and-spatial-sound.md). The rule is the mission's: what must a
 developer outside the repository write, not what the demos use or what a benchmark says.
 
 ## 1. What the code did (checked before designing)
@@ -114,24 +115,151 @@ Nothing new enters the `engine.audio` section: bus volumes were never in it, and
 presentation driven by game state that is hashed already. Hashes of existing games do not change. Rendering stays
 deterministic and independent of block sizes with every effect active (tested).
 
-## 5. What remains, and what this work changes about it
+## 5. What remained after the first part
 
-Slices 4 to 6 of the issue were not started; nothing of them is half in the code.
+Slices 4 to 6 of the issue (time, formats and memory, spatial sound) were not part of the first pull request
+(#199). They are sections 7 to 10 below and [ADR 0072](../decisions/0072-audio-time-formats-and-spatial-sound.md).
 
-- **Time (position, seek, scheduled start, loop region).** The main thread now has `Settle` and `FramesLeft`, which
-  give a clip's position at any frame including through pitch ramps: position is a read of that. A loop region needs
-  the same two functions to wrap, and `SampleClip` to wrap at a region end. Streams need `IAudioStream` to grow a
-  seek, and `StreamFeed` a generation so a seek can drop what is decoded ahead.
-- **Formats and lifetime.** A decoder registry belongs on the device (`AddDecoder` made public plus a static list
-  for built-ins); OGG for sound effects is `VorbisStream` read to the end at load. MP3: NLayer 3.0.1 is managed, MIT
-  and without dependencies, so adoption is plausible, but its trimming and browser behaviour were not checked; until
-  then the loader should refuse `.mp3` at load on devices that do not list it. Unloading needs sounds keyed by handle
-  with a free list, since a playing voice holds its clip.
-- **Spatial sound.** A scene system in the core (ADR 0060) that owns a listener and emitters and calls
-  `Audio.Set(voice, volume, pan, seconds: one step)` each update; ramps make that click-free without new mixer code.
-  Distance low-pass per emitter is the case for per-voice effects (2.1).
-
-## 6. Not verified
+## 6. Not verified in the first part
 
 Nothing was verified by ear. Browser, Android, iOS, Linux and macOS were not run. The cost of a submix was not
 measured: the path without effects is the previous one, and no doubt needed a number.
+
+## 7. Time: position, seek, scheduled start, loop regions (2026-11-20)
+
+- **A. Need.** A rhythm game judges a key press against the music; a cutscene cues pictures from it; a game saved in
+  the middle of a track wants it back there; nearly every soundtrack has an intro that must not repeat. Today's cost
+  to a developer: impossible for position and seek (nothing exposes them), and for the intro two pieces of music and
+  a timer that guesses when the first ends, off by the output latency and by every slow frame.
+- **B. Before.** `l.Position` existed on the game's thread only to move a clip's end when its pitch changed.
+- **C. Alternatives.** There is nothing to adopt: this is the mixer's own bookkeeping. Conventions adopted instead of
+  invented: the sampler chunk of WAV (`smpl`, what audio editors write for loop points) and the `LOOPSTART`,
+  `LOOPLENGTH`, `LOOPEND` comments of OGG files (what RPG Maker and the tools after it read and write).
+- **D. Target, written first.** `Audio.AddMusicFile("field", "field.ogg"); Audio.PlayMusic("field");` loops over the
+  file's region with nothing else; `Audio.MusicHeardPosition` in an update; `Audio.SeekMusic(saved)`;
+  `new PlayParameters { Delay = beat }`.
+- **E. Boundary.** Position and loop wrap must be the mixer's: only it knows frames. What a beat is, is the game's.
+- **F. Integration.** Positions are computed from the timeline (the game's thread), not read from the audio thread:
+  deterministic, equal in every run and on every sink, and in no hash (they are a function of steps that already
+  are). A seek is one more command at a frame. Streams seek by a new feed carried in the command. The silent device
+  gets a clock in the façade so headless runs behave alike.
+- **G. Trade-offs.** A position moves once per step, not continuously: a game that wants it between steps
+  interpolates. The heard position trusts the sink's declared latency; the device's own buffer beyond it is not known
+  to the engine. A stream that falls behind its decoding is behind its position until sought.
+- **H. Decision.** Extend.
+- **I. Validation.** `AudioPositionTests` (24 tests): every clip and stream holds its frame numbers as samples, so
+  each output frame says which source frame it played. Exact frames at four block sizes for start offsets, scheduled
+  starts, seeks, seeks of several steps waiting, loop seams; position and heard position through pause, pitch and
+  another sample rate; NaN, negative, zero, infinite and enormous times for every new argument; zero bytes allocated
+  by the render function with seeks, regions and scheduled sounds; the WAV sampler chunk. The recorded baseline
+  hashes pass unchanged.
+- **Found on the way.** A stream that does not loop never played its last frame (an index kept across a buffer
+  move). A stream's end on the timeline was `Start + Produced`, which ignores a pause made before decoding finished,
+  so long music paused and resumed was reported as ended early (read in the code; the new test for it passes, the
+  old code was not run against it).
+
+## 8. Formats and memory (2026-11-22)
+
+### 8.1 A list of decoders, MP3, OGG for effects
+
+- **A. Need.** Any game with recorded sound. A developer with an MP3 or an OGG effect got "Not a WAV file", or music
+  that loaded everywhere and played on one backend; a format of their own meant subclassing a device.
+- **C. Alternatives, verified on nuget.org on 2026-11-20 and by running them.**
+
+| Library | Version | Licence | Dependencies | Verdict |
+| --- | --- | --- | --- | --- |
+| NVorbis (in use) | 0.10.5 pinned | MIT | none on .NET 10 | Kept. Decodes 20 s of 44.1 kHz stereo in 117 to 219 ms. Its seek is not exact (8.2) |
+| NVorbis | 1.0.0-rc.2 | MIT | none on .NET 10 | Not adopted: a prerelease, and after a seek its first 600 to 3600 samples differ from a straight decode by up to 1.3 (the signal was 0.3) |
+| NLayer | 3.0.1 (2026-11-04) | MIT | none | Adopted for MP3. Managed, `Span` API, net8.0 build. A trimmed self-contained publish (`TrimMode=full`, every warning shown) was clean and decoded correctly when run. Its seek gives silence and then differing samples (8.2) |
+| raylib's dr_mp3 (in use on one backend) | bundled | public domain | native | Was the only MP3 path: one backend, whole file decoded at load and again at each play. No longer reached |
+| NAudio.Core | 3.4.0-preview.1 | MIT | System.Numerics.Tensors | A device and file library; its MP3 path is NLayer or Windows codecs |
+| Native decoders through SDL_mixer or SDL_sound | n/a | zlib | native, per platform | A native dependency per platform and none in browsers' managed runtime, to decode what two managed libraries already decode |
+
+- **D. Target.** `Audio.AddSoundFile("hit", "hit.ogg")`; `Assets.Sound("sfx/hit.mp3")`;
+  `AudioDecoders.Add("pcm16", bytes => new Pcm16Stream(bytes))`.
+- **E. Boundary.** Decoding belongs beside the mixer, not in it and not in a device: the mixer consumes
+  `IAudioStream` and never knew formats.
+- **F. Integration.** One static list, read by the façade, the device and the asset loaders (the "sound" kind decodes
+  by extension; which kind an extension chooses by default is unchanged, so `.ogg` named without a kind is still
+  music). Static because the asset loaders run on worker threads and have no game object; copy-on-write, so reads
+  take no lock.
+- **G. Trade-offs.** A process-wide list: two games in one process share formats (tests remove what they add). A
+  format in the list wins over a backend's own decoder: consistency over a native decoder's speed.
+- **H. Decision.** Extend (the stream contract was the right seam; only its registration was closed).
+- **I. Validation.** `AudioDecoderTests` (14 tests) on two small files made with ffmpeg and kept as base64: lengths,
+  rates, the tone they were made from, garbage and wrong-format bytes, a custom format as effect and music, a decoder
+  that throws, returns null or six channels; the sample's `Pcm16Stream`.
+
+### 8.2 Seeking a compressed stream
+
+Measured in a probe project outside the repository, with a chirp so positions cannot alias:
+
+| Decoder | `seek(n)` then read |
+| --- | --- |
+| NVorbis 0.10.5 | lands off: +239 frames in a short mono file, frame 512 for a seek to 0 after reading, -128 and +128 in a 20 s stereo file; exact only at 0 of the long file |
+| NVorbis 1.0.0-rc.2 | lands on the frame, with samples up to 1.3 away from a straight decode for 600 to 3600 samples |
+| NLayer 3.0.1 | silence, then samples that differ from a straight decode |
+
+A loop seam some hundreds of samples off is a rhythm hiccup, and a position that assumes exact seeks drifts from the
+sound by that much every loop. So seeks are made exact by reading (`ExactSeekStream`): forward by decoding and
+dropping, backward from the file's beginning; a second decoder is brought to a loop's start a little at each read
+while the loop plays, so the seam itself costs a swap. Cost of an interactive seek backward: decoding from the start,
+3 to 11 ms per second of music at the speeds measured. This also fixed looping OGG music, which went back to where the
+decoder's seek to 0 landed. Tested: after seeks to several frames a stream gives the samples of the whole decode at
+1e-6, and streamed music loops over its file's region sample for sample across three seams.
+
+### 8.3 Streamed or decoded, and releasing
+
+- **Streaming or memory, per sound.** `AudioLoadMode.Streamed` (default for music) or `Decoded`; sound effects are
+  decoded. Tested: the same file streamed and decoded renders the same samples at 1e-6.
+- **Unloading. A/B.** A registered sound stayed in a list for good; a game with levels grew for ever, and a sound
+  loaded by an asset scope was kept by the mixer after the scope released it.
+- **D. Target.** Nothing to write for a level's sounds: `Audio.Play(level.Sound("owl.ogg"))`, and the scope is the
+  only owner. For the bank: `Audio.RemoveSound(name)`.
+- **F. Integration.** The asset store already counts holders of a clip; the audio side adds no second count. The
+  device frees a handle's slot (`UnloadSound`, `UnloadMusic`, defaults that do nothing for other devices) and reuses
+  it. A voice holds its clip by reference, so removing a sound that plays is safe.
+- **I. Validation.** Weak references: a removed or replaced sound is collected; a clip played without a name is
+  collected after its voices end; a registered one is not; removing the current music stops it, on a silent device
+  too.
+
+## 9. Spatial sound (2026-11-22)
+
+- **A. Need.** Any game with a world larger than a screen: torches, machines, enemies off screen, a river. Each game
+  wrote the same twenty lines (distance, a curve, pan, `Set` every update), kept the voice handles, stopped them on
+  scene exit, and most forgot to free voices of sources out of range.
+- **B. Before.** `VoicesExample` did it by hand for one sound.
+- **C. Alternatives.** OpenAL Soft and Steam Audio are 3D spatializers with their own mixers: adopting one replaces
+  the engine's mixer (ADR 0033) for a 2D need that is two multiplications per emitter. FMOD and Wwise are licensed
+  middleware. Nothing managed and small exists to adopt; what is conventional was adopted as vocabulary: minimum and
+  maximum distance and linear, inverse and custom rolloff are the terms of Unity, Godot and OpenAL.
+- **D. Target, written first.** `Sounds.Follow(hero); Sounds.Emit("torch", torch, loop: true);` and
+  `Sounds.Emit("explosion", position);`. No handle to keep, nothing in `Exit`.
+- **E. Boundary.** The engine: distance, pan, lifetime, voices. The game: what makes a sound and where the listener
+  is.
+- **F. Integration.** A scene system (ADR 0060), `Scene.Sounds`, ordered after the others so it reads positions
+  physics wrote. Entities through `IWorld`. Ramps of one step (ADR 0067) instead of new mixer code. The state hash
+  gets nothing: emitters derive from hashed entities, and whether a voice plays depends on the device; a test runs
+  the same scene on a silent and a capture device and compares the hashes.
+- **G. Trade-offs.** Volume and pan only (no distance filter: effects are per bus). A loop waits for a free voice
+  rather than stealing, so with more loops in range than voices the first keep theirs, not the nearest. A scene that
+  is not updated keeps its emitters at their last values.
+- **Doppler.** Asked to be included only if justified: fly-bys are common (racing, shooters), the cost is ten lines
+  over the pitch ramp, and it is off by default. Included.
+- **H. Decision.** Extend.
+- **I. Validation.** `SceneAudioTests` (12 tests) on rendered samples and emitter values: levels in each speaker by
+  distance and side, every rolloff monotonic with exact end points, a custom curve clamped, an emitter following an
+  entity with no change between two samples larger than a ramp's, entity destroyed, scene left, two hundred emitters
+  out of range with no voice and none refused, a loop back in range at the phase it would have, Doppler ratios, odd
+  numbers everywhere, no allocation in a step with forty moving emitters. `SpatialSoundExampleTests` measures the
+  example's tones as the listener walks.
+
+## 10. Not verified (second part)
+
+- Nothing was heard on a device: every claim above is about rendered samples.
+- NativeAOT with NLayer was not published (the machine has no native linker); the trimmed publish is the evidence.
+  No browser, Android, iOS, Linux or macOS run.
+- Decoding speed and seek cost were measured once, on one machine, with other builds running.
+- The `sdk/tests` checks (`packages.mjs` was taught the new dependency) were not run: they need a packed feed.
+- Left as it was: `AudioEngine.CreateBus` writes a new bus's parent and volume without a hand-over to the audio
+  thread.
