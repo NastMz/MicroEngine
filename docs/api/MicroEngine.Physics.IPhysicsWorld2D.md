@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 A 2D physics world: bodies owned by entities, shapes with collision layers, kinematic collide-and-slide moves, ray
 and overlap queries, sensors, and a step. The members below are the common contract every backend passes (one

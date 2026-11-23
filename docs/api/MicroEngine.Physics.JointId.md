@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 A joint of an [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md) ([Joints](MicroEngine.Physics.PhysicsCapabilities.md)). Generation-checked like
 [BodyId](MicroEngine.Physics.BodyId.md); <code>default</code> is [None](MicroEngine.Physics.JointId.md#MicroEngine_Physics_JointId_None).

@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 The physics module: registers a [PhysicsSystem](MicroEngine.Physics.PhysicsSystem.md) service and steps it in [Physics](MicroEngine.Kernel.FramePhase.md)
 (system [SystemName](MicroEngine.Physics.PhysicsModule.md#MicroEngine_Physics_PhysicsModule_SystemName)), once per fixed step, after the simulation's [FixedUpdate](MicroEngine.Kernel.FramePhase.md).

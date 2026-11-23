@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 What a physics backend offers beyond the common contract of [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md). Every backend passes the
 common conformance suite; each flag it declares has a suite of its own that runs only on backends declaring it. A

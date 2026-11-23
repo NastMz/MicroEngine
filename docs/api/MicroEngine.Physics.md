@@ -4,9 +4,11 @@
 
 The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms.
 
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 ### Namespaces
+
+ [MicroEngine.Physics.Box2D](MicroEngine.Physics.Box2D.md)
 
  [MicroEngine.Physics.Tiles](MicroEngine.Physics.Tiles.md)
 

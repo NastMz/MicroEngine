@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 How the solver treats a dynamic body ([Dynamics](MicroEngine.Physics.BodyDescription.md#MicroEngine_Physics_BodyDescription_Dynamics),
 [SetDynamics](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_SetDynamics_MicroEngine_Physics_BodyId_MicroEngine_Physics_BodyDynamics__)). <code>default</code> is the default body: no damping, full gravity, free to

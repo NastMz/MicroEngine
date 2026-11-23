@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 A shape of an [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md) (a box, a tile grid, or a shape of a declared capability), attached to one
 body. Generation-checked like [BodyId](MicroEngine.Physics.BodyId.md); <code>default</code> is [None](MicroEngine.Physics.ShapeId.md#MicroEngine_Physics_ShapeId_None).

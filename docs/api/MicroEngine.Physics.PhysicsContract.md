@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 The version of the 2D physics contract ([IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md)); a change to its rules raises it.
 
