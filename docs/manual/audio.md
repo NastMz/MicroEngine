@@ -346,10 +346,11 @@ repeats.
 | --- | --- |
 | `Audio.MusicPosition`, `Audio.Position(voice)` | Seconds from the sound's beginning, at this update. A loop comes back to the start of its region |
 | `Audio.MusicHeardPosition`, `Audio.HeardPosition(voice)` | The same, less `Audio.OutputLatency`: what the player hears at this update |
-| `Audio.SeekMusic(seconds)`, `Audio.Seek(voice, seconds)` | Moves the sound there from this update on, exactly at the update's point in the output |
+| `Audio.SeekMusic(seconds)`, `Audio.Seek(voice, seconds)` | Moves the sound there from this update on, exactly at the update's point in the output (streamed music far from the place gets there a few frames later: see below) |
+| `Audio.MusicSeeking`, `Audio.IsSeeking(voice)` | Whether streamed music is still on its way to the place asked for |
 | `Audio.MusicDuration`, `Audio.Duration(voice)` | The sound's length in seconds |
 | `new PlayParameters { StartAt = 12.5 }` | The sound starts that far into itself |
-| `new PlayParameters { Delay = 0.25 }` | The sound starts that long after this update, exact to the output sample |
+| `new PlayParameters { Delay = 0.25 }` | The sound starts that long after this update, exact to the output sample. It holds a voice of its own while it waits, so sounds scheduled one after another all play |
 | `new PlayParameters { Loop = true, LoopRegion = ... }` | The part that repeats, for this play |
 
 ### An intro, then a loop
@@ -406,6 +407,12 @@ sound's first sample is still on its way, by the time left; so is the position o
 On a device without sound the music's position is the time it has played, so a game that follows its music behaves
 the same in a headless run until the music loops.
 
+The heard position is where the sound was one output latency ago, exactly. While the sound plays on it never goes
+back: after a pause it stands still that much later than the position does, after a resume it moves on that much
+later, and a change of pitch reaches it that much later. Two things make it jump, as they make the sound jump: a
+loop's seam, and a seek. After a seek the heard position goes on along the old place until the seek reaches the
+speaker, then is at the new one.
+
 Seeking is one call. A paused sound stays paused at the new place; a sound that does not loop ends as much sooner or
 later; a time past the end ends it, and past a loop's region lands inside the region:
 
@@ -417,6 +424,15 @@ if (Input.Pressed("right")) Audio.SeekMusic(Audio.MusicPosition + BeatSeconds); 
 
 To bring the music back where a saved game left it, save `MusicPosition` and call `SeekMusic` after `PlayMusic`, or
 play it as a voice with `StartAt`.
+
+Sounds and decoded music are at the new place at once. Streamed OGG and MP3 reach a place by decoding up to it, and
+a place more than a quarter of a second of decoding away is reached over the next frames instead of holding one up:
+`SeekMusic` returns true, the music goes on playing where it was (`MusicPosition` with it), `Audio.MusicSeeking` is
+true, and a few frames later the music is at the new place, on the exact sample. Music started in its middle
+(`StartAt`) is silent until it gets there, with its position standing at the place asked for. The way is counted in
+sound, not in time (a quarter of a second of the file per frame), so a scripted run arrives at the same update every
+time: a place 90 seconds into a file is reached 360 frames later, six seconds at 60 frames per second. Register
+music with `AudioLoadMode.Decoded` when it must jump at once.
 
 
 ## Sounds with a place
@@ -493,12 +509,14 @@ maximum, the result is the gain.
 
 **Voices.** An emitter out of range holds no voice, so a level can have hundreds of emitters and only those within
 earshot count against the 32 voices. A looping emitter that comes into range starts where it would be had it played
-all along. A sound that plays once and is out of range when it happens is not heard at all. When more loops are in
+all along, and so does a sound that plays once and comes into range part of the way through. When more loops are in
 range than there are voices, the ones that came first keep theirs and the others wait for one to be free; sounds
 that play once take voices by the usual priority rule.
 
 **Lifetime.** Emitters stop when their entity is destroyed and when the scene leaves the stack, fading out over
-`Sounds.StopFade` (a tenth of a second). A sound that plays once removes its emitter when it ends.
+`Sounds.StopFade` (a tenth of a second). A sound that plays once removes its emitter when the sound's length has
+passed on the scene's clock (at the emitter's pitch), whether it was heard or not: `IsActive` and `Emitters` are the
+same on a device that plays and on a silent one, at every update.
 
 **Scripted runs.** Emitters are sound, not state: nothing of them is in the scene's state hash, and a run on a
 silent device computes the same gains and pans and plays nothing. Do not decide anything in the game by `IsAudible`,
@@ -606,16 +624,28 @@ Music is kept one of two ways, chosen per piece:
 
 | `AudioLoadMode` | Memory | While it plays | Use it for |
 | --- | --- | --- | --- |
-| `Streamed` (the default) | the file's bytes and half a second of sound | decodes a little every frame, outside the simulation step; plays at its own pitch; a seek decodes up to the place asked for | long tracks |
+| `Streamed` (the default) | the file's bytes and half a second of sound | decodes a little every frame, outside the simulation step; plays at its own pitch; a far seek arrives some frames later | long tracks |
 | `Decoded` | the whole sound: about ten megabytes per minute of stereo at 44.1 kHz | nothing to decode; changes pitch; seeks at once | short pieces, stings, anything played many times at once |
 
 Sound effects are always decoded whole. A long ambience is better registered as music and played beside the track
 with `PlayMusicVoice`, which streams it.
 
-A seek in streamed OGG or MP3 lands on the exact sample, by decoding and dropping what lies between: forward from
-where the music is, or from the file's beginning when it goes back, at a few milliseconds per second of music
-skipped. A loop that goes back to the same place again and again does not pay for it: the place is prepared while
-the loop plays.
+A seek in streamed OGG or MP3 lands on the exact sample, by decoding up to it, a quarter of a second of the file per
+frame ([Following the music](#following-the-music)): no frame waits for a seek. A loop does not pay for going back
+either. In an OGG file the way back to the loop's start is found by the decoder's own seek and then made exact, so
+an intro of a minute before a loop of a few seconds costs no more than a loop over the whole file; the seam is on the
+exact sample. In an MP3 file, and for a decoder of the game's own, the way back is decoded again from the file's
+beginning while the loop plays, half a second of the file per frame: it is ready in time when the intro is at most
+thirty times as long as the loop at 60 frames per second, and beyond that the seam waits for it.
+
+A loop region of streamed music is at least a tenth of a second long: a shorter one (a file whose loop comments are
+wrong) is ignored and the whole file loops. Decoded sounds loop over regions of any length, down to two samples.
+
+**Damaged files.** A file that is not what its extension says, or is cut short or lies about its length, is refused
+when it is registered (`InvalidDataException`; `AssetLoadException` through `Game.Assets`), without decoding it and
+without allocating for the length it claims. A music file that is damaged further in is found while it plays: the
+music plays up to the damage and ends there, like a track that is over. Nothing is thrown into the game; the engine
+writes one warning naming the music to `Audio.Log` (the game's log), and `Audio.FailedStreams` counts it.
 
 ### Files from content, and releasing them
 
@@ -712,9 +742,15 @@ sound and resumes it when shown again.
 - A loop wraps at a whole sample of the sound; played at another pitch or rate, the fraction of a sample across the
   seam holds the last sample before it.
 - Streamed music keeps its own pitch; register it with `AudioLoadMode.Decoded` to change it.
-- A seek backward in streamed OGG or MP3 decodes from the file's beginning to the place asked for, and a seek forward
-  from where the music is: a few milliseconds per second of music skipped, on the game's thread. Decoded music
-  seeks at once.
+- A far seek in streamed OGG or MP3 is not instant: the music reaches the place four times faster than it would by
+  playing (a quarter of a second of the file per frame at 60 frames per second) and plays on where it was
+  meanwhile. Each of those frames decodes that much on the game's thread: 2 to 7 ms on a desktop for 44.1 kHz
+  stereo. `AudioEngineSettings.StreamSeekSeconds` changes the amount. Decoded music seeks at once.
+- A streamed MP3 loop whose intro is more than thirty times as long as the loop waits at the seam for the rest of
+  the way back to be decoded. OGG has no such limit.
+- The heard position remembers the last eight changes of a sound's motion (pause, resume, pitch, seek): with more
+  than eight within one output latency it is approximate until the latency has passed.
+
 - MP3 has no loop points, and an MP3 file that loops has a short gap at the seam (the padding of its encoder).
 - A sound registered by name stays in memory until `RemoveSound`; a clip played without a name is held only while
   it plays.

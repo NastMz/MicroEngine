@@ -173,7 +173,7 @@ public static class ContentTool
                 {
                     // The engine's own decoder, the one every platform plays it with.
                     try { AudioDecoders.Open(File.ReadAllBytes(full), "mp3").Dispose(); }
-                    catch (InvalidDataException e) { Error($"not an MP3 file the engine decodes ({e.Message}). Export it again as MP3, or as OGG Vorbis."); }
+                    catch (Exception e) when (e is InvalidDataException or NotSupportedException) { Error($"not an MP3 file the engine decodes ({e.Message}). Export it again as MP3, or as OGG Vorbis."); }
                 }
                 else if (UnreadAudio.Contains(ext)) Error($"the engine does not decode {ext} audio. Convert it to PCM WAV, OGG Vorbis or MP3 (OGG for music that loops: it carries loop points and has no gap at the seam).");
                 else if (ext is ".ttf" or ".otf")

@@ -41,7 +41,9 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
   Commit d2dce9be.
 - [x] T6 S4, S5, S6 Listener and emitters as a scene system. Route: inline. Commit eddfd3e1.
 - [x] T7 S5 Evaluation, ADR 0072, release notes, limitations, API reference. Route: inline. Commit b1966aee.
-- [x] T8 S3, S5 Second batch: what T5 to T7 left contradicting (L8). Route: inline. The commit after b1966aee.
+- [x] T8 S3, S5 Second batch: what T5 to T7 left contradicting (L8). Route: inline. Commit 2e8ddb84.
+- [x] T9 S2 to S6 Corrections after the independent verification, D1 to D9 and the seek hitch (L9). Route: inline.
+  The commit after 2e8ddb84.
 
 ## Log
 
@@ -100,3 +102,18 @@ Evaluation: `docs/evaluations/audio-2.md`. Decisions: ADR 0067 (graph, effects, 
   page: one line each in `docs/architecture.md` (two), `docs/howto.md`, `docs/tutorial/08-sound.md` and
   `docs/manual/backends.md`. Anchors: 251 links with anchors in the 26 pages changed since `origin/main`, none
   broken (a script outside the repository).
+- L9 (2026-11-23, T9, the coordinator's correction batch after an independent verification; its probes were read in
+  `%TEMP%/me-audio3-verify-sWP1j0`, not copied) Tests written first and seen failing, 16 of 17 on the first run
+  (the seventeenth, the heard position of a loop, already passed): D1 `A_stream_whose_decoder_throws_ends_instead_of_ending_the_game`,
+  `Music_files_damaged_after_their_headers_never_throw_while_they_play`; D2 `Sounds_scheduled_one_after_another_each_get_a_voice_and_keep_their_handles`;
+  D3 `A_loop_after_a_long_intro_never_decodes_the_intro_at_the_seam`, `A_region_too_short_to_stream_is_the_whole_stream`;
+  D4 `An_ogg_file_that_lies_about_its_length_is_refused_at_once` (it ran a minute before failing),
+  `An_mp3_file_with_a_tag_larger_than_the_file_or_damaged_bytes_allocates_little_and_returns`; D5
+  `A_seek_or_a_pitch_change_before_a_scheduled_start_does_not_end_the_sound_early`; D6
+  `The_heard_position_is_what_the_output_held_a_delay_ago_and_never_goes_back`; D7 the two one-shot tests of
+  `SceneAudioTests` (rewritten; the old one asserted the device-dependent lifetime); D8
+  `A_wav_sampler_loop_without_a_length_is_no_loop`; D9 `A_wav_that_is_not_pcm_is_not_supported_whichever_way_it_is_loaded`.
+  Written after the fix, for what the fix added: the three tests on a real OGG (`OggLong`, 7 KB, in the fixtures).
+  Timings before and after are in the evaluation, section 9b. Changed outside the allowed surface, one line:
+  `Audio.Log = engine.Log;` in `src/MicroEngine/Core/Game.cs`, without which the warning of a damaged music file
+  would go to standard error instead of the game's log.

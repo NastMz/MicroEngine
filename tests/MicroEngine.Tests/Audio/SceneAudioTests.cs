@@ -239,24 +239,51 @@ public sealed class SceneAudioTests
     // ---- Lifetime
 
     [TestMethod]
-    public void A_sound_that_plays_once_is_over_when_it_ends_and_never_heard_when_out_of_range()
+    public void A_sound_that_plays_once_is_over_when_its_length_has_passed_with_or_without_a_device()
+    {
+        // The same scene on a device that plays and on a silent one: what the game can read is the same at every step.
+        var seen = new List<string>();
+        foreach (bool silent in new[] { false, true })
+        {
+            var (game, capture, scene) = Start(silent: silent);
+            Step(game);
+            var near = scene.Sounds.Emit("blip", new Vector2(0, 0));
+            var far = scene.Sounds.Emit("blip", new Vector2(5000, 0));
+            var fast = scene.Sounds.Emit("blip", new Vector2(10, 0));
+            fast.Pitch = 2;
+            var trace = new System.Text.StringBuilder();
+            for (int step = 0; step < 10; step++)
+            {
+                Step(game);
+                trace.Append($"{step}:{(near.IsActive ? 1 : 0)}{(far.IsActive ? 1 : 0)}{(fast.IsActive ? 1 : 0)}/{scene.Sounds.Emitters.Count} ");
+            }
+            seen.Add(trace.ToString());
+            Assert.IsFalse(near.IsActive || far.IsActive || fast.IsActive, "a tenth of a second later all are over");
+            if (capture is null) continue;
+            Assert.AreEqual(2, capture.Played.Count, "the two in range were played; the one out of range was not");
+            Assert.AreEqual(0.5f + 0.5f, Heard(capture, StepFrames + 100).Left, 0.02f, "both heard while they last");
+            near.Stop();
+            Assert.IsFalse(near.IsAudible);
+        }
+        Assert.AreEqual(seen[0], seen[1], "with a device and without one");
+        StringAssert.StartsWith(seen[0], "0:111/3 1:111/3 2:111/3 3:110/2 ", "the one at twice the pitch is over in half the time, the one out of range lasts as long as the one heard");
+        StringAssert.Contains(seen[0], "4:110/2 5:000/0", "six steps: a tenth of a second on the scene's clock");
+    }
+
+    [TestMethod]
+    public void A_sound_that_plays_once_and_comes_into_range_is_heard_from_where_it_is()
     {
         var (game, capture, scene) = Start();
         Step(game);
-        var near = scene.Sounds.Emit("blip", new Vector2(0, 0));
-        var far = scene.Sounds.Emit("blip", new Vector2(5000, 0));
-        Assert.IsTrue(near.IsAudible);
-        Assert.IsFalse(far.IsAudible);
-        Step(game, 2);
-        Assert.IsFalse(far.IsActive, "out of range when it happened: gone");
-        Assert.IsTrue(near.IsActive);
+        var rise = scene.Sounds.Emit("rise", new Vector2(5000, 0));
+        Step(game, 30);
+        Assert.IsTrue(rise.IsActive && !rise.IsAudible);
+        rise.Position = Vector2.Zero;
         Step(game, 6);
-        Assert.IsFalse(near.IsActive, "a tenth of a second later it has ended");
-        Assert.AreEqual(0, scene.Sounds.Emitters.Count);
-        Assert.AreEqual(1, capture!.Played.Count, "one sound was played");
-        Assert.AreEqual(0.5f, Heard(capture, StepFrames + 100).Left, 1e-5f);
-        near.Stop();
-        Assert.IsFalse(near.IsAudible);
+        Assert.IsTrue(rise.IsAudible);
+        Assert.AreEqual(0.5f * (36 / 60f), Heard(capture!, (int)(capture!.Duration * Rate) - 1).Left, 0.02f, "half way through its second, not from its start");
+        Step(game, 30);
+        Assert.IsFalse(rise.IsActive, "a second after it was made");
     }
 
     [TestMethod]

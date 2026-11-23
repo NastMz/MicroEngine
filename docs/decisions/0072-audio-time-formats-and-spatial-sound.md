@@ -68,7 +68,45 @@ by CONSOLIDATION-1.
 - Nothing of it enters the state hash. Emitters are presentation derived from entities that are hashed already, and
   whether a voice plays differs between a device that plays and a silent one.
 
+**Corrections after an independent verification (2026-11-23).**
+
+- **Nothing of a decoder can end the game.** Every read and seek of a stream's source is caught where the feed is
+  filled; the feed ends with what it had decoded, the voice ends as a sound that is over, and the failure is
+  reported once (`AudioEngine.StreamFailed`, `FailedStreams`; `AudioMixer` writes it to its log). Sizes a file
+  declares are bounded by what its bytes could hold before anything is allocated or the decoder is given them: Ogg
+  page positions against the packets before them, an ID3v2 tag against the file's length, the first allocation of a
+  whole decode against the encoded size.
+- **A seek never holds a frame up.** A compressed stream reaches a place by decoding up to it; when that is more
+  than `AudioEngineSettings.StreamSeekSeconds` of sound (0.25), a third decoder is brought there by that much per
+  `Pump` while the stream plays on, and the stream changes to it, by the same command as any seek, when it arrives
+  (`IsSeeking`). The amount is counted in frames of sound, so the arrival is at the same step in every run. Started
+  in its middle, a stream waits silent, its position standing at the place.
+- **A loop's way back is found, not decoded.** The sound at the loop's start is kept when it is first decoded in
+  passing; the next decoder for the way back is put near it by the library's own seek, 4096 frames early, and then
+  on the exact frame by finding that sound in what it decodes (NVorbis's seek was measured up to 512 frames off, on
+  either side). The position is taken only when the sound is found exactly once; silence, a pure tone, a decoder
+  without a seek (MP3, a game's own) fall back to decoding from the file's start, a piece per `Pump`.
+- **A scheduled sound holds a voice of its own.** A voice holds one sound and one waiting to replace it; choosing a
+  voice by "free at the sound's start" put several scheduled sounds in one voice, each replacing the one before. A
+  voice is free only when its sound is over now. A scheduled sound that steals a voice silences its victim at once,
+  so no handle that is gone names something that still sounds.
+- **The heard position is the position one delay ago.** The timeline keeps the last eight changes of a sound's
+  motion (start, pause, resume, pitch, seek) and evaluates the motion that held at that frame: it cannot go back
+  while the sound plays on, and across a seek it follows the old place until the seek is heard.
+- **A one-shot emitter lives for its sound's length on the scene's clock**, heard or not, so what a game reads of
+  it is the same with and without a device.
+- **A stream's loop region is at least a tenth of a second**; a shorter one is ignored. A WAV sampler loop of one
+  frame is no loop.
+
 ## Alternatives rejected
+
+- **Catching decoder exceptions in `Game`'s frame schedule**: a broken file would still throw every frame, and the
+  schedule is not the audio module's.
+- **A far seek done in the call, with a warning in the manual**: measured 100 to 550 ms for 90 s of OGG on the
+  machine this was written on; a frozen game.
+- **Seeking a compressed stream with the library and decoding only the remainder**: the library does not say where
+  it landed, and at an arbitrary place there is no sound to recognise it by. At a loop's start there is, which is
+  why loops use it and seeks do not.
 
 - **Reading the position from the audio thread** (a volatile counter per voice): it moves in blocks, differs between
   sinks and runs, and would make a game that follows its music non-deterministic.

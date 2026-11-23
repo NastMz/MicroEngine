@@ -403,15 +403,15 @@ public sealed class AudioPositionTests
     public void A_stream_loops_over_the_region_its_file_names()
     {
         var (engine, sink) = Open(delayFrames: 10);
-        var voice = engine.Play(new NumberedStream(6000, new LoopRegion(2000, 5000)), new PlayParameters { Loop = true });
-        Step(engine, 12);
-        Assert.AreEqual(4999f, At(sink, 10 + 4999));
-        Assert.AreEqual(2000f, At(sink, 10 + 5000), "back to the region's start; the tail after the region is never played");
-        Assert.AreEqual(4999f, At(sink, 10 + 7999));
-        Assert.AreEqual(2000f, At(sink, 10 + 8000));
-        Assert.AreEqual((2000 + (12 * StepFrames - 5000) % 3000) / (double)Rate, engine.Position(voice), 1e-12);
-        Assert.IsTrue(engine.Seek(voice, 5500.0 / Rate), "past the region: brought into it");
-        Assert.AreEqual(2500.0 / Rate, engine.Position(voice), 1e-12);
+        var voice = engine.Play(new NumberedStream(12000, new LoopRegion(2000, 8000)), new PlayParameters { Loop = true });
+        Step(engine, 24);
+        Assert.AreEqual(7999f, At(sink, 10 + 7999));
+        Assert.AreEqual(2000f, At(sink, 10 + 8000), "back to the region's start; the tail after the region is never played");
+        Assert.AreEqual(7999f, At(sink, 10 + 13999));
+        Assert.AreEqual(2000f, At(sink, 10 + 14000));
+        Assert.AreEqual((2000 + (24 * StepFrames - 8000) % 6000) / (double)Rate, engine.Position(voice), 1e-12);
+        Assert.IsTrue(engine.Seek(voice, 9500.0 / Rate), "past the region: brought into it");
+        Assert.AreEqual(3500.0 / Rate, engine.Position(voice), 1e-12);
     }
 
     [TestMethod]

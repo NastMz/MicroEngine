@@ -118,6 +118,12 @@ public sealed record AudioEngineSettings
     /// <summary>Output frames of streamed music decoded ahead (by <see cref="AudioEngine.Pump"/>); half a second by default.</summary>
     public double StreamAheadSeconds { get; init; } = 0.5;
     /// <summary>
+    /// Seconds of a compressed stream decoded and dropped per <see cref="AudioEngine.Pump"/> on the way to a place
+    /// sought (0.25 by default): a seek further than this is spread over several host frames instead of holding one
+    /// up (<see cref="AudioEngine.IsSeeking"/>).
+    /// </summary>
+    public double StreamSeekSeconds { get; init; } = 0.25;
+    /// <summary>
     /// Whether the limiter after "master" (<see cref="AudioEngine.Limiter"/>) starts switched on: a mix that goes over
     /// full scale is then turned down instead of clipped, and a mix within full scale is not touched. Null (the
     /// default) leaves it to whoever creates the mixer: the devices games play through
@@ -366,6 +372,7 @@ public sealed class AudioEngine : IDisposable
     // frame, whether a host frame ended since, and when the sink last rendered anything: what it had rendered, the step
     // that saw it, and the host frames ended since.
     private readonly int _sinkLatency;
+    private readonly double _seekSeconds;
     private bool _pumped;
     private long _frameLead = long.MaxValue, _progressRendered = -1, _progressStep;
     private int _progressPumps;
@@ -390,6 +397,7 @@ public sealed class AudioEngine : IDisposable
         _sinkLatency = Math.Max(0, sink.LatencyFrames);
         DelayFrames = Math.Max(_sinkLatency, settings.DelayFrames ?? 0);
         StreamAheadFrames = Math.Max(1024, (int)(settings.StreamAheadSeconds * _rate));
+        _seekSeconds = settings.StreamSeekSeconds > 0 ? Math.Min(settings.StreamSeekSeconds, 3600) : 0.25;
         _logical = new Logical[MaxVoices];
         _voices = new Voice[MaxVoices];
         _incoming = new Voice[MaxVoices];
@@ -535,6 +543,24 @@ public sealed class AudioEngine : IDisposable
     /// whether it starts on (a game's device has it on); <see cref="AudioEffect.Bypass"/> switches it.
     /// </summary>
     public Effects.Limiter Limiter { get; }
+
+    /// <summary>
+    /// Streams that ended because their decoder threw while it was read or sought (a damaged file): each plays what it
+    /// had decoded, then ends like a sound that is over. Counted once per stream.
+    /// </summary>
+    public int FailedStreams { get; private set; }
+
+    /// <summary>
+    /// Raised once, on the main thread during <see cref="Pump"/> (or the call that sought it), for each stream counted
+    /// in <see cref="FailedStreams"/>: the voice that played it (already ended) and what its decoder threw.
+    /// </summary>
+    public event Action<VoiceHandle, Exception>? StreamFailed;
+
+    private void ReportFailure(VoiceHandle voice, Exception error)
+    {
+        FailedStreams++;
+        StreamFailed?.Invoke(voice, error);
+    }
 
     /// <summary>Effects that threw while rendering and were taken out of the mix (<see cref="AudioEffect.Faulted"/>).</summary>
     public int FaultedEffects => Volatile.Read(ref _faulted);
@@ -754,14 +780,59 @@ public sealed class AudioEngine : IDisposable
         // Only a stream that can seek starts elsewhere than its beginning or repeats a part of itself.
         long from = seekable is null ? 0 : (long)StartFrame(parameters.StartAt, stream.SampleRate, frames);
         var region = seekable is null ? default : (parameters.LoopRegion ?? seekable.LoopRegion ?? default).Within(frames);
-        if (from > 0) seekable!.Seek(from);
-        var feed = new StreamFeed(stream, parameters.Loop, _rate, _channels, StreamAheadFrames, from, region.Start, region.End);
+        // A stream is decoded in pieces, and each time round a loop it is put back at the region's start: a region of
+        // a few frames would be all seeking and no sound. Shorter than a tenth of a second, it is the whole stream.
+        if (region.End > 0 && region.End - region.Start < Math.Max(1, stream.SampleRate / 10)) region = (0, frames);
+        var exact = stream as ExactSeekStream;
+        // Far into a compressed stream: the way there is decoded over the next host frames, and the sound starts
+        // when it is reached.
+        bool later = exact is not null && exact.CostOf(from) > SeekBudget(stream);
+        try
+        {
+            if (later) exact!.BeginSeek(from);
+            else if (from > 0) seekable!.Seek(from);
+            if (parameters.Loop && region.Start > 0) exact?.PrepareLoop(region.Start, region.End);
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            // A damaged file: there is no sound to play.
+            stream.Dispose();
+            ReportFailure(VoiceHandle.None, error);
+            return VoiceHandle.None;
+        }
+        var feed = new StreamFeed(stream, parameters.Loop, _rate, _channels, StreamAheadFrames, from, region.Start, region.End) { Hold = later };
         var handle = Start(parameters, long.MaxValue, null, feed, (double)stream.SampleRate / _rate, from, frames, stream.SampleRate, region);
         if (handle.IsNone) { stream.Dispose(); return handle; }
         feed.Slot = handle.Index;
         feed.Generation = handle.Generation;
         _feeds.Add(feed);
+        if (later)
+        {
+            ref var l = ref _logical[handle.Index];
+            (l.Held, l.Seeking, l.SeekTarget) = (true, true, from);
+            Mark(ref l);
+        }
         return handle;
+    }
+
+    /// <summary>The frames of <paramref name="stream"/> decoded and dropped in one go on the way to a place sought.</summary>
+    private long SeekBudget(IAudioStream stream) => Math.Max(1, (long)(_seekSeconds * stream.SampleRate));
+
+    /// <summary>
+    /// Whether <paramref name="voice"/> is on its way to a place that <see cref="Seek"/> or
+    /// <see cref="PlayParameters.StartAt"/> named and has not reached it yet. Only compressed streams take time to get
+    /// there (their decoders reach a place by decoding up to it, a little at each <see cref="Pump"/>): a stream sought
+    /// while it plays goes on playing where it was until then, and one started in its middle is silent until then.
+    /// </summary>
+    public bool IsSeeking(VoiceHandle voice) => IsPlaying(voice) && _logical[voice.Index].Seeking;
+
+    /// <summary>A stream's decoder threw: it is reported once, and the stream ends with what it had decoded.</summary>
+    private void Fail(StreamFeed feed, Exception error)
+    {
+        if (feed.Reported) return;
+        feed.Reported = true;
+        feed.Fail(error);
+        ReportFailure(new VoiceHandle(feed.Slot, feed.Generation), error);
     }
 
     private VoiceHandle Start(in PlayParameters p, long length, AudioClip? clip, StreamFeed? feed, double step, double from, long frames, int sampleRate, (long Start, long End) region)
@@ -776,13 +847,17 @@ public sealed class AudioEngine : IDisposable
             DroppedCommands++;
             return VoiceHandle.None;
         }
-        long at = Now + Frames(p.Delay);
-        int slot = Choose(at, p.Priority);
+        long now = Now, at = now + Frames(p.Delay);
+        int slot = Choose(now, p.Priority);
         if (slot < 0)
         {
             RefusedSounds++;
             return VoiceHandle.None;
         }
+        // A sound that takes the voice of one still playing replaces it at its own first frame. When that frame is
+        // later than this step's (a scheduled sound), the one it took is silenced now: its handle is gone, and a
+        // handle that is gone names nothing that still sounds.
+        if (at > now && Busy(slot)) TryPost(new Command { Op = Op.Stop, Slot = slot, Frame = now });
         Release(slot);
         ref var l = ref _logical[slot];
         l.Generation = l.Generation == uint.MaxValue ? 1 : l.Generation + 1;
@@ -802,6 +877,8 @@ public sealed class AudioEngine : IDisposable
         l.Position = l.FeedBase = from;
         l.PositionFrame = at;
         (l.LoopStart, l.LoopEnd) = region;
+        (l.Held, l.Seeking, l.MotionCount) = (false, false, 0);
+        Mark(ref l);
         l.Limit = long.MaxValue;
         l.Volume = float.IsNaN(p.Volume) ? 1 : Math.Clamp(p.Volume, 0, 1);
         (l.Left, l.Right) = Balance(p.Pan);
@@ -815,6 +892,11 @@ public sealed class AudioEngine : IDisposable
     }
 
     /// <summary>A free voice, or the one the policy steals; -1 when the new sound is refused.</summary>
+    /// <remarks>
+    /// A voice is free when its sound is over at <paramref name="at"/>, the current step's frame, also for a sound that
+    /// starts later: a voice holds one sound and at most one waiting to replace it, so a sound scheduled after another
+    /// takes a voice of its own and holds it while it waits.
+    /// </remarks>
     private int Choose(long at, int priority)
     {
         int victim = -1;
@@ -841,7 +923,7 @@ public sealed class AudioEngine : IDisposable
     private static void Settle(ref Logical l, long now)
     {
         long frames = Math.Max(0, now - l.PositionFrame);
-        if (!l.Paused && frames > 0)
+        if (!l.Paused && !l.Held && frames > 0)
         {
             long ramp = Math.Min(frames, l.StepRamp);
             if (ramp > 0)
@@ -861,14 +943,48 @@ public sealed class AudioEngine : IDisposable
     }
 
     /// <summary>
-    /// Where a sound is in its source, in source frames, at output frame <paramref name="frame"/>. Before the sound's
-    /// last change (its start, a seek) it is counted back from there at the sound's speed: the time left until that
-    /// change is heard, as a negative offset from it.
+    /// Records how the sound moves from now on (where it is, its speed, whether it stands still): the timeline keeps
+    /// the last few of these, so it can tell where the sound was at an earlier frame, which is where the player still
+    /// hears it (<see cref="HeardPosition"/>). Called after every change to a sound's motion.
+    /// </summary>
+    private static void Mark(ref Logical l)
+    {
+        var motion = new Motion { Frame = l.PositionFrame, Position = l.Position, Step = l.Step, StepTarget = l.StepTarget, StepRamp = l.StepRamp, Still = l.Paused || l.Held };
+        Span<Motion> motions = l.Motions;
+        // Changes of one frame are one change.
+        if (l.MotionCount > 0 && motions[l.MotionCount - 1].Frame >= motion.Frame)
+        {
+            motions[l.MotionCount - 1] = motion;
+            return;
+        }
+        if (l.MotionCount == MotionsKept)
+        {
+            for (int i = 1; i < MotionsKept; i++) motions[i - 1] = motions[i];
+            l.MotionCount--;
+        }
+        motions[l.MotionCount++] = motion;
+    }
+
+    /// <summary>
+    /// Where a sound is in its source, in source frames, at output frame <paramref name="frame"/>: on the motion it
+    /// had at that frame, so an earlier frame gives where it was then, across pauses, pitch changes and seeks. Before
+    /// the first motion kept (a sound that has not started) it is counted back from there at the sound's speed.
     /// </summary>
     private static double SourceFrame(in Logical l, long frame)
     {
         var at = l;
-        if (frame < at.PositionFrame) return at.Paused ? at.Position : at.Position - (at.PositionFrame - frame) * at.Step;
+        ReadOnlySpan<Motion> motions = at.Motions;
+        int index = at.MotionCount - 1;
+        if (index < 0)
+        {
+            Settle(ref at, frame);
+            return at.Position;
+        }
+        while (index > 0 && motions[index].Frame > frame) index--;
+        var motion = motions[index];
+        if (frame < motion.Frame) return motion.Still ? motion.Position : motion.Position - (motion.Frame - frame) * motion.Step;
+        (at.PositionFrame, at.Position, at.Step, at.StepTarget, at.StepRamp) = (motion.Frame, motion.Position, motion.Step, motion.StepTarget, motion.StepRamp);
+        (at.Paused, at.Held) = (motion.Still, false);
         Settle(ref at, frame);
         return at.Frames > 0 ? Math.Min(at.Position, at.Frames) : at.Position;
     }
@@ -888,6 +1004,14 @@ public sealed class AudioEngine : IDisposable
     /// speaker. What a game shows in step with the sound reads this: a note crossing a line, a cutscene's cue. It is
     /// negative while the sound's first frame is still on its way, by the time left until it is heard.
     /// </summary>
+    /// <remarks>
+    /// It is where the sound was one delay ago, exactly: it stands still that long after a pause and moves on that
+    /// long after a resume, a pitch change reaches it that much later, and it never goes back while the sound plays
+    /// on. After <see cref="Seek"/> it goes on along the old place until the seek is heard, then jumps to the new one
+    /// (and after a loop's seam, back to the region's start). The timeline keeps the last eight changes of a sound's
+    /// motion: with more than that within one delay, the oldest are forgotten and the heard position is approximate
+    /// until the delay has passed.
+    /// </remarks>
     public double HeardPosition(VoiceHandle voice) => PositionAt(voice, DelayFrames);
 
     private double PositionAt(VoiceHandle voice, long before)
@@ -928,35 +1052,64 @@ public sealed class AudioEngine : IDisposable
         Settle(ref l, now);
         double target = StartFrame(seconds, l.SampleRate, l.Frames);
         if (l.Loop && l.LoopEnd > l.LoopStart && target >= l.LoopEnd) target = l.LoopStart + (target - l.LoopStart) % (l.LoopEnd - l.LoopStart);
-        StreamFeed? feed = null;
-        if (seekable is not null)
+        if (seekable is null)
         {
-            // What was decoded ahead belongs to the old place: a new feed takes the stream from the new one, decoded
-            // here so the sound goes on without a gap, and the render function changes to it at the seek's frame. The
-            // old feed is never filled again.
-            target = Math.Floor(target);
+            l.Position = target;
+            if (!l.Loop && l.Frames > 0)
+            {
+                // From where the sound is on the timeline, which for a sound that has not started is its start.
+                long left = FramesLeft(l);
+                if (l.Paused) l.Remaining = left;
+                else l.End = Math.Min(l.PositionFrame + left, l.Limit);
+            }
+            Mark(ref l);
+            TryPost(new Command { Op = Op.Seek, Slot = voice.Index, Frame = now, Position = target });
+            return true;
+        }
+        target = Math.Floor(target);
+        var feed = l.Feed!;
+        try
+        {
+            if (seekable is ExactSeekStream exact && exact.CostOf((long)target) > SeekBudget(exact))
+            {
+                // Too far to decode in one go: the way there is spread over the next host frames (Pump), and the
+                // sound goes on where it is until it is reached.
+                exact.BeginSeek((long)target);
+                (l.Seeking, l.SeekTarget) = (true, target);
+                return true;
+            }
             seekable.Seek((long)target);
-            var old = l.Feed!;
-            feed = new StreamFeed(old.Source, old.Loop, _rate, _channels, StreamAheadFrames, (long)target, l.LoopStart, l.LoopEnd) { Slot = old.Slot, Generation = old.Generation };
-            int index = _feeds.IndexOf(old);
-            if (index >= 0) _feeds[index] = feed;
-            else _feeds.Add(feed);
-
-            l.Feed = feed;
-            feed.Fill();
-            l.FeedBase = target;
-            if (l.Paused) l.Remaining = long.MaxValue;
-            else l.End = l.Limit;
         }
-        l.Position = target;
-        if (feed is null && !l.Loop && l.Frames > 0)
+        catch (Exception error) when (error is not OutOfMemoryException)
         {
-            long left = FramesLeft(l);
-            if (l.Paused) l.Remaining = left;
-            else l.End = Math.Min(now + left, l.Limit);
+            Fail(feed, error);
+            Stop(voice);
+            return false;
         }
-        TryPost(new Command { Op = Op.Seek, Slot = voice.Index, Frame = now, Position = target, Feed = feed });
+        ArriveAt(ref l, voice.Index, target, now);
         return true;
+    }
+
+    /// <summary>
+    /// A stream's decoder is at <paramref name="target"/>: what was decoded ahead belongs to the old place, so a new
+    /// feed takes the stream from the new one, decoded here so the sound goes on without a gap, and the render
+    /// function changes to it at frame <paramref name="now"/>. The old feed is never filled again.
+    /// </summary>
+    private void ArriveAt(ref Logical l, int slot, double target, long now)
+    {
+        Settle(ref l, now);
+        var old = l.Feed!;
+        var feed = new StreamFeed(old.Source, old.Loop, _rate, _channels, StreamAheadFrames, (long)target, l.LoopStart, l.LoopEnd) { Slot = old.Slot, Generation = old.Generation, Reported = old.Reported };
+        int index = _feeds.IndexOf(old);
+        if (index >= 0) _feeds[index] = feed;
+        else _feeds.Add(feed);
+        l.Feed = feed;
+        feed.Fill();
+        (l.Position, l.FeedBase, l.Held, l.Seeking) = (target, target, false, false);
+        if (l.Paused) l.Remaining = long.MaxValue;
+        else l.End = l.Limit;
+        Mark(ref l);
+        TryPost(new Command { Op = Op.Seek, Slot = slot, Frame = now, Position = target, Feed = feed });
     }
 
     /// <summary>Frames a clip that does not loop still has to play, from where <see cref="Settle"/> left it.</summary>
@@ -1054,8 +1207,9 @@ public sealed class AudioEngine : IDisposable
         {
             long left = FramesLeft(l);
             if (l.Paused) l.Remaining = left;
-            else l.End = Math.Min(now + left, l.Limit);
+            else l.End = Math.Min(l.PositionFrame + left, l.Limit);
         }
+        Mark(ref l);
         Send(new Command { Op = Op.Set, Slot = voice.Index, Frame = now, Volume = -1, Left = -1, Right = -1, Step = speed, Fade = ramp }, Unsent.Values);
         return true;
     }
@@ -1078,6 +1232,7 @@ public sealed class AudioEngine : IDisposable
         }
         else l.End = l.Remaining == long.MaxValue ? long.MaxValue : now + l.Remaining;
         l.Paused = paused;
+        Mark(ref l);
         Send(new Command { Op = Op.Pause, Slot = voice.Index, Frame = now, Paused = paused }, Unsent.Pause);
         return true;
     }
@@ -1154,6 +1309,7 @@ public sealed class AudioEngine : IDisposable
             if (held <= 0) continue;
             l.Start += held;
             l.PositionFrame += held;
+            Mark(ref l);
             if (l.End != long.MaxValue) l.End = Math.Min(l.End + held, l.Limit);
         }
         Volatile.Write(ref _skipped, _skipped + frames);
@@ -1179,7 +1335,40 @@ public sealed class AudioEngine : IDisposable
                 feed.Source.Dispose();
                 continue;
             }
+            if (l.Seeking)
+            {
+                // On its way to a place sought: a piece of the way per host frame, and the change once it is there
+                // (when the queue has room to tell the render function).
+                if (!Flush() || Full) continue;
+                bool there;
+                try { there = ((ExactSeekStream)feed.Source).ContinueSeek(SeekBudget(feed.Source)); }
+                catch (Exception error) when (error is not OutOfMemoryException)
+                {
+                    l.Seeking = false;
+                    Fail(feed, error);
+                    Stop(new VoiceHandle(feed.Slot, feed.Generation));
+                    continue;
+                }
+                if (there)
+                {
+                    ArriveAt(ref l, feed.Slot, l.SeekTarget, Now);
+                    feed = l.Feed!;
+                }
+            }
             feed.Fill();
+            // The way back to a loop's start, a piece per host frame.
+            if (feed.Error is null && feed.Source is ExactSeekStream looping)
+            {
+                try { looping.Idle(2 * SeekBudget(looping)); }
+                catch (Exception error) when (error is not OutOfMemoryException) { feed.Fail(error); }
+            }
+            if (feed.Error is { } failure)
+            {
+                Fail(feed, failure);
+                // What it decoded is still played; the sound is over when the render function has played it.
+                if (!l.Paused) l.End = Math.Min(l.End, Math.Max(Now, RenderedFrames + _skipped + feed.Buffered));
+                continue;
+            }
             // Its end is known once decoding reaches it; the mixer's timeline learns it here.
             if (feed.Finished && l.End == long.MaxValue && !l.Paused)
             {
@@ -1958,6 +2147,23 @@ public sealed class AudioEngine : IDisposable
         private Change _first;
     }
 
+    /// <summary>Changes of a sound's motion the timeline remembers.</summary>
+    private const int MotionsKept = 8;
+
+    /// <summary>How a sound moves from a frame on: where it is there, its speed and what is left of a pitch ramp, or that it stands still.</summary>
+    private struct Motion
+    {
+        public long Frame, StepRamp;
+        public double Position, Step, StepTarget;
+        public bool Still;
+    }
+
+    [System.Runtime.CompilerServices.InlineArray(MotionsKept)]
+    private struct MotionList
+    {
+        private Motion _first;
+    }
+
     /// <summary>A voice as the main thread's policy sees it.</summary>
     private struct Logical
     {
@@ -1974,6 +2180,13 @@ public sealed class AudioEngine : IDisposable
         public int SampleRate;
         public long LoopStart, LoopEnd;
         public double FeedBase;
+        // A stream on its way to a place sought (Seeking, to SeekTarget), and one that stands still until it gets
+        // there because it has not begun (Held).
+        public bool Held, Seeking;
+        public double SeekTarget;
+        // How the sound moved lately, oldest first: where it was at an earlier frame is read from these.
+        public int MotionCount;
+        public MotionList Motions;
         // A pitch ramp: the speed it ends at and the frames it still takes from PositionFrame (0: none).
         public double StepTarget;
         public long StepRamp;

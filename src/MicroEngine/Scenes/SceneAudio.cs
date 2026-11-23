@@ -34,6 +34,10 @@ public sealed class SoundEmitter
     internal float SentVolume = -1, SentPan = -1, SentPitch = -1;
     internal float LastDistance = -1;
     internal bool Started;
+    // A sound that plays once: its length in seconds of the sound, how much of it has gone by on the scene's clock,
+    // and whether it is to be given a voice the next time it is in range.
+    internal double Length, Progress;
+    internal bool Wanted = true;
 
     /// <summary>The registered sound it plays, or null when it plays a clip.</summary>
     public string? Sound { get; }
@@ -73,7 +77,11 @@ public sealed class SoundEmitter
     public float Pan { get; internal set; } = 0.5f;
     /// <summary>The pitch the last step gave it, Doppler shift included.</summary>
     public float PlayedPitch { get; internal set; } = 1;
-    /// <summary>Whether the emitter is still in its scene: false once stopped, once its sound ended (when it does not loop), once its entity was destroyed or once the scene left.</summary>
+    /// <summary>
+    /// Whether the emitter is still in its scene: false once stopped, once its entity was destroyed, once the scene
+    /// left and, for a sound that plays once, once the sound's length has gone by on the scene's clock (at its
+    /// pitch), whether or not it was heard. It is the same with and without a device that plays.
+    /// </summary>
     public bool IsActive => Owner is not null;
     /// <summary>Whether a voice of the mixer is playing its sound now (false out of range, on a device without sound, and when every voice was busy with sounds of higher priority).</summary>
     public bool IsAudible => Owner is { } owner && owner.Scene.Audio.IsPlaying(Voice);
@@ -200,6 +208,7 @@ public sealed class SceneAudio : SceneSystem
     private SoundEmitter Add(string? sound, AudioClip? clip, EntityId entity, Vector2 position, bool loop, float volume)
     {
         var emitter = new SoundEmitter(this, sound, clip, loop) { Entity = entity, Position = position, Volume = volume };
+        emitter.Length = clip?.Duration ?? Scene.Audio.SoundDuration(sound!);
         if (!entity.IsNone)
         {
             if (!TryPlace(entity, out var at)) throw new ArgumentException($"{entity} is not alive in the scene's world.", nameof(entity));
@@ -280,6 +289,13 @@ public sealed class SceneAudio : SceneSystem
                 }
             }
             emitter.Age += dt;
+            // A sound that plays once is over when its length has gone by on the scene's clock, heard or not.
+            emitter.Progress += dt * emitter.PlayedPitch;
+            if (!emitter.Loop && emitter.Progress >= emitter.Length)
+            {
+                Remove(emitter, 0.02f);
+                continue;
+            }
             Place(emitter, listener, dt);
         }
     }
@@ -310,32 +326,37 @@ public sealed class SceneAudio : SceneSystem
         bool playing = audio.IsPlaying(emitter.Voice);
         if (emitter.Gain <= 0)
         {
-            // Out of range: no voice. A sound that plays once and was out of range when it happened is never heard.
+            // Out of range: no voice. It is given one again if it comes back in range.
             if (playing) audio.Stop(emitter.Voice, 0.05f);
             emitter.Voice = VoiceHandle.None;
-            if (!emitter.Loop && emitter.Started) Remove(emitter, 0);
-            emitter.Started = true;
+            (emitter.Started, emitter.Wanted) = (true, true);
             return;
         }
         if (!playing)
         {
-            if (!emitter.Loop && emitter.Started)
+            if (emitter.Loop)
             {
-                // It played once and ended (or could not play at all).
-                Remove(emitter, 0);
-                return;
+                // A device without voices hears of the sound once, so a headless run can list it.
+                if (emitter.Started && !audio.SupportsVoices) return;
+                // A loop waits for a free voice instead of taking one from another sound: with more loops in range
+                // than voices, they would otherwise take them from each other at every step.
+                if (audio.SupportsVoices && audio.Statistics is var voices && voices.ActiveVoices >= voices.MaxVoices)
+                {
+                    emitter.Started = true;
+                    return;
+                }
             }
-            // A device without voices hears of the sound once, so a headless run can list it.
-            if (emitter.Started && !audio.SupportsVoices) return;
-            // A loop waits for a free voice instead of taking one from another sound: with more loops in range than
-            // voices, they would otherwise take them from each other at every step.
-            if (emitter.Loop && audio.SupportsVoices && audio.Statistics is var voices && voices.ActiveVoices >= voices.MaxVoices)
+            // A sound that plays once asks for a voice when it happens and when it comes into range, not at every
+            // step: one that lost its voice to a sound of higher priority stays silent.
+            else if (!emitter.Wanted) return;
+            emitter.Wanted = false;
+            var parameters = new PlayParameters
             {
-                emitter.Started = true;
-                return;
-            }
-
-            var parameters = new PlayParameters { Volume = volume, Pan = emitter.Pan, Pitch = pitch, Loop = emitter.Loop, Bus = emitter.Bus, Priority = emitter.Priority, FadeIn = emitter.Started ? 0.05f : 0 };
+                Volume = volume, Pan = emitter.Pan, Pitch = pitch, Loop = emitter.Loop, Bus = emitter.Bus, Priority = emitter.Priority,
+                FadeIn = emitter.Started ? 0.05f : 0,
+                // What comes into range part of the way through is heard from there.
+                StartAt = emitter.Loop ? 0 : emitter.Progress,
+            };
             emitter.Voice = emitter.Clip is { } clip ? audio.PlayVoice(clip, parameters) : audio.PlayVoice(emitter.Sound!, parameters);
             // A loop that comes into range is where it would be had it been heard all along.
             if (emitter.Started && emitter.Loop && audio.Duration(emitter.Voice) is > 0 and var length) audio.Seek(emitter.Voice, emitter.Age % length);

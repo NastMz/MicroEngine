@@ -267,15 +267,64 @@ public class MixerAudioDevice : IAudioDevice, IDisposable
 /// seam and a game following its music as drift. So a seek here is exact by construction: forward it decodes and
 /// drops what lies between, backward it starts the file again first (<see cref="ExactSeekStream"/>).
 /// </remarks>
-internal sealed class VorbisStream(NVorbis.VorbisReader reader) : IAudioStream
+internal sealed class VorbisStream(NVorbis.VorbisReader reader) : IAudioStream, ICoarseSeek
 {
     public static IAudioStream Open(byte[] encoded)
     {
+        CheckPages(encoded);
         var first = new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded, writable: false), closeOnDispose: true));
         return new ExactSeekStream(first, () => new VorbisStream(new NVorbis.VorbisReader(new MemoryStream(encoded, writable: false), closeOnDispose: true)), first.Frames, first.LoopRegion);
     }
 
     public long Frames => reader.TotalSamples;
+
+    /// <summary>The decoder's own seek: within a few hundred frames of the place, on either side.</summary>
+    public void SeekNear(long frame) => reader.SamplePosition = Math.Clamp(frame, 0, Math.Max(0, reader.TotalSamples));
+
+    /// <summary>
+    /// Refuses a file whose pages lie about its length before the decoder trusts them. The decoder takes the length
+    /// of the sound from the position written in the last page, sizes its work by it and, for some values, never
+    /// returns from a read. A position is believed only when the packets before it could hold that much sound (a
+    /// packet gives at most 8192 frames), is not negative and does not go back.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The file has no Ogg page, or a page position that cannot be true.</exception>
+    private static void CheckPages(byte[] file)
+    {
+        long packets = 0, last = -1, previous = 0;
+        int pages = 0, at = 0;
+        while (at + 27 <= file.Length)
+        {
+            if (file[at] != 'O' || file[at + 1] != 'g' || file[at + 2] != 'g' || file[at + 3] != 'S')
+            {
+                // Not a page (damage in between): the decoder looks for the next one, and so does this.
+                int next = file.AsSpan(at + 1).IndexOf("OggS"u8);
+                if (next < 0) break;
+                at += 1 + next;
+                continue;
+            }
+            int segments = file[at + 26];
+            if (at + 27 + segments > file.Length) break;
+            int body = 0;
+            for (int i = 0; i < segments; i++)
+            {
+                int lacing = file[at + 27 + i];
+                body += lacing;
+                if (lacing < 255) packets++;
+            }
+            long position = BitConverter.ToInt64(file, at + 6);
+            pages++;
+            if (position != -1)
+            {
+                if (position < previous || position > packets * 8192)
+                    throw new InvalidDataException($"an Ogg page says the sound is {position} frames long there, which its {packets} packets cannot hold.");
+                previous = position;
+            }
+            last = position;
+            at += 27 + segments + body;
+        }
+        if (pages == 0) throw new InvalidDataException("no Ogg page was found.");
+        if (last <= 0) throw new InvalidDataException("its last Ogg page does not say how long the sound is.");
+    }
 
     /// <summary>
     /// The loop the file's comments name, in the convention game tools write: LOOPSTART with LOOPLENGTH or LOOPEND, in

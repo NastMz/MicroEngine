@@ -50,15 +50,18 @@ public sealed class AudioClip
 
     /// <summary>
     /// Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo). The first loop of a sampler chunk ("smpl"),
-    /// which audio editors write for loop points, becomes the clip's <see cref="LoopRegion"/>.
+    /// which audio editors write for loop points, becomes the clip's <see cref="LoopRegion"/> when it is at least two
+    /// frames long and starts within the sound.
     /// </summary>
+    /// <exception cref="InvalidDataException">The bytes are not a WAV file, or it is cut short.</exception>
+    /// <exception cref="NotSupportedException">The WAV is not PCM, has more than two channels or another sample size.</exception>
     public static AudioClip FromWav(ReadOnlySpan<byte> data)
     {
         if (data.Length < 12 || !data[..4].SequenceEqual("RIFF"u8) || !data.Slice(8, 4).SequenceEqual("WAVE"u8))
             throw new InvalidDataException("Not a WAV file.");
         int channels = 0, rate = 0, bits = 0, format = 0;
         float[]? decoded = null;
-        LoopRegion? loop = null;
+        long loopStart = -1, loopEnd = -1;
         int p = 12;
         while (p + 8 <= data.Length)
         {
@@ -68,6 +71,7 @@ public sealed class AudioClip
             var body = data.Slice(p + 8, Math.Min(size, data.Length - p - 8));
             if (id.SequenceEqual("fmt "u8))
             {
+                if (body.Length < 16) throw new InvalidDataException("Corrupt WAV format chunk.");
                 format = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(body);
                 channels = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(body[2..]);
                 rate = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(body[4..]);
@@ -101,13 +105,16 @@ public sealed class AudioClip
                 // The first loop: its first frame and its last one (inclusive).
                 long start = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 8)..]);
                 long end = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[(36 + 12)..]);
-                if (end >= start) loop ??= new LoopRegion(start, end + 1);
+                if (loopStart < 0) (loopStart, loopEnd) = (start, end);
             }
             // A chunk the file cuts short is the last one.
             if (size > data.Length - p - 8) break;
             p += 8 + size + (size & 1);
         }
         if (decoded is null) throw new InvalidDataException("WAV file has no data chunk.");
+        // A sampler loop that starts and ends on one frame, or lies past the sound, is a marker and not a loop.
+        long frames = decoded.Length / channels;
+        LoopRegion? loop = loopEnd > loopStart && loopStart < frames ? new LoopRegion(loopStart, Math.Min(loopEnd + 1, frames)) : null;
         return new AudioClip(decoded, rate, channels) { LoopRegion = loop };
 
     }
@@ -267,7 +274,35 @@ public sealed class AudioMixer
 
     /// <summary>Creates a mixer over <paramref name="device"/>. Games use the one in <c>Game.Audio</c>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="device"/> is null.</exception>
-    public AudioMixer(IAudioDevice device) => _device = device ?? throw new ArgumentNullException(nameof(device));
+    public AudioMixer(IAudioDevice device)
+    {
+        _device = device ?? throw new ArgumentNullException(nameof(device));
+        if (Engine is { } engine) engine.StreamFailed += StreamFailed;
+    }
+
+    private static readonly MicroEngine.Kernel.ILog DefaultLog = new MicroEngine.Kernel.ConsoleLog();
+    // The name of the music the device was last told to play, for the report of a file that turns out damaged.
+    private string? _startedMusic;
+
+    /// <summary>A stream's decoder threw while it played: said once, as a warning; the sound has ended.</summary>
+    private void StreamFailed(VoiceHandle voice, Exception error)
+    {
+        string what = !voice.IsNone && voice == MusicVoice && _startedMusic is not null ? $"music '{_startedMusic}'" : "a streamed sound";
+        (Log ?? DefaultLog).Write(MicroEngine.Kernel.LogLevel.Warning, "audio",
+            $"{what} stopped: its file could not be decoded any further ({error.GetType().Name}: {error.Message}). The file is damaged; export it again.");
+    }
+
+    /// <summary>
+    /// Where the mixer reports what it could not play (a music file that turns out damaged while it plays): the
+    /// engine's log when the mixer is a game's, standard error otherwise.
+    /// </summary>
+    public MicroEngine.Kernel.ILog? Log { get; set; }
+
+    /// <summary>
+    /// Music and streamed voices that ended because their file could not be decoded any further (see
+    /// <see cref="AudioEngine.FailedStreams"/>); each is also written once to <see cref="Log"/>.
+    /// </summary>
+    public int FailedStreams => Engine?.FailedStreams ?? 0;
 
     /// <summary>The audio device the mixer plays through.</summary>
     public IAudioDevice Device => _device;
@@ -310,7 +345,15 @@ public sealed class AudioMixer
         var handle = _device.LoadSound(name, clip);
         if (_sounds.TryGetValue(name, out var old)) _device.UnloadSound(old);
         _sounds[name] = handle;
+        _soundSeconds[name] = clip.Duration;
     }
+
+    private readonly Dictionary<string, double> _soundSeconds = new(StringComparer.Ordinal);
+
+    /// <summary>The length in seconds of the registered sound <paramref name="name"/>, at its own pitch; the same on every device.</summary>
+    /// <exception cref="KeyNotFoundException">No sound is registered under <paramref name="name"/>.</exception>
+    public double SoundDuration(string name) =>
+        _soundSeconds.TryGetValue(name, out double seconds) ? seconds : throw new KeyNotFoundException($"Sound '{name}' is not registered.");
 
     /// <summary>
     /// Registers a sound file of any format in <see cref="AudioDecoders"/> ("wav", "ogg", "mp3" and what the game
@@ -335,6 +378,7 @@ public sealed class AudioMixer
         if (!_sounds.Remove(name, out var handle)) return false;
         _device.UnloadSound(handle);
         _lastPlayedFrame.Remove(name);
+        _soundSeconds.Remove(name);
         return true;
     }
 
@@ -627,6 +671,17 @@ public sealed class AudioMixer
     public bool Seek(VoiceHandle voice, double seconds) => Engine?.Seek(voice, seconds) ?? false;
 
     /// <summary>
+    /// Whether <paramref name="voice"/> is still on its way to a place <see cref="Seek"/> or
+    /// <see cref="PlayParameters.StartAt"/> named. Only streamed OGG and MP3 take time to get somewhere far: a stream
+    /// sought while it plays goes on where it was until then (and <see cref="Position"/> with it), and one started in
+    /// its middle is silent until then. Sounds and decoded music are there at once.
+    /// </summary>
+    public bool IsSeeking(VoiceHandle voice) => Engine?.IsSeeking(voice) ?? false;
+
+    /// <summary>Whether the music is still on its way to the place <see cref="SeekMusic"/> named (see <see cref="IsSeeking"/>).</summary>
+    public bool MusicSeeking => Engine?.IsSeeking(MusicVoice) ?? false;
+
+    /// <summary>
     /// Seconds between the mixer writing a frame and the player hearing it, as the device reports it (0 on a silent
     /// device and when rendering offline). <see cref="HeardPosition"/> and <see cref="MusicHeardPosition"/> already
     /// take it into account.
@@ -795,6 +850,7 @@ public sealed class AudioMixer
             _pendingMusic = null;
             _waiting = null;
             (_fade, _fadeSpeed) = (1, 0);
+            _startedMusic = name;
             mixer.CrossfadeMusic(Music(name), _musicVolume, crossfade);
             return;
         }
@@ -841,6 +897,7 @@ public sealed class AudioMixer
         _fade = fadeIn ? 0.05f : 1f;
         _fadeSpeed = fadeIn ? 4f : 0f;
         _silentMusicTime = 0;
+        _startedMusic = name;
         _device.PlayMusic(Music(name), _musicVolume * _fade);
     }
 

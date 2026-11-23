@@ -183,6 +183,13 @@ modelled as components and systems.
   decoded in managed code like OGG. `AudioDecoders.Add(extension, open)` registers a format of the game's own for
   all of them ([an audio format](../manual/extending.md#an-audio-format)). Music is streamed or decoded whole, per
   piece: `Audio.AddMusicFile(name, path, loop, AudioLoadMode.Decoded)`.
+- Streamed music never holds a frame up: a far `SeekMusic` or `StartAt` in an OGG or MP3 file is reached over the
+  next frames (`Audio.MusicSeeking`, `Audio.IsSeeking(voice)`), on the exact sample and at the same update in every
+  run, and a loop after a long intro goes back to its start without decoding the intro again.
+- A music file that turns out damaged while it plays ends there instead of throwing: one warning in the game's log
+  (`Audio.Log`) and `Audio.FailedStreams`. Files that lie about their length or carry a tag larger than themselves
+  are refused when registered, without the memory they claim.
+- `Audio.SoundDuration(name)` gives a registered sound's length.
 - `microengine content check` no longer warns about MP3 files, which every platform now plays; an `.mp3` the
   engine cannot decode is an error, like a WAV.
 - Releasing sounds: `Audio.RemoveSound(name)` and `Audio.RemoveMusic(name)` unregister and free a sound, and

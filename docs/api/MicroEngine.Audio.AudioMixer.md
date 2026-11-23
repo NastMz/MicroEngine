@@ -97,6 +97,19 @@ public IAudioDevice Device { get; }
 
  [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
+### <a id="MicroEngine_Audio_AudioMixer_FailedStreams"></a> FailedStreams
+
+Music and streamed voices that ended because their file could not be decoded any further (see
+[FailedStreams](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_FailedStreams)); each is also written once to [Log](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Log).
+
+```csharp
+public int FailedStreams { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Audio_AudioMixer_Limiter"></a> Limiter
 
 The limiter after "master": on a device that plays, a mix louder than full scale is turned down instead of
@@ -109,6 +122,19 @@ public Limiter Limiter { get; }
 #### Property Value
 
  [Limiter](MicroEngine.Audio.Effects.Limiter.md)
+
+### <a id="MicroEngine_Audio_AudioMixer_Log"></a> Log
+
+Where the mixer reports what it could not play (a music file that turns out damaged while it plays): the
+engine's log when the mixer is a game's, standard error otherwise.
+
+```csharp
+public ILog? Log { get; set; }
+```
+
+#### Property Value
+
+ [ILog](MicroEngine.Kernel.ILog.md)?
 
 ### <a id="MicroEngine_Audio_AudioMixer_MusicDuration"></a> MusicDuration
 
@@ -161,6 +187,18 @@ public double MusicPosition { get; }
 #### Property Value
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Audio_AudioMixer_MusicSeeking"></a> MusicSeeking
+
+Whether the music is still on its way to the place [SeekMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_SeekMusic_System_Double_) named (see [IsSeeking](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_IsSeeking_MicroEngine_Audio_VoiceHandle_)).
+
+```csharp
+public bool MusicSeeking { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Audio_AudioMixer_MusicVolume"></a> MusicVolume
 
@@ -615,6 +653,25 @@ public bool IsPlaying(VoiceHandle voice)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Audio_AudioMixer_IsSeeking_MicroEngine_Audio_VoiceHandle_"></a> IsSeeking\(VoiceHandle\)
+
+Whether <code class="paramref">voice</code> is still on its way to a place [Seek](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) or
+[StartAt](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_StartAt) named. Only streamed OGG and MP3 take time to get somewhere far: a stream
+sought while it plays goes on where it was until then (and [Position](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Position_MicroEngine_Audio_VoiceHandle_) with it), and one started in
+its middle is silent until then. Sounds and decoded music are there at once.
+
+```csharp
+public bool IsSeeking(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Audio_AudioMixer_Pause_MicroEngine_Audio_VoiceHandle_System_Boolean_"></a> Pause\(VoiceHandle, bool\)
 
 Pauses (true) or resumes (false) <code class="paramref">voice</code>; a paused sound keeps its voice.
@@ -999,6 +1056,28 @@ public void SetBusVolume(string name, float volume, float fadeSeconds = 0)
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No such bus.
+
+### <a id="MicroEngine_Audio_AudioMixer_SoundDuration_System_String_"></a> SoundDuration\(string\)
+
+The length in seconds of the registered sound <code class="paramref">name</code>, at its own pitch; the same on every device.
+
+```csharp
+public double SoundDuration(string name)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No sound is registered under <code class="paramref">name</code>.
 
 ### <a id="MicroEngine_Audio_AudioMixer_Stop_MicroEngine_Audio_VoiceHandle_System_Single_"></a> Stop\(VoiceHandle, float\)
 

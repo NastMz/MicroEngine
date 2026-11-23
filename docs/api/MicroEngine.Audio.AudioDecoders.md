@@ -127,7 +127,7 @@ public static IAudioStream Open(byte[] encoded, string format)
 
  [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
 
-No decoder is registered for the format.
+No decoder is registered for the format, or the file is of a kind its decoder does not read (a WAV that is not PCM).
 
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 

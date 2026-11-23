@@ -132,6 +132,12 @@ Behaviour that changed:
 - **A WAV file with a sampler chunk** (`smpl`) and **an OGG file with `LOOPSTART` comments** now loop over that
   region when played looping, instead of over the whole file. To loop the whole file anyway:
   `new PlayParameters { Loop = true, LoopRegion = new LoopRegion(0) }`, or strip the loop points from the file.
+- **A seek in streamed OGG or MP3** that is far from where the music is no longer happens inside the call: the call
+  returns true, the music plays on where it was, and it is at the new place some frames later
+  (`Audio.MusicSeeking`). Code that read `MusicPosition` right after `SeekMusic` and expected the new place waits for
+  `MusicSeeking` to be false, or registers the music with `AudioLoadMode.Decoded`.
+- **A loop region of streamed music shorter than a tenth of a second** is ignored (the whole file loops), and **a
+  WAV sampler loop that starts and ends on the same sample** is no loop.
 - **Registering a sound or music name again** releases the earlier one in the device. Handles from
   `IAudioDevice.LoadSound` kept by a game for a name it replaced through `AudioMixer` no longer play.
 - **Streamed music that does not loop** plays one sample more (its last), and music that was paused ends when it

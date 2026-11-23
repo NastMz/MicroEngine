@@ -172,6 +172,19 @@ public int DroppedCommands { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Audio_AudioEngine_FailedStreams"></a> FailedStreams
+
+Streams that ended because their decoder threw while it was read or sought (a damaged file): each plays what it
+had decoded, then ends like a sound that is over. Counted once per stream.
+
+```csharp
+public int FailedStreams { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Audio_AudioEngine_FaultedEffects"></a> FaultedEffects
 
 Effects that threw while rendering and were taken out of the mix ([Faulted](MicroEngine.Audio.AudioEffect.md#MicroEngine_Audio_AudioEffect_Faulted)).
@@ -408,12 +421,40 @@ public double HeardPosition(VoiceHandle voice)
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
 
+#### Remarks
+
+It is where the sound was one delay ago, exactly: it stands still that long after a pause and moves on that
+long after a resume, a pitch change reaches it that much later, and it never goes back while the sound plays
+on. After [Seek](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) it goes on along the old place until the seek is heard, then jumps to the new one
+(and after a loop's seam, back to the region's start). The timeline keeps the last eight changes of a sound's
+motion: with more than that within one delay, the oldest are forgotten and the heard position is approximate
+until the delay has passed.
+
 ### <a id="MicroEngine_Audio_AudioEngine_IsPlaying_MicroEngine_Audio_VoiceHandle_"></a> IsPlaying\(VoiceHandle\)
 
 Whether <code class="paramref">voice</code> is still playing (or paused, or fading out) on the mixer's timeline.
 
 ```csharp
 public bool IsPlaying(VoiceHandle voice)
+```
+
+#### Parameters
+
+`voice` [VoiceHandle](MicroEngine.Audio.VoiceHandle.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Audio_AudioEngine_IsSeeking_MicroEngine_Audio_VoiceHandle_"></a> IsSeeking\(VoiceHandle\)
+
+Whether <code class="paramref">voice</code> is on its way to a place that [Seek](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Seek_MicroEngine_Audio_VoiceHandle_System_Double_) or
+[StartAt](MicroEngine.Audio.PlayParameters.md#MicroEngine_Audio_PlayParameters_StartAt) named and has not reached it yet. Only compressed streams take time to get
+there (their decoders reach a place by decoding up to it, a little at each [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump)): a stream sought
+while it plays goes on playing where it was until then, and one started in its middle is silent until then.
+
+```csharp
+public bool IsSeeking(VoiceHandle voice)
 ```
 
 #### Parameters
@@ -645,5 +686,18 @@ public bool Stop(VoiceHandle voice, double fadeSeconds = 0)
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 Whether it was playing.
+
+### <a id="MicroEngine_Audio_AudioEngine_StreamFailed"></a> StreamFailed
+
+Raised once, on the main thread during [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump) (or the call that sought it), for each stream counted
+in [FailedStreams](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_FailedStreams): the voice that played it (already ended) and what its decoder threw.
+
+```csharp
+public event Action<VoiceHandle, Exception>? StreamFailed
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action\-2)<[VoiceHandle](MicroEngine.Audio.VoiceHandle.md), [Exception](https://learn.microsoft.com/dotnet/api/system.exception)\>?
 
 </div>

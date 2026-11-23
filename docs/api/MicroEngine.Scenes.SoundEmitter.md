@@ -85,7 +85,9 @@ public float Gain { get; }
 
 ### <a id="MicroEngine_Scenes_SoundEmitter_IsActive"></a> IsActive
 
-Whether the emitter is still in its scene: false once stopped, once its sound ended (when it does not loop), once its entity was destroyed or once the scene left.
+Whether the emitter is still in its scene: false once stopped, once its entity was destroyed, once the scene
+left and, for a sound that plays once, once the sound's length has gone by on the scene's clock (at its
+pitch), whether or not it was heard. It is the same with and without a device that plays.
 
 ```csharp
 public bool IsActive { get; }

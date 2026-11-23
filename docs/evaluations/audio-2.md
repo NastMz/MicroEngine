@@ -264,6 +264,39 @@ decoder's seek to 0 landed. Tested: after seeks to several frames a stream gives
   numbers everywhere, no allocation in a step with forty moving emitters. `SpatialSoundExampleTests` measures the
   example's tones as the listener walks.
 
+## 9b. Corrections after an independent verification (2026-11-23)
+
+A second verification confirmed the thread design and found a crash and several defects; each got a test that
+failed first (`AudioCorrectionTests`, 20 tests, and two in `SceneAudioTests`).
+
+| Found | Cause | Now |
+| --- | --- | --- |
+| D1. An MP3 damaged after its header passed loading, and `Pump` threw from the decoder every frame | Nothing caught a decoder's exception in the fill | The feed ends with what it decoded; reported once to the log and in `FailedStreams`. 400 damaged MP3 files and the OGG files that still open play without an exception (27 of the MP3 files end by their decoder) |
+| D2. Sounds scheduled with `Delay` one after another shared a voice; only two of four sounded | A voice counted as free when its sound would be over at the new sound's start | Free only when over now; a scheduled sound that steals silences its victim at once |
+| D3. A loop after a long intro decoded the intro at every seam; tiny regions decoded and reopened without end | The spare decoder was thrown away unless ready, and advanced only as fast as reads | The way back is found by the decoder's own seek and made exact against the sound kept from the loop's start; else decoded per `Pump`; stream regions under a tenth of a second are ignored |
+| D4. An OGG whose last page claimed 2^40 frames allocated 2 GB or never returned; an ID3 tag larger than the file allocated 512 MB | Declared sizes were trusted | Bounded by what the bytes can hold, before allocating or decoding |
+| D5. `Seek` or `SetPitch` before a scheduled start ended the sound early on the timeline | The end was counted from now, not from the start | Counted from where the sound is on the timeline |
+| D6. `HeardPosition` jumped back on resume and on a pitch increase | It extrapolated backwards from the latest state | It evaluates the motion that held one delay ago, from the last eight changes |
+| D7. A one-shot emitter's `IsActive` depended on the device | It followed the voice | It follows the sound's length on the scene's clock |
+| D8. A sampler loop with start equal to end gave a one-frame loop | It was taken as a region | No region |
+| D9. A WAV that is not PCM threw `InvalidDataException` through the decoder list | The list wrapped `NotSupportedException` | It passes through, as the documentation says |
+| A far seek froze the game | Decode-and-drop inside the call | Spread over `Pump`s, a quarter of a second of sound each |
+
+Measured with a probe outside the repository, a 120 s stereo 44.1 kHz OGG, offline sink, three rounds, on the machine
+this was written on, with other builds running:
+
+| Case | Before | After |
+| --- | --- | --- |
+| `Seek` forward to 90 s: the call | 102 to 550 ms | 0.6 to 4.3 ms; the place is reached 360 `Pump`s later, each at most 2.7 to 6.6 ms |
+| `Seek` back from 100 s to 30 s: the call | 36 to 62 ms | 0.6 to 2.4 ms; reached 120 `Pump`s later, each at most 1.5 to 1.8 ms |
+| `Play` with `StartAt` 54 s | 63 to 79 ms | 3.4 to 14 ms |
+| A loop of 3.7 s after an intro of 55 s: the `Pump` at each seam | 64 to 77 ms, every seam | 2.0 to 5.4 ms; in the first round one seam took 10.8 ms and one 33.4 ms, in the later rounds none above 3.7 ms |
+
+Not fixed, and why: nothing of the list. Left as limits and written in the manual: a far seek takes time to arrive
+(four times faster than playing); an MP3 loop whose intro is more than thirty times the loop waits at its seam; the
+heard position keeps eight changes. Not verified: the 33 ms `Pump` of the first round was not explained (first use
+of the code, or a collection); nothing was heard on a device.
+
 ## 10. Not verified (second part)
 
 - Nothing was heard on a device: every claim above is about rendered samples.
