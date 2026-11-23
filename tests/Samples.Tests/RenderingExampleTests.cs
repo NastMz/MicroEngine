@@ -27,7 +27,7 @@ public sealed class RenderingExampleTests
     /// <summary>The examples game on a rasterizing 960×540 headless window with <paramref name="scene"/> on top.</summary>
     internal static (ExamplesGame Game, HeadlessPlatform Platform) Start(Scene scene)
     {
-        var game = new ExamplesGame(Directory.CreateTempSubdirectory("examples-").FullName);
+        var game = new ExamplesGame();
         var platform = HeadlessPlatform.For(game.Settings, rasterize: true);
         platform.Resize(960, 540);
         platform.PumpEvents(new NoEvents());

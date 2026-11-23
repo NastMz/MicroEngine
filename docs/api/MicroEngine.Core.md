@@ -121,7 +121,9 @@ tests compose the same way and decide a run the same way. A host states its defa
 files are), the game's <code>Configure</code> entry point composes the rest ([HostBuilder](MicroEngine.Hosting.HostBuilder.md)), and the
 [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) decides the run: a script means deterministic time and seed 1 on every host; a run in
 deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-one; a real-time run whose game shows a start screen starts gamepads after the first frame.
+one; a run nobody plays ([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended): a script, deterministic time, no window, or an
+end of its own with <code>--frames</code>) keeps its saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) unless the launch names
+a folder; a real-time run whose game shows a start screen starts gamepads after the first frame.
 
  [GameLauncher](MicroEngine.Core.GameLauncher.md)
 
@@ -129,7 +131,11 @@ The command line every desktop game accepts, on any backend: a thin caller of th
 ([GameHost](MicroEngine.Core.GameHost.md), [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)). Supported arguments:
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
-<code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
+<code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--saves DIR</code> keep the game's saves in that folder for this run ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves)). Without
+it a run nobody plays (<code>--script</code>, <code>--time deterministic</code>, <code>--headless</code> or <code>--platform headless</code>
+in any time mode, <code>--frames N</code>) keeps them in memory, empty at start, and never touches the player's; any
+other run uses the game's usual saves. The crash report of such a run is written beside its captures, or in the
+working directory without a script.</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>. A
 headless run is in deterministic time unless <code>--time</code> says otherwise (the headless platform's
 [RunPreset](MicroEngine.Core.RunPreset.md)).</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
@@ -291,6 +297,14 @@ the engine's input layers, exactly as a backend's would; each device is announce
 
 The launcher command line with the engine's own types (see [GameLauncher](MicroEngine.Core.GameLauncher.md)): a typed view of a
 [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), with the seed and the time mode resolved by its rules.
+
+ [MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md)
+
+Slots kept in memory: empty when created, gone with the object. It is where a run nobody plays keeps its saves (a
+scripted run, a run in deterministic time, a game stepped by a test), so such a run never reads or writes the
+player's saves and two of them start from the same state. A test that plays a game twice over the same saves
+hands both the same instance (<code>RunOptions.Saves</code>, <code>Game.InitializeForTest</code>). It takes the names the file
+storage takes (a plain name, see [SaveStore](MicroEngine.Core.SaveStore.md)), so a slot that works here works on a disk.
 
  [MonotonicClock](MicroEngine.Core.MonotonicClock.md)
 

@@ -154,8 +154,10 @@ public static void BindDefaults(InputMap map) => map
     .Unbind("fire").Bind("fire", [Key.X], [PadButton.X]);
 ```
 
-At start the defaults are bound, then saved bindings replace them. `LoadBindings` returns false when nothing was
-saved, and also when the data is unreadable; unreadable data is set aside first:
+At start the defaults are bound, then saved bindings replace them. The screen passes the actions it offers
+(`actions:`), so a saved file changes those and no other: the menu actions and the engine's own always follow the
+game's code. `LoadBindings` returns false when nothing was saved, and also when the data is unreadable or was written
+in a later format; such data is set aside first:
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#load -->
 ```csharp
@@ -163,8 +165,9 @@ public override void Enter()
 {
     _storage = Game.Saves.Storage;   // the bindings are kept where the game's saves are
     BindDefaults(Input);
-    // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
-    _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+    // Saved bindings replace the defaults of the actions this screen offers, and of no other action; false
+    // (nothing saved, or unreadable and set aside) keeps the defaults.
+    _status.Text = Input.LoadBindings(_storage, actions: Rebindable) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
 
     var rows = new Stack { Spacing = 3, Align = Align.Start };
     foreach (var action in Rebindable)
@@ -247,9 +250,12 @@ each is read in its own scenes.
 Bindings are saved as text, one list of controls per action, each by its kind and name (`"Key:Q"`, `"Pad:A"`,
 `"Mouse:Secondary"`, `"Wheel:Up"`, `"Axis:RightTrigger+"`), so they stay valid when the engine adds keys, and a control
 a version does not know is skipped. A file saved in the first format (one list per kind of control, no mouse) loads
-unchanged. `SaveBindings`
-writes every action and throws `IOException` or `UnauthorizedAccessException` when the medium refuses; the change then
-lasts until the game quits:
+unchanged. Loading never leaves an action without a control by accident: an action saved with controls of which this
+version knows none keeps the controls it has, and only an action that was unbound when it was saved (an empty list)
+is unbound again. `SaveBindings` writes the actions it is given, or every action of the map when it is given none,
+and throws `IOException` or `UnauthorizedAccessException` when the medium refuses; the change then lasts until the
+game quits. Save the actions the player can rebind: a file with every action also holds the ones the game binds in
+code, and loading it back replaces what a newer version of the game binds there:
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#save -->
 ```csharp
@@ -257,7 +263,7 @@ private void Save(string done)
 {
     try
     {
-        Input.SaveBindings(_storage);
+        Input.SaveBindings(_storage, actions: Rebindable);   // what the player can change, nothing else
         _status.Text = done;
     }
     catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -272,9 +278,9 @@ private void Save(string done)
 | `InputSystem.ListenForPress(pressed, kinds)` | Hands the next press to `pressed`, once, and keeps it (and its release) from everything else; dispose the result to stop listening. Keys and gamepad buttons unless `kinds` says more: `PressKinds.All` adds mouse buttons and the wheel |
 | `InputControl.FromPress(press)` | The control a press is on (a key, a gamepad button, a mouse button, a wheel direction), or null |
 | `BindFrom(action, press, replace)` | Binds the press's control; `replace` swaps the action's keys (for a key), its gamepad buttons (for a button) or its mouse buttons and wheel directions (for a mouse button or the wheel) |
-| `SaveBindings(storage, slot)` | Writes every action's bindings to an `IStorage` slot (`input-bindings` by default; a plain name, see [Slot names](persistence.md#slot-names)). Throws `IOException` or `UnauthorizedAccessException` when the storage fails |
-| `LoadBindings(storage, slot)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back); false and the defaults stay when nothing was saved or the data is unreadable, which is set aside. A storage that cannot be read throws (`IOException`, `UnauthorizedAccessException`) and the current bindings stay |
-| `ExportBindings()`, `ImportBindings(set)` | The same data as an `InputBindingSet`, to keep inside a save of your own (`SaveStore.Save("bindings", Input.ExportBindings())`) |
+| `SaveBindings(storage, slot, actions)` | Writes the bindings of `actions` (the ones a rebinding screen offers), or of every action when it is null, to an `IStorage` slot (`input-bindings` by default; a plain name, see [Slot names](persistence.md#slot-names)). Throws `IOException` or `UnauthorizedAccessException` when the storage fails |
+| `LoadBindings(storage, slot, actions)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back), and with `actions` to those only; false and the defaults stay when nothing was saved or the data is unreadable or of a later format, which is set aside. A storage that cannot be read throws (`IOException`, `UnauthorizedAccessException`) and the current bindings stay |
+| `ExportBindings(actions)`, `ImportBindings(set, actions)` | The same data as an `InputBindingSet`, to keep inside a save of your own (`SaveStore.Save("bindings", Input.ExportBindings())`) |
 
 ## The mouse in actions
 

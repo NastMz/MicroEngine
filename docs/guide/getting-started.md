@@ -79,6 +79,11 @@ dotnet run --project games/MeadowRun -c Release -- --script games/MeadowRun/scri
 
 Open the PNGs in `captures/` and look at them. For visual changes, passing tests are not enough.
 
+A scripted run never touches your saves: it keeps the game's progress, settings, achievements and key bindings in
+memory, empty at the start, so the same script gives the same captures whatever you played before. Add
+`--saves DIR` to start it from the saves in a folder and to find there what it saved
+([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
+
 ## Your first game
 
 1. Copy `samples/HelloEngine` to a new folder (for example `games/MyGame`), rename the project file and keep its

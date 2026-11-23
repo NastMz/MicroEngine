@@ -273,7 +273,7 @@ jobs:
           # The 3D slice game on the same adapter, through the desktop launcher with its sdl-gpu device: a scripted,
           # deterministic run whose capture is kept as an artifact.
           (cd samples/Slice3D/bin/Release/net10.0 && xvfb-run -a -s "-screen 0 1920x1080x24" dotnet Slice3D.dll --script slice.script \
-            --hidden --report --captures "$GITHUB_WORKSPACE/gpu-captures") | tee -a gpu-tests.log
+            --hidden --report --captures "$GITHUB_WORKSPACE/gpu-captures" --saves "$RUNNER_TEMP/slice3d-saves") | tee -a gpu-tests.log
           { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 4 -E 'deviceName|driverName' gpu-tests.log || true; grep -m 2 'sdl-gpu api=' gpu-tests.log || true; grep -m 1 'depth formats:' gpu-tests.log || true; grep -E '^(platform|capture):' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         uses: actions/upload-artifact@v4

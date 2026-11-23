@@ -61,9 +61,12 @@ public static PlatformCatalog Platforms(this HostBuilder host)
 
 ### <a id="MicroEngine_Core_HostBuilderExtensions_SaveStore_MicroEngine_Hosting_HostBuilder_System_String_"></a> SaveStore\(HostBuilder, string\)
 
-A save store for <code class="paramref">gameId</code> on the composition's medium ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)), else the
-platform's default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)): for a game that takes its store as a
-constructor argument. A game that uses [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) gets the same medium without it.
+A save store for <code class="paramref">gameId</code> on the medium of this launch, for a game that takes its store as a
+constructor argument: the folder the launch names ([SaveDirectory](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_SaveDirectory)), else the
+composition's medium ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)), else a store in memory when nobody plays the launch
+([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended)), else the platform's default
+([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)). A game that uses [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) gets the same medium
+without it: in one launch both are the same saves.
 
 ```csharp
 public static SaveStore SaveStore(this HostBuilder host, string gameId)

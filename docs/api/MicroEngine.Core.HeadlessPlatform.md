@@ -246,10 +246,11 @@ public Presentation Presentation { get; init; }
 
 The run defaults this testing composition states ([RunPreset](MicroEngine.Core.RunPreset.md), offered as a capability):
 [Testing](MicroEngine.Core.RunPreset.md#MicroEngine_Core_RunPreset_Testing) by default, so a game run on it through [GameRunner](MicroEngine.Core.GameRunner.md),
-[GameLoop](MicroEngine.Core.GameLoop.md), [GameSession](MicroEngine.Core.GameSession.md) or [InitializeForTest](MicroEngine.Core.Game.md#MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_) advances one fixed step
+[GameLoop](MicroEngine.Core.GameLoop.md), [GameSession](MicroEngine.Core.GameSession.md) or [InitializeForTest](MicroEngine.Core.Game.md#MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_MicroEngine_Platform_IStorage_) advances one fixed step
 per frame with no option. The run's [TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode) and the game's [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)
 win over it; <code>Preset = new RunPreset()</code> when creating the platform makes runs that choose nothing real-time.
-The platform behaves the same either way.
+The platform behaves the same either way, and its preset always says that nobody plays
+([Unattended](MicroEngine.Core.RunPreset.md#MicroEngine_Core_RunPreset_Unattended)): a run on it keeps the game's saves to itself in any time mode.
 
 ```csharp
 public RunPreset Preset { get; init; }

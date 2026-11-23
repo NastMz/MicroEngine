@@ -119,6 +119,23 @@ public FrameProfiler? Profiler { get; init; }
 
  [FrameProfiler](MicroEngine.Core.FrameProfiler.md)?
 
+### <a id="MicroEngine_Core_RunOptions_Saves"></a> Saves
+
+Where the game keeps its saves in this run (the launcher's <code>--saves</code>: a folder), or null (the default) for
+the run's rule: a store of its own, in memory and empty at start, for a run nobody plays (one that has a
+[Script](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Script), ends by itself after [MaxUpdates](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_MaxUpdates), advances in deterministic time or is on a
+platform without a window, [Unattended](MicroEngine.Core.RunPreset.md#MicroEngine_Core_RunPreset_Unattended)), else the medium of the game's composition, else
+the platform's default. A test that plays a game twice over the same saves gives both runs the same
+[MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md) or folder ([FileSaveStorage](MicroEngine.Core.FileSaveStorage.md)). See [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves).
+
+```csharp
+public IStorage? Saves { get; init; }
+```
+
+#### Property Value
+
+ [IStorage](MicroEngine.Platform.IStorage.md)?
+
 ### <a id="MicroEngine_Core_RunOptions_Script"></a> Script
 
 Scripted input to play, or null for none.

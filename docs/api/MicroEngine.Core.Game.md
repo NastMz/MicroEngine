@@ -380,11 +380,16 @@ protected virtual string SaveId { get; }
 
 ### <a id="MicroEngine_Core_Game_Saves"></a> Saves
 
-The game's saves: one [SaveStore](MicroEngine.Core.SaveStore.md) for its slots (progress, settings, achievements), created the first
-time it is used ([CreateSaves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateSaves)). It keeps them where the host's composition says
-([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)), else in the platform's default medium: files in the user's data folder,
-the page's localStorage in browsers. Use it from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later, not from
-the game's constructor: the host hands over its medium once the game exists.
+The game's saves: one [SaveStore](MicroEngine.Core.SaveStore.md) for its slots (progress, settings, achievements, key bindings),
+created the first time it is used ([CreateSaves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateSaves)). Where it keeps them is decided for the run, in
+this order: the medium the run names ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves), the launcher's <code>--saves DIR</code>); the
+medium of the host's composition ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); a store of the run's own, in
+memory and empty at start ([MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md)), when nobody plays the run: it has a script, ends by
+itself after a number of updates, advances in deterministic time or has no window (the headless platform), as
+scripted runs, checks and tests do; else the platform's default medium:
+files in the user's data folder, the page's localStorage in browsers. So a scripted run never reads or writes the
+player's saves, and two of them start from the same state. Use it from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_),
+[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later, not from the game's constructor: the run hands over its medium when it starts.
 
 ```csharp
 public SaveStore Saves { get; }
@@ -641,10 +646,11 @@ protected virtual InputMap CreateInput()
 
 ### <a id="MicroEngine_Core_Game_CreateSaves"></a> CreateSaves\(\)
 
-Creates [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves), once. By default a store for [SaveId](MicroEngine.Core.Game.md#MicroEngine_Core_Game_SaveId) on the composition's medium, else
-on the platform's default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)). Override it to build the store by hand:
-a folder of the game's choice (<code>new SaveStore(SaveId, directory)</code>, as tests do) or a storage of its own
-(<code>new SaveStore(storage)</code>).
+Creates [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves), once. By default a store for [SaveId](MicroEngine.Core.Game.md#MicroEngine_Core_Game_SaveId) on the medium of the run
+([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) says which), else on the platform's default
+([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)). Override it to build the store by hand, for a game that must
+keep its saves in one place whatever the run says (<code>new SaveStore(storage)</code>): a store built here is the
+game's own, and neither <code>--saves</code> nor a scripted run's own store reaches it.
 
 ```csharp
 protected virtual SaveStore CreateSaves()
@@ -702,12 +708,16 @@ public virtual void HashState(StateHasher hash)
 
 `hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
-### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_"></a> InitializeForTest\(IPlatform, int\)
+### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_MicroEngine_Platform_IStorage_"></a> InitializeForTest\(IPlatform, int, IStorage?\)
 
-Test hook: initializes against a platform without running the loop.
+Test hook: initializes against a platform without running the loop. The game's saves ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) go to
+<code class="paramref">saves</code>; null follows the rule of every run: on a platform whose preset is deterministic time
+([HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)) a store of the game's own, in memory and empty, so a test never reads or
+writes the player's saves. A test that starts the game twice over the same saves hands both the same
+[MemorySaveStorage](MicroEngine.Core.MemorySaveStorage.md), or a [FileSaveStorage](MicroEngine.Core.FileSaveStorage.md) on a temporary folder.
 
 ```csharp
-public void InitializeForTest(IPlatform platform, int seed = 1)
+public void InitializeForTest(IPlatform platform, int seed = 1, IStorage? saves = null)
 ```
 
 #### Parameters
@@ -715,6 +725,14 @@ public void InitializeForTest(IPlatform platform, int seed = 1)
 `platform` [IPlatform](MicroEngine.Core.IPlatform.md)
 
 `seed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`saves` [IStorage](MicroEngine.Platform.IStorage.md)?
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The game already used [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) on the platform's default medium, which this run does not keep its saves in.
 
 ### <a id="MicroEngine_Core_Game_Load"></a> Load\(\)
 

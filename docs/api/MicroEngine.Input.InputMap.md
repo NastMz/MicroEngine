@@ -51,7 +51,7 @@ public InputMap()
 
 ### <a id="MicroEngine_Input_InputMap_BindingsSlot"></a> BindingsSlot
 
-The slot [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_) and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_) use unless told otherwise.
+The slot [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__) and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__) use unless told otherwise.
 
 ```csharp
 public const string BindingsSlot = "input-bindings"
@@ -642,13 +642,19 @@ Advances edge detection. Called by the runner after each fixed update.
 public void EndUpdate()
 ```
 
-### <a id="MicroEngine_Input_InputMap_ExportBindings"></a> ExportBindings\(\)
+### <a id="MicroEngine_Input_InputMap_ExportBindings_System_Collections_Generic_IEnumerable_System_String__"></a> ExportBindings\(IEnumerable<string\>?\)
 
-Every action's bindings as data (see [InputBindingSet](MicroEngine.Input.InputBindingSet.md)), in ordinal order of the names.
+The bindings as data (see [InputBindingSet](MicroEngine.Input.InputBindingSet.md)), in ordinal order of the names: of every action, or of
+<code class="paramref">actions</code> only (those the map has), which is what a rebinding screen saves: the actions it
+lets the player change.
 
 ```csharp
-public InputBindingSet ExportBindings()
+public InputBindingSet ExportBindings(IEnumerable<string>? actions = null)
 ```
+
+#### Parameters
+
+`actions` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>?
 
 #### Returns
 
@@ -684,7 +690,7 @@ public void HashState(StateHasher hash)
 
 `hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
-### <a id="MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_"></a> ImportBindings\(InputBindingSet\)
+### <a id="MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_System_Collections_Generic_IEnumerable_System_String__"></a> ImportBindings\(InputBindingSet, IEnumerable<string\>?\)
 
 Replaces the bindings of the actions this map has with those in <code class="paramref">set</code>. Actions the set does not
 mention keep theirs; actions the map does not have are ignored (a renamed or removed action does not come back),
@@ -692,18 +698,28 @@ and so are controls this version does not know. A set of the first format (one l
 the same way.
 
 ```csharp
-public int ImportBindings(InputBindingSet set)
+public int ImportBindings(InputBindingSet set, IEnumerable<string>? actions = null)
 ```
 
 #### Parameters
 
 `set` [InputBindingSet](MicroEngine.Input.InputBindingSet.md)
 
+`actions` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>?
+
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 The number of actions whose bindings were replaced.
+
+#### Remarks
+
+Loading never empties an action by accident. An action saved with no control was unbound when it was saved and
+is unbound again; an action saved with controls of which this version knows none keeps the controls it has; and a
+set of a later format ([Version](MicroEngine.Input.InputBindingSet.md#MicroEngine_Input_InputBindingSet_Version) above [CurrentVersion](MicroEngine.Input.InputBindingSet.md#MicroEngine_Input_InputBindingSet_CurrentVersion))
+changes nothing. With <code class="paramref">actions</code>, only those actions are replaced: a rebinding screen passes the
+actions it offers, so the others (the menus', the engine's) always follow the game's code, whatever the set holds.
 
 ### <a id="MicroEngine_Input_InputMap_IsConsumed_System_String_"></a> IsConsumed\(string\)
 
@@ -721,14 +737,16 @@ public bool IsConsumed(string action)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_"></a> LoadBindings\(IStorage, string\)
+### <a id="MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__"></a> LoadBindings\(IStorage, string, IEnumerable<string\>?\)
 
-Reads bindings saved with [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_) and applies them ([ImportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_)). Returns false
-and keeps the current bindings when nothing was saved or the data is unreadable (which is set aside, so the next
-save does not destroy it). A storage that cannot be read throws instead, and the current bindings stay.
+Reads bindings saved with [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__) and applies them ([ImportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_System_Collections_Generic_IEnumerable_System_String__)): to
+<code class="paramref">actions</code> only, the actions a rebinding screen offers, or to every action the data names when
+it is null. Returns false and keeps the current bindings when nothing was saved or the data is unreadable or of a
+later format (it is set aside, so the next save does not destroy it). A storage that cannot be read throws
+instead, and the current bindings stay.
 
 ```csharp
-public bool LoadBindings(IStorage storage, string slot = "input-bindings")
+public bool LoadBindings(IStorage storage, string slot = "input-bindings", IEnumerable<string>? actions = null)
 ```
 
 #### Parameters
@@ -736,6 +754,8 @@ public bool LoadBindings(IStorage storage, string slot = "input-bindings")
 `storage` [IStorage](MicroEngine.Platform.IStorage.md)
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`actions` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>?
 
 #### Returns
 
@@ -855,12 +875,14 @@ public void Sample(IInputSource source)
 
 `source` [IInputSource](MicroEngine.Input.IInputSource.md)
 
-### <a id="MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_"></a> SaveBindings\(IStorage, string\)
+### <a id="MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__"></a> SaveBindings\(IStorage, string, IEnumerable<string\>?\)
 
-Writes every action's bindings to <code class="paramref">storage</code> (the slot <code class="paramref">slot</code>), for a rebinding screen.
+Writes the bindings to <code class="paramref">storage</code> (the slot <code class="paramref">slot</code>), for a rebinding screen:
+those of <code class="paramref">actions</code>, the actions the screen lets the player change, or of every action when it
+is null.
 
 ```csharp
-public void SaveBindings(IStorage storage, string slot = "input-bindings")
+public void SaveBindings(IStorage storage, string slot = "input-bindings", IEnumerable<string>? actions = null)
 ```
 
 #### Parameters
@@ -869,8 +891,12 @@ public void SaveBindings(IStorage storage, string slot = "input-bindings")
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+`actions` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>?
+
 #### Remarks
 
+Pass the actions the player can rebind. Saving every action also saves the ones the game binds in code, and
+loading them back later replaces what a newer version of the game binds there.
 The slot is handed to the storage as given, and the storage decides which names it can hold. The file storage
 takes plain names only (<code>"input-bindings"</code>, <code>"bindings.player2"</code>), and a plain name is the same file
 or key on every system.

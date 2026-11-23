@@ -22,7 +22,7 @@ public sealed class ActionBindingData
 
 [Keys](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Keys), [Buttons](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Buttons), [Stick](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Stick), [Axes](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Axes) and [Chords](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Chords) are the
 first format (version 1), which had one list per kind of control and no place for the mouse. They are still read,
-so files saved by earlier versions load; [ExportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ExportBindings) fills [Controls](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Controls) only.
+so files saved by earlier versions load; [ExportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ExportBindings_System_Collections_Generic_IEnumerable_System_String__) fills [Controls](MicroEngine.Input.ActionBindingData.md#MicroEngine_Input_ActionBindingData_Controls) only.
 
 ## Constructors
 

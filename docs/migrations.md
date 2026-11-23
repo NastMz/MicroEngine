@@ -6,6 +6,48 @@ it. Newest first.
 
 ## Next release
 
+### Saved bindings: later formats are refused, and a screen saves its own actions
+
+`InputBindingSet.FromJson` throws `FormatException` for a set whose `version` is above
+`InputBindingSet.CurrentVersion` (or below 1); `LoadBindings` returns false for such a file and sets it aside, and
+`ImportBindings` returns 0 for such a set. Before, it was applied as "every action, no control". `ImportBindings`
+no longer replaces an action whose saved controls are all unknown to this version: the action keeps its controls and
+is not counted in the result. An action saved with an empty list is still unbound.
+
+The four methods have an optional `actions` parameter. A rebinding screen should pass the actions it offers,
+`Input.SaveBindings(storage, actions: Rebindable)` and `Input.LoadBindings(storage, actions: Rebindable)`: a file
+written without it holds every action of the map, and loading it back replaces what the game binds in code,
+including bindings a newer version of the game changed. A file saved before loads with `actions` as well; the
+actions it names beyond those are ignored.
+
+### A scripted run, a headless run and a stepped game no longer use the player's saves
+
+`Game.Saves` and `host.SaveStore(gameId)` are now on a store in memory, empty at start, in a run nobody plays: one
+that has a script, advances in deterministic time, has no window or ends by itself (`--script`,
+`--time deterministic`, `--headless` in any time mode, `--frames N`, `RunOptions.MaxUpdates`, `GameRunner` or
+`InitializeForTest` on `HeadlessPlatform`), unless the run names a medium or the composition sets `host.Storage`
+([Scripted runs and tests](manual/persistence.md#scripted-runs-and-tests)).
+
+- A script that relied on saves left by an earlier run names them: `--saves DIR`. So does a check that starts a
+  game with `--frames N` and then looks at the save folder.
+- The crash report of such a run is no longer in the game's folder under the user's data: it is in the captures'
+  folder (with a script) or the working directory, and its path is printed on standard error as before.
+  `HostEnvironment.CrashDirectory` still decides when it is set.
+- A test that started a game twice and expected the second to find the first one's saves in the default folder
+  hands both the same medium: `game.InitializeForTest(platform, saves: storage)` with one `MemorySaveStorage`, or
+  `RunOptions.Saves` for a run.
+- A game with a `saveDirectory` parameter and an override of `CreateSaves` for its tests can delete both. Until it
+  does, they keep working: the override's fallback to `base.CreateSaves()` follows the new rule.
+- A game that uses `Saves` in its constructor, with no store of its own, now throws `InvalidOperationException` in
+  such a run instead of using the player's saves. Use `Saves` from `Configure`, `Load` or later.
+- `Game.InitializeForTest` has a third, optional parameter (`saves`); a call with two arguments compiles as before.
+- The SDK now has a type named `MemorySaveStorage` in `MicroEngine.Core`, and the examples no longer write one by
+  hand: their storage of their own is `SingleFileSaveStorage`, every slot in one file
+  ([A save storage](manual/extending.md#a-save-storage)). A game that copied the examples' `MemorySaveStorage`
+  deletes the copy and uses the SDK's; until it does, a file that imports both namespaces gets an ambiguous
+  reference. The SDK's keeps what `SetAside` took out of a slot apart (`ReadSetAside(slot)`), not in a slot named
+  `<slot>.corrupt`, and takes plain slot names only.
+
 ### `TextureFilter` has a third value, and two devices declare mip levels
 
 `TextureFilter.LinearMipmap` joins `Nearest` and `Linear`. Code that decides between two samplers with

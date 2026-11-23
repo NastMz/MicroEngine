@@ -54,8 +54,8 @@ Where the virtual canvas goes in a window: the shared letterbox rule of every ba
 
  [InputBindingSet](MicroEngine.Input.InputBindingSet.md)
 
-Every action's bindings as data, for a rebinding screen to save and load: through [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_)
-and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_) (the platform's storage), or as a value a game keeps in its own save
+Every action's bindings as data, for a rebinding screen to save and load: through [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__)
+and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__) (the platform's storage), or as a value a game keeps in its own save
 (<code>SaveStore.Save("bindings", map.ExportBindings())</code>; the classes have public properties).
 
  [InputDeviceInfo](MicroEngine.Input.InputDeviceInfo.md)

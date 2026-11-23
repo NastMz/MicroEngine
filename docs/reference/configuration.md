@@ -41,6 +41,7 @@ with code 2.
 | --- | --- |
 | `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies deterministic time unless `--time realtime`, and seed 1 unless `--seed` is given |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
+| `--saves DIR` | Keeps the game's saves in that folder for this run, created when the game first saves. A blank value or an existing file is an argument error. Without it, a run nobody plays (`--script`, `--time deterministic`, `--headless` or `--platform headless` in any time mode, `--frames N`) keeps them in memory, empty at start, and any other run uses the player's saves ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)) |
 | `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else every platform that can run here except `headless`, in order, until one starts, printing why each one failed |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
 | `--hidden` | Renders in a hidden window; captures still work. A hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute` |
@@ -145,7 +146,7 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine.Input/InputMap.cs`](../../s
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
 | Content location | `host.Content` in the composition, for every host (default: the `Content` folder next to the program) | Tests can point at another folder |
 | Save medium | Implement `IStorage` (namespace `MicroEngine.Platform`); set `host.Storage` in the composition and `Game.Saves` uses it, or pass it to a `SaveStore` built by hand | `BrowserStorage`, `FileSaveStorage` |
-| Save location | Override `Game.CreateSaves()` and return `new SaveStore(SaveId, directory)` | Every game's `*_SAVE_DIR` variable |
+| Save location | `--saves DIR` for one run, `RunOptions.Saves` in code; override `Game.CreateSaves()` only for a game that must keep its saves in one place whatever the run says | [Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests) |
 | Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile`; `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
 | Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame; `GameHost` gives a host of your own the shared launch rules and the game's composition | The browser host |
 

@@ -35,8 +35,9 @@ public sealed class RebindExample : Scene
     {
         _storage = Game.Saves.Storage;   // the bindings are kept where the game's saves are
         BindDefaults(Input);
-        // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
-        _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+        // Saved bindings replace the defaults of the actions this screen offers, and of no other action; false
+        // (nothing saved, or unreadable and set aside) keeps the defaults.
+        _status.Text = Input.LoadBindings(_storage, actions: Rebindable) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
 
         var rows = new Stack { Spacing = 3, Align = Align.Start };
         foreach (var action in Rebindable)
@@ -113,7 +114,7 @@ public sealed class RebindExample : Scene
     {
         try
         {
-            Input.SaveBindings(_storage);
+            Input.SaveBindings(_storage, actions: Rebindable);   // what the player can change, nothing else
             _status.Text = done;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

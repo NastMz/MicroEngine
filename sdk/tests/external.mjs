@@ -57,6 +57,8 @@ if (feed && !fs.existsSync(feed) || feed && !fs.readdirSync(feed).some(f => f.st
   process.exit(2);
 }
 const work = fs.mkdtempSync(path.join(outsideRepo, 'microengine-external-'));
+// A packaged game started by a check keeps its saves in a folder of the check, never in the user's data folder.
+const savesFolder = () => fs.mkdtempSync(path.join(work, 'saves-'));
 if (work.startsWith(repo)) throw new Error('the external project must live outside the repository');
 console.log(`external project in ${work}, SDK ${version} from ${feed ?? 'nuget.org only'}, .NET SDK ${sdkVersion}`);
 const env = { ...process.env, NUGET_PACKAGES: path.join(work, 'nuget'), DOTNET_CLI_HOME: path.join(work, 'home'), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
@@ -284,7 +286,7 @@ async function checkGallery() {
     const contentRoot = target === 'macos' ? path.join(top, 'Asset Gallery.app', 'Contents', 'Resources') : top;
     check(`gallery ${target}: fonts, atlases and images are in the package`, files.every(f => fs.existsSync(path.join(contentRoot, f))));
     const code = target === 'macos' ? path.join(top, 'Asset Gallery.app', 'Contents', 'MacOS') : top;
-    const played = run(path.join(code, `AssetGallery${exe}`), ['--platform', 'sdl-software', '--hidden', '--frames', '30', '--report']);
+    const played = run(path.join(code, `AssetGallery${exe}`), ['--platform', 'sdl-software', '--hidden', '--frames', '30', '--report', '--saves', savesFolder()]);
     check(`gallery ${target}: the packaged game loads its content and runs`, played.code === 0 && /done: 30 updates/.test(played.out), tail(played.out));
   }
 }
@@ -327,7 +329,7 @@ function checkPackage(target, file, dist) {
       check('windows: the executable carries the game\'s name', ps.out.trim() === 'Sample Game', ps.out.trim());
     }
     if (target === host) {
-      const ran = run(path.join(code, `${id}${exe}`), ['--platform', 'sdl-software', '--hidden', '--frames', '30', '--report']);
+      const ran = run(path.join(code, `${id}${exe}`), ['--platform', 'sdl-software', '--hidden', '--frames', '30', '--report', '--saves', savesFolder()]);
       check(`${target}: the packaged game runs`, ran.code === 0 && /done: 30 updates/.test(ran.out), tail(ran.out));
     }
   } else if (target === 'web') {

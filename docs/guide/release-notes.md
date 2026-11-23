@@ -6,6 +6,31 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Saves: a scripted run keeps its own
+
+- **A run nobody plays never touches the player's saves.** A run with an input script (`--script`), in
+  deterministic time (`--time deterministic`), without a window (`--headless`, a game run or stepped on
+  `HeadlessPlatform`, in any time mode) or with an end of its own (`--frames N`) keeps its saves in memory, empty
+  at the start: progress, settings, achievements and key bindings. `host.SaveStore(gameId)` follows the same rule,
+  and the crash report of such a run is written beside its captures or in the working directory, not in the
+  player's folder. `LaunchRequest.IsUnattended` and `RunPreset.Unattended` say which runs these are. The same script gives the
+  same captures whatever was played before, and a test needs no folder of its own
+  ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
+- **`--saves DIR`** keeps the saves of one run in a folder, on every desktop launcher: a scripted run that starts
+  from given saves and leaves what it saved to look at, or a second set of saves while developing. In code it is
+  `RunOptions.Saves`; `LaunchRequest.SaveDirectory` and `LaunchArguments.SaveDirectory` carry the option.
+- **`MemorySaveStorage`** is a save medium in memory, for tests and tools: `new SaveStore(new MemorySaveStorage())`.
+  The examples' storage of their own is now `SingleFileSaveStorage`, every slot in one file
+  ([A save storage](../manual/extending.md#a-save-storage)).
+- **`Game.InitializeForTest(platform, seed, saves)`** takes the medium of the game's saves, for a test that starts
+  a game twice over the same saves.
+- **The samples have no save folder parameter.** The examples and Gem Garden no longer take a `saveDirectory` nor
+  override `CreateSaves`; their tests start them as a player would.
+- **Saved key bindings cannot empty a map.** `SaveBindings`, `LoadBindings`, `ExportBindings` and `ImportBindings`
+  take the actions a rebinding screen offers (`actions:`), so the menus' and the engine's actions always follow the
+  game's code. A file of a later format is not applied (it is set aside), and an action whose saved controls are
+  all unknown to this version keeps the controls it has ([A rebinding screen](../manual/input.md#a-rebinding-screen)).
+
 ### Graphics: draw order, post-processing, the window stage and mip levels
 
 - **Draw order that does not depend on call order.** A `SortedRenderer` keeps the draws made between `Begin` and

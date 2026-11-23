@@ -11,7 +11,8 @@ namespace MicroEngine.Sdl;
 /// <c>requestAnimationFrame</c> and may start it again after the game ends. Every run composes the game with the same
 /// <c>Configure</c> entry point its desktop <c>Program.cs</c> uses, so what the game configures there (platforms, request
 /// changes, engine services) reaches the browser too; a scripted run is in deterministic time with seed 1, exactly as on
-/// desktop and phones. Saves go to localStorage by default (<see cref="SaveStore.DefaultStorage(string)"/>).
+/// desktop and phones. Saves go to localStorage by default (<see cref="SaveStore.DefaultStorage(string)"/>), in a scripted
+/// run too (<see cref="Defaults"/>).
 /// </summary>
 [SupportedOSPlatform("browser")]
 public static class BrowserLauncher
@@ -40,11 +41,18 @@ public static class BrowserLauncher
         return GameHost.CreateSession(request => GameHost.Create(new HostEnvironment(HostKind.Browser), request, configure, host => Defaults(host, page)));
     }
 
-    /// <summary>The browser host's defaults: the SDL platform of <paramref name="page"/> as its only platform.</summary>
+    /// <summary>
+    /// The browser host's defaults: the SDL platform of <paramref name="page"/> as its only platform, and the page's
+    /// storage as the save medium of a scripted run. Elsewhere a scripted run keeps its saves in memory
+    /// (<see cref="Game.Saves"/>); in a page it keeps them where every run of the page does, because what a scripted
+    /// page run starts from is the browser profile it is opened in (a new profile is an empty store), and it is the
+    /// way to see what a game does when the page's storage is full or blocked.
+    /// </summary>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     public static void Defaults(HostBuilder host, BrowserPage page)
     {
         ArgumentNullException.ThrowIfNull(host);
         host.UsePlatforms(new PlatformCatalog().Add(SdlPlatform.BrowserProfile(page)));
+        if (host.Request.HasScript) host.Storage ??= SaveStore.DefaultStorage;
     }
 }

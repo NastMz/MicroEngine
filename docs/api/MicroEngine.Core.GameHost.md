@@ -11,7 +11,9 @@ tests compose the same way and decide a run the same way. A host states its defa
 files are), the game's <code>Configure</code> entry point composes the rest ([HostBuilder](MicroEngine.Hosting.HostBuilder.md)), and the
 [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) decides the run: a script means deterministic time and seed 1 on every host; a run in
 deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-one; a real-time run whose game shows a start screen starts gamepads after the first frame.
+one; a run nobody plays ([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended): a script, deterministic time, no window, or an
+end of its own with <code>--frames</code>) keeps its saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) unless the launch names
+a folder; a real-time run whose game shows a start screen starts gamepads after the first frame.
 
 ```csharp
 public sealed class GameHost
@@ -137,8 +139,10 @@ The composition chose no game ([UseGame](MicroEngine.Core.HostBuilderExtensions.
 
 ### <a id="MicroEngine_Core_GameHost_CreateGame"></a> CreateGame\(\)
 
-A new game, built by the composition's [UseGame](MicroEngine.Core.HostBuilderExtensions.md#MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__) and given the composition's
-save medium ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)) for its [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves).
+A new game, built by the composition's [UseGame](MicroEngine.Core.HostBuilderExtensions.md#MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__) and given the save medium of
+this launch for its [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves): the folder the launch names, else the composition's
+([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)), else a store in memory when nobody plays the launch
+([IsUnattended](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_IsUnattended)).
 
 ```csharp
 public Game CreateGame()
@@ -152,7 +156,7 @@ public Game CreateGame()
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-The factory returned null, or the game used [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) in its constructor while the composition has a save medium.
+The factory returned null, or the game used [Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves) in its constructor while the launch has a save medium for it.
 
 ### <a id="MicroEngine_Core_GameHost_CreateLoop_MicroEngine_Core_Game_MicroEngine_Core_IPlatform_MicroEngine_Core_RunOptions_"></a> CreateLoop\(Game, IPlatform, RunOptions\)
 
@@ -222,6 +226,7 @@ public PlatformRequest CreateRequest(Game game, RunOptions options)
 
 The run's options for <code class="paramref">game</code>: the graphics options with the launch's overrides, the script, its
 captures, the frame limit, the seed, mute, pacing and the time mode ([EffectiveTime](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_EffectiveTime)).
+Where the game's saves go is the composition's part: [CreateGame](MicroEngine.Core.GameHost.md#MicroEngine_Core_GameHost_CreateGame) hands it to the game.
 
 ```csharp
 public RunOptions CreateRunOptions(Game game, FrameProfiler? profiler = null, InputScript? script = null)
