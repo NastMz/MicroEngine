@@ -15,6 +15,13 @@ public static class PhysicsContract
     /// a backend written for version 1 still compiles and declares what it implements.
     /// </summary>
     public const int Version = 2;
+
+    /// <summary>
+    /// How thick the platform of a one-way tile is, as a share of the tile, from the tile's top: what overlaps, point
+    /// queries and the nearest surface see of a <see cref="MicroEngine.World.TileFlags.OneWay"/> cell on every backend
+    /// (moves, rays and cast shapes meet its top edge).
+    /// </summary>
+    public const float OneWayTileThickness = 0.25f;
 }
 
 /// <summary>
@@ -41,6 +48,16 @@ public static class PhysicsContract
 /// <item><b>Queries.</b> <see cref="RayCast"/> returns the closest hit; <see cref="Overlap(in RectF, in QueryFilter, Span{ShapeId})"/> is exact (shapes that
 /// truly overlap the area, not their bounding boxes; sharing an edge is not overlapping). Both leave sensors out unless
 /// the filter includes them.</item>
+/// <item><b>Edges.</b> One rule for every backend. A point on a shape's edge or corner is not inside it. A ray hits a
+/// shape where it enters it: one that starts inside a shape does not hit it; one that starts on its edge hits it at
+/// fraction 0 going in, and not going out or along the edge; one that only runs along an edge or clips a corner does
+/// not hit. A cast shape does not hit what it overlaps where it starts; what it only touches there it hits at fraction
+/// 0 going in, and not going out or sliding along it, which is what <see cref="Move"/> does from the same place. On a
+/// backend with a <see cref="Skin"/>, two shapes that overlap by less than the skin touch.</item>
+/// <item><b>Tile geometry is one shape with one surface.</b> The faces between two solid tiles are not surfaces: a
+/// shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
+/// cell, <see cref="PhysicsContract.OneWayTileThickness"/> of a tile thick for overlaps, points and the nearest
+/// surface.</item>
 /// <item><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
 /// overlapping it, when the layers of both accept each other and the visitor has
 /// <see cref="ShapeDescription.SensorEvents"/> (the default). Sensors do not see other sensors or static shapes.</item>
@@ -311,7 +328,11 @@ public interface IPhysicsWorld2D
     /// <exception cref="InvalidOperationException">The id is stale, the body is not kinematic, or it has no single non-sensor shape the backend can move.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="delta"/> is not finite.</exception>
     MoveResult Move(BodyId body, Vector2 delta, in QueryFilter filter = default);
-    /// <summary>The closest shape the segment from <paramref name="from"/> to <paramref name="to"/> enters; a shape holding <paramref name="from"/> is not hit.</summary>
+    /// <summary>
+    /// The closest shape the segment from <paramref name="from"/> to <paramref name="to"/> enters. A shape holding
+    /// <paramref name="from"/> is not hit; one whose edge <paramref name="from"/> is on is hit at fraction 0 when the
+    /// segment goes into it, and not when it leaves it or runs along the edge.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">A point is not finite.</exception>
     bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit);
     /// <summary>
@@ -337,9 +358,10 @@ public interface IPhysicsWorld2D
     /// Moves <paramref name="shape"/> with its centre going from <paramref name="from"/> to <paramref name="to"/> and
     /// returns the first shape it would touch: <see cref="RayHit.Fraction"/> is how far along the way its centre is
     /// then, <see cref="RayHit.Point"/> where the two touch and <see cref="RayHit.Normal"/> the surface normal there. A
-    /// shape it overlaps where it starts is not hit (like <see cref="Move"/>, which this predicts: "is there room to
-    /// stand up", "what would this dash hit"); one-way platforms are hit only from above, coming down. The shape stops
-    /// within <see cref="Skin"/> of the exact place.
+    /// shape it overlaps where it starts is not hit, and one it touches there is hit at fraction 0 when it moves into
+    /// it and not when it leaves it or slides along it: like <see cref="Move"/>, which this predicts ("is there room
+    /// to stand up", "what would this dash hit", "can I move there"). One-way platforms are hit only from above, coming
+    /// down. The shape stops within <see cref="Skin"/> of the exact place.
     /// </summary>
     /// <exception cref="PhysicsCapabilityException">The backend does not declare <see cref="PhysicsCapabilities.ShapeQueries"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The shape is invalid (<see cref="QueryShape.Validate"/>) or a point is not finite.</exception>

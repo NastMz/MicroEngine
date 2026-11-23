@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 6
+#define ME_API_VERSION 7
 
 typedef struct MeWorld MeWorld;
 
@@ -96,6 +96,9 @@ ME_API void me_world_set_ignored( MeWorld* world, const int* shapes, int count )
 // the handle is not alive or stands for tile geometry. For callers that reach Box2D's own API, which the shared
 // library exports next to this layer; this layer does not know what they change.
 ME_API int me_native_id( MeWorld* world, int kind, int handle, void* out8 );
+// Whether a body (kind 1), a shape (2) or a joint (3) of this layer still exists in Box2D: 0 once something destroyed
+// it through Box2D's own API, after which every other call with that handle is undefined.
+ME_API int me_native_valid( MeWorld* world, int kind, int handle );
 // bodies, shapes, contacts, awake bodies.
 ME_API void me_world_counters( MeWorld* world, int* out4 );
 

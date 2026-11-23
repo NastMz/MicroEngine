@@ -53,7 +53,8 @@ No collision meaning: the tile is empty space.
 
 `OneWay = 2` 
 
-Blocks only bodies moving down onto its top edge (jump-through platform).
+Blocks only bodies moving down onto its top edge (jump-through platform). For overlaps, point queries and the
+nearest surface it is a platform at the top of the tile, <code>PhysicsContract.OneWayTileThickness</code> of a tile thick.
 
 
 
@@ -69,7 +70,8 @@ right one is solid. Geometry only on a backend that declares
 
 A slope that rises to the right: the half of the tile under the line from its lower left corner to its upper
 right one is solid. Geometry only on a backend that declares
-[TileSlopes](MicroEngine.Physics.PhysicsCapabilities.md).
+[TileSlopes](MicroEngine.Physics.PhysicsCapabilities.md). A character walks on slopes as a capsule; a
+box is stopped at the foot of one.
 
 
 

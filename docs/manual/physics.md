@@ -437,12 +437,19 @@ Rules they share:
   (`new QueryFilter { Where = shape => world.BodyOf(shape) != self }` for a ray that must not hit the body that fires
   it). It is asked once per shape near the query, before it runs; keep the delegate in a field rather than making one
   each step.
-- A cast shape does not hit what it overlaps where it starts, like `Move`, and hits a one-way platform only from
-  above, coming down. A ray does not hit a shape that holds its start.
-- Touching is not overlapping: a circle exactly one radius from a wall does not overlap it.
-- On the tile backend a cast stops flush against what it hits. On Box2D it stops within half a centimetre of the
-  surface (short of it for a box, up to that far into it for a circle or a capsule), and a surface less than a
-  millimetre from the shape where the cast starts counts as overlapped.
+- Edges follow one rule on both backends:
+  - A point on a shape's edge or corner is not inside it, and touching is not overlapping: a circle exactly one
+    radius from a wall does not overlap it.
+  - A ray hits a shape where it enters it. One that starts inside a shape does not hit it. One that starts on its
+    edge hits it at fraction 0 going in, and nothing going out or along the edge. One that only runs along an edge
+    or clips a corner hits nothing.
+  - A cast shape does not hit what it overlaps where it starts. What it only touches there it hits at fraction 0
+    when it moves into it, and not when it leaves it or slides along it. That is what `Move` does from the same
+    place, so a cast answers "can I move there": a box standing on a floor, cast along it, is stopped by the wall and
+    not by the floor.
+  - A one-way platform is hit only from above, coming down.
+- On the tile backend a cast stops flush against what it hits. On Box2D it stops within a millimetre of that, and two
+  shapes that overlap by less than half a centimetre (Box2D lets resting bodies sink that far) count as touching.
 - A tile grid is one shape: a ray that crosses several of its cells reports one hit, at the first one.
 
 ### Contacts
@@ -489,7 +496,7 @@ cells are platforms. Both backends take it, each in its own way:
 | What the level is | its cells | the outline of its solid cells: one smooth boundary for each region of open space |
 | A body that slides along a row of tiles | rests and slides exactly | meets no seam between tiles: a flat row is one straight edge |
 | Slopes (`TileSlopes`) | refused when the tiles are added | `TileFlags.SlopeRight` (rising to the right) and `TileFlags.SlopeLeft` cells: half tiles cut along their diagonal; a row of them is one straight ramp |
-| One-way cells | their top edge | a run of them is one platform, the top quarter of its tiles |
+| One-way cells | a platform at the top of the cell | a run of them is one platform |
 | The inside of solid tiles | solid | hollow: a dynamic body placed inside solid tiles is not pushed out. Overlaps, point queries and the nearest surface still answer that it is inside |
 
 <!-- code: samples/PhysicsPlayground/TileScene.cs#tiles -->
@@ -532,9 +539,35 @@ var level = _world.CreateBody(default, BodyDescription.Static());
 Level = _world.AddTiles(level, _grid, _grid.Layer.Width, _grid.Layer.Height);
 ```
 
-On Box2D a character on slopes is a capsule (`ShapeDescription.Capsule`) with a `GroundSnap` of a few units; a box
-character moves along x, then y, and climbs a slope as a staircase. A slope tile under a ceiling, steeper or gentler
-slopes and slopes on the tile backend are not there: build those from polygon shapes on Box2D.
+On both backends the level is one shape with one surface. The faces between two solid tiles are not surfaces, so a
+shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
+cell: moves, rays and cast shapes meet its top edge, and overlaps, point queries and the nearest surface see it a
+quarter of a tile thick (`PhysicsContract.OneWayTileThickness`).
+
+**Slopes need a capsule character.** A character that walks on slope tiles is a capsule
+(`ShapeDescription.Capsule`) with a `GroundSnap` of a few units: it walks up a ramp and over the joint onto flat ground
+without meeting a wall, on the ground all the way. A box character does not climb: `Move` takes a box along x and then
+along y, and the foot of a ramp stops the first of the two like a wall. `CharacterController2D.Create` makes a box;
+for a level with slopes make the body yourself:
+
+```csharp
+var body = world.CreateBody(entity, BodyDescription.Kinematic(start));
+world.AddShape(body, ShapeDescription.Capsule(5, 14));
+var hero = new CharacterController2D(world, body, new CharacterMotion { GroundSnap = 4 });
+```
+
+A slope tile under a ceiling, steeper or gentler slopes and slopes on the tile backend are not there: build those
+from polygon shapes on Box2D.
+
+**One call per level.** The outline has no seams inside one `AddTiles` call. Two areas added with two calls are two
+outlines: where they meet there is a seam, as between two boxes side by side, and a dynamic box that slides over it
+can stop there. Add a level with one call; for a level kept in pieces, give `AddTiles` one `ICollisionGrid` that
+answers for all of them.
+
+**Size.** On Box2D the cost of a level is its outline, not its tiles: about 0.7 KB of native memory for each straight
+edge. A 250 × 250 map of random tiles (46,000 edges, far more than a drawn level of that size has) takes a tenth of
+a second to add and 27 MB; a 1000 × 1000 one (750,000 edges) takes 1.6 seconds and 520 MB, and 0.15 seconds to
+remove. The tile backend keeps nothing for a grid: its size costs nothing.
 
 ## Box2D's own API
 
@@ -575,8 +608,16 @@ gives `World`, `Body(body)`, `Shape(shape)` and `Joint(joint)` as `B2WorldId`, `
 
 - **Units are Box2D's**: metres, radians, y up, whatever the world's options map the game's units to.
 - **The engine does not know what you changed.** It is not in the state hash and not in `DescriptionOf`; bodies,
-  shapes and joints created through Box2D have no engine id, so queries and events skip them. Never destroy through
-  Box2D what the engine created.
+  shapes and joints created through Box2D have no engine id, so queries and events skip them.
+- **An id lives as long as its engine object.** After `DestroyBody`, `RemoveShape` or `DestroyJoint` (or after the
+  world is disposed) the Box2D id you read before is dead; passing it to Box2D is undefined. Read ids when you use
+  them rather than keeping them.
+- **Destroying an engine object through Box2D is not supported.** The engine then refuses that body or joint with an
+  `InvalidOperationException` when it is next used, and its shapes, contacts and events are in an undefined state:
+  destroy engine objects with the engine.
+- **Stepping the world through Box2D** (`b2World_Step`) moves the bodies but is not a step of the engine: `StepCount`
+  does not move, and the events of those steps (contacts, sensors, impacts, broken joints) are never reported. Step
+  with `Step`.
 - **Box2D's API changes between its releases.** `Box2DPhysicsWorld2D.Box2DVersion` says which one the package carries
   (3.2.0); a later package may carry another.
 - **Platforms.** Windows, Linux, macOS and Android. Not the browser (the runtime there does not pass these ids), and
@@ -613,7 +654,8 @@ normal for each contact that began in the latest step. See [diagnosing a game](d
 - Tile backend: axis-aligned boxes only, no slopes, no dynamic bodies, no joints, no contact detail.
 - Box2D backend: no solids that push kinematic bodies (the character controller carries a character standing on a
   moved body on either backend); tile geometry is read when it is added and is hollow inside; slope tiles are the two
-  diagonals of a tile.
+  diagonals of a tile, and only a capsule character walks on them; a level costs memory by the edges of its outline
+  ([Tile levels](#tile-levels)).
 - A query shape is a box, a circle or a standing capsule: no rotated or polygon query shapes.
 - 2D only.
 

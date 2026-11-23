@@ -356,9 +356,23 @@ static void query_checks( void )
 	int hit = me_shape_cast( w, 0.0f, 0.0f, 0.25f, 0.0f, 2.0f, 0.0f, -4.0f, STATIC_LAYER, ALL, 0, out );
 	check( "query.cast-circle", hit == ground && out[4] > 0.435f && out[4] < 0.44f && fabsf( out[3] - 1.0f ) < 1e-3f, DETAIL( "fraction %.4f", out[4] ) );
 	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 1.0f, 4.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
-	check( "query.cast-box", hit == wall && out[4] > 0.69f && out[4] <= 0.7001f && fabsf( out[2] + 1.0f ) < 1e-3f, DETAIL( "fraction %.4f", out[4] ) );
+	check( "query.cast-box", hit == wall && fabsf( out[4] - 0.7f ) < 0.0005f && fabsf( out[2] + 1.0f ) < 1e-3f, DETAIL( "fraction %.4f", out[4] ) );
 	hit = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 0.0f, 0.2f, 0.0f, -1.0f, STATIC_LAYER, ALL, 0, out );
 	check( "query.cast-overlapped", hit == -1, DETAIL( "%d", hit ) );
+
+	// Edges: a box flush against the wall is stopped at once going in and free going out or along it; a ray that
+	// starts on the wall's face enters it going in and hits nothing going out; a point on the face is not held.
+	int flush = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 2.8f, 1.0f, 1.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	float flushFraction = out[4];
+	int away = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 2.8f, 1.0f, -1.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	int along = me_shape_cast( w, 0.2f, 0.4f, 0.0f, 2.8f, 1.0f, 0.0f, 0.5f, STATIC_LAYER, ALL, 0, out );
+	check( "query.cast-flush", flush == wall && flushFraction == 0.0f && away == -1 && along == -1, DETAIL( "%d at %.4f, away %d, along %d", flush, flushFraction, away, along ) );
+	int in = me_ray_cast( w, 3.0f, 1.0f, 1.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	float inFraction = out[4];
+	int outward = me_ray_cast( w, 3.0f, 1.0f, -1.0f, 0.0f, STATIC_LAYER, ALL, 0, out );
+	int edge = me_ray_cast( w, 3.0f, 0.5f, 0.0f, 1.0f, STATIC_LAYER, ALL, 0, out );
+	check( "query.ray-edge", in == wall && inFraction == 0.0f && outward == -1 && edge == -1 && me_overlap_point( w, 3.0f, 1.0f, STATIC_LAYER, ALL, 0, shapes, 8 ) == 0,
+		DETAIL( "in %d at %.4f, out %d, along %d", in, inFraction, outward, edge ) );
 
 	me_world_set_ignored( w, &wall, 1 );
 	n = me_ray_cast_all( w, 0.0f, 1.0f, 8.0f, 0.0f, STATIC_LAYER, ALL, 0, shapes, hits, 8 );

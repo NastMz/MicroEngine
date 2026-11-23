@@ -144,7 +144,7 @@ implements the members of the capabilities it declares. Games are affected by th
 | `ICollisionGrid` and `TileFlags` in `MicroEngine.Physics.Tiles.dll` | the same types and namespace (`MicroEngine.World`), in `MicroEngine.Physics.dll`; recompile |
 
 `Box2DPhysicsWorld2D` now declares `PhysicsCapabilities.Joints`, `ShapeQueries`, `ContactDetail`, `FilterPredicates`,
-`TileGeometry` and `TileSlopes`, and the Box2D package's native library is layer version 6: the managed assembly and
+`TileGeometry` and `TileSlopes`, and the Box2D package's native library is layer version 7: the managed assembly and
 the native library come from the same package version. The library also exports Box2D's own functions.
 
 Code that tested `(world.Capabilities & PhysicsCapabilities.TileGeometry) == 0` to build a Box2D level from boxes now
@@ -153,7 +153,10 @@ finds tile geometry there: call `AddTiles`, or keep the boxes.
 `QueryFilter` has a `Where` predicate; a physics backend written outside the engine declares
 `PhysicsCapabilities.FilterPredicates` when it honours it and refuses a filter that has one otherwise.
 `TilePhysicsWorld2D.AddTiles(body, grid, columns, rows)` refuses a grid with `TileFlags.SlopeRight` or `SlopeLeft`
-tiles (new flags, values 256 and 512). A `ContactEvent` has a `Point`. The state hash of a `CharacterController2D` has
+tiles (new flags, values 256 and 512). A `ContactEvent` has a `Point`. On the tile backend a one-way tile is, for `Overlap`, a
+platform at the top quarter of its cell, no longer the whole cell, and `Move` no longer stops a box that starts sunk
+into tiles at the face between two solid tiles; a ray that starts on a shape's edge and leaves it hits nothing on
+either backend. The state hash of a `CharacterController2D` has
 three more values, so recorded hashes of scenes that track one change.
 
 A scene that created a world with `new` and registered it with `PhysicsSystem.Add` keeps working. To let the scene

@@ -237,6 +237,7 @@ public sealed class Box2DTileLevelTests
         {
             hero.Step(1 / 60f, new CharacterInput(1));
             if (i > 20 && !hero.IsGrounded) airborne++;
+            if (hero.Position.X < 130) Assert.IsFalse(hero.IsOnWall, $"no wall on the way up, at the foot of the ramp or where it meets the ledge: step {i}, {hero.Position}, {hero.WallNormal}");
             if (hero.IsGrounded && hero.LastMove.GroundNormal.X < -0.6f)
             {
                 onRamp = true;
@@ -315,6 +316,22 @@ public sealed class Box2DTileLevelTests
     }
 
     [TestMethod]
+    public void The_bounds_of_tiles_follow_their_body_when_it_is_turned()
+    {
+        var (world, tiles, _) = Level("####", "####");
+        Assert.AreEqual(new RectF(0, 0, 64, 32), world.BoundsOf(tiles));
+        // A quarter turn about the origin: the 64 x 32 area stands 32 wide and 64 tall.
+        world.SetRotation(world.BodyOf(tiles), MathF.PI / 2);
+        var turned = world.BoundsOf(tiles);
+        Assert.AreEqual(32, turned.Width, 0.2f, turned.ToString());
+        Assert.AreEqual(64, turned.Height, 0.2f, turned.ToString());
+        Span<ShapeId> found = stackalloc ShapeId[2];
+        Assert.AreEqual(1, world.OverlapPoint(turned.Center, default, found), "the tiles are where their bounds say");
+        world.SetPosition(world.BodyOf(tiles), new Vector2(100, 50));
+        Assert.AreEqual(turned.Center + new Vector2(100, 50), world.BoundsOf(tiles).Center);
+    }
+
+    [TestMethod]
     public void The_tile_backend_refuses_a_level_with_slope_tiles_instead_of_playing_it_without_them()
     {
         var grid = new TileGrid(TileLayer.Parse(["..../", "#####"], Legend), Tile, Flags) { OutsideFlags = TileFlags.None };
@@ -347,6 +364,23 @@ public sealed class Box2DNativeAccessTests
         var plain = Box2DTesting.Create();
         var e = Assert.ThrowsExactly<InvalidOperationException>(() => plain.NativeIds);
         StringAssert.Contains(e.Message, "NativeAccess");
+    }
+
+    [DllImport(Box2DNative.Library)] private static extern void b2DestroyBody(B2BodyId body);
+
+    [TestMethod]
+    public void An_engine_body_destroyed_through_Box2D_is_refused_with_an_error_instead_of_ending_the_process()
+    {
+        var world = Box2DTesting.Create(new Box2DWorldOptions { NativeAccess = true });
+        var crate = world.CreateBody(default, BodyDescription.Dynamic(new Vector2(0, 1)));
+        var shape = world.AddShape(crate, ShapeDescription.Box(new Vector2(0.5f)));
+        var other = world.CreateBody(default, BodyDescription.Dynamic(new Vector2(3, 1)));
+        b2DestroyBody(world.NativeIds.Body(crate));
+        var e = Assert.ThrowsExactly<InvalidOperationException>(() => world.PositionOf(crate));
+        StringAssert.Contains(e.Message, "Box2D's own API");
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.SetVelocity(crate, Vector2.One));
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.NativeIds.Shape(shape));
+        Assert.AreEqual(new Vector2(3, 1), world.PositionOf(other), "the rest of the world is as it was");
     }
 
     [TestMethod]

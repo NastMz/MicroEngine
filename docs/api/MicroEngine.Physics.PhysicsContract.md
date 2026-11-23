@@ -19,6 +19,20 @@ public static class PhysicsContract
 
 ## Fields
 
+### <a id="MicroEngine_Physics_PhysicsContract_OneWayTileThickness"></a> OneWayTileThickness
+
+How thick the platform of a one-way tile is, as a share of the tile, from the tile's top: what overlaps, point
+queries and the nearest surface see of a [OneWay](MicroEngine.World.TileFlags.md) cell on every backend
+(moves, rays and cast shapes meet its top edge).
+
+```csharp
+public const float OneWayTileThickness = 0.25
+```
+
+#### Field Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Physics_PhysicsContract_Version"></a> Version
 
 2: version 1 (the common core and capabilities of the first two backends) plus tile geometry as a contract member

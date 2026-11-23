@@ -30,8 +30,8 @@ helper. A rope, a vehicle or a ragdoll could not be built with the published API
   checks after each step. Box2D declares it; the target joint is Box2D's motor joint with a bounded spring.
 - **Tile geometry** (`AddTiles`, `TilesOf`) and `BoundsOf` are contract members; `ICollisionGrid` and `TileFlags` live
   in the contract's assembly, same namespace.
-- **The native layer** is version 6 (2: dynamics, 3: joints, 4: queries and contact detail, 5: shapes left out of a
-  query, 6: tile geometry and the native ids). The managed assembly refuses another version.
+- **The native layer** is version 7 (2: dynamics, 3: joints, 4: queries and contact detail, 5: shapes left out of a
+  query, 6: tile geometry and the native ids, 7: the rules of edges and `me_native_valid`). The managed assembly refuses another version.
 
 Amended 2026-11-22 (the remaining slices, still contract version 2, which no release has carried):
 
@@ -47,6 +47,10 @@ Amended 2026-11-22 (the remaining slices, still contract version 2, which no rel
   `Motion` rather than subclassing.
 - **Tile levels on Box2D** are the outline of the solid tiles as chain shapes, one managed shape for the level;
   `TileFlags.SlopeRight` and `SlopeLeft` under `TileSlopes`. The tile backend refuses slope tiles.
+- **Edges have one rule on every backend**, written in the contract: a point on an edge is not inside; a ray hits
+  where it enters (at fraction 0 from an edge going in, nothing going out or along it); a cast shape hits at once
+  what it touches and moves into, as `Move` is blocked there; tile geometry is one shape whose faces between solid
+  tiles are not surfaces; a one-way tile is a platform a quarter of a tile thick for overlaps.
 - **Box2D's own API** is the way out: `Box2DWorldOptions.NativeAccess`, `Box2DPhysicsWorld2D.NativeIds`, and a shared
   library that exports Box2D whole. Not in the browser or on iOS; outside the state hash.
 

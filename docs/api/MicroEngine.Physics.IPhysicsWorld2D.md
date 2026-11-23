@@ -30,7 +30,15 @@ while the others go on. It may stop short of a surface by a gap of at most [Skin
 backend declares (0 on the tile backend). The body's contacts and its ground are in the [MoveResult](MicroEngine.Physics.MoveResult.md); a
 shape the box already overlaps when the move starts does not block it, so a body is never trapped.</li><li><b>Queries.</b> [RayCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_RayCast_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__) returns the closest hit; [Overlap](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__) is exact (shapes that
 truly overlap the area, not their bounding boxes; sharing an edge is not overlapping). Both leave sensors out unless
-the filter includes them.</li><li><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
+the filter includes them.</li><li><b>Edges.</b> One rule for every backend. A point on a shape's edge or corner is not inside it. A ray hits a
+shape where it enters it: one that starts inside a shape does not hit it; one that starts on its edge hits it at
+fraction 0 going in, and not going out or along the edge; one that only runs along an edge or clips a corner does
+not hit. A cast shape does not hit what it overlaps where it starts; what it only touches there it hits at fraction
+0 going in, and not going out or sliding along it, which is what [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__) does from the same place. On a
+backend with a [Skin](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Skin), two shapes that overlap by less than the skin touch.</li><li><b>Tile geometry is one shape with one surface.</b> The faces between two solid tiles are not surfaces: a
+shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
+cell, [OneWayTileThickness](MicroEngine.Physics.PhysicsContract.md#MicroEngine_Physics_PhysicsContract_OneWayTileThickness) of a tile thick for overlaps, points and the nearest
+surface.</li><li><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
 overlapping it, when the layers of both accept each other and the visitor has
 [SensorEvents](MicroEngine.Physics.ShapeDescription.md#MicroEngine_Physics_ShapeDescription_SensorEvents) (the default). Sensors do not see other sensors or static shapes.</li><li><b>Events are buffered per step.</b> [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_) computes [SensorEvents](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_SensorEvents) and
 [ContactEvents](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactEvents) from the poses at its end (moves made before it count in it); they stay readable until
@@ -1136,7 +1144,9 @@ The id is stale.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_RayCast_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__"></a> RayCast\(Vector2, Vector2, in QueryFilter, out RayHit\)
 
-The closest shape the segment from <code class="paramref">from</code> to <code class="paramref">to</code> enters; a shape holding <code class="paramref">from</code> is not hit.
+The closest shape the segment from <code class="paramref">from</code> to <code class="paramref">to</code> enters. A shape holding
+<code class="paramref">from</code> is not hit; one whose edge <code class="paramref">from</code> is on is hit at fraction 0 when the
+segment goes into it, and not when it leaves it or runs along the edge.
 
 ```csharp
 bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
@@ -1541,9 +1551,10 @@ The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabili
 Moves <code class="paramref">shape</code> with its centre going from <code class="paramref">from</code> to <code class="paramref">to</code> and
 returns the first shape it would touch: [Fraction](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Fraction) is how far along the way its centre is
 then, [Point](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Point) where the two touch and [Normal](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Normal) the surface normal there. A
-shape it overlaps where it starts is not hit (like [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__), which this predicts: "is there room to
-stand up", "what would this dash hit"); one-way platforms are hit only from above, coming down. The shape stops
-within [Skin](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Skin) of the exact place.
+shape it overlaps where it starts is not hit, and one it touches there is hit at fraction 0 when it moves into
+it and not when it leaves it or slides along it: like [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__), which this predicts ("is there room
+to stand up", "what would this dash hit", "can I move there"). One-way platforms are hit only from above, coming
+down. The shape stops within [Skin](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Skin) of the exact place.
 
 ```csharp
 bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)

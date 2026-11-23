@@ -35,6 +35,7 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
 | T1 | Shape queries and contact detail on the contract, both backends, native layer 4 | S1, S2, S6 | inline | [x] |
 | T2 | Tile levels on Box2D (chains, one-way runs, slopes) and the native world | S3, S4, S6 | inline | [x] |
 | T3 | Character rules: gravity phases, skid, corner correction, conditional solids | S5 | inline | [x] |
+| T4 | Correction batch after the independent verification (defects a to k) | S1, S3, S4, S6 | inline | [x] |
 
 ## Log
 
@@ -113,3 +114,34 @@ Quoted fragments are the issue's text or the task's brief, verbatim (L1, L2).
   skipped). `docs/api` regenerated: 11 pages changed, 5 added; the Box2D package has no pages there
   (`site/scripts/api-reference.mjs` does not list it). Not run: the site build, a browser build of a game with Box2D,
   phones. Left to the owner: the row of T10 in `consolidation-1.md`, and CI for the natives of Linux, macOS and iOS.
+- L7 (2026-11-23, the coordinator's correction batch, the part that sets the rule, verbatim): "an independent
+  verification found no blocker ... It found eleven minor defects, mostly places where the two backends disagree or
+  the manual says something the code does not do. Fix them in ONE batch, test-first where it is code ... Backends must
+  agree (decide ONE rule for each, state it in the contract's XML comments and the manual, and make both backends keep
+  it)".
+- L8 (2026-11-23) T4 done. The rules are in the contract's remarks ("Edges", "Tile geometry is one shape with one
+  surface") and the evaluation, section 7b. Tests that failed first: (a) and (b)
+  `A_ray_that_starts_on_an_edge_hits_going_in_and_nothing_going_out_or_along_it` on Box2D in metres and pixels and
+  `A_ray_on_the_surface_of_tiles_hits_going_in_and_nothing_going_out` on Box2D; (c)
+  `A_cast_shape_that_touches_a_surface_hits_it_at_once_going_in_as_a_move_from_there_is_blocked` on Box2D in metres
+  and pixels; (d) `A_shape_sunk_into_tiles_is_not_stopped_by_the_faces_between_them` on the tile backend; (e)
+  `A_one_way_tile_is_a_platform_a_quarter_of_a_tile_thick_for_overlaps_points_and_the_nearest_surface` on the tile
+  backend; (f) `The_count_of_a_ray_through_one_way_and_solid_tiles_does_not_depend_on_the_room_given` on Box2D; (g)
+  the capsule test, with a new assertion that it meets no wall; (h)
+  `The_bounds_of_tiles_follow_their_body_when_it_is_turned`. (j) has
+  `An_engine_body_destroyed_through_Box2D_is_refused_with_an_error_instead_of_ending_the_process`, written after the
+  guard (it could only end the process before). (i) measured with a throwaway test, not kept: 1000 x 1000 random
+  tiles, removal 5705 ms (the verifier's number) to 149 to 161 ms; adding 1.5 to 1.7 s and about 520 MB after a
+  collection, unchanged (3 MB of it managed); 250 x 250: 0.1 s, 27 MB, 8 ms. One regression on the way: mapping a tile
+  shape's two handles to one changed which of two equally near surfaces `ClosestPoint` names; the lowest handle wins
+  again. Native layer 7: no signature changed, but its rules did (the header raises the version for either) and
+  `me_native_valid` was added. Not fixed: a box character does not climb slope tiles (the manual now says slopes need
+  a capsule; a step-up rule in the controller is a feature of its own); the memory of a huge noise map (Box2D's, per
+  chain segment; stated). No runtime refusal of a box character on a level with slopes: a box on such a level is
+  legitimate for everything but walking the slopes. Checks are in L9.
+- L9 (2026-11-23) Checks of T4. `dotnet build MicroEngine.slnx -c Release`: 0 warnings. `dotnet test MicroEngine.slnx -c Release`:
+  17 projects, 0 failed, no host aborted (Box2D 271, MicroEngine.Tests 1356 and 1 skipped, Samples 113, Desktop 832 and
+  18 skipped: one more skipped than the run before, outside physics). Native self-test: win-x64 and browser-wasm (under
+  Node) all passed, determinism hash `93f3a79ebf294b23` on both. API pages regenerated (3 changed), snippets
+  refreshed, the anchors of `physics.md` named by other pages exist. Not rebuilt: android-x64 with the last layer;
+  not compiled: Linux with gcc, macOS, iOS.

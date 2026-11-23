@@ -154,6 +154,70 @@ public abstract class TileGeometryConformance : CapabilityConformance
     }
 
     [TestMethod]
+    public void A_ray_on_the_surface_of_tiles_hits_going_in_and_nothing_going_out()
+    {
+        var (world, tiles, _) = Map(".....", "#####");
+        Assert.IsFalse(world.RayCast(new Vector2(40, 16), new Vector2(60, 4), default, out _), "leaving the floor it starts on");
+        Assert.IsFalse(world.RayCast(new Vector2(8, 16), new Vector2(72, 16), default, out _), "along the floor's top, across the tiles");
+        Assert.IsTrue(world.RayCast(new Vector2(40, 16), new Vector2(60, 28), default, out var into));
+        Assert.AreEqual(tiles, into.Shape);
+        Assert.AreEqual(0, into.Fraction, Rounding);
+        Assert.AreEqual(new Vector2(0, -1), into.Normal);
+    }
+
+    [TestMethod]
+    public void A_shape_sunk_into_tiles_is_not_stopped_by_the_faces_between_them()
+    {
+        var (world, _, _) = Map("..........", "##########", "##########");
+        // The floor's top is y 16. A box sunk half a unit into it, cast and moved along it.
+        if ((world.Capabilities & PhysicsCapabilities.ShapeQueries) != 0)
+        {
+            Assert.IsFalse(world.ShapeCast(QueryShape.Box(new Vector2(12, 14)), new Vector2(40, 9.5f), new Vector2(120, 9.5f), default, out var hit), $"nothing but the floor it is sunk in: {hit}");
+            Assert.IsFalse(world.ShapeCast(QueryShape.Circle(6), new Vector2(40, 10.5f), new Vector2(120, 10.5f), default, out hit), hit.ToString());
+        }
+        var player = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(40, 9.5f)));
+        world.AddShape(player, ShapeDescription.Box(new Vector2(12, 14)));
+        var moved = world.Move(player, new Vector2(80, 0));
+        Assert.AreEqual(120, world.PositionOf(player).X, Tolerance(world), $"the move goes the whole way, as the cast said: {moved}");
+        Assert.IsFalse(moved.HitWall, moved.ToString());
+    }
+
+    [TestMethod]
+    public void A_one_way_tile_is_a_platform_a_quarter_of_a_tile_thick_for_overlaps_points_and_the_nearest_surface()
+    {
+        var (world, tiles, _) = Map("....", "....", "====", "....", "....");
+        if ((world.Capabilities & PhysicsCapabilities.ShapeQueries) == 0) Assert.Inconclusive("the backend has no shape queries");
+        Span<ShapeId> found = stackalloc ShapeId[2];
+        // The row's cells are y 32..48; the platform is their top quarter, y 32..36.
+        Assert.AreEqual(1, world.OverlapPoint(new Vector2(24, 34), default, found), "inside the platform");
+        Assert.AreEqual(tiles, found[0]);
+        Assert.AreEqual(0, world.OverlapPoint(new Vector2(24, 42), default, found), "in the cell, under the platform");
+        Assert.AreEqual(1, world.Overlap(new RectF(20, 30, 8, 4), default, found));
+        Assert.AreEqual(0, world.Overlap(new RectF(20, 38, 8, 8), default, found), "an area under the platform, inside the cell");
+        Assert.AreEqual(1, world.Overlap(QueryShape.Circle(3), new Vector2(24, 34), default, found));
+        Assert.AreEqual(0, world.Overlap(QueryShape.Circle(3), new Vector2(24, 43), default, found));
+        Assert.IsTrue(world.ClosestPoint(new Vector2(24, 44), 10, default, out var under));
+        Assert.AreEqual(8, under.Distance, Tolerance(world), "from under it, the platform's underside at y 36");
+        Assert.AreEqual(36, under.Point.Y, Tolerance(world));
+        Assert.IsTrue(world.ClosestPoint(new Vector2(24, 34), 10, default, out var inside));
+        Assert.AreEqual(0, inside.Distance, Tolerance(world));
+        Assert.AreEqual(0, world.OverlapPoint(new Vector2(24, 34), new QueryFilter { PassOneWay = true }, found));
+    }
+
+    [TestMethod]
+    public void The_count_of_a_ray_through_one_way_and_solid_tiles_does_not_depend_on_the_room_given()
+    {
+        var (world, tiles, _) = Map("....", "====", "....", "####");
+        if ((world.Capabilities & PhysicsCapabilities.ShapeQueries) == 0) Assert.Inconclusive("the backend has no shape queries");
+        Span<RayHit> hits = stackalloc RayHit[4];
+        Assert.AreEqual(1, world.RayCastAll(new Vector2(24, 0), new Vector2(24, 64), default, hits), "a grid is one shape");
+        Assert.AreEqual(tiles, hits[0].Shape);
+        Assert.AreEqual(16, hits[0].Point.Y, Rounding, "at the first of its surfaces");
+        Assert.AreEqual(1, world.RayCastAll(new Vector2(24, 0), new Vector2(24, 64), default, []), "the same count with no room");
+        Assert.AreEqual(1, world.RayCastAll(new Vector2(24, 0), new Vector2(24, 64), default, hits[..1]));
+    }
+
+    [TestMethod]
     public void Tiles_are_static_geometry_only()
     {
         var world = CreateWorld();

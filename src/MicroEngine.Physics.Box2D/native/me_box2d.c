@@ -22,6 +22,13 @@
 // Overlap queries shrink their box by this much so that shapes sharing an edge with it do not count: Box2D's overlap
 // test accepts a distance up to a tenth of the slop.
 #define ME_TOUCH ( 0.1f * ME_SLOP + 1e-4f )
+// A point is inside a shape when it is deeper than this (a point on an edge or a corner is not), and a ray enters a
+// shape when it is inside it this far past where it met it (a ray that runs along an edge or clips a corner does not).
+#define ME_INSIDE ( 1e-5f )
+#define ME_ENTER ( 1e-3f )
+// Cast shapes are made this much smaller (a box) so that Box2D's cast, which stops a slop away, stops them where they
+// touch, and so that a surface they slide along is not in their way.
+#define ME_CAST_SHRINK ( ME_SLOP + ME_TOUCH )
 #define ME_MAX_PLANES 16
 #define ME_MOVER_ITERATIONS 5
 // The kind of a handle made by me_tiles_create (after MeShapeKind's values).
@@ -45,6 +52,7 @@ typedef struct
 	b2ChainId* chains;
 	b2ShapeId* parts;
 	int chainCount, partCount;
+	int group; // the handle queries report for this one: its own, or the solid handle of the tiles it is the one-way part of
 } MeShape;
 
 typedef struct
@@ -243,6 +251,21 @@ ME_API int me_native_id( MeWorld* w, int kind, int handle, void* out8 )
 				return 0;
 			memcpy( out8, &w->joints[handle].id, sizeof( b2JointId ) );
 			return 1;
+		default:
+			return 0;
+	}
+}
+
+ME_API int me_native_valid( MeWorld* w, int kind, int handle )
+{
+	switch ( kind )
+	{
+		case 1:
+			return is_live_body( w, handle ) && b2Body_IsValid( w->bodies[handle].id );
+		case 2:
+			return is_live_shape( w, handle ) && ( w->shapes[handle].kind == ME_TILES || b2Shape_IsValid( w->shapes[handle].id ) );
+		case 3:
+			return handle >= 0 && handle < w->jointCount && w->joints[handle].alive && b2Joint_IsValid( w->joints[handle].id );
 		default:
 			return 0;
 	}
@@ -514,6 +537,7 @@ ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int 
 	s->body = body;
 	s->kind = kind;
 	s->flags = flags;
+	s->group = w->shapeCount;
 	b2Shape_SetUserData( id, (void*)(intptr_t)( w->shapeCount + 1 ) );
 
 	int handle = w->shapeCount++;
@@ -609,6 +633,7 @@ static int new_tiles( MeWorld* w, int body, int flags )
 	s->body = body;
 	s->kind = ME_TILES;
 	s->flags = flags;
+	s->group = w->shapeCount;
 	return w->shapeCount++;
 }
 
@@ -667,6 +692,7 @@ ME_API int me_tiles_create( MeWorld* w, int body, const float* points, const int
 		w->shapes[oneWay].parts = parts;
 		w->shapes[oneWay].partCount = oneWayCount;
 		w->shapes[oneWay].id = parts[0];
+		w->shapes[oneWay].group = solid;
 		note_one_way( w );
 		*outOneWay = oneWay;
 	}
@@ -678,7 +704,8 @@ static void release_tiles( MeShape* s, int destroy )
 {
 	if ( destroy )
 	{
-		for ( int i = 0; i < s->chainCount; ++i )
+		// Newest first: Box2D finds a chain by walking its body's list, which starts at the newest.
+		for ( int i = s->chainCount - 1; i >= 0; --i )
 			b2DestroyChain( s->chains[i] );
 		for ( int i = 0; i < s->partCount; ++i )
 			b2DestroyShape( s->parts[i], false );
@@ -1011,35 +1038,106 @@ ME_API void me_joint_set_length( MeWorld* w, int joint, float length )
 
 // ---------------------------------------------------------------------------------------------------- queries
 
+// Whether a world point is inside the shape and not on its edge. Segments have no inside.
+static int strictly_inside( b2ShapeId id, b2Vec2 point )
+{
+	b2BodyId body = b2Shape_GetBody( id );
+	b2Vec2 p = b2Body_GetLocalPoint( body, ( b2Pos ){ point.x, point.y } );
+	switch ( b2Shape_GetType( id ) )
+	{
+		case b2_circleShape:
+		{
+			b2Circle c = b2Shape_GetCircle( id );
+			return b2Distance( p, c.center ) < c.radius - ME_INSIDE;
+		}
+		case b2_capsuleShape:
+		{
+			b2Capsule c = b2Shape_GetCapsule( id );
+			b2Vec2 d = b2Sub( c.center2, c.center1 );
+			float dd = b2Dot( d, d );
+			float t = dd > 0.0f ? b2ClampFloat( b2Dot( b2Sub( p, c.center1 ), d ) / dd, 0.0f, 1.0f ) : 0.0f;
+			return b2Distance( p, b2MulAdd( c.center1, t, d ) ) < c.radius - ME_INSIDE;
+		}
+		case b2_polygonShape:
+		{
+			b2Polygon polygon = b2Shape_GetPolygon( id );
+			for ( int i = 0; i < polygon.count; ++i )
+				if ( b2Dot( polygon.normals[i], b2Sub( p, polygon.vertices[i] ) ) > polygon.radius - ME_INSIDE )
+					return 0;
+			return 1;
+		}
+		default:
+			return 0;
+	}
+}
+
+// The rule of rays, for the closest hit and for every hit: a ray hits a shape where it enters it. One that starts
+// inside a shape does not hit it; one that starts on its edge hits it at once going in, and not going out or along
+// the edge; one that only runs along an edge or clips a corner does not enter. A one-way platform is entered only
+// through its top.
+static int ray_enters( MeWorld* w, int h, b2ShapeId id, b2Vec2 start, b2Vec2 direction, b2Pos point, b2Vec2 normal, int queryFlags )
+{
+	int flags = w->shapes[h].flags;
+	if ( is_ignored( w, h ) || ( ( flags & ME_SENSOR ) && ( queryFlags & ME_QUERY_SENSORS ) == 0 ) )
+		return 0;
+	if ( flags & ME_ONE_WAY )
+	{
+		if ( ( queryFlags & ME_QUERY_PASS_ONE_WAY ) || normal.y < 0.7f )
+			return 0;
+	}
+	if ( b2Dot( direction, normal ) >= 0.0f || strictly_inside( id, start ) )
+		return 0;
+	b2ShapeType type = b2Shape_GetType( id );
+	if ( type == b2_segmentShape || type == b2_chainSegmentShape )
+		return 1;
+	float length = b2Length( direction );
+	if ( length <= 0.0f )
+		return 0;
+	b2Vec2 past = { (float)point.x + direction.x * ( ME_ENTER / length ), (float)point.y + direction.y * ( ME_ENTER / length ) };
+	return strictly_inside( id, past );
+}
+
 typedef struct
 {
 	MeWorld* w;
 	int queryFlags;
-	b2Pos start;
+	b2Vec2 start, direction;
+	float lead;
 	int shape;
 	float fraction;
 	b2Vec2 point, normal;
 } RayContext;
 
+// Box2D does not report a shape for a ray that starts exactly on its edge. Rays are therefore cast from a little
+// before their start (ME_ENTER), to the same end: `lead` is the share of the longer ray that lies before the start,
+// and a fraction of the longer ray becomes one of the ray asked for (0 for a surface met at the start).
+static float ray_lead( float* x, float* y, float* dx, float* dy )
+{
+	float length = sqrtf( *dx * *dx + *dy * *dy );
+	if ( !( length > 0.0f ) )
+		return 0.0f;
+	float back = ME_ENTER / length;
+	*x -= *dx * back;
+	*y -= *dy * back;
+	*dx += *dx * back;
+	*dy += *dy * back;
+	return back / ( 1.0f + back );
+}
+
+static float ray_fraction( float fraction, float lead )
+{
+	float f = ( fraction - lead ) / ( 1.0f - lead );
+	return f > 0.0f ? f : 0.0f;
+}
+
 static float ray_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fraction, void* context )
 {
 	RayContext* c = (RayContext*)context;
 	int h = shape_handle( id );
-	if ( h < 0 || is_ignored( c->w, h ) )
+	if ( h < 0 || ray_enters( c->w, h, id, c->start, c->direction, point, normal, c->queryFlags ) == 0 )
 		return -1.0f;
-	int flags = c->w->shapes[h].flags;
-	if ( ( flags & ME_SENSOR ) && ( c->queryFlags & ME_QUERY_SENSORS ) == 0 )
-		return -1.0f;
-	if ( flags & ME_ONE_WAY )
-	{
-		// A one-way platform is a floor: hit only on its top, never when the query passes one-way platforms.
-		if ( ( c->queryFlags & ME_QUERY_PASS_ONE_WAY ) || normal.y < 0.7f )
-			return -1.0f;
-	}
-	if ( b2Shape_TestPoint( id, c->start ) )
-		return -1.0f;
-	c->shape = h;
-	c->fraction = fraction;
+	c->shape = c->w->shapes[h].group;
+	c->fraction = ray_fraction( fraction, c->lead );
 	c->point = ( b2Vec2 ){ (float)point.x, (float)point.y };
 	c->normal = normal;
 	return fraction;
@@ -1048,7 +1146,8 @@ static float ray_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fractio
 ME_API int me_ray_cast( MeWorld* w, float x, float y, float dx, float dy, uint64_t category, uint64_t mask,
 	int queryFlags, float* out5 )
 {
-	RayContext c = { w, queryFlags, { x, y }, -1, 1.0f, { 0.0f, 0.0f }, { 0.0f, 0.0f } };
+	RayContext c = { w, queryFlags, { x, y }, { dx, dy }, 0.0f, -1, 1.0f, { 0.0f, 0.0f }, { 0.0f, 0.0f } };
+	c.lead = ray_lead( &x, &y, &dx, &dy );
 	b2World_CastRay( w->id, ( b2Pos ){ x, y }, ( b2Vec2 ){ dx, dy }, make_query( category, mask ), ray_result, &c );
 	if ( c.shape < 0 )
 		return -1;
@@ -1079,7 +1178,7 @@ static bool overlap_result( b2ShapeId id, void* context )
 	if ( ( flags & ME_ONE_WAY ) && ( c->queryFlags & ME_QUERY_PASS_ONE_WAY ) )
 		return true;
 	c->w->scratch = (int*)grow( c->w->scratch, &c->w->scratchCapacity, c->count + 1, sizeof( int ) );
-	c->w->scratch[c->count++] = h;
+	c->w->scratch[c->count++] = c->w->shapes[h].group;
 	return true;
 }
 
@@ -1132,7 +1231,8 @@ typedef struct
 {
 	MeWorld* w;
 	int queryFlags;
-	b2Pos start;
+	b2Vec2 start, direction;
+	float lead;
 	int count;
 } RayAllContext;
 
@@ -1140,16 +1240,11 @@ static float ray_all_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fra
 {
 	RayAllContext* c = (RayAllContext*)context;
 	int h = shape_handle( id );
-	if ( h < 0 || query_skips( c->w, h, c->queryFlags, 0 ) )
-		return -1.0f;
-	if ( c->w->shapes[h].flags & ME_ONE_WAY )
-	{
-		if ( ( c->queryFlags & ME_QUERY_PASS_ONE_WAY ) || normal.y < 0.7f )
-			return -1.0f;
-	}
-	if ( b2Shape_TestPoint( id, c->start ) )
+	if ( h < 0 || ray_enters( c->w, h, id, c->start, c->direction, point, normal, c->queryFlags ) == 0 )
 		return -1.0f;
 	MeWorld* w = c->w;
+	h = w->shapes[h].group;
+	fraction = ray_fraction( fraction, c->lead );
 	// One hit per handle: the nearest of the Box2D shapes that make it.
 	for ( int i = 0; i < c->count; ++i )
 	{
@@ -1167,7 +1262,8 @@ static float ray_all_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fra
 ME_API int me_ray_cast_all( MeWorld* w, float x, float y, float dx, float dy, uint64_t category, uint64_t mask,
 	int queryFlags, int* outShapes, float* outHits5, int maxHits )
 {
-	RayAllContext c = { w, queryFlags, { x, y }, 0 };
+	RayAllContext c = { w, queryFlags, { x, y }, { dx, dy }, 0.0f, 0 };
+	c.lead = ray_lead( &x, &y, &dx, &dy );
 	b2World_CastRay( w->id, ( b2Pos ){ x, y }, ( b2Vec2 ){ dx, dy }, make_query( category, mask ), ray_all_result, &c );
 	if ( c.count > 1 )
 		qsort( w->hits, (size_t)c.count, sizeof( MeHit ), compare_hit );
@@ -1267,7 +1363,8 @@ typedef struct
 {
 	MeWorld* w;
 	int queryFlags;
-	const b2ShapeProxy* proxy;
+	const b2ShapeProxy* proxy; // the proxy that is cast: a box made smaller, a round shape made larger
+	float reach;			   // how far the query shape's surface is from that proxy's core
 	b2Vec2 translation;
 	float bottom; // the query shape's lowest point where the cast starts
 	int shape;
@@ -1284,18 +1381,22 @@ static float cast_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fracti
 	b2Vec2 p = { (float)point.x, (float)point.y };
 	if ( fraction <= 0.0f )
 	{
-		// Box2D reports a shape within its slop of the start as an initial overlap, with no normal. The distance
-		// tells a shape the query only stands next to (hit at once when it moves into it) from one it overlaps.
+		// Box2D reports a shape the proxy starts next to as an initial overlap, with no normal. The distance between
+		// the two cores tells a shape the query shape touches (hit at once when it moves into it, never when it slides
+		// along it or leaves it) from one it overlaps, which is not hit. Shapes that overlap by less than a slop touch.
 		b2DistanceInput input;
 		input.proxyA = *c->proxy;
 		input.proxyB = id_proxy( id );
 		input.transform = b2Transform_identity;
-		input.useRadii = true;
+		input.useRadii = false;
 		b2SimplexCache cache = { 0 };
 		b2DistanceOutput output = b2ComputeShapeDistance( &input, &cache, NULL, 0 );
-		if ( output.distance <= ME_TOUCH || b2Dot( c->translation, output.normal ) <= 0.0f )
+		float gap = output.distance - c->reach - input.proxyB.radius;
+		if ( output.distance <= ME_INSIDE || gap < -ME_SLOP )
 			return -1.0f;
-		p = output.pointB;
+		if ( b2Dot( c->translation, output.normal ) <= 1e-4f * b2Length( c->translation ) )
+			return -1.0f;
+		p = b2MulSub( output.pointB, input.proxyB.radius, output.normal );
 		normal = b2Neg( output.normal );
 		fraction = 0.0f;
 	}
@@ -1306,6 +1407,7 @@ static float cast_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fracti
 		if ( c->bottom < id_bounds( id ).upperBound.y - ME_EPS )
 			return -1.0f; // it started below the platform's top
 	}
+	h = c->w->shapes[h].group;
 	if ( c->shape < 0 || fraction < c->fraction || ( fraction == c->fraction && h < c->shape ) )
 	{
 		c->shape = h;
@@ -1319,8 +1421,22 @@ static float cast_result( b2ShapeId id, b2Pos point, b2Vec2 normal, float fracti
 ME_API int me_shape_cast( MeWorld* w, float hx, float hy, float radius, float x, float y, float dx, float dy,
 	uint64_t category, uint64_t mask, int queryFlags, float* out5 )
 {
-	b2ShapeProxy proxy = query_proxy( hx, hy, radius, x, y, 0.0f );
-	CastContext c = { w, queryFlags, &proxy, { dx, dy }, y - hy - radius, -1, 1.0f, { 0.0f, 0.0f }, { 0.0f, 0.0f } };
+	// Box2D's cast stops when the cores are a slop apart (a box) or a slop less than the radius apart (a round
+	// shape). The proxy is the query shape made a slop smaller, or its radius a slop larger, so that it stops where
+	// the query shape itself touches.
+	b2ShapeProxy proxy;
+	float reach;
+	if ( radius > 0.0f )
+	{
+		proxy = query_proxy( hx, hy, radius + ME_SLOP, x, y, 0.0f );
+		reach = radius;
+	}
+	else
+	{
+		proxy = query_proxy( hx, hy, 0.0f, x, y, ME_CAST_SHRINK );
+		reach = ME_CAST_SHRINK;
+	}
+	CastContext c = { w, queryFlags, &proxy, reach, { dx, dy }, y - hy - radius, -1, 1.0f, { 0.0f, 0.0f }, { 0.0f, 0.0f } };
 	b2World_CastShape( w->id, b2Pos_zero, &proxy, c.translation, make_query( category, mask ), cast_result, &c );
 	if ( c.shape < 0 )
 		return -1;
@@ -1372,10 +1488,10 @@ static bool point_result( b2ShapeId id, void* context )
 {
 	PointContext* c = (PointContext*)context;
 	int h = shape_handle( id );
-	if ( h < 0 || query_skips( c->w, h, c->queryFlags, 1 ) || b2Shape_TestPoint( id, c->point ) == false )
+	if ( h < 0 || query_skips( c->w, h, c->queryFlags, 1 ) || strictly_inside( id, ( b2Vec2 ){ (float)c->point.x, (float)c->point.y } ) == 0 )
 		return true;
 	c->w->scratch = (int*)grow( c->w->scratch, &c->w->scratchCapacity, c->count + 1, sizeof( int ) );
-	c->w->scratch[c->count++] = h;
+	c->w->scratch[c->count++] = c->w->shapes[h].group;
 	return true;
 }
 
@@ -1396,6 +1512,7 @@ typedef struct
 	int shape;
 	float distance;
 	b2Vec2 nearest;
+	int raw; // the handle found, before it stands for its group
 } ClosestContext;
 
 static bool closest_result( b2ShapeId id, void* context )
@@ -1407,15 +1524,17 @@ static bool closest_result( b2ShapeId id, void* context )
 	b2Vec2 target = { (float)c->point.x, (float)c->point.y };
 	b2Vec2 nearest = target;
 	float distance = 0.0f;
-	if ( b2Shape_TestPoint( id, c->point ) == false )
+	if ( strictly_inside( id, target ) == 0 )
 	{
 		b2Pos q = b2Shape_GetClosestPoint( id, c->point );
 		nearest = ( b2Vec2 ){ (float)q.x, (float)q.y };
 		distance = b2Distance( nearest, target );
 	}
-	if ( distance > c->distance || ( distance == c->distance && c->shape >= 0 && h >= c->shape ) )
+	// At the same distance the lowest handle wins (of a tile shape's two, the solid one).
+	if ( distance > c->distance || ( distance == c->distance && c->shape >= 0 && h >= c->raw ) )
 		return true;
-	c->shape = h;
+	c->raw = h;
+	c->shape = c->w->shapes[h].group;
 	c->distance = distance;
 	c->nearest = nearest;
 	return true;
@@ -1424,7 +1543,7 @@ static bool closest_result( b2ShapeId id, void* context )
 ME_API int me_closest_point( MeWorld* w, float x, float y, float maxDistance, uint64_t category, uint64_t mask,
 	int queryFlags, float* out3 )
 {
-	ClosestContext c = { w, queryFlags, { x, y }, -1, maxDistance, { 0.0f, 0.0f } };
+	ClosestContext c = { w, queryFlags, { x, y }, -1, maxDistance, { 0.0f, 0.0f }, -1 };
 	b2AABB box = { { x - maxDistance, y - maxDistance }, { x + maxDistance, y + maxDistance } };
 	b2World_OverlapAABB( w->id, b2Pos_zero, box, make_query( category, mask ), closest_result, &c );
 	if ( c.shape < 0 )
@@ -1641,11 +1760,44 @@ static int mover_ignores( MeWorld* w, b2ShapeId id, int h, int body, int queryFl
 	return 0;
 }
 
+// The outward normal of the chain segment from a to b (chains keep the solid on their left).
+static b2Vec2 segment_normal( b2Vec2 a, b2Vec2 b )
+{
+	b2Vec2 d = b2Sub( b, a );
+	return b2Normalize( ( b2Vec2 ){ d.y, -d.x } );
+}
+
+// Whether a plane the mover found on a chain segment is a surface of the chain. A capsule that has sunk a little into
+// one segment can touch the end of the next one from the side; Box2D then gives a plane that faces along the surface,
+// which is not there for a body outside the chain (its own collision uses the neighbours, the ghost points, to drop
+// it). A plane is kept when it faces the way the segment does, or lies between the segment's normal and that of the
+// neighbour it shares the touched end with, where the two make an outer corner.
+static int chain_plane_is_surface( b2ShapeId id, b2Vec2 normal )
+{
+	b2ChainSegment s = b2Shape_GetChainSegment( id );
+	b2Rot q = b2Body_GetRotation( b2Shape_GetBody( id ) );
+	b2Vec2 own = b2RotateVector( q, segment_normal( s.segment.point1, s.segment.point2 ) );
+	if ( b2Dot( normal, own ) > 0.999f )
+		return 1;
+	b2Vec2 before = b2RotateVector( q, segment_normal( s.ghost1, s.segment.point1 ) );
+	b2Vec2 after = b2RotateVector( q, segment_normal( s.segment.point2, s.ghost2 ) );
+	// At the first end the surface turns from `before` to `own`, at the second from `own` to `after`; both turn
+	// counter-clockwise at an outer corner (the chain goes counter-clockwise round the solid).
+	const float slack = 0.02f;
+	if ( b2Cross( before, own ) > 0.0f && b2Cross( before, normal ) >= -slack && b2Cross( normal, own ) >= -slack && b2Dot( normal, b2Add( before, own ) ) > 0.0f )
+		return 1;
+	if ( b2Cross( own, after ) > 0.0f && b2Cross( own, normal ) >= -slack && b2Cross( normal, after ) >= -slack && b2Dot( normal, b2Add( own, after ) ) > 0.0f )
+		return 1;
+	return 0;
+}
+
 static bool plane_result( b2ShapeId id, const b2PlaneResult* result, void* context )
 {
 	PlaneSet* set = (PlaneSet*)context;
 	int h = shape_handle( id );
 	if ( h < 0 || mover_ignores( set->w, id, h, set->body, set->queryFlags, set->dy, set->bottom, result->plane.normal ) )
+		return true;
+	if ( b2Shape_GetType( id ) == b2_chainSegmentShape && chain_plane_is_surface( id, result->plane.normal ) == 0 )
 		return true;
 	if ( set->count < ME_MAX_PLANES )
 	{

@@ -610,8 +610,11 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         var mask = passOneWay ? TileFlags.Solid : TileFlags.Solid | TileFlags.OneWay;
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
-            if ((grid.FlagsAt(x, y) & mask) != 0 && new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts).Intersects(area))
+        {
+            var flags = grid.FlagsAt(x, y);
+            if ((flags & mask) != 0 && TileCast.Blocking(flags, new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts)).Intersects(area))
                 return true;
+        }
         return false;
     }
 
@@ -733,8 +736,15 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
             bool holds;
             if (s.Grid is not null)
             {
-                var flags = s.Grid.FlagsAt((int)MathF.Floor((point.X - position.X) / s.Grid.TileSize), (int)MathF.Floor((point.Y - position.Y) / s.Grid.TileSize));
-                holds = (flags & (filter.PassOneWay ? TileFlags.Solid : TileFlags.Solid | TileFlags.OneWay)) != 0;
+                // Inside a solid cell (the faces between solid cells are inside too), or inside a one-way cell's platform.
+                int ts = s.Grid.TileSize;
+                float tx = (point.X - position.X) / ts, ty = (point.Y - position.Y) / ts;
+                int cx = (int)MathF.Floor(tx), cy = (int)MathF.Floor(ty);
+                var flags = s.Grid.FlagsAt(cx, cy);
+                if ((flags & TileFlags.Solid) != 0)
+                    holds = (tx > cx || (s.Grid.FlagsAt(cx - 1, cy) & TileFlags.Solid) != 0) && (ty > cy || (s.Grid.FlagsAt(cx, cy - 1) & TileFlags.Solid) != 0);
+                else
+                    holds = !filter.PassOneWay && (flags & TileFlags.OneWay) != 0 && tx > cx && ty > cy && ty - cy < PhysicsContract.OneWayTileThickness;
             }
             else
             {

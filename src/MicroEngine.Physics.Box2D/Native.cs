@@ -12,7 +12,7 @@ internal static unsafe partial class Native
 {
     public const string Library = "me_box2d";
     /// <summary>The <c>ME_API_VERSION</c> this assembly is written against.</summary>
-    public const int ApiVersion = 6;
+    public const int ApiVersion = 7;
 
     public const int Static = 0, Kinematic = 1, Dynamic = 2;
     public const int Box = 0, Circle = 1, Capsule = 2, Polygon = 3;
@@ -39,6 +39,7 @@ internal static unsafe partial class Native
     [LibraryImport(Library)] public static partial void me_world_counters(nint world, int* out4);
     [LibraryImport(Library)] public static partial void me_world_set_ignored(nint world, int* shapes, int count);
     [LibraryImport(Library)] public static partial int me_native_id(nint world, int kind, int handle, void* out8);
+    [LibraryImport(Library)] public static partial int me_native_valid(nint world, int kind, int handle);
 
     [LibraryImport(Library)] public static partial int me_body_create(nint world, int type, float x, float y, float angle, int bullet);
     [LibraryImport(Library)] public static partial void me_body_destroy(nint world, int body);

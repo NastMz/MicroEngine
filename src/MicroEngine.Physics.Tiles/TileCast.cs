@@ -106,6 +106,8 @@ internal static class TileCast
             var tile = new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts);
             if (!Rounded(tile, half, radius, from, dir, out float tt, out var n)) continue;
             if (!solid && !OneWayStops(tile, half, radius, from, n)) continue;
+            // The grid is one shape: a face (or a corner) between two solid cells is not a surface of it.
+            if (solid && Inside(grid, x, y, n)) continue;
             if (found && tt >= t) continue;
             found = true;
             t = tt;
@@ -114,6 +116,21 @@ internal static class TileCast
         }
         return found;
     }
+
+    /// <summary>
+    /// Whether the part of solid cell (<paramref name="x"/>, <paramref name="y"/>) that faces <paramref name="normal"/>
+    /// is inside the solid: the cell on that side is solid too (for a corner, one of the two beside it).
+    /// </summary>
+    private static bool Inside(ICollisionGrid grid, int x, int y, Vector2 normal)
+    {
+        int nx = normal.X > 0.001f ? 1 : normal.X < -0.001f ? -1 : 0, ny = normal.Y > 0.001f ? 1 : normal.Y < -0.001f ? -1 : 0;
+        if (nx != 0 && (grid.FlagsAt(x + nx, y) & TileFlags.Solid) != 0) return true;
+        return ny != 0 && (grid.FlagsAt(x, y + ny) & TileFlags.Solid) != 0;
+    }
+
+    /// <summary>What a one-way cell is for overlaps, points and the nearest surface: a platform at the top of the cell.</summary>
+    public static RectF Blocking(TileFlags flags, RectF tile) =>
+        (flags & TileFlags.Solid) != 0 ? tile : tile with { Height = tile.Height * PhysicsContract.OneWayTileThickness };
 
     /// <summary>Whether the rounded box centred at <paramref name="centre"/> overlaps a blocking cell of <paramref name="grid"/>.</summary>
     public static bool GridOverlaps(ICollisionGrid grid, Vector2 origin, Vector2 half, float radius, Vector2 centre, bool passOneWay)
@@ -125,8 +142,11 @@ internal static class TileCast
         var mask = passOneWay ? TileFlags.Solid : TileFlags.Solid | TileFlags.OneWay;
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
-            if ((grid.FlagsAt(x, y) & mask) != 0 && Overlaps(new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts), half, radius, centre))
+        {
+            var flags = grid.FlagsAt(x, y);
+            if ((flags & mask) != 0 && Overlaps(Blocking(flags, new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts)), half, radius, centre))
                 return true;
+        }
         return false;
     }
 
@@ -143,8 +163,9 @@ internal static class TileCast
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
         {
-            if ((grid.FlagsAt(x, y) & mask) == 0) continue;
-            var tile = new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts);
+            var flags = grid.FlagsAt(x, y);
+            if ((flags & mask) == 0) continue;
+            var tile = Blocking(flags, new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts));
             float d = DistanceSquared(tile, p);
             if (found && d >= distanceSquared) continue;
             found = true;

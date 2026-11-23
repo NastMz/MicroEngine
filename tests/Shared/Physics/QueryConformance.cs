@@ -172,6 +172,72 @@ public abstract class ShapeQueryConformance : CapabilityConformance
         Assert.IsFalse(world.ShapeCast(box, At(world, 0, 60), At(world, 0, 20), new QueryFilter(CollisionLayers.Default, CollisionLayers.All) { PassOneWay = true }, out _));
     }
 
+    // ------------------------------------------------------------------ edges: one rule on every backend
+
+    [TestMethod]
+    public void A_ray_that_starts_on_an_edge_hits_going_in_and_nothing_going_out_or_along_it()
+    {
+        var (world, floor, wall, _) = Scene();
+        Span<RayHit> hits = stackalloc RayHit[4];
+        // On the wall's left face (x 50), going in.
+        Assert.IsTrue(world.RayCast(At(world, 50, 20), At(world, 70, 20), default, out var into));
+        Assert.AreEqual(wall, into.Shape);
+        Assert.AreEqual(0, into.Fraction, Rounding, "it enters where it starts");
+        Assert.AreEqual(-1, into.Normal.X, 1e-3f);
+        Assert.AreEqual(1, world.RayCastAll(At(world, 50, 20), At(world, 70, 20), default, hits));
+        Assert.AreEqual(wall, hits[0].Shape);
+        // Going out, and along the face.
+        Assert.IsFalse(world.RayCast(At(world, 50, 20), At(world, 30, 20), default, out _), "leaving the face it starts on");
+        Assert.AreEqual(0, world.RayCastAll(At(world, 50, 20), At(world, 30, 20), default, hits));
+        Assert.IsFalse(world.RayCast(At(world, 50, 10), At(world, 50, 30), default, out _), "along the face");
+        Assert.AreEqual(0, world.RayCastAll(At(world, 50, 10), At(world, 50, 30), default, hits));
+        // On the floor's top, leaving it upward and running along it.
+        Assert.IsFalse(world.RayCast(At(world, 0, 0), At(world, 20, 12), default, out _), "leaving the floor it starts on");
+        Assert.IsFalse(world.RayCast(At(world, -20, 0), At(world, 20, 0), default, out _), "along the floor's top");
+        Assert.IsTrue(world.RayCast(At(world, 0, 0), At(world, 20, -12), default, out var down));
+        Assert.AreEqual(floor, down.Shape);
+        Assert.AreEqual(0, down.Fraction, Rounding);
+        // A point on an edge or a corner is not held.
+        Span<ShapeId> found = stackalloc ShapeId[4];
+        Assert.AreEqual(0, world.OverlapPoint(At(world, 50, 20), default, found), "on the wall's face");
+        Assert.AreEqual(0, world.OverlapPoint(At(world, 50, 40), default, found), "on its corner");
+        Assert.AreEqual(0, world.OverlapPoint(At(world, 0, 0), default, found), "on the floor's top");
+        Assert.AreEqual(1, world.OverlapPoint(At(world, 50.5f, 20), default, found), "just inside");
+    }
+
+    [TestMethod]
+    public void A_cast_shape_that_touches_a_surface_hits_it_at_once_going_in_as_a_move_from_there_is_blocked()
+    {
+        var (world, floor, wall, _) = Scene();
+        var box = QueryShape.Box(Size(12, 14));
+        // Flush against the wall (its right side at x 50), clear of the floor.
+        Assert.IsTrue(world.ShapeCast(box, At(world, 44, 20), At(world, 64, 20), default, out var into));
+        Assert.AreEqual(wall, into.Shape);
+        Assert.AreEqual(0, into.Fraction, Slack(world, 20), "it cannot move at all");
+        Assert.AreEqual(-1, into.Normal.X, 1e-2f);
+        Assert.IsFalse(world.ShapeCast(box, At(world, 44, 20), At(world, 24, 20), default, out _), "away from the wall it is free");
+        Assert.IsFalse(world.ShapeCast(box, At(world, 44, 20), At(world, 44, 30), default, out _), "and along it");
+        // Standing on the floor.
+        Assert.IsTrue(world.ShapeCast(box, At(world, 0, 7), At(world, 0, -3), default, out var down));
+        Assert.AreEqual(floor, down.Shape);
+        Assert.AreEqual(0, down.Fraction, Slack(world, 10));
+        Assert.AreEqual(1, Vector2.Dot(down.Normal, world.Up), 1e-2f);
+        Assert.IsTrue(world.ShapeCast(box, At(world, 0, 7), At(world, 100, 7), default, out var along));
+        Assert.AreEqual(wall, along.Shape, "along the floor it slides as far as the wall");
+        Assert.AreEqual(0.44f, along.Fraction, Slack(world, 100));
+        // A circle that touches the floor, the same.
+        Assert.IsTrue(world.ShapeCast(QueryShape.Circle(5 * Scale), At(world, 0, 5), At(world, 0, -5), default, out var round));
+        Assert.AreEqual(floor, round.Shape);
+        Assert.AreEqual(0, round.Fraction, Slack(world, 10));
+        Assert.IsFalse(world.ShapeCast(QueryShape.Circle(5 * Scale), At(world, 0, 5), At(world, 0, 25), default, out _));
+
+        // The cast predicts the move: a body of that box, flush against the wall, does not move into it.
+        var (body, _) = Box(world, BodyDescription.Kinematic(default), 38, 50, 13, 27);
+        var blocked = world.Move(body, By(world, 20, 0));
+        Assert.AreEqual(0, XOf(blocked.Delta), Tolerance(world), blocked.ToString());
+        Assert.IsTrue(blocked.HitWall);
+    }
+
     // ------------------------------------------------------------------ overlaps
 
     [TestMethod]

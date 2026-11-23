@@ -192,6 +192,43 @@ hash adds a body's dynamics only once they were set, so worlds that never set th
   structs passed by value, which the interpreter does not do), not on iOS (untested), outside the state hash, tied to
   Box2D's version. The library grew from 436 KB to 710 KB on win-x64.
 
+## 7b. What an independent verification found, and the rules it led to
+
+Eleven minor defects, most of them places where the two backends answered differently at an edge. Each was given one
+rule, written in the contract's comments and the manual, and a test both backends run:
+
+- **Rays at an edge.** Box2D does not report a polygon for a ray that starts exactly on its edge, and reported a chain
+  segment for a ray that starts on it and leaves. The layer now casts from a millimetre before the start and keeps
+  only hits the ray enters (the direction goes against the normal, and the ray is inside the shape just past the
+  hit), so both backends hit at fraction 0 going in and nothing going out or along.
+- **Points.** `b2Shape_TestPoint` holds a point on an edge; the layer tests the inside itself.
+- **A cast from a touching start.** Box2D's cast stops a slop away and calls anything nearer an initial overlap. The
+  layer casts a box made smaller by a slop (a round shape with its radius made larger), so the shape stops where it
+  touches, and tells touching from overlapping by the distance of the cores: a flush box is stopped at once going in,
+  as `Move` is, and slides free along the surface.
+- **Tiles are one shape.** The tile backend stopped a shape sunk into tiles at the next cell's face; the faces between
+  two solid cells are no longer surfaces for casts or for the world's mover (the legacy `TileMotion` rule is
+  untouched).
+- **One-way tiles** are a platform a quarter of a tile thick for overlaps, points and the nearest surface on both
+  backends (`PhysicsContract.OneWayTileThickness`); the tile backend used the whole cell.
+- **A count that depended on the room given**: the layer reports a tile shape's two handles as one.
+- **A capsule at the top of a ramp** reported a wall for two steps: Box2D's mover gives a plane for the end of the
+  next chain segment when the capsule has sunk a little into this one. The layer drops planes of a chain segment that
+  do not face the way the segment does or lie between its normal and its neighbour's at an outer corner.
+- **A box character does not climb slope tiles** (it was said to, as a staircase): the manual now says slopes need a
+  capsule and shows how to make one. Making the box mover climb means a step-up rule in the controller, a feature of
+  its own; not done.
+- **Removal was quadratic**: Box2D unlinks a chain by walking its body's list from the newest; chains are now
+  destroyed newest first. 1000 × 1000 random tiles (746,000 outline edges in 51,000 loops): removal 5.7 s before,
+  0.15 s after; adding 1.5 to 1.7 s and about 520 MB, unchanged, of which 3 MB is managed (the copy of the flags) and
+  the rest is Box2D's (about 0.7 KB per segment). 250 × 250: 46,500 edges, 0.1 s, 27 MB, removal 8 ms. The memory is
+  the price of chain segments on a map where almost every tile edge is a boundary; it is stated in the manual, not
+  reduced.
+- **Native access**: an engine body or joint destroyed through Box2D is now refused with a typed error by worlds made
+  for native access (`me_native_valid`) instead of ending the process; the manual says ids die with their objects and
+  that stepping through Box2D skips events and `StepCount`.
+- **Bounds of tiles** on a turned body follow the body.
+
 ## 8. Performance
 
 No existing path does more work: the tile backend gained members that only refuse, a world without joints skips the

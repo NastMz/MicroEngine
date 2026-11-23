@@ -65,7 +65,12 @@ public readonly struct B2JointId
 /// <item>Units are Box2D's: metres, radians, y up, whatever <see cref="Box2DWorldOptions"/> maps the game's units to.</item>
 /// <item>The engine does not know what was changed: it is not in the state hash, not in
 /// <see cref="IPhysicsWorld2D.DescriptionOf(ShapeId)"/>, and bodies, shapes and joints created through Box2D have no
-/// engine id (queries and events skip them). Never destroy through Box2D what the engine created.</item>
+/// engine id (queries and events skip them).</item>
+/// <item>An id lives as long as its engine object: after the engine destroys the object (or the world) the id is dead
+/// and passing it to Box2D is undefined. Destroying an engine object through Box2D is not supported: the engine then
+/// refuses that body or joint with <see cref="InvalidOperationException"/>, and what was attached to it is in an
+/// undefined state. Stepping the world through Box2D is not a step of the engine: <see cref="IPhysicsWorld2D.StepCount"/>
+/// does not move and the events of those steps are never reported.</item>
 /// <item>Box2D's API changes between its releases; <see cref="Box2DPhysicsWorld2D.Box2DVersion"/> says which one the
 /// package carries.</item>
 /// <item>It works where the package ships a shared library that exports Box2D: Windows, Linux, macOS and Android. In

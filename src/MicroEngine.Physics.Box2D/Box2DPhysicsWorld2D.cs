@@ -233,7 +233,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     internal int NativeShape(ShapeId shape)
     {
         if (!IsAlive(shape)) throw new InvalidOperationException($"{shape} is not a live shape of this world.");
-        return _shapeSlots[(int)shape.Index].Native;
+        int native = _shapeSlots[(int)shape.Index].Native;
+        if (Native.me_native_valid(World, 2, native) == 0) throw DestroyedNatively(shape);
+        return native;
     }
 
     // ------------------------------------------------------------------ units
@@ -491,8 +493,17 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private Body Resolve(BodyId body)
     {
         if (!IsAlive(body)) throw new InvalidOperationException($"{body} is not a live body of this world (destroyed, stale or none).");
-        return _bodySlots[(int)body.Index];
+        var b = _bodySlots[(int)body.Index];
+        if (Options.NativeAccess && Native.me_native_valid(World, 1, b.Native) == 0) throw DestroyedNatively(body);
+        return b;
     }
+
+    /// <summary>
+    /// The error of an engine object that Box2D no longer has: something destroyed it through Box2D's own API, which
+    /// is not supported. Only worlds made for native access look for it.
+    /// </summary>
+    private static InvalidOperationException DestroyedNatively(object id) =>
+        new($"{id} was destroyed through Box2D's own API behind the engine: destroy engine objects with the engine (DestroyBody, RemoveShape, DestroyJoint).");
 
     // ------------------------------------------------------------------ joints
 
@@ -508,7 +519,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     private Joint Resolve(JointId joint)
     {
         if (!IsAlive(joint)) throw new InvalidOperationException($"{joint} is not a live joint of this world (destroyed, broken, stale or none).");
-        return _jointSlots[(int)joint.Index];
+        var j = _jointSlots[(int)joint.Index];
+        if (Options.NativeAccess && Native.me_native_valid(World, 3, j.Native) == 0) throw DestroyedNatively(joint);
+        return j;
     }
 
     /// <summary>Whether the joint's limit and coordinate are angles (and so turn with the world's y direction).</summary>
@@ -867,9 +880,15 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         if (_shapeSlots[(int)shape.Index] is { Tiles: { } tiles } tileShape)
         {
             // Like the tile backend: the area the tiles were added with, from the body's origin downward.
-            var origin = PositionOf(BodyOf(shape));
-            var far = origin + new Vector2(tiles.Columns, 0) * tiles.Grid.TileSize - Up * (tiles.Rows * tiles.Grid.TileSize);
-            return new RectF(MathF.Min(origin.X, far.X), MathF.Min(origin.Y, far.Y), MathF.Abs(far.X - origin.X), MathF.Abs(far.Y - origin.Y));
+            // The area runs sideways and downward from the body's origin, and turns with the body.
+            var body = BodyOf(shape);
+            var origin = PositionOf(body);
+            var turn = Matrix3x2.CreateRotation(RotationOf(body));
+            var across = Vector2.TransformNormal(new Vector2(tiles.Columns * tiles.Grid.TileSize, 0), turn);
+            var down = Vector2.TransformNormal(Up * -(tiles.Rows * tiles.Grid.TileSize), turn);
+            var min = Vector2.Min(Vector2.Min(origin, origin + across), Vector2.Min(origin + down, origin + across + down));
+            var max = Vector2.Max(Vector2.Max(origin, origin + across), Vector2.Max(origin + down, origin + across + down));
+            return new RectF(min.X, min.Y, max.X - min.X, max.Y - min.Y);
         }
         float* b = stackalloc float[4];
         Native.me_shape_bounds(World, _shapeSlots[(int)shape.Index].Native, b);
@@ -895,8 +914,6 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         public int Columns, Rows, OneWayNative = -1;
     }
 
-    /// <summary>The share of a tile, from its top, that a one-way tile's platform takes.</summary>
-    private const float OneWayThickness = 0.25f;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -905,6 +922,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
     /// tiles for a sliding body to catch on, and one body for the whole level. <see cref="TileFlags.SlopeRight"/> and
     /// <see cref="TileFlags.SlopeLeft"/> cells are part of that outline (<see cref="PhysicsCapabilities.TileSlopes"/>).
     /// A run of <see cref="TileFlags.OneWay"/> tiles is one platform, the top quarter of its tiles.</para>
+    /// <para>A character walks on slope tiles as a capsule; a box is stopped at the foot of a ramp, because a box moves
+    /// along x and then along y. Two areas added with two calls are two outlines with a seam where they meet: add a
+    /// level with one call. The cost is the outline's: about 0.7 KB of native memory for each of its straight edges.</para>
     /// <para>After changing tiles, remove the shape and add the tiles again. The outline is hollow: a dynamic body
     /// placed inside solid tiles is not pushed out, and nothing stops it leaving. Overlaps, point queries and the
     /// nearest surface know the inside (a point inside solid tiles is held by them).</para>
@@ -939,7 +959,7 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         {
             var (row, from, to) = outline.OneWay[i];
             boxes[4 * i] = from * size;
-            boxes[4 * i + 1] = -(row + OneWayThickness) * size;
+            boxes[4 * i + 1] = -(row + PhysicsContract.OneWayTileThickness) * size;
             boxes[4 * i + 2] = to * size;
             boxes[4 * i + 3] = -row * size;
         }
@@ -1237,9 +1257,9 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
 
     /// <inheritdoc/>
     /// <remarks>
-    /// The shape stops within a Box2D slop (half a centimetre) of the surface: short of it for a box, and up to that
-    /// far into it for a circle or a capsule. A surface nearer than that where the cast starts counts as overlapped
-    /// when the two are less than a millimetre apart, and as hit at once otherwise.
+    /// The shape stops within a millimetre of where it touches. Where the cast starts, a shape it overlaps by less than
+    /// a Box2D slop (half a centimetre, how far resting bodies sink) counts as touched: it is hit at once when the
+    /// cast moves into it.
     /// </remarks>
     public bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
     {
