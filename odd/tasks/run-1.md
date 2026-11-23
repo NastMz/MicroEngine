@@ -85,3 +85,30 @@ Quoted fragments are the issue's text (L1).
   (`tests/MeadowRun.Tests/SaveFormatTests.cs`, `tests/CourtyardKey.Tests/SaveFormatTests.cs`). The browser page keeps
   its storage in a scripted run: `web/tests/run.mjs` (`storage`, `blockedStorage`) plays a script to see a full and a
   blocked storage, and the browser suite cannot be run here.
+- L3 (2026-11-22) T1, commit a3b1e9d0. `Game.AttachRun` decides the medium at `Initialize`; `RunOptions.Saves`,
+  `LaunchRequest.SaveDirectory` (`--saves`), `LaunchArguments.SaveDirectory`, `MemorySaveStorage`,
+  `InitializeForTest(platform, seed, saves)`; the browser host composes the page's storage for a launch with a
+  script. Tests: `tests/MicroEngine.Tests/Hosting/RunSavesTests.cs` (10). They were written after the code and do
+  not compile against the code before it; no red run was observed for this task.
+- L4 (2026-11-22) T2, commit 75c3d869. `ExamplesGame` and Gem Garden's `MainGame` lose the parameter and the
+  override; their tests use the run's own store, and the two relaunch tests share one `MemorySaveStorage`
+  (`GemGardenTests`, `LocalizationExampleTests`). The tutorial's chapter on saving, the testing guide, the persistence
+  page, `configuration.md` and `contracts.md` follow. The four demos were not touched and their tests pass. What
+  they can delete: the `saveDirectory` constructor parameters and `CreateSaves` overrides of `MeadowGame`,
+  `RiftGame`, `CourtyardKeyGame` and `TrailDuelGame`, the `*_SAVE_DIR` variables (`RIFT_SAVE_DIR`...), and in their
+  tests the temporary folders, replaced by nothing or by `InitializeForTest(platform, saves: storage)`; the package
+  checks (`packaging/verify.mjs`, `packaging/linux-distros.mjs`) would pass `--saves` instead of the variable.
+- L5 (2026-11-22) T3, commit 4a83c1b4. Evaluation, section J. `InputBindingSet.FromJson` refuses a later format,
+  `ImportBindings` keeps an action whose saved controls are all unknown, and the four methods take `actions`.
+  `RebindExample` passes its two actions. Tests: `BindingsPersistenceTests` (4), written before the fix but not run
+  red. Not reproduced: the first emptying of the file on this machine; it is inferred from the reader before
+  71b97e67 and the folder's date.
+- L6 (2026-11-22) T4. `dotnet build MicroEngine.slnx -c Release`: 0 warnings, 0 errors.
+  `dotnet test MicroEngine.slnx -c Release --no-build`: 17 assemblies, 0 failed (MicroEngine.Tests 1345 passed,
+  1 skipped; Samples.Tests 109 passed, 2 skipped; the four demos 67, 75, 73 and 132 passed; Desktop 833 passed,
+  17 skipped), no aborted host. The examples' tour run twice from the command line: 45 captures, byte-identical
+  between the runs; the files in `%LOCALAPPDATA%\MicroEngine\MicroEngineExamples` kept their dates of 2026-11-20;
+  with `--saves DIR` the three slots were written there, the bindings holding `fire` and `jump` only.
+  `16-rebind.png` and `37-localization-en.png` were looked at: key names, not action names. Not run: the browser
+  suite (`web/tests`), the phone hosts, `sdk/tests`, the site build. No scripted trace or capture test of the demos
+  or the samples changed.

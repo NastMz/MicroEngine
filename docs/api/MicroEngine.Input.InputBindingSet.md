@@ -6,8 +6,8 @@ Namespace: [MicroEngine.Input](MicroEngine.Input.md)
 Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
-Every action's bindings as data, for a rebinding screen to save and load: through [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_)
-and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_) (the platform's storage), or as a value a game keeps in its own save
+Every action's bindings as data, for a rebinding screen to save and load: through [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__)
+and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_System_Collections_Generic_IEnumerable_System_String__) (the platform's storage), or as a value a game keeps in its own save
 (<code>SaveStore.Save("bindings", map.ExportBindings())</code>; the classes have public properties).
 
 ```csharp
@@ -90,7 +90,7 @@ public static InputBindingSet FromJson(string json)
 
  [FormatException](https://learn.microsoft.com/dotnet/api/system.formatexception)
 
-The text is not a binding set.
+The text is not a binding set, or it is one of a format this version does not know (a later one): read as this format it would hold every action with no control.
 
 ### <a id="MicroEngine_Input_InputBindingSet_ToJson"></a> ToJson\(\)
 

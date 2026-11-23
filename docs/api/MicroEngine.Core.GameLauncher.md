@@ -10,7 +10,9 @@ The command line every desktop game accepts, on any backend: a thin caller of th
 ([GameHost](MicroEngine.Core.GameHost.md), [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)). Supported arguments:
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
-<code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
+<code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--saves DIR</code> keep the game's saves in that folder for this run ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves)). Without
+it a run with a script or in deterministic time keeps them in memory, empty at start, and never touches the
+player's; any other run uses the game's usual saves.</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>. A
 headless run is in deterministic time unless <code>--time</code> says otherwise (the headless platform's
 [RunPreset](MicroEngine.Core.RunPreset.md)).</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
@@ -63,7 +65,7 @@ public const int ProfileWarmupFrames = 60
 The one-line usage text printed after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--saves DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
 ```
 
 #### Field Value

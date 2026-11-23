@@ -11,7 +11,8 @@ tests compose the same way and decide a run the same way. A host states its defa
 files are), the game's <code>Configure</code> entry point composes the rest ([HostBuilder](MicroEngine.Hosting.HostBuilder.md)), and the
 [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) decides the run: a script means deterministic time and seed 1 on every host; a run in
 deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
-one; a real-time run whose game shows a start screen starts gamepads after the first frame.
+one, and keeps its saves to itself ([Saves](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Saves)) unless the launch names a folder; a real-time run whose
+game shows a start screen starts gamepads after the first frame.
 
 ```csharp
 public sealed class GameHost
@@ -221,7 +222,8 @@ public PlatformRequest CreateRequest(Game game, RunOptions options)
 ### <a id="MicroEngine_Core_GameHost_CreateRunOptions_MicroEngine_Core_Game_MicroEngine_Core_FrameProfiler_MicroEngine_Core_InputScript_"></a> CreateRunOptions\(Game, FrameProfiler?, InputScript?\)
 
 The run's options for <code class="paramref">game</code>: the graphics options with the launch's overrides, the script, its
-captures, the frame limit, the seed, mute, pacing and the time mode ([EffectiveTime](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_EffectiveTime)).
+captures, the frame limit, the seed, mute, pacing, the time mode ([EffectiveTime](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_EffectiveTime)) and
+the folder of the saves when the launch names one ([SaveDirectory](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_SaveDirectory)).
 
 ```csharp
 public RunOptions CreateRunOptions(Game game, FrameProfiler? profiler = null, InputScript? script = null)

@@ -273,6 +273,18 @@ public bool Report { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_LaunchArguments_SaveDirectory"></a> SaveDirectory
+
+<code>--saves</code>: the folder the game keeps its saves in for this run ([Saves](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Saves)), or null for the run's rule.
+
+```csharp
+public string? SaveDirectory { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_LaunchArguments_Scale"></a> Scale
 
 <code>--scale</code>: the window scale, or null for [Scale](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scale).

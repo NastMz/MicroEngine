@@ -58,7 +58,7 @@ public const string HeadlessName = "headless"
 The one-line usage text desktop launchers print after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--saves DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
 ```
 
 #### Field Value
@@ -333,6 +333,21 @@ public bool Report { get; init; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Hosting_LaunchRequest_SaveDirectory"></a> SaveDirectory
+
+<code>--saves</code>: the folder the game keeps its saves in for this run (created when the game first saves), or null
+for the run's rule: a store of its own, in memory and empty at start, for a run with a script or in
+deterministic time; the game's usual saves otherwise. With a script it is how a run starts from given saves
+and leaves what it saved to look at; without one it is a second set of saves beside the player's.
+
+```csharp
+public string? SaveDirectory { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 ### <a id="MicroEngine_Hosting_LaunchRequest_Scale"></a> Scale
 

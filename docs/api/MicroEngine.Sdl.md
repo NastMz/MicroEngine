@@ -16,7 +16,8 @@ starts it with a [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) (a script
 <code>requestAnimationFrame</code> and may start it again after the game ends. Every run composes the game with the same
 <code>Configure</code> entry point its desktop <code>Program.cs</code> uses, so what the game configures there (platforms, request
 changes, engine services) reaches the browser too; a scripted run is in deterministic time with seed 1, exactly as on
-desktop and phones. Saves go to localStorage by default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)).
+desktop and phones. Saves go to localStorage by default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)), in a scripted
+run too ([Defaults](MicroEngine.Sdl.BrowserLauncher.md#MicroEngine_Sdl_BrowserLauncher_Defaults_MicroEngine_Hosting_HostBuilder_MicroEngine_Sdl_BrowserPage_)).
 
  [BrowserPage](MicroEngine.Sdl.BrowserPage.md)
 
