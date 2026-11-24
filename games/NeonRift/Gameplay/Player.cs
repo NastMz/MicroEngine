@@ -190,7 +190,15 @@ public sealed class Player : Actor
         return shoulder + _aim * rig.Length;
     }
 
-    public int RunFrame => (int)(_runTime * 12) % 8;
+    /// <summary>The frame of the run cycle (the sheet gives its length and rate): it chooses the arm rig, so it places the muzzle.</summary>
+    public int RunFrame
+    {
+        get
+        {
+            var run = Stage.Strip(Names.Clips.HeroRunShoot);
+            return (int)(_runTime * run.Fps) % run.Frames;
+        }
+    }
 
     /// <summary>Applies one hit from a shot or an enemy. Returns false if the player was protected.</summary>
     public bool Hurt()
@@ -266,8 +274,7 @@ public sealed class Player : Actor
         }
         if (Somersault)
         {
-            var frames = art.Frames("hero_back-jump");
-            r.Draw(frames[2 + (int)(Age * 16) % 4], feet, flipX: flip);
+            r.Draw(art.Clip(Names.Clips.HeroSomersault).FrameAt(Age), feet, flipX: flip);
             return;
         }
         if (!_body.Grounded)

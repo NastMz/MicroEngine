@@ -185,44 +185,38 @@ public abstract class Enemy : Actor
     protected bool LeftBehind(float margin = 96) => Bounds.Right < Stage.Camera.View.Left - margin || Bounds.Top > Stage.Def.PixelHeight + 32;
 }
 
-/// <summary>Short-lived visual effect (explosion, muzzle spark) that plays a strip once.</summary>
+/// <summary>Short-lived visual effect (explosion, muzzle spark) that plays a clip of <c>Content/sprites.sheet</c> once.</summary>
 /// <remarks>
-/// Nothing in play reads effects. Their lifetime is the strip's length, which the stage reads from the art when the
-/// effect first updates (<see cref="Stage.StripLength"/>), never from drawing, so how often frames are drawn changes
+/// Nothing in play reads effects. Their lifetime is the clip's length, which the stage reads from the art when the
+/// effect first updates (<see cref="Stage.Strip"/>), never from drawing, so how often frames are drawn changes
 /// nothing; the stage's own sections leave them out, the world hashes their entities like any other.
 /// </remarks>
 public sealed class Effect : Actor
 {
-    private readonly string _sprite;
-    private readonly float _fps, _rotation;
-    private readonly bool _flipX;
-    private int _frames;
+    private Strip _strip;
 
-    public Effect(string sprite, Vector2 at, float fps = 16, float rotation = 0, bool flipX = false)
+    public Effect(string clip, Vector2 at)
     {
-        (_sprite, _fps, _rotation, _flipX) = (sprite, fps, rotation, flipX);
+        Clip = clip;
         Position = at;
         Hitbox = new RectF(-2, -2, 4, 4);
     }
 
-    public string Sprite => _sprite;
+    /// <summary>The clip the effect plays, at the rate the sheet gives it.</summary>
+    public string Clip { get; }
     private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<Effect>(id, this);
     public float Scale { get; init; } = 1;
 
     public override void Update(float dt)
     {
         base.Update(dt);
-        if (_frames == 0) _frames = Stage.StripLength(_sprite);
+        if (_strip.Frames == 0) _strip = Stage.Strip(Clip);
         Position += Velocity * dt;
-        if (Age * _fps >= _frames) Destroy();
+        if (Age * _strip.Fps >= _strip.Frames) Destroy();
     }
 
     internal override void Render(IRenderer r, Assets art)
-    {
-        var frames = art.Frames(_sprite);
-        int i = Math.Min((int)(Age * _fps), frames.Count - 1);
-        r.DrawPivoted(frames[i], Vector2.Round(DrawPosition), _rotation, new Vector2(Scale), flipX: _flipX);
-    }
+        => r.DrawPivoted(art.Clip(Clip).FrameAt(Age), Vector2.Round(DrawPosition), 0, new Vector2(Scale));
 }
 
 /// <summary>Shared ground physics for walkers: gravity, tile collision and a grounded flag.</summary>

@@ -83,11 +83,11 @@ public sealed class DrawBlendTests
     }
 
     [TestMethod]
-    public void An_effect_plays_its_strip_once_whether_or_not_it_is_drawn()
+    public void An_effect_plays_its_clip_once_whether_or_not_it_is_drawn()
     {
         var stage = Settled();
-        stage.Strips = name => name == "shot_hit" ? 4 : 1;
-        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200), fps: 25));   // 4 frames: 0.16 s, 9.6 updates
+        stage.Strips = name => name == "shot_hit" ? new Strip(4, 25) : new Strip(1, 16);
+        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200)));   // 4 frames at 25 a second: 0.16 s, 9.6 updates
         Run(stage, 9, PlayerInput.None);
         Assert.IsTrue(spark.Alive, "still playing its fourth frame after 9 updates");
         Run(stage, 1, PlayerInput.None);
@@ -95,11 +95,11 @@ public sealed class DrawBlendTests
     }
 
     [TestMethod]
-    public void Without_art_an_effect_lasts_one_frame_of_its_strip()
+    public void Without_art_an_effect_lasts_one_frame()
     {
         var stage = Settled();
-        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200), fps: 25));   // one frame: 0.04 s, 2.4 updates
-        Run(stage, 2, PlayerInput.None);
+        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200)));   // one frame at 16 a second: 0.0625 s, 3.75 updates
+        Run(stage, 3, PlayerInput.None);
         Assert.IsTrue(spark.Alive);
         Run(stage, 1, PlayerInput.None);
         Assert.IsFalse(spark.Alive);

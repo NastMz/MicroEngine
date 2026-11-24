@@ -47,7 +47,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
             Rigs = name => game.Art.Rig(name),
-            Strips = name => game.Art.Frames(name).Count,
+            Strips = name => game.Art.Strip(name),
             DefeatSink = _ =>
             {
                 game.Achievements.Unlock(RiftAchievements.FirstScrap);

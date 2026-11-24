@@ -14,7 +14,7 @@ public sealed class ImpactAndJingleTests
     [DataRow(WeaponKind.Spread, "hit2")]
     [DataRow(WeaponKind.Lance, "hit4")]
     [DataRow(WeaponKind.Rapid, "hit1")]
-    public void A_shot_hitting_an_enemy_leaves_its_weapons_impact(WeaponKind kind, string sprite)
+    public void A_shot_hitting_an_enemy_leaves_its_weapons_impact(WeaponKind kind, string clip)
     {
         var stage = Settled();
         var weapon = WeaponSpec.Of(kind);
@@ -24,7 +24,7 @@ public sealed class ImpactAndJingleTests
         stage.Spawn(new PlayerShot(weapon, target.Center - new Vector2(4, 0), new Vector2(weapon.Speed, 0)));
         Run(stage, 2, PlayerInput.None);
 
-        Assert.IsTrue(stage.Effects.Any(e => e.Sprite == sprite), $"{kind}: {string.Join(", ", stage.Effects.Select(e => e.Sprite))}");
+        Assert.IsTrue(stage.Effects.Any(e => e.Clip == clip), $"{kind}: {string.Join(", ", stage.Effects.Select(e => e.Clip))}");
     }
 
     [TestMethod]
@@ -36,7 +36,7 @@ public sealed class ImpactAndJingleTests
         Assert.IsTrue(pod.Hit(1, pod.Center), "armour stops the shot");
         Assert.AreEqual(12, pod.Health, "armour takes no damage");
         Run(stage, 1, PlayerInput.None);
-        Assert.IsTrue(stage.Effects.Any(e => e.Sprite == "hit3"), string.Join(", ", stage.Effects.Select(e => e.Sprite)));
+        Assert.IsTrue(stage.Effects.Any(e => e.Clip == "hit3"), string.Join(", ", stage.Effects.Select(e => e.Clip)));
     }
 
     [TestMethod]

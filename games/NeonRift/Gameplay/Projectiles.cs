@@ -5,6 +5,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.World;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Gameplay;
 
@@ -64,8 +65,7 @@ public sealed class PlayerShot : Actor
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var frames = art.Frames(Weapon.Sprite);
-        var frame = frames[(int)(Age * 18) % frames.Count];
+        var frame = art.Clip(Weapon.Sprite).FrameAt(Age);
         float angle = MathF.Atan2(Velocity.Y, Velocity.X);
         r.SetBlendMode(BlendMode.Additive);
         if (Weapon.Kind == WeaponKind.Spread)
@@ -121,8 +121,7 @@ public sealed class EnemyShot : Actor
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var frames = art.Frames("enemy_bullet");
-        var frame = frames[(int)(Age * 12) % frames.Count];
+        var frame = art.Clip(Names.Clips.EnemyBullet).FrameAt(Age);
         r.SetBlendMode(BlendMode.Additive);
         r.DrawPivoted(frame, Vector2.Round(DrawPosition), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? HeavyTint : LightTint);
         r.SetBlendMode(BlendMode.Alpha);
