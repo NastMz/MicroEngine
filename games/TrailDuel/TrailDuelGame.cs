@@ -94,7 +94,7 @@ public sealed class TrailDuelGame : Game
     {
         // Images and jingles come from the composition's content source (a folder, a zip or a phone's packaged files);
         // everything loads once for the whole game, so it stays in the root scope.
-        Art = AtlasFactory.Build(Graphics, Assets.Image);
+        Art = AtlasFactory.Build(Graphics, Assets.Image, Assets.Sheet(FxArt.Sheet));
         SoundBank.Register(Audio);
         MusicBank.Register(Audio, Assets);
         Audio.MusicVolume = 0.6f;

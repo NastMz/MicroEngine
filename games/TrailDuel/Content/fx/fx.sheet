@@ -1,0 +1,23 @@
+// The hand-animated battle effects (Ninja Adventure, CC0, see CREDITS.md): how each image is cut into frames
+// "fx:{name}0", "fx:{name}1"..., the pivot the effect is centred on, and the rate it plays at, once.
+{
+  "sheets": [
+    { "image": "flame.png", "name": "fx:flame", "cell": [25, 30], "pivot": [0.5, 0.75], "fps": 18, "loop": false },
+    { "image": "explosion.png", "name": "fx:explosion", "cell": [40, 40], "pivot": [0.5, 0.6], "fps": 18, "loop": false },
+    { "image": "splash.png", "name": "fx:splash", "cell": [44, 33], "pivot": [0.5, 0.7], "fps": 18, "loop": false },
+    { "image": "geyser.png", "name": "fx:geyser", "cell": [30, 41], "pivot": [0.5, 0.9], "fps": 16, "loop": false },
+    { "image": "leaves.png", "name": "fx:leaves", "cell": [30, 28], "pivot": [0.5, 0.5], "fps": 18, "loop": false },
+    { "image": "thunder.png", "name": "fx:thunder", "cell": [20, 28], "pivot": [0.5, 0.85], "fps": 18, "loop": false },
+    { "image": "rocks.png", "name": "fx:rocks", "cell": [30, 30], "pivot": [0.5, 0.7], "fps": 18, "loop": false },
+    { "image": "rock-spike.png", "name": "fx:rock-spike", "cell": [54, 48], "pivot": [0.5, 0.85], "fps": 16, "loop": false },
+    { "image": "gale.png", "name": "fx:gale", "cell": [63, 55], "pivot": [0.5, 0.5], "fps": 14, "loop": false },
+    { "image": "claw.png", "name": "fx:claw", "cell": [32, 32], "pivot": [0.5, 0.5], "fps": 18, "loop": false },
+    { "image": "cut.png", "name": "fx:cut", "cell": [32, 32], "pivot": [0.5, 0.5], "fps": 18, "loop": false },
+    { "image": "boost.png", "name": "fx:boost", "cell": [53, 35], "pivot": [0.5, 0.8], "fps": 14, "loop": false },
+    { "image": "sparkle.png", "name": "fx:sparkle", "cell": [27, 35], "pivot": [0.5, 0.6], "fps": 14, "loop": false },
+    { "image": "smoke.png", "name": "fx:smoke", "cell": [32, 32], "pivot": [0.5, 0.6], "fps": 12, "loop": false },
+    // The spark ring is the one effect played at several rates: this is the big Volt impact's; the others say theirs.
+    { "image": "spark-ring.png", "name": "fx:spark-ring", "cell": [32, 32], "pivot": [0.5, 0.5], "fps": 18, "loop": false },
+    { "image": "aura.png", "name": "fx:aura", "cell": [25, 24], "pivot": [0.5, 0.8], "fps": 12, "loop": false }
+  ]
+}

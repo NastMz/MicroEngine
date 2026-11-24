@@ -4,7 +4,10 @@ using MicroEngine.Graphics;
 
 namespace TrailDuel.Scenes;
 
-/// <summary>One-shot sprite animations (impacts, auras, smoke) that play once at a point and disappear.</summary>
+/// <summary>
+/// One-shot sprite animations (impacts, auras, smoke) that play once at a point and disappear. Which frames an effect
+/// has and how fast it plays is the atlas's clip "fx:{name}" (<c>Content/fx/fx.sheet</c>).
+/// </summary>
 internal sealed class SpriteFx
 {
     private sealed class Playing
@@ -25,12 +28,15 @@ internal sealed class SpriteFx
 
     public bool Busy => _playing.Count > 0;
 
-    /// <summary>Starts effect <paramref name="name"/> (atlas frames "fx:{name}N") after an optional delay.</summary>
-    public void Play(string name, Vector2 at, float fps = 16, float delay = 0, bool flipX = false, Color? tint = null)
-        => _playing.Add(new Playing { Frames = _atlas.Frames("fx:" + name), At = at, Fps = fps, Delay = delay, FlipX = flipX, Tint = tint ?? Color.White });
-
-    /// <summary>How long effect <paramref name="name"/> runs at <paramref name="fps"/>.</summary>
-    public float Duration(string name, float fps = 16) => _atlas.Frames("fx:" + name).Count / fps;
+    /// <summary>
+    /// Starts effect <paramref name="name"/> (the clip "fx:{name}") after an optional delay, at the clip's own rate
+    /// unless this moment plays it at another (<paramref name="fps"/>).
+    /// </summary>
+    public void Play(string name, Vector2 at, float? fps = null, float delay = 0, bool flipX = false, Color? tint = null)
+    {
+        var clip = _atlas.Clip("fx:" + name);
+        _playing.Add(new Playing { Frames = clip.Frames, At = at, Fps = fps ?? clip.FramesPerSecond, Delay = delay, FlipX = flipX, Tint = tint ?? Color.White });
+    }
 
     public void Update(float dt)
     {
