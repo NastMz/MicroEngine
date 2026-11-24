@@ -28,7 +28,7 @@ public sealed class ArtTests
     [TestMethod]
     public void MonsterFramesAreRepaintedInTheGameInk()
     {
-        var frames = MonsterArt.Frames(new MicroEngine.Core.ContentFolder().Image).ToList();
+        var frames = MonsterArt.Frames(Pack()).ToList();
         CollectionAssert.AreEquivalent(new[] { "spitter0", "spitter1", "spitter2" }, frames.Select(f => f.Name).ToArray());
         foreach (var (name, img, _) in frames)
         {
@@ -40,7 +40,7 @@ public sealed class ArtTests
     [TestMethod]
     public void PackHousesAndTreesAreRepaintedInTheWorldRamps()
     {
-        var pieces = PackArt.Pieces(new MicroEngine.Core.ContentFolder().Image).ToList();
+        var pieces = PackArt.Pieces(Pack()).ToList();
         CollectionAssert.AreEquivalent(new[] { "tree0", "tree1", "tree2", "house_home", "house_shop" }, pieces.Select(p => p.Name).ToArray());
         foreach (var (name, img, _) in pieces)
         {
@@ -64,6 +64,10 @@ public sealed class ArtTests
         foreach (var name in new[] { "tree0", "tree1", "tree2", "house_home", "house_shop", "shade_n", "shade_w", "wall_corner" })
             Assert.IsTrue(h.Game.Art.Contains(name), name);
     }
+
+    /// <summary>The pack pieces as the game's content folder describes them.</summary>
+    private static MicroEngine.Graphics.SpriteSheet Pack() =>
+        MicroEngine.Graphics.SpriteSheet.Load(new MicroEngine.Core.ContentFolder().PathOf(Sprites.PackSheet));
 
     private static bool Contains(MicroEngine.Graphics.PixelImage img, Color c)
     {

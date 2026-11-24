@@ -95,18 +95,8 @@ public sealed class StateTraceTests
         }
     }
 
-    private static TracedRun RunOnce(string script, string? start)
-    {
-        string saves = Path.Combine(Path.GetTempPath(), "courtyard-state-trace", Guid.NewGuid().ToString("N"));
-        try
-        {
-            return StateTraceRuns.Run(new CourtyardKeyGame(saves, start), StateTraceRuns.Script(script));
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
-    }
+    private static TracedRun RunOnce(string script, string? start) =>
+        StateTraceRuns.Run(new CourtyardKeyGame(start), StateTraceRuns.Script(script));
 
     /// <summary>The update of the script's <c>quit</c> command.</summary>
     private static long QuitUpdate(string script)

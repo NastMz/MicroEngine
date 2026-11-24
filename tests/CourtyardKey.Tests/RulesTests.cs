@@ -74,54 +74,38 @@ public sealed class RulesTests
     [TestMethod]
     public void SaveRoundTripPreservesTheWholeAdventure()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "courtyard-tests", Guid.NewGuid().ToString("N"));
-        try
+        var slots = new SaveSlots(new SaveStore(new MemorySaveStorage()));
+        Assert.IsFalse(slots.HasSave);
+        var p = new Progress
         {
-            var slots = new SaveSlots(new SaveStore("CourtyardKey", dir));
-            Assert.IsFalse(slots.HasSave);
-            var p = new Progress
-            {
-                MaxHealth = 10, Health = 7, Gems = 123, SmallKeys = 2, HasSword = true, HasBoomerang = true,
-                HasBossKey = true, Deaths = 3, PlaySeconds = 456.5,
-                Entrance = new Checkpoint("dungeon", 1, 3, 10f, 8.2f, Dir.Up),
-            };
-            p.Set("chest:dungeon:0,2:0");
-            p.MarkVisited("dungeon", 1, 2);
-            slots.Save(p);
-            Assert.IsTrue(slots.HasSave);
-            var loaded = slots.Load();
-            Assert.IsNotNull(loaded);
-            Assert.AreEqual(10, loaded.MaxHealth);
-            Assert.AreEqual(7, loaded.Health);
-            Assert.AreEqual(123, loaded.Gems);
-            Assert.AreEqual(2, loaded.SmallKeys);
-            Assert.IsTrue(loaded.HasSword && loaded.HasBoomerang && loaded.HasBossKey);
-            Assert.IsFalse(loaded.HasCourtyardKey);
-            Assert.AreEqual(3, loaded.Deaths);
-            Assert.AreEqual(456.5, loaded.PlaySeconds, 1e-9);
-            Assert.AreEqual(p.Entrance, loaded.Entrance);
-            Assert.IsTrue(loaded.Has("chest:dungeon:0,2:0"));
-            Assert.IsTrue(loaded.WasVisited("dungeon", 1, 2));
-        }
-        finally
-        {
-            if (Directory.Exists(dir)) Directory.Delete(dir, true);
-        }
+            MaxHealth = 10, Health = 7, Gems = 123, SmallKeys = 2, HasSword = true, HasBoomerang = true,
+            HasBossKey = true, Deaths = 3, PlaySeconds = 456.5,
+            Entrance = new Checkpoint("dungeon", 1, 3, 10f, 8.2f, Dir.Up),
+        };
+        p.Set("chest:dungeon:0,2:0");
+        p.MarkVisited("dungeon", 1, 2);
+        slots.Save(p);
+        Assert.IsTrue(slots.HasSave);
+        var loaded = slots.Load();
+        Assert.IsNotNull(loaded);
+        Assert.AreEqual(10, loaded.MaxHealth);
+        Assert.AreEqual(7, loaded.Health);
+        Assert.AreEqual(123, loaded.Gems);
+        Assert.AreEqual(2, loaded.SmallKeys);
+        Assert.IsTrue(loaded.HasSword && loaded.HasBoomerang && loaded.HasBossKey);
+        Assert.IsFalse(loaded.HasCourtyardKey);
+        Assert.AreEqual(3, loaded.Deaths);
+        Assert.AreEqual(456.5, loaded.PlaySeconds, 1e-9);
+        Assert.AreEqual(p.Entrance, loaded.Entrance);
+        Assert.IsTrue(loaded.Has("chest:dungeon:0,2:0"));
+        Assert.IsTrue(loaded.WasVisited("dungeon", 1, 2));
     }
 
     [TestMethod]
     public void CorruptSaveIsTreatedAsNoSave()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "courtyard-tests", Guid.NewGuid().ToString("N"));
-        try
-        {
-            Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, SaveSlots.Slot + ".json"), "{ not json");
-            Assert.IsNull(new SaveSlots(new SaveStore("CourtyardKey", dir)).Load());
-        }
-        finally
-        {
-            Directory.Delete(dir, true);
-        }
+        var saves = new MemorySaveStorage();
+        saves.Write(SaveSlots.Slot, "{ not json");
+        Assert.IsNull(new SaveSlots(new SaveStore(saves)).Load());
     }
 }

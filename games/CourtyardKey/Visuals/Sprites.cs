@@ -9,19 +9,22 @@ public sealed class Sprites : IDisposable
 
     private Sprites(SpriteAtlas atlas) => _atlas = atlas;
 
+    /// <summary>The description of the pieces cut from the pack images (<c>Content/pack.sheet</c>).</summary>
+    public const string PackSheet = "pack.sheet";
+
     /// <param name="device">The graphics device the atlas is uploaded to.</param>
-    /// <param name="image">Reads a content image by path (the game passes <c>Assets.Image</c>).</param>
-    public static Sprites Build(IGraphicsDevice device, Func<string, PixelImage> image)
+    /// <param name="pack">The pack pieces as pixels (the game passes <c>Assets.Sheet(PackSheet)</c>).</param>
+    public static Sprites Build(IGraphicsDevice device, SpriteSheet pack)
     {
         var b = new SpriteAtlasBuilder();
         GroundArt.AddAll(b);
         DungeonArt.AddAll(b);
         TileArt.AddAll(b);
-        PackArt.AddAll(b, image);
+        PackArt.AddAll(b, pack);
         CharacterArt.AddHero(b);
         CharacterArt.AddVillagers(b);
         CreatureArt.AddAll(b);
-        MonsterArt.AddAll(b, image);
+        MonsterArt.AddAll(b, pack);
         PropArt.AddAll(b);
         ItemArt.AddAll(b);
         TitleArt.AddAll(b);

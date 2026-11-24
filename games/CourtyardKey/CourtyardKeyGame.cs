@@ -17,22 +17,17 @@ public sealed class CourtyardKeyGame : Game
 {
     public const string GameId = "CourtyardKey";
     private readonly string? _start;
-    private readonly string? _saveDirectory;
     private SaveSlots? _slots;
 
-    /// <param name="saveDirectory">Where the save slot lives (tests pass a temporary folder).</param>
     /// <param name="start">Optional debug checkpoint name, see <see cref="DebugStart"/>.</param>
-    public CourtyardKeyGame(string? saveDirectory = null, string? start = null)
-    {
-        _start = start;
-        _saveDirectory = saveDirectory;
-    }
+    public CourtyardKeyGame(string? start = null) => _start = start;
 
-    /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
+    /// <summary>
+    /// The save id every release has used: it names the save folder, so it never changes. Where the saves are kept is
+    /// the run's decision (<see cref="Game.Saves"/>): the player's folder when somebody plays, a store of its own for a
+    /// scripted run or a test, the folder <c>--saves</c> names.
+    /// </summary>
     protected override string SaveId => "CourtyardKey";
-
-    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
-    protected override SaveStore CreateSaves() => _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = UI.UiStyle.Theme };
@@ -47,7 +42,7 @@ public sealed class CourtyardKeyGame : Game
     protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
 
     /// <summary>The same game simulated at <paramref name="updateRate"/> updates per second (tests check that timings hold at any rate).</summary>
-    internal CourtyardKeyGame(string? saveDirectory, string? start, int updateRate) : this(saveDirectory, start)
+    internal CourtyardKeyGame(string? start, int updateRate) : this(start)
         => Settings = Settings with { UpdateRate = updateRate };
 
     public override GameSettings Settings { get; } = new("Courtyard Key") { Background = Pal.Ink };
@@ -80,9 +75,9 @@ public sealed class CourtyardKeyGame : Game
 
     protected override void Load()
     {
-        // The one content file (the heart-trap's sheet) is read through Assets, so it comes from whatever content source
-        // the host composed: a folder on desktop, the packaged assets on phones, the fetched files in browsers.
-        Art = Sprites.Build(Graphics, Assets.Image);
+        // The pack pieces are read through Assets, so they come from whatever content source the host composed: a folder
+        // on desktop, the packaged assets on phones, the fetched files in browsers.
+        Art = Sprites.Build(Graphics, Assets.Sheet(Sprites.PackSheet));
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
         // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
@@ -102,7 +97,7 @@ public sealed class CourtyardKeyGame : Game
 
     /// <summary>
     /// State hash: nothing of its own. The adventure's state (progress, room, hero, actors) belongs to the play scene and
-    /// is hashed there; this class only holds the debug start (fixed), the save store (a platform location) and the art.
+    /// is hashed there; this class only holds the debug start (fixed) and the art.
     /// </summary>
     public override void HashState(StateHasher hash) { }
 }

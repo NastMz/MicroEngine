@@ -125,7 +125,7 @@ dotnet test tests/CourtyardKey.Tests/CourtyardKey.Tests.csproj -c Release --no-b
 
 Scripted captures (PNG, 3x) use the scripts in `scripts/`. `COURTYARD_START` jumps to a checkpoint
 (`village`, `town`, `road`, `woods`, `bridge`, `ruins`, `dungeon`, `blocks`, `trial`, `channel`,
-`boss`, `ending`) and `COURTYARD_SAVE_DIR` redirects the save slot:
+`boss`, `ending`). A scripted run keeps its saves to itself, in memory; `--saves DIR` names a folder for them:
 
 ```
 COURTYARD_START=boss games/CourtyardKey/bin/Release/net10.0/CourtyardKey.exe --script games/CourtyardKey/scripts/boss.script --hidden --mute --captures captures

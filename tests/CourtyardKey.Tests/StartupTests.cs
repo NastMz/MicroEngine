@@ -10,27 +10,19 @@ namespace CourtyardKey.Tests;
 [TestClass]
 public sealed class StartupTests
 {
-    private static CourtyardKeyGame Compose(string? start, string saves)
+    private static CourtyardKeyGame Compose(string? start)
     {
-        var variables = new Dictionary<string, string?> { ["COURTYARD_START"] = start, ["COURTYARD_SAVE_DIR"] = saves };
+        var variables = new Dictionary<string, string?> { ["COURTYARD_START"] = start };
         var environment = new HostEnvironment(HostKind.Test) { Variables = name => variables.GetValueOrDefault(name) };
         return (CourtyardKeyGame)GameHost.Create(environment, new LaunchRequest(), Startup.Configure).CreateGame();
     }
 
     private static T Started<T>(string? start, Func<CourtyardKeyGame, T> read)
     {
-        string saves = Path.Combine(Path.GetTempPath(), "courtyard-startup", Guid.NewGuid().ToString("N"));
-        try
-        {
-            var game = Compose(start, saves);
-            game.InitializeForTest(HeadlessPlatform.For(game.Settings));
-            game.StepForTest();
-            return read(game);
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
+        var game = Compose(start);
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        game.StepForTest();
+        return read(game);
     }
 
     [TestMethod]

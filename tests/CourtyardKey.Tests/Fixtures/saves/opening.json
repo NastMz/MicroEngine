@@ -1,0 +1,25 @@
+{
+  "@version": 1,
+  "MaxHealth": 6,
+  "Health": 6,
+  "Gems": 0,
+  "SmallKeys": 0,
+  "HasSword": true,
+  "HasBoomerang": false,
+  "HasBossKey": false,
+  "HasCourtyardKey": false,
+  "Deaths": 0,
+  "PlaySeconds": 4.1833335515111685,
+  "Flags": [],
+  "Visited": [
+    "overworld:1,2"
+  ],
+  "Entrance": {
+    "Area": "overworld",
+    "RoomX": 1,
+    "RoomY": 2,
+    "TileX": 4,
+    "TileY": 4.6,
+    "Facing": 0
+  }
+}
