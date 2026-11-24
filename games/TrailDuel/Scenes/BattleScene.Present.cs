@@ -195,7 +195,7 @@ internal sealed partial class BattleScene
         Audio.Play("sendout");
         _flash = 0.6f;
         BattleFx.Stars(_glow, target);
-        _sprites.Play("spark-ring", target, 20);
+        _sprites.Play("spark-ring", target, fps: 20);
         d.Visible = true;
         d.White = 1;
         yield return Tween(0.28f, t => { d.Scale = t; }, Ease.OutBack);
@@ -227,9 +227,9 @@ internal sealed partial class BattleScene
             bool self = move.Effect is MoveEffect.RaiseSelf or MoveEffect.HealSelf;
             var at = CenterOf(self ? user : target);
             ud.Tint = Pal.TypeColor(move.Type);
-            if (move.Effect == MoveEffect.RaiseSelf) _sprites.Play("boost", BaseOf(user) + new Vector2(0, -2), 14);
-            else if (move.Effect == MoveEffect.HealSelf) _sprites.Play("sparkle", at, 14);
-            else _sprites.Play("aura", BaseOf(target) + new Vector2(0, -4), 12, tint: Pal.TypeColor(move.Type));
+            if (move.Effect == MoveEffect.RaiseSelf) _sprites.Play("boost", BaseOf(user) + new Vector2(0, -2));
+            else if (move.Effect == MoveEffect.HealSelf) _sprites.Play("sparkle", at);
+            else _sprites.Play("aura", BaseOf(target) + new Vector2(0, -4), tint: Pal.TypeColor(move.Type));
             for (int i = 0; i < 3; i++)
             {
                 BattleFx.Attack(_glow, move.Type, at, false);
@@ -291,20 +291,20 @@ internal sealed partial class BattleScene
         {
             case ElementType.Volt:
                 // Two bolts strike a beat apart, then the spark ring.
-                _sprites.Play("thunder", feet + new Vector2(-7, -6), 18);
-                _sprites.Play("thunder", feet + new Vector2(8, -2), 18, delay: 0.08f, flipX: true);
-                if (big) _sprites.Play("spark-ring", at, 18, delay: 0.12f);
+                _sprites.Play("thunder", feet + new Vector2(-7, -6));
+                _sprites.Play("thunder", feet + new Vector2(8, -2), delay: 0.08f, flipX: true);
+                if (big) _sprites.Play("spark-ring", at, delay: 0.12f);
                 break;
             case ElementType.Tide when big:
             case ElementType.Stone when big:
-                _sprites.Play(FxArt.Impact(move.Type, big), feet, 16, flipX: mirrored);
+                _sprites.Play(FxArt.Impact(move.Type, big), feet, flipX: mirrored);
                 break;
             case ElementType.Leaf:
-                _sprites.Play("leaves", at, 18, flipX: mirrored);
-                if (big) _sprites.Play("leaves", at + new Vector2(6, 4), 18, delay: 0.1f, flipX: !mirrored);
+                _sprites.Play("leaves", at, flipX: mirrored);
+                if (big) _sprites.Play("leaves", at + new Vector2(6, 4), delay: 0.1f, flipX: !mirrored);
                 break;
             default:
-                _sprites.Play(FxArt.Impact(move.Type, big), at, move.Type == ElementType.Gale ? 14 : 18, flipX: mirrored);
+                _sprites.Play(FxArt.Impact(move.Type, big), at, flipX: mirrored);
                 break;
         }
     }
@@ -351,7 +351,7 @@ internal sealed partial class BattleScene
         var disp = Of(h.Target);
         Audio.Play("heal", 0.7f);
         BattleFx.Healing(_glow, CenterOf(h.Target));
-        _sprites.Play("sparkle", CenterOf(h.Target), 14);
+        _sprites.Play("sparkle", CenterOf(h.Target));
         yield return DrainHp(disp, h.HpAfter);
     }
 
@@ -362,7 +362,7 @@ internal sealed partial class BattleScene
         // A last little lurch upward, then the slide down behind the platform.
         yield return Tween(0.12f, t => d.Offset = new Vector2(0, -3 * MathF.Sin(t * MathF.PI)));
         d.Offset = Vector2.Zero;
-        _sprites.Play("smoke", BaseOf(side) + new Vector2(0, side == Side.Player ? -8 : -6), 12, delay: 0.15f);
+        _sprites.Play("smoke", BaseOf(side) + new Vector2(0, side == Side.Player ? -8 : -6), delay: 0.15f);
         yield return Tween(0.4f, t => d.SinkDepth = t, Ease.InQuad);
         d.Visible = false;
         d.SinkDepth = 0;
@@ -474,7 +474,7 @@ internal sealed partial class BattleScene
         {
             Audio.Play("click");
             BattleFx.Stars(_glow, rest + new Vector2(0, -4));
-            _sprites.Play("spark-ring", rest + new Vector2(0, -4), 16);
+            _sprites.Play("spark-ring", rest + new Vector2(0, -4), fps: 16);
             _enemy.HudVisible = false;
             yield return Wait.Seconds(0.3f);
             Audio.Play("jingle:catch");

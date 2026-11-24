@@ -162,7 +162,7 @@ games/TrailDuel/bin/Release/net10.0/TrailDuel.exe --script games/TrailDuel/scrip
 evolves under `evolve`). The game reads these variables from its host: the environment on desktop, the page's
 address in a browser (`?TRAIL_DEBUG=town`) and the launch's `env` option on a phone. Saves live in
 `%LocalAppData%/MicroEngine/TrailDuel/adventure.json` (achievements in `achievements.json` beside it);
-`TRAIL_SAVE_DIR` points both at another folder, e.g. for capture runs.
+`--saves DIR` keeps both in another folder for one run, and a scripted run without it keeps its saves to itself.
 
 Tests cover the type chart, damage (STAB, effectiveness, crits, burn, stages), seeded accuracy and
 crit rates, XP/level-ups/move learning/evolution, capture bounds, statuses, party/faint/switch rules,

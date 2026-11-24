@@ -11,7 +11,8 @@ internal static class AtlasFactory
 {
     /// <param name="device">Creates the atlas texture.</param>
     /// <param name="image">Reads a content image by path (<c>Game.Assets.Image</c>), decoded fresh so it can be recoloured.</param>
-    public static GameArt Build(IGraphicsDevice device, Func<string, PixelImage> image)
+    /// <param name="effects">The battle effects as their description cuts them (<see cref="FxArt.Sheet"/>), packed with the rest.</param>
+    public static GameArt Build(IGraphicsDevice device, Func<string, PixelImage> image, SpriteSheet effects)
     {
         var b = new SpriteAtlasBuilder();
         var heights = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -39,7 +40,7 @@ internal static class AtlasFactory
         CharacterArt.AddAll(b, image);
         UiArt.AddAll(b);
         BattleStageArt.AddAll(b);
-        FxArt.AddAll(b, image);
+        b.AddSheet(effects);
         foreach (var map in Maps.Every)
         {
             b.Add($"ground:{map.Id}", map.Indoor ? GroundArt.Build(map) : Village.Grade(GroundArt.Build(map)));

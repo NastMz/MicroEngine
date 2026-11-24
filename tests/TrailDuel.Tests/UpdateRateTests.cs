@@ -10,22 +10,14 @@ public sealed class UpdateRateTests
     /// <summary>Seconds from the start of a wild battle until its action menu opens, at <paramref name="rate"/> updates a second.</summary>
     private static double SecondsUntilTheBattleMenu(int rate)
     {
-        string saves = Path.Combine(Path.GetTempPath(), "trailduel-rate-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            var game = new TrailDuelGame(saves, "battle") { UpdateRate = rate };
-            game.InitializeForTest(new HeadlessPlatform(), 3);
-            game.StepForTest();
-            var battle = Assert.IsInstanceOfType<BattleScene>(game.Scenes.Current);
-            int steps = 1;
-            for (; steps < rate * 30 && !battle.AwaitingChoice; steps++) game.StepForTest();
-            Assert.IsTrue(battle.AwaitingChoice, "the action menu opens");
-            return steps / (double)rate;
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
+        var game = new TrailDuelGame("battle") { UpdateRate = rate };
+        game.InitializeForTest(new HeadlessPlatform(), 3);
+        game.StepForTest();
+        var battle = Assert.IsInstanceOfType<BattleScene>(game.Scenes.Current);
+        int steps = 1;
+        for (; steps < rate * 30 && !battle.AwaitingChoice; steps++) game.StepForTest();
+        Assert.IsTrue(battle.AwaitingChoice, "the action menu opens");
+        return steps / (double)rate;
     }
 
     [TestMethod]

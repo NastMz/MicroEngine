@@ -231,37 +231,29 @@ public sealed class PersistenceTests
     [TestMethod]
     public void SaveAndLoadRoundTrip()
     {
-        var dir = Path.Combine(Path.GetTempPath(), "trailduel-save-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            var store = new SaveStore("TrailDuel", dir);
-            var s = GameState.NewGame();
-            s.MapId = "route1";
-            (s.X, s.Y, s.Facing) = (9, 12, Direction.Left);
-            s.AddCreature(Creature.Create("sprigbun", 9));
-            s.Party[0].Status = StatusCondition.Poison;
-            s.Party[0].Moves[0].Pp = 3;
-            s.Set("starter");
-            s.Bag.Add("superorb", 2);
-            s.Money = 1234;
-            s.Save(store);
+        var store = new SaveStore(new MemorySaveStorage());
+        var s = GameState.NewGame();
+        s.MapId = "route1";
+        (s.X, s.Y, s.Facing) = (9, 12, Direction.Left);
+        s.AddCreature(Creature.Create("sprigbun", 9));
+        s.Party[0].Status = StatusCondition.Poison;
+        s.Party[0].Moves[0].Pp = 3;
+        s.Set("starter");
+        s.Bag.Add("superorb", 2);
+        s.Money = 1234;
+        s.Save(store);
 
-            var loaded = GameState.Load(store)!;
-            Assert.AreEqual("route1", loaded.MapId);
-            Assert.AreEqual((9, 12, Direction.Left), (loaded.X, loaded.Y, loaded.Facing));
-            Assert.AreEqual(1234, loaded.Money);
-            Assert.IsTrue(loaded.Has("starter"));
-            Assert.AreEqual(2, loaded.Bag.Count("superorb"));
-            Assert.AreEqual("sprigbun", loaded.Party[0].SpeciesId);
-            Assert.AreEqual(9, loaded.Party[0].Level);
-            Assert.AreEqual(StatusCondition.Poison, loaded.Party[0].Status);
-            Assert.AreEqual(3, loaded.Party[0].Moves[0].Pp);
-            Assert.IsTrue(loaded.Caught.Contains("sprigbun"));
-        }
-        finally
-        {
-            if (Directory.Exists(dir)) Directory.Delete(dir, true);
-        }
+        var loaded = GameState.Load(store)!;
+        Assert.AreEqual("route1", loaded.MapId);
+        Assert.AreEqual((9, 12, Direction.Left), (loaded.X, loaded.Y, loaded.Facing));
+        Assert.AreEqual(1234, loaded.Money);
+        Assert.IsTrue(loaded.Has("starter"));
+        Assert.AreEqual(2, loaded.Bag.Count("superorb"));
+        Assert.AreEqual("sprigbun", loaded.Party[0].SpeciesId);
+        Assert.AreEqual(9, loaded.Party[0].Level);
+        Assert.AreEqual(StatusCondition.Poison, loaded.Party[0].Status);
+        Assert.AreEqual(3, loaded.Party[0].Moves[0].Pp);
+        Assert.IsTrue(loaded.Caught.Contains("sprigbun"));
     }
 
     [TestMethod]

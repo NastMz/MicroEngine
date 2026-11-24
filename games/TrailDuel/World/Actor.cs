@@ -84,9 +84,6 @@ internal sealed class Actor : IStateHashed
 
     private const int Tile = MapDef.TileSize;
 
-    /// <summary>The tile whose row the actor should be drawn with (its feet, on the tile's last pixel row).</summary>
-    public int DrawRow => (int)MathF.Floor((PixelPosition.Y + Tile - 1) / Tile);
-
     /// <summary>Moves to a tile at once; it is drawn there from this step on, never sliding from where it was.</summary>
     public void Teleport(int x, int y)
     {

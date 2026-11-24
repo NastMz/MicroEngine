@@ -9,11 +9,12 @@ using TrailDuel.World;
 
 namespace TrailDuel.Scenes;
 
-/// <summary>Overworld rendering: ground, depth-sorted objects and characters per row, effects and HUD.</summary>
+/// <summary>Overworld rendering: ground, objects and characters ordered by the row they stand on, effects and HUD.</summary>
 internal sealed partial class OverworldScene
 {
     private const int Tile = MapDef.TileSize;
-    private readonly List<Actor> _rowActors = [];
+    /// <summary>Orders what stands on the ground: a row covers the rows above it, and a character the row it walks out of.</summary>
+    private readonly SortedRenderer _standing = new();
 
     // Tile keys built once: formatting them per tile per frame was most of the overworld's garbage.
     private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", TileArt.FlowerKinds * TileArt.FlowerFrames), TallKeys = SpriteKeys.Numbered("t:tall", 2),
@@ -78,21 +79,31 @@ internal sealed partial class OverworldScene
             DrawGround(r, x, y);
         r.Draw(_game.Sprite(_groundKey), Vector2.Zero);
 
+        // The depth is the row: within one, tiles, then item balls, then buildings (by their bottom row), then the
+        // characters whose feet are in it, the lower ones last.
+        var standing = _standing.Begin(r);
         for (int y = y0; y <= y1; y++)
         {
-            for (int x = x0; x <= x1; x++) DrawObject(r, x, y);
-            foreach (var item in _map.Def.Items) if (item.Y == y && !State.Has(item.Flag)) r.Draw(_game.Sprite("itemball"), new Vector2(item.X * Tile, item.Y * Tile + MathF.Round(MathX.Wave(Age + item.X, 0.8f, 1))));
-            for (int i = 0; i < _map.Def.Buildings.Count; i++)
-            {
-                var b = _map.Def.Buildings[i];
-                if (b.Y + b.H - 1 == y) r.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * Tile, b.Y * Tile));
-            }
-            _rowActors.Clear();
-            foreach (var npc in _map.Npcs) if (npc.Visible && npc.DrawRow == y) _rowActors.Add(npc);
-            if (_player.DrawRow == y) _rowActors.Add(_player);
-            _rowActors.Sort((a, b) => a.PixelPosition.Y.CompareTo(b.PixelPosition.Y));
-            foreach (var a in _rowActors) DrawActor(r, a);
+            standing.Depth = y;
+            for (int x = x0; x <= x1; x++) DrawObject(standing, x, y);
         }
+        foreach (var item in _map.Def.Items)
+        {
+            if (item.Y < y0 || item.Y > y1 || State.Has(item.Flag)) continue;
+            standing.Depth = item.Y;
+            standing.Draw(_game.Sprite("itemball"), new Vector2(item.X * Tile, item.Y * Tile + MathF.Round(MathX.Wave(Age + item.X, 0.8f, 1))));
+        }
+        for (int i = 0; i < _map.Def.Buildings.Count; i++)
+        {
+            var b = _map.Def.Buildings[i];
+            int row = b.Y + b.H - 1;
+            if (row < y0 || row > y1) continue;
+            standing.Depth = row;
+            standing.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * Tile, b.Y * Tile));
+        }
+        foreach (var npc in _map.Npcs) if (npc.Visible) DrawStanding(standing, npc, y0, y1);
+        DrawStanding(standing, _player, y0, y1);
+        _standing.End();
 
         foreach (var (rx, ry, time) in _rustles)
         {
@@ -229,6 +240,16 @@ internal sealed partial class OverworldScene
         if (State.Has("starter") && (id == State.StarterId || id == GameState.RivalStarterFor(State.StarterId))) return;
         float bob = _previewSpecies == id ? MathF.Round(MathX.Wave(Age, 2, 1.5f)) - 1 : 0;
         r.Draw(_game.Sprite("orbsmall"), new Vector2(x * Tile + 8, y * Tile + 6 + bob));
+    }
+
+    /// <summary>Draws an actor at the depth of its feet, when their row is one of those on screen.</summary>
+    private void DrawStanding(SortedRenderer standing, Actor a, int firstRow, int lastRow)
+    {
+        float feet = (a.PixelPosition.Y + Tile - 1) / Tile;
+        int row = (int)MathF.Floor(feet);
+        if (row < firstRow || row > lastRow) return;
+        standing.Depth = feet;
+        DrawActor(standing, a);
     }
 
     private void DrawActor(IRenderer r, Actor a)

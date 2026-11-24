@@ -73,24 +73,9 @@ public sealed class SaveVersionTests
         }
         """;
 
-    private string _dir = "";
+    private readonly MemorySaveStorage _saves = new();
 
-    [TestInitialize]
-    public void Init() => _dir = Path.Combine(Path.GetTempPath(), "trailduel-save-version-" + Guid.NewGuid().ToString("N"));
-
-    [TestCleanup]
-    public void Cleanup()
-    {
-        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
-    }
-
-    private string SaveFile => Path.Combine(_dir, GameState.SaveSlot + ".json");
-
-    private void Write(string text)
-    {
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, text);
-    }
+    private void Write(string text) => _saves.Write(GameState.SaveSlot, text);
 
     private static void AssertTheAdventure(GameState? loaded)
     {
@@ -115,7 +100,7 @@ public sealed class SaveVersionTests
     public void ASaveWrittenByThePreviousReleaseLoads()
     {
         Write(SavedByThePreviousRelease);
-        AssertTheAdventure(GameState.Load(new SaveStore("TrailDuel", _dir)));
+        AssertTheAdventure(GameState.Load(new SaveStore(_saves)));
     }
 
     [TestMethod]
@@ -124,18 +109,18 @@ public sealed class SaveVersionTests
         var json = JsonNode.Parse(SavedByThePreviousRelease)!.AsObject();
         Assert.IsTrue(json.Remove("SaveVersion"));
         Write(json.ToJsonString());
-        AssertTheAdventure(GameState.Load(new SaveStore("TrailDuel", _dir)));
+        AssertTheAdventure(GameState.Load(new SaveStore(_saves)));
     }
 
     [TestMethod]
     public void SavingWritesTheEnginesVersionAndTheSameAdventure()
     {
         Write(SavedByThePreviousRelease);
-        var store = new SaveStore("TrailDuel", _dir);
+        var store = new SaveStore(_saves);
         var loaded = GameState.Load(store)!;
         loaded.Save(store);
 
-        var written = JsonNode.Parse(File.ReadAllText(SaveFile))!.AsObject();
+        var written = JsonNode.Parse(_saves.Read(GameState.SaveSlot)!)!.AsObject();
         Assert.AreEqual(SaveSchema.VersionProperty, written.First().Key, "the version is the first property");
         Assert.AreEqual(1, (int?)written[SaveSchema.VersionProperty]);
         Assert.IsFalse(written.ContainsKey("SaveVersion"), "the game's own version property is gone");
@@ -145,8 +130,8 @@ public sealed class SaveVersionTests
         before.Remove("SaveVersion");
         written.Remove(SaveSchema.VersionProperty);
         Assert.AreEqual(before.ToJsonString(), written.ToJsonString());
-        Assert.HasCount(1, Directory.GetFiles(_dir), "a save of the same version is replaced without a copy");
-        AssertTheAdventure(GameState.Load(new SaveStore("TrailDuel", _dir)));
+        Assert.HasCount(1, _saves.List(), "a save of the same version is replaced without a copy");
+        AssertTheAdventure(GameState.Load(new SaveStore(_saves)));
     }
 
     [TestMethod]
@@ -156,11 +141,11 @@ public sealed class SaveVersionTests
         json.Insert(0, SaveSchema.VersionProperty, 2);
         string newer = json.ToJsonString();
         Write(newer);
-        var store = new SaveStore("TrailDuel", _dir);
+        var store = new SaveStore(_saves);
 
         Assert.IsNull(GameState.Load(store));
         GameState.NewGame().Save(store);
-        Assert.AreEqual(newer, File.ReadAllText(SaveFile));
+        Assert.AreEqual(newer, _saves.Read(GameState.SaveSlot));
     }
 }
 
@@ -168,21 +153,12 @@ public sealed class SaveVersionTests
 [TestClass]
 public sealed class SaveFeedbackTests
 {
-    private string _dir = "";
-
-    [TestInitialize]
-    public void Init() => _dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "trailduel-save-feedback-" + Guid.NewGuid().ToString("N"))).FullName;
-
-    [TestCleanup]
-    public void Cleanup()
-    {
-        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
-    }
+    private readonly MemorySaveStorage _saves = new();
 
     private TrailDuelGame Launch(string? debug = null)
     {
-        var game = new TrailDuelGame(_dir, debug);
-        game.InitializeForTest(new HeadlessPlatform(), 3);
+        var game = new TrailDuelGame(debug);
+        game.InitializeForTest(new HeadlessPlatform(), 3, _saves);
         game.StepForTest();
         return game;
     }
@@ -190,7 +166,7 @@ public sealed class SaveFeedbackTests
     [TestMethod]
     public void ASaveFromANewerReleaseIsNotOfferedAsContinue()
     {
-        File.WriteAllText(Path.Combine(_dir, GameState.SaveSlot + ".json"), """{ "@version": 2, "Money": 5 }""");
+        _saves.Write(GameState.SaveSlot, """{ "@version": 2, "Money": 5 }""");
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(Launch().Scenes.Current);
         CollectionAssert.DoesNotContain(title.Options.ToArray(), "CONTINUE");
     }
@@ -198,7 +174,7 @@ public sealed class SaveFeedbackTests
     [TestMethod]
     public void ASaveThatLoadsIsOfferedAsContinue()
     {
-        GameState.NewGame().Save(new SaveStore("TrailDuel", _dir));
+        GameState.NewGame().Save(new SaveStore(_saves));
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(Launch().Scenes.Current);
         Assert.AreEqual("CONTINUE", title.Options[0]);
     }
@@ -206,17 +182,16 @@ public sealed class SaveFeedbackTests
     [TestMethod]
     public void ARefusedSaveIsNotReportedAsSaved()
     {
-        string file = Path.Combine(_dir, GameState.SaveSlot + ".json");
         const string newer = """{ "@version": 2, "Money": 5 }""";
-        File.WriteAllText(file, newer);
+        _saves.Write(GameState.SaveSlot, newer);
         var game = Launch("town");
 
         Assert.IsFalse(game.SaveGame());
-        Assert.AreEqual(newer, File.ReadAllText(file));
+        Assert.AreEqual(newer, _saves.Read(GameState.SaveSlot));
         Assert.AreEqual("The trail could not be saved.", Scenes.StartMenuScene.SaveMessage(false));
         Assert.AreEqual("Progress saved! Rest easy.", Scenes.StartMenuScene.SaveMessage(true));
 
-        File.Delete(file);
+        _saves.Delete(GameState.SaveSlot);
         Assert.IsTrue(game.SaveGame());
     }
 }
