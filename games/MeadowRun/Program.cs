@@ -11,15 +11,14 @@ namespace MeadowRun
     public static class Startup
     {
         /// <summary>
-        /// Developer shortcuts come from the host's variables (MEADOW_START, MEADOW_LEVEL, MEADOW_CHECKPOINT, MEADOW_FORM,
-        /// MEADOW_SAVE_DIR): environment variables on desktop, a phone test's --env, a page's query. The desktop launcher
-        /// rejects unknown arguments.
+        /// Developer shortcuts come from the host's variables (MEADOW_START, MEADOW_LEVEL, MEADOW_CHECKPOINT, MEADOW_FORM):
+        /// environment variables on desktop, a phone test's --env, a page's query. The desktop launcher rejects unknown
+        /// arguments. Where the saves go is the run's choice (--saves, or a store of its own for a scripted run).
         /// </summary>
         public static void Configure(HostBuilder host)
         {
-            var saveDir = host.Environment.Variable("MEADOW_SAVE_DIR");
             var launch = LaunchOptions.From(host.Environment);
-            host.UseGame(() => new MeadowGame(saveDir, launch));
+            host.UseGame(() => new MeadowGame(launch));
         }
     }
 }

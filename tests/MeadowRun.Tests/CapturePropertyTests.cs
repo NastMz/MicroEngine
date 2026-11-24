@@ -54,7 +54,7 @@ public sealed class CapturePropertyTests
         string dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "meadowrun-tests", Guid.NewGuid().ToString("N"))).FullName;
         try
         {
-            var game = new MeadowGame(Path.Combine(dir, "save"), new LaunchOptions("level", 1));
+            var game = new MeadowGame(new LaunchOptions("level", 1));
             var probe = new ProbePlatform(HeadlessPlatform.For(game.Settings, rasterize: true), game);
             var script = new InputScript().Capture(120, "a.png").Capture(240, "b.png").QuitAfter(241);
             var result = GameRunner.Run(game, probe, new RunOptions { Script = script, CaptureDirectory = Path.Combine(dir, "captures") });

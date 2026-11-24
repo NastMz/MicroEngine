@@ -40,16 +40,8 @@ public sealed partial class StateTraceTests
 
     private static TracedRun RunOnce(string script, string variables)
     {
-        string save = Path.Combine(Path.GetTempPath(), "meadowrun-state-trace", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(save);
-        try
-        {
-            return StateTraceRuns.Run(new MeadowGame(save, Options(variables)), StateTraceRuns.Script("games/MeadowRun/scripts/" + script));
-        }
-        finally
-        {
-            Directory.Delete(save, recursive: true);
-        }
+        // A scripted run keeps its saves to itself: both runs start from none.
+        return StateTraceRuns.Run(new MeadowGame(Options(variables)), StateTraceRuns.Script("games/MeadowRun/scripts/" + script));
     }
 
     [GeneratedRegex(@"^\s*(\d+)\s+quit\b", RegexOptions.Multiline)]
@@ -102,29 +94,20 @@ public sealed partial class StateTraceTests
     [TestMethod]
     public void ThePlaySceneHashFollowsPip()
     {
-        string save = Path.Combine(Path.GetTempPath(), "meadowrun-state-trace", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(save);
-        try
-        {
-            var game = new MeadowGame(save, new LaunchOptions("level"));
-            game.InitializeForTest(new HeadlessPlatform());
-            for (int i = 0; i < 5; i++) game.StepForTest();
-            var play = (PlayScene)game.Scenes.Current!;
-            game.Input.SetForced("right", true);
-            var hash = new StateHasher();
-            play.HashState(hash);
-            ulong before = hash.Value;
-            float x = play.Stage.Player.Position.X;
-            for (int i = 0; i < 10; i++) game.StepForTest();
-            hash.Reset();
-            play.HashState(hash);
-            Assert.AreNotEqual(x, play.Stage.Player.Position.X, "Pip moved");
-            Assert.AreNotEqual(before, hash.Value, "the play scene's hash follows Pip");
-        }
-        finally
-        {
-            Directory.Delete(save, recursive: true);
-        }
+        var game = new MeadowGame(new LaunchOptions("level"));
+        game.InitializeForTest(new HeadlessPlatform());
+        for (int i = 0; i < 5; i++) game.StepForTest();
+        var play = (PlayScene)game.Scenes.Current!;
+        game.Input.SetForced("right", true);
+        var hash = new StateHasher();
+        play.HashState(hash);
+        ulong before = hash.Value;
+        float x = play.Stage.Player.Position.X;
+        for (int i = 0; i < 10; i++) game.StepForTest();
+        hash.Reset();
+        play.HashState(hash);
+        Assert.AreNotEqual(x, play.Stage.Player.Position.X, "Pip moved");
+        Assert.AreNotEqual(before, hash.Value, "the play scene's hash follows Pip");
     }
 
     private static ulong Section(StepHash step, string name) => step.Sections.Single(s => s.Name == name).Hash;

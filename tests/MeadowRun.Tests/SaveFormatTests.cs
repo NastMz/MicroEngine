@@ -50,8 +50,8 @@ public sealed class SaveFormatTests
 
     private MeadowGame Launch()
     {
-        var game = new MeadowGame(_dir);
-        game.InitializeForTest(new HeadlessPlatform());
+        var game = new MeadowGame();
+        game.InitializeForTest(new HeadlessPlatform(), saves: new FileSaveStorage(_dir));
         return game;
     }
 

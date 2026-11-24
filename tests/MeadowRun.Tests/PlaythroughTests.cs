@@ -11,8 +11,6 @@ namespace MeadowRun.Tests;
 [TestClass]
 public sealed class PlaythroughTests
 {
-    private static string TempDir() => Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "meadowrun-tests", Guid.NewGuid().ToString("N"))).FullName;
-
     private static void Press(MeadowGame game, string action, int frames = 2)
     {
         game.Input.SetForced(action, true);
@@ -69,7 +67,7 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void BestCoinsCountTheLevelsCoinsWhenTheHundredthCoinBecomesALife()
     {
-        var game = new MeadowGame(TempDir());
+        var game = new MeadowGame();
         game.InitializeForTest(new HeadlessPlatform());
         for (int i = 0; i < 40; i++) game.StepForTest();
         Press(game, "confirm");
@@ -96,10 +94,10 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void NewGameThroughFirstLevelSavesProgress()
     {
-        string dir = TempDir();
-        var game = new MeadowGame(dir);
+        var saves = new MemorySaveStorage();
+        var game = new MeadowGame();
         var platform = new HeadlessPlatform();
-        game.InitializeForTest(platform);
+        game.InitializeForTest(platform, saves: saves);
         Assert.IsInstanceOfType<TitleScene>(game.Scenes.Current);
 
         for (int i = 0; i < 40; i++) game.StepForTest();
@@ -114,17 +112,17 @@ public sealed class PlaythroughTests
 
         Assert.AreEqual(2, game.Save.Unlocked, "clearing level 1 unlocks level 2");
         Assert.IsTrue(game.Save.BestScores[0] > 0);
-        var reloaded = new SaveStore("MeadowRun", dir).Load<SaveData>("progress");
+        var reloaded = new SaveStore(saves).Load<SaveData>("progress");
         Assert.IsNotNull(reloaded);
-        Assert.AreEqual(2, reloaded.Unlocked, "progress is persisted to disk");
+        Assert.AreEqual(2, reloaded.Unlocked, "progress is persisted");
         Assert.AreEqual(0, game.MissingSounds.Count, "every requested sound exists: " + string.Join(", ", game.MissingSounds));
         Assert.IsTrue(platform.SilentAudio.Played.Contains("jump"));
         Assert.IsTrue(platform.SilentAudio.Played.Contains("flag"));
 
         Assert.IsTrue(game.Achievements.IsUnlocked(MeadowAchievements.FirstCourse), "clearing level 1 earns First Steps");
         Assert.IsTrue(platform.SilentAudio.Played.Contains("checkpoint"), "the unlock plays its jingle");
-        var relaunched = new MeadowGame(dir);
-        relaunched.InitializeForTest(new HeadlessPlatform());
+        var relaunched = new MeadowGame();
+        relaunched.InitializeForTest(new HeadlessPlatform(), saves: saves);
         Assert.IsTrue(relaunched.Achievements.IsUnlocked(MeadowAchievements.FirstCourse), "achievements survive a restart");
         Assert.IsNull(relaunched.Banners.Current, "a reloaded unlock is not announced again");
     }
@@ -132,9 +130,9 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void CoinsAndStompsAccumulateIntoProgressiveAchievements()
     {
-        string dir = TempDir();
-        var game = new MeadowGame(dir, new LaunchOptions("level"));
-        game.InitializeForTest(new HeadlessPlatform());
+        var saves = new MemorySaveStorage();
+        var game = new MeadowGame(new LaunchOptions("level"));
+        game.InitializeForTest(new HeadlessPlatform(), saves: saves);
         for (int i = 0; i < 5; i++) game.StepForTest();
         var play = (PlayScene)game.Scenes.Current!;
         for (int i = 0; i < 7; i++) game.Session.AddCoin();
@@ -142,8 +140,8 @@ public sealed class PlaythroughTests
         Assert.AreEqual(7, game.Achievements.Progress(MeadowAchievements.CoinPurse));
         Assert.AreEqual(3, game.Achievements.Progress(MeadowAchievements.Stomper));
         for (int i = 0; i < 70; i++) game.StepForTest();
-        var relaunched = new MeadowGame(dir);
-        relaunched.InitializeForTest(new HeadlessPlatform());
+        var relaunched = new MeadowGame();
+        relaunched.InitializeForTest(new HeadlessPlatform(), saves: saves);
         Assert.AreEqual(7, relaunched.Achievements.Progress(MeadowAchievements.CoinPurse), "progress is flushed while playing");
         Assert.AreEqual(3, relaunched.Achievements.Progress(MeadowAchievements.Stomper));
     }
@@ -151,7 +149,7 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void TitleMenuOpensAndClosesTheAchievementList()
     {
-        var game = new MeadowGame(TempDir());
+        var game = new MeadowGame();
         game.InitializeForTest(new HeadlessPlatform());
         for (int i = 0; i < 40; i++) game.StepForTest();
         Press(game, "down");
@@ -168,7 +166,7 @@ public sealed class PlaythroughTests
     {
         foreach (var start in new[] { "title", "map", "level", "credits", "gameover", "sheet" })
         {
-            var game = new MeadowGame(TempDir(), new LaunchOptions(start, Level: 4));
+            var game = new MeadowGame(new LaunchOptions(start, Level: 4));
             var platform = new HeadlessPlatform();
             var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 240 });
             Assert.IsNull(result.Error, $"{start}: {result.Error}");
@@ -179,7 +177,7 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void PauseMenuRestartsTheLevel()
     {
-        var game = new MeadowGame(TempDir(), new LaunchOptions("level"));
+        var game = new MeadowGame(new LaunchOptions("level"));
         game.InitializeForTest(new HeadlessPlatform());
         for (int i = 0; i < 20; i++) game.StepForTest();
         Press(game, "pause");
@@ -230,7 +228,7 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void ClearingTheFinalLevelMarksTheGameFinished()
     {
-        var game = new MeadowGame(TempDir());
+        var game = new MeadowGame();
         game.InitializeForTest(new HeadlessPlatform());
         for (int i = 0; i < Levels.All.Count; i++) game.RecordClear(i, 1000 + i, 10);
         Assert.IsTrue(game.Save.Finished);
@@ -240,10 +238,10 @@ public sealed class PlaythroughTests
     [TestMethod]
     public void CorruptSaveFallsBackToFreshProgress()
     {
-        string dir = TempDir();
-        File.WriteAllText(Path.Combine(dir, "progress.json"), "{ not json");
-        var game = new MeadowGame(dir);
-        game.InitializeForTest(new HeadlessPlatform());
+        var saves = new MemorySaveStorage();
+        saves.Write("progress", "{ not json");
+        var game = new MeadowGame();
+        game.InitializeForTest(new HeadlessPlatform(), saves: saves);
         Assert.AreEqual(1, game.Save.Unlocked);
     }
 }

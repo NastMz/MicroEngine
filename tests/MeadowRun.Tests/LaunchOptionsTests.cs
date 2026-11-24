@@ -7,7 +7,8 @@ namespace MeadowRun.Tests;
 
 /// <summary>
 /// The developer launch options (MEADOW_START, MEADOW_LEVEL, MEADOW_CHECKPOINT, MEADOW_FORM) come from the host's
-/// variables, the ones a phone test passes with <c>--env</c> and a page with its query, not from the process.
+/// variables, the ones a phone test passes with <c>--env</c> and a page with its query, not from the process. The
+/// saves are not one of them: the run says where they go.
 /// </summary>
 [TestClass]
 public sealed class LaunchOptionsTests
@@ -39,28 +40,18 @@ public sealed class LaunchOptionsTests
     [TestMethod]
     public void TheCompositionStartsWhereTheHostVariablesSay()
     {
-        string save = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "meadowrun-tests", Guid.NewGuid().ToString("N"))).FullName;
-        try
+        var host = GameHost.Create(Host(new()
         {
-            var host = GameHost.Create(Host(new()
-            {
-                ["MEADOW_START"] = "level",
-                ["MEADOW_LEVEL"] = "2",
-                ["MEADOW_FORM"] = "bloom",
-                ["MEADOW_SAVE_DIR"] = save,
-            }), new LaunchRequest(), Startup.Configure);
-            var game = (MeadowGame)host.CreateGame();
-            game.InitializeForTest(new HeadlessPlatform());
-            game.StepForTest();
-            var play = game.Scenes.Current as PlayScene;
-            Assert.IsNotNull(play, $"started in {game.Scenes.Current?.GetType().Name}");
-            Assert.AreEqual(1, play.LevelIndex);
-            Assert.AreEqual(PipForm.Bloom, play.Stage.Player.Form);
-            Assert.AreEqual(save, game.Saves.Directory);
-        }
-        finally
-        {
-            Directory.Delete(save, recursive: true);
-        }
+            ["MEADOW_START"] = "level",
+            ["MEADOW_LEVEL"] = "2",
+            ["MEADOW_FORM"] = "bloom",
+        }), new LaunchRequest(), Startup.Configure);
+        var game = (MeadowGame)host.CreateGame();
+        game.InitializeForTest(new HeadlessPlatform());
+        game.StepForTest();
+        var play = game.Scenes.Current as PlayScene;
+        Assert.IsNotNull(play, $"started in {game.Scenes.Current?.GetType().Name}");
+        Assert.AreEqual(1, play.LevelIndex);
+        Assert.AreEqual(PipForm.Bloom, play.Stage.Player.Form);
     }
 }

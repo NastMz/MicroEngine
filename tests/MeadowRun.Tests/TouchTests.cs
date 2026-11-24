@@ -10,8 +10,7 @@ public sealed class TouchTests
 {
     private static (MeadowGame Game, HeadlessPlatform Platform, PlayScene Play) Level()
     {
-        var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "meadowrun-tests", Guid.NewGuid().ToString("N"))).FullName;
-        var game = new MeadowGame(dir, new LaunchOptions("level", 1));
+        var game = new MeadowGame(new LaunchOptions("level", 1));
         var platform = new HeadlessPlatform();
         platform.TouchScreen.TouchFirst = true;
         game.InitializeForTest(platform);
