@@ -168,9 +168,7 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       const listed = spawnSync(exe, ['--list-platforms'], { encoding: 'utf8', env, cwd: os.tmpdir() });
       const sdlLine = listed.stdout.split('\n').find(l => l.startsWith('sdl:'));
       level('platforms', listed.status === 0 && Boolean(sdlLine), listed.status === 0 ? `started; ${sdlLine ? 'SDL can run here' : 'SDL is unavailable here'}` : `exit ${listed.status ?? listed.signal}: ${listed.stderr.trim()}`);
-      const saves = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-saves-'));
-      const saveVar = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' }[gameId];
-      const report = spawnSync(exe, ['--report', '--hidden', '--audio', 'device', '--frames', '120'], { encoding: 'utf8', env: { ...env, [saveVar]: saves }, cwd: os.tmpdir(), timeout: 120000 });
+      const report = spawnSync(exe, ['--report', '--hidden', '--audio', 'device', '--frames', '120'], { encoding: 'utf8', env, cwd: os.tmpdir(), timeout: 120000 });
       const platform = report.stdout.match(/^platform: (.*)$/m)?.[1], audio = report.stdout.match(/^audio: (.*)$/m)?.[1];
       record.platform = platform; record.audio = audio;
       // A machine without a sound device (hosted Windows runners) cannot show that audio opens: with --audio optional
@@ -179,7 +177,6 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       level('report', report.status === 0 && /^sdl\b/.test(platform ?? '') && audioOk,
         report.status === 0 ? `ran 120 updates on ${platform}; audio device ${audio}${audio !== 'available' && audioOptional ? ' (this machine has no sound device: audio not verified here)' : ''}`
           : `exit ${report.status ?? report.signal}: ${report.stderr.trim().split('\n').pop()}`);
-      fs.rmSync(saves, { recursive: true, force: true });
       const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-verify-captures-'));
       const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--packages', dir, '--backend', 'sdl', '--games', gameId, '--out', out, '--reference', referenceFile], { encoding: 'utf8' });
       log(compared.stdout.trim());

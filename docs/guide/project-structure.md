@@ -129,17 +129,16 @@ namespace TrailDuel
     {
         public static void Configure(HostBuilder host)
         {
-            var saveDir = host.Environment.Variable("TRAIL_SAVE_DIR");
             var debug = host.Environment.Variable("TRAIL_DEBUG");
             var evolve = host.Environment.Variable("TRAIL_EVOLVE");
-            host.UseGame(() => new TrailDuelGame(saveDir, debug, evolve));
+            host.UseGame(() => new TrailDuelGame(debug, evolve));
         }
     }
 }
 ```
 
-`TRAIL_SAVE_DIR` keeps saves and achievements in another folder (capture runs), `TRAIL_DEBUG` jumps to a screen or
-situation and `TRAIL_EVOLVE` picks who evolves under `TRAIL_DEBUG=evolve`.
+`TRAIL_DEBUG` jumps to a screen or situation and `TRAIL_EVOLVE` picks who evolves under `TRAIL_DEBUG=evolve`. Where the
+saves live is the run's choice, not the game's ([Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests)).
 
 `Startup.Configure` is the game's composition, and the browser and phone hosts call the same method, so they build the
 same game ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)).

@@ -31,7 +31,6 @@ const images = {
 };
 const selected = (option('images') ?? Object.keys(images).join(',')).split(',');
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(repoRoot, 'web/tests/scenarios.json'), 'utf8'));
-const saveDir = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
 const games = [...new Set(scenarios.map(s => s.game))].filter(g => fs.existsSync(path.join(packages, `${g}-linux-x64.tar.gz`)));
 
 // One shell script per image: extract, report, then every scenario (env as in desktop.mjs).
@@ -45,7 +44,7 @@ const play = [
     `echo "== ${g}"; /tmp/p/${g}/${g} --report --hidden --audio device --frames 60 2>&1 | grep -E "^(platform|audio|done|error)" | head -4; echo "exit $?"`,
     ...scenarios.filter(s => s.game === g).map(s => {
       const name = path.basename(s.script, '.script');
-      const env = Object.entries({ ...s.env, [saveDir[g]]: `/tmp/saves-${name}` }).map(([k, v]) => `${k}=${quote(v)}`).join(' ');
+      const env = Object.entries(s.env ?? {}).map(([k, v]) => `${k}=${quote(v)}`).join(' ');
       return `mkdir -p /out/desktop/${g}/${name} && env ${env} /tmp/p/${g}/${g} --script /scripts/${g}/${s.script} --hidden --mute --platform sdl --captures /out/desktop/${g}/${name} > /out/${g}-${name}.log 2>&1; echo "${g} ${name}: exit $?"`;
     }),
   ]),
