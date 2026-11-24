@@ -4,17 +4,17 @@ using TrailDuel.Rules;
 
 namespace TrailDuel.Tests;
 
-/// <summary>Runs the real game headlessly with a temporary save folder.</summary>
+/// <summary>Runs the real game headlessly over saves kept in memory, which a second game can be started on.</summary>
 internal sealed class Harness : IDisposable
 {
-    public string SaveDir { get; } = Path.Combine(Path.GetTempPath(), "trailduel-tests-" + Guid.NewGuid().ToString("N"));
+    public MemorySaveStorage Saves { get; } = new();
     public TrailDuelGame Game { get; }
     public HeadlessPlatform Platform { get; } = new();
 
     public Harness(string? debug = null)
     {
-        Game = new TrailDuelGame(SaveDir, debug ?? "none");
-        Game.InitializeForTest(Platform, 3);
+        Game = new TrailDuelGame(debug ?? "none");
+        Game.InitializeForTest(Platform, 3, Saves);
     }
 
     public GameState State => Game.State;
@@ -41,8 +41,5 @@ internal sealed class Harness : IDisposable
         Step(after);
     }
 
-    public void Dispose()
-    {
-        try { if (Directory.Exists(SaveDir)) Directory.Delete(SaveDir, true); } catch (IOException) { }
-    }
+    public void Dispose() { }
 }

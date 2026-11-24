@@ -12,16 +12,15 @@ namespace TrailDuel
     {
         /// <summary>
         /// The developer options, read from the host's variables (environment variables on desktop, the page's query in
-        /// browsers, the launch's <c>env</c> option on phones): TRAIL_SAVE_DIR keeps saves and achievements in another
-        /// folder (capture runs), TRAIL_DEBUG jumps to a screen or situation and TRAIL_EVOLVE picks who evolves under
-        /// TRAIL_DEBUG=evolve.
+        /// browsers, the launch's <c>env</c> option on phones): TRAIL_DEBUG jumps to a screen or situation and TRAIL_EVOLVE
+        /// picks who evolves under TRAIL_DEBUG=evolve. Saves are where the run says (<c>--saves DIR</c>, else the
+        /// player's folder, else a store of its own for a scripted run).
         /// </summary>
         public static void Configure(HostBuilder host)
         {
-            var saveDir = host.Environment.Variable("TRAIL_SAVE_DIR");
             var debug = host.Environment.Variable("TRAIL_DEBUG");
             var evolve = host.Environment.Variable("TRAIL_EVOLVE");
-            host.UseGame(() => new TrailDuelGame(saveDir, debug, evolve));
+            host.UseGame(() => new TrailDuelGame(debug, evolve));
         }
     }
 }

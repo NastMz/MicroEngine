@@ -52,7 +52,7 @@ public sealed class AchievementTests
         Assert.IsTrue(h.Game.Achievements.IsUnlocked(TrailAchievements.Evolution));
         Assert.AreEqual(1, toasts);
         Assert.IsTrue(h.Platform.SilentAudio.Played.Contains("sparkle"), "The unlock plays a sparkle.");
-        Assert.IsTrue(new AchievementTracker(TrailAchievements.Catalog, new SaveStore("TrailDuel", h.SaveDir)).IsUnlocked(TrailAchievements.Evolution), "Saved to the game's folder.");
+        Assert.IsTrue(new AchievementTracker(TrailAchievements.Catalog, new SaveStore(h.Saves)).IsUnlocked(TrailAchievements.Evolution), "Saved to the game's saves.");
     }
 
     [TestMethod]

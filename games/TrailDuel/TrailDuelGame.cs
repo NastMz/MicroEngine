@@ -18,24 +18,18 @@ namespace TrailDuel;
 /// </summary>
 public sealed class TrailDuelGame : Game
 {
-    private readonly string? _saveDirectory;
     private readonly string? _debugStart;
 
-    /// <param name="saveDirectory">Where saves and achievements go; the platform's default when null.</param>
     /// <param name="debugStart">A development shortcut (<see cref="DebugStart"/>); null or empty opens the title screen.</param>
     /// <param name="debugEvolve">The species that evolves under the <c>evolve</c> shortcut; Sprigbun when null.</param>
-    public TrailDuelGame(string? saveDirectory = null, string? debugStart = null, string? debugEvolve = null)
+    public TrailDuelGame(string? debugStart = null, string? debugEvolve = null)
     {
-        _saveDirectory = saveDirectory;
         _debugStart = debugStart;
         DebugEvolve = debugEvolve;
     }
 
     /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
     protected override string SaveId => "TrailDuel";
-
-    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
-    protected override SaveStore CreateSaves() => _saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, _saveDirectory);
 
     /// <summary>The unlock banners, drawn above every scene.</summary>
     public DemoKit.AchievementBanners Banners { get; } = new() { Theme = Ui.UiKit.Theme };
@@ -113,9 +107,9 @@ public sealed class TrailDuelGame : Game
     protected override void Unload() => Art.Dispose();
 
     /// <summary>
-    /// State hash (section <c>game</c>): the adventure in progress (<see cref="GameState"/>). Left out: the save folder
-    /// and the debug start (launch options, not state; the save folder differs per run), the atlas and the save store
-    /// (platform and storage objects). Scenes add their own state.
+    /// State hash (section <c>game</c>): the adventure in progress (<see cref="GameState"/>). Left out: the debug start
+    /// (a launch option, not state), the atlas and the save store (platform and storage objects). Scenes add their own
+    /// state.
     /// </summary>
     public override void HashState(StateHasher hash) => hash.Add(State);
 

@@ -43,15 +43,7 @@ public sealed class StateTraceTests
     {
         var input = StateTraceRuns.Script($"games/TrailDuel/scripts/{script}.script");
         quit = input.QuitUpdate;
-        string saves = Path.Combine(Path.GetTempPath(), "trailduel-state-trace-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            return StateTraceRuns.Run(new TrailDuelGame(saves, debugStart), input);
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
+        return StateTraceRuns.Run(new TrailDuelGame(debugStart), input);
     }
 
     [TestMethod]
@@ -74,18 +66,10 @@ public sealed class StateTraceTests
     public void TheCatchScriptThrowsAnOrbInTheWildBattle()
     {
         var input = StateTraceRuns.Script("games/TrailDuel/scripts/catch.script");
-        string saves = Path.Combine(Path.GetTempPath(), "trailduel-state-trace-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            var game = new TrailDuelGame(saves, "battle");
-            StateTraceRuns.Run(game, input);
-            Assert.AreEqual(5, game.State.Bag.Count("orb"), "one orb thrown");
-            Assert.AreEqual(0, game.State.Caught.Count(id => id == "mossnail"), "it broke free");
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
+        var game = new TrailDuelGame("battle");
+        StateTraceRuns.Run(game, input);
+        Assert.AreEqual(5, game.State.Bag.Count("orb"), "one orb thrown");
+        Assert.AreEqual(0, game.State.Caught.Count(id => id == "mossnail"), "it broke free");
     }
 
     /// <summary>

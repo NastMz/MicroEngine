@@ -169,12 +169,9 @@ public sealed class PlaythroughTests
         h.Press("confirm", 10);
         Assert.IsTrue(h.Game.HasSave);
 
-        using var again = new Harness();
-        // Point the new game at the same save folder by copying the file.
-        Directory.CreateDirectory(again.SaveDir);
-        foreach (var f in Directory.GetFiles(h.SaveDir)) File.Copy(f, Path.Combine(again.SaveDir, Path.GetFileName(f)));
-        var game = new TrailDuelGame(again.SaveDir, "none");
-        game.InitializeForTest(new MicroEngine.Core.HeadlessPlatform(), 1);
+        // A second game started on the same saves.
+        var game = new TrailDuelGame("none");
+        game.InitializeForTest(new MicroEngine.Core.HeadlessPlatform(), 1, h.Saves);
         Assert.IsTrue(game.HasSave);
         game.ContinueGame();
         for (int i = 0; i < 120; i++) game.StepForTest();
