@@ -22,10 +22,8 @@ internal sealed class Coin : Actor
 
     public override void Render(IRenderer r, Assets a, float time)
     {
-        var frames = a.Frames("coin");
         // Coins spin in a slow wave across the level instead of in lockstep.
-        int f = (int)((time + _phase) * 8) % frames.Count;
-        r.Draw(frames[f], Snap(Position + new Vector2(8, 8)));
+        r.Draw(a.Clip("coin").FrameAt(time + _phase), Snap(Position + new Vector2(8, 8)));
     }
 }
 
@@ -48,8 +46,7 @@ internal sealed class PopCoin : Actor
 
     public override void Render(IRenderer r, Assets a, float time)
     {
-        var frames = a.Frames("coin");
-        r.Draw(frames[(int)(Age * 24) % frames.Count], Snap(DrawPosition));
+        r.Draw(a.Clip("coin_pop").FrameAt(Age), Snap(DrawPosition));
     }
 }
 
@@ -106,8 +103,8 @@ internal sealed class PowerItem : Actor
         var pos = Snap(DrawFeet);
         Sprite sprite = Kind switch
         {
-            PowerKind.Sunpetal => a.Frames("sunpetal")[(int)(time * 6) % 4],
-            PowerKind.EmberSeed => a.Frames("emberseed")[(int)(time * 4) % 2],
+            PowerKind.Sunpetal => a.Clip("sunpetal").FrameAt(time),
+            PowerKind.EmberSeed => a.Clip("emberseed").FrameAt(time),
             _ => a["lifesprout"],
         };
         if (Emerging)

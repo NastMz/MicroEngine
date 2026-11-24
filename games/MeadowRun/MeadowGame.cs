@@ -54,7 +54,7 @@ public sealed record LaunchOptions(string Start = "title", int Level = 1, int Ch
 }
 
 /// <summary>Meadow Run: a side-scrolling platformer about Pip recovering the stolen Sunstone.</summary>
-public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? launch = null) : Game
+public sealed class MeadowGame(LaunchOptions? launch = null) : Game
 {
     private const string SaveSlot = "progress";
     /// <summary>
@@ -69,9 +69,6 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
     internal MicroEngine.Graphics.LightMap Lights { get; private set; } = null!;
     /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
     protected override string SaveId => "MeadowRun";
-
-    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
-    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
     public SaveData Save { get; private set; } = new();
     public Session Session { get; private set; } = new();
     /// <summary>Sound names requested but not registered (should stay empty; checked by tests).</summary>
@@ -142,7 +139,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
 
     /// <summary>
     /// Hashes the run (<see cref="Session"/>) and the progress in memory (<see cref="SaveData"/>). Leaves out the save
-    /// folder and store (environment), the art, lights and sound banks (platform resources), and
+    /// store (environment), the art, lights and sound banks (platform resources), and
     /// <see cref="MissingSounds"/> (a diagnostic).
     /// </summary>
     public override void HashState(StateHasher hash)

@@ -112,7 +112,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
         float t = DrawTime.Of(this);
         Diorama.Draw(r, game.Art, t, t * 12);
         // The Sunstone hangs in the sky, radiating.
-        var sun = game.Art.Frames("sunstone")[(int)(t * 6) % 4];
+        var sun = game.Art.Clip("sunstone").FrameAt(t);
         r.SetBlendMode(BlendMode.Additive);
         r.Draw(game.Art["glow"], new Vector2(250, 40), Pal.Gold.WithAlpha(0.8f));
         r.SetBlendMode(BlendMode.Alpha);

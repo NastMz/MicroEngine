@@ -139,7 +139,9 @@ query; the launcher rejects unknown arguments):
 - `MEADOW_LEVEL`: the level number (1 to 5).
 - `MEADOW_CHECKPOINT`: the checkpoint to start from.
 - `MEADOW_FORM`: `sprout`, `bloom` or `ember`.
-- `MEADOW_SAVE_DIR`: a separate save folder, for captures.
+
+A scripted run keeps its saves to itself, so it never reads or writes a player's progress; `--saves DIR` names a
+folder for the saves of one run.
 
 The tests cover:
 

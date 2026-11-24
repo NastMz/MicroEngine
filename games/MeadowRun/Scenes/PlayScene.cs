@@ -195,7 +195,7 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
         Ui.Centered(r, Font, _world, 160, 46, Pal.Haze);
         Ui.Centered(r, Font, _name, 160, 66, Pal.Butter, 2);
         Ui.Centered(r, Font, def.Subtitle, 160, 86, Pal.Cream);
-        var pip = game.Art.Pip(game.Session.Form, "idle")[(int)(Age * 1.6f) % 2];
+        var pip = game.Art.PipClip(game.Session.Form, "idle").FrameAt(Age);
         r.Draw(pip, new Vector2(142, 136));
         Ui.Text(r, Font, _lives, new Vector2(156, 124));
         if (checkpoint > 0) Ui.Centered(r, Font, "from the checkpoint", 160, 146, Pal.Dusk);
