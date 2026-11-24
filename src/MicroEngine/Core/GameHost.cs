@@ -225,6 +225,7 @@ public sealed class GameHost
             WaitForDisplay = !deterministic,
             StartGamepadsAfterFirstFrame = !deterministic && !arguments.Hidden && options.StartScreen && identity is { Splash: true },
             Mute = arguments.Mute,
+            Unattended = Request.IsUnattended || deterministic,
             AudioOutput = arguments.Audio == AudioOutput.Automatic && deterministic ? AudioOutput.Silent : arguments.Audio,
             Identity = identity,
             Log = game.StartupLog,

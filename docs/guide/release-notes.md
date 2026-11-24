@@ -22,6 +22,10 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - **`MemorySaveStorage`** is a save medium in memory, for tests and tools: `new SaveStore(new MemorySaveStorage())`.
   The examples' storage of their own is now `SingleFileSaveStorage`, every slot in one file
   ([A save storage](../manual/extending.md#a-save-storage)).
+- **A run nobody plays names keys the same on every machine.** The SDL platform gives such a run no label of the
+  machine's keyboard layout (`PlatformRequest.Unattended`), so prompts show the US names and a capture does not
+  depend on the keyboard of the machine that took it; a played run still shows the player's layout
+  ([Showing controls to the player](../manual/input.md#showing-controls-to-the-player)).
 - **`Game.InitializeForTest(platform, seed, saves)`** takes the medium of the game's saves, for a test that starts
   a game twice over the same saves.
 - **The samples have no save folder parameter.** The examples and Gem Garden no longer take a `saveDirectory` nor

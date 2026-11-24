@@ -195,6 +195,21 @@ public bool StartGamepadsAfterFirstFrame { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_PlatformRequest_Unattended"></a> Unattended
+
+A run nobody plays (the launch's <code>IsUnattended</code>: a script, deterministic time, no window, or an
+end of its own). The backend then reports nothing of the machine the picture could depend on: no labels of the
+keyboard layout ([IKeyLabels](MicroEngine.Input.IKeyLabels.md) answers null and keys are named by the engine), so two machines
+draw the same prompts.
+
+```csharp
+public bool Unattended { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Core_PlatformRequest_WaitForDisplay"></a> WaitForDisplay
 
 Whether the frames of a visible window may wait for the display's refresh (true by default): VSync as

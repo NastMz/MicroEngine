@@ -47,6 +47,13 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// <summary>No sound: the backend opens no audio device.</summary>
     public bool Mute { get; init; }
     /// <summary>
+    /// A run nobody plays (the launch's <c>IsUnattended</c>: a script, deterministic time, no window, or an
+    /// end of its own). The backend then reports nothing of the machine the picture could depend on: no labels of the
+    /// keyboard layout (<see cref="Input.IKeyLabels"/> answers null and keys are named by the engine), so two machines
+    /// draw the same prompts.
+    /// </summary>
+    public bool Unattended { get; init; }
+    /// <summary>
     /// Whether the backend may open a physical audio device: <see cref="AudioOutput.Automatic"/> (the default) and
     /// <see cref="AudioOutput.Device"/> open one, <see cref="AudioOutput.Silent"/> opens none.
     /// </summary>

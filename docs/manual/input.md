@@ -473,6 +473,8 @@ Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapS
 Keys are named as the player's keyboard layout prints them where the platform knows the layout (SDL): with the
 default bindings an AZERTY player reads `ZQSD` where a US player reads `WASD`, and a game that binds `Key.A` shows `Q`
 on that keyboard. `Prompts.KeyText(key)` gives the label; `ActionPrompts.KeyName(key)` is the US name, used where the layout is unknown (raylib).
+A run nobody plays (a script, deterministic time, no window, `--frames`) uses the US names on every machine, so its
+captures do not depend on the keyboard of the machine that took them.
 
 The names of the other keys and of controls ("Space", "Enter", "Shift", "D-pad", "Stick", "Start", "LMB") are English
 until the game's string tables translate them with `prompt.` keys (`"prompt.Space": "Espacio"`), and they change with

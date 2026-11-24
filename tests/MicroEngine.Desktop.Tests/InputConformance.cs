@@ -601,6 +601,18 @@ public sealed unsafe class SdlInputConformance : InputConformance
         text.Start(new RectF(4, 4, 2, 8));
         text.Stop();
     }
+
+    [TestMethod]
+    public void A_run_nobody_plays_gets_no_label_from_the_machines_layout()
+    {
+        // A scripted run on a machine with another layout would draw other letters in its prompts, and a layout the
+        // system cannot read at that moment draws "?": its captures would depend on the machine.
+        using var host = Open(new PlatformRequest(new GameSettings("labels", 64, 36)) { Hidden = true, WaitForDisplay = false, Mute = true, Unattended = true })
+            ?? throw new AssertInconclusiveException("SDL cannot open here");
+        Assert.IsTrue(host.TryGetCapability<IKeyLabels>(out var labels));
+        foreach (var key in new[] { Input.Key.A, Input.Key.W, Input.Key.Z, Input.Key.D1, Input.Key.Semicolon })
+            Assert.IsNull(labels.KeyLabel(key), $"{key}: the engine names it");
+    }
 }
 
 /// <summary>
