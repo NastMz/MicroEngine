@@ -46,7 +46,6 @@ function executableOf(game) {
 }
 // Scripted runs are deterministic (fixed step, seed 1), so they run side by side; results print in scenario order.
 const jobs = Math.max(1, Number(option('--jobs', String(Math.min(4, os.availableParallelism())))));
-const saveDirVariable = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
 
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(here, 'scenarios.json'), 'utf8'));
 const selected = scenarios.filter(s => !only || only.split(',').includes(s.game));
@@ -59,18 +58,14 @@ function play(s) {
   if (!fs.existsSync(exe)) throw new Error(`${exe} is missing; ${packages ? 'extract the package there' : 'run dotnet build MicroEngine.slnx -c Release'}.`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
-  const saves = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-saves-'));
   return new Promise(resolve => {
     const child = spawn(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--platform', backend, '--captures', dir],
-      { env: { ...process.env, ...s.env, [saveDirVariable[s.game]]: saves } });
+      { env: { ...process.env, ...s.env } });
     let stdout = '', stderr = '';
     child.stdout.on('data', d => stdout += d);
     child.stderr.on('data', d => stderr += d);
     child.on('error', error => { stderr += String(error); });
-    child.on('close', (status, signal) => {
-      fs.rmSync(saves, { recursive: true, force: true });
-      resolve({ status, signal, stdout, stderr });
-    });
+    child.on('close', (status, signal) => resolve({ status, signal, stdout, stderr }));
   });
 }
 

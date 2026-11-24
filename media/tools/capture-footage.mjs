@@ -25,8 +25,6 @@ const clips = {
   duel: { game: 'TrailDuel', script: 'master-battle.script', env: { TRAIL_DEBUG: 'trainer' }, from: 560, to: 1000 },
 };
 
-const saveVariable = { MeadowRun: 'MEADOW_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR' };
-
 function captureClip(name, { media, repo }) {
   const clip = clips[name];
   if (!clip) throw new Error(`Unknown clip '${name}'.`);
@@ -54,7 +52,7 @@ function captureClip(name, { media, repo }) {
   execFileSync('dotnet', ['run', '--project', join(repo, 'games', clip.game), '-c', 'Release', '--',
     '--script', scriptFile, '--hidden', '--mute', '--captures', frames], {
     stdio: ['ignore', 'ignore', 'inherit'],
-    env: { ...process.env, ...clip.env, [saveVariable[clip.game]]: join(frames, 'saves') },
+    env: { ...process.env, ...clip.env },
   });
   if (!existsSync(join(frames, 'f0000.png'))) throw new Error(`${name}: the run wrote no frames.`);
 

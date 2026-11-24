@@ -81,7 +81,8 @@ developer options from environment variables instead.
 
 ### Games
 
-Read by each game's `Program.cs` or launch options.
+Read by each game's `Program.cs` or launch options. None of them names a save folder: `--saves DIR` does that for
+any run, and a scripted run keeps its saves in memory ([Command-line flags](#command-line-flags)).
 
 | Game | Variable | Effect |
 | --- | --- | --- |
@@ -89,19 +90,15 @@ Read by each game's `Program.cs` or launch options.
 | | `MEADOW_LEVEL` | Level number (1 to 5) |
 | | `MEADOW_CHECKPOINT` | Checkpoint to start from |
 | | `MEADOW_FORM` | `sprout`, `bloom` or `ember` |
-| | `MEADOW_SAVE_DIR` | Separate save folder |
 | Courtyard Key | `COURTYARD_START` | Checkpoint: `village`, `town`, `road`, `woods`, `bridge`, `ruins`, `dungeon`, `blocks`, `trial`, `channel`, `boss`, `ending` |
-| | `COURTYARD_SAVE_DIR` | Separate save folder |
 | Trail Duel | `TRAIL_DEBUG` | Jump to a screen or situation (`trainer`, `battle`, `evolve`, `credits` and others) |
 | | `TRAIL_EVOLVE` | Species id that evolves under `TRAIL_DEBUG=evolve` |
-| | `TRAIL_SAVE_DIR` | Separate folder for saves and achievements |
 | Neon Rift | `RIFT_START` | `title`, `stage`, `card`, `gameover`, `ending` |
 | | `RIFT_STAGE` | Stage number (1 to 3) for `stage`/`card` |
 | | `RIFT_CHECKPOINT` | Start at checkpoint N |
 | | `RIFT_WEAPON` | `Pulse`, `Spread`, `Lance` or `Rapid` |
 | | `RIFT_GOD=1` | Shots and contact do not kill |
 | | `RIFT_AUTO=1` | The test autopilot plays |
-| | `RIFT_SAVE_DIR` | Separate folder for achievements |
 
 The engine itself reads no environment variables.
 
