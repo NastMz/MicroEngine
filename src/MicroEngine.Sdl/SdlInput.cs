@@ -222,6 +222,8 @@ internal sealed unsafe class SdlInput : BufferedInputBackend, IKeyLabels, IGamep
     /// </summary>
     public string? KeyLabel(Key key)
     {
+        // Nobody plays: the machine's layout must not reach the picture (PlatformRequest.Unattended).
+        if (_platform.Unattended) return null;
         int usage = KeyUsages.Usage(key);
         if (usage == 0) return null;
         var code = SDL_GetKeyFromScancode((SDL_Scancode)usage, SDL_Keymod.SDL_KMOD_NONE, false);

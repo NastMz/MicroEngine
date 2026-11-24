@@ -80,6 +80,7 @@ public sealed class GameHostTests
             Assert.IsFalse(request.WaitForDisplay, kind.ToString());
             Assert.AreEqual(AudioOutput.Silent, request.AudioOutput, kind.ToString());
             Assert.IsFalse(request.StartGamepadsAfterFirstFrame, kind.ToString());
+            Assert.IsTrue(request.Unattended, $"{kind}: nobody plays a scripted run, so the backend reports nothing of the machine");
         }
 
         var plain = GameHost.Create(Environment(HostKind.Browser), new LaunchRequest(), h => h.UseGame(() => new Probe()));
@@ -87,6 +88,7 @@ public sealed class GameHostTests
         Assert.IsNull(unscripted.TimeMode, "no script: the game's choice, then the platform's preset, then real time");
         Assert.AreEqual(77, unscripted.Seed, "no script: the host's clock seed");
         Assert.IsTrue(plain.CreateRequest(plain.CreateGame(), unscripted).WaitForDisplay);
+        Assert.IsFalse(plain.CreateRequest(plain.CreateGame(), unscripted).Unattended, "somebody plays");
 
         var chosen = GameHost.Create(Environment(HostKind.Browser), new LaunchRequest { ScriptText = Script, Time = TimeMode.RealTime, Seed = 5 }, h => h.UseGame(() => new Probe()));
         var options2 = chosen.CreateRunOptions(chosen.CreateGame());

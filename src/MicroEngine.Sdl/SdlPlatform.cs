@@ -139,6 +139,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// </summary>
     internal static SdlPlatform ForPage(PlatformRequest request, BrowserPage page) => new(request, null, page ?? throw new ArgumentNullException(nameof(page)));
 
+    /// <summary>Nobody plays this run (<see cref="PlatformRequest.Unattended"/>): nothing of the machine reaches the picture.</summary>
+    internal bool Unattended { get; }
+
     private SdlPlatform(PlatformRequest request, string? renderer, BrowserPage? page)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -146,6 +149,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _page = page;
         _settings = request.Settings;
         _log = request.Log;
+        Unattended = request.Unattended;
         Letterbox = _settings.Letterbox;
         _captureScale = Math.Max(1, request.CaptureScale);
         SDL_SetHint(SDL_HINT_APP_NAME, _settings.Title);
