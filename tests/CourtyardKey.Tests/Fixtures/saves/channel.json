@@ -1,0 +1,36 @@
+{
+  "@version": 1,
+  "MaxHealth": 6,
+  "Health": 6,
+  "Gems": 40,
+  "SmallKeys": 0,
+  "HasSword": true,
+  "HasBoomerang": true,
+  "HasBossKey": false,
+  "HasCourtyardKey": false,
+  "Deaths": 0,
+  "PlaySeconds": 1.3500000704079866,
+  "Flags": [
+    "door:dungeon:2,1:h"
+  ],
+  "Visited": [
+    "dungeon:1,3",
+    "dungeon:1,2",
+    "dungeon:0,2",
+    "dungeon:2,2",
+    "dungeon:1,1",
+    "dungeon:0,1",
+    "dungeon:2,1",
+    "dungeon:2,0",
+    "dungeon:1,0",
+    "overworld:1,2"
+  ],
+  "Entrance": {
+    "Area": "dungeon",
+    "RoomX": 2,
+    "RoomY": 1,
+    "TileX": 2,
+    "TileY": 5,
+    "Facing": 3
+  }
+}

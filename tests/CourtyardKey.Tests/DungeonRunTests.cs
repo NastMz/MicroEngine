@@ -143,7 +143,7 @@ public sealed class DungeonRunTests
         }
         Assert.AreEqual(WardenState.Dying, warden.State, "The Warden falls.");
         Assert.IsTrue(achievements.IsUnlocked(CourtyardAchievements.Warden));
-        Assert.IsTrue(new AchievementTracker(CourtyardAchievements.Catalog, new SaveStore(CourtyardKeyGame.GameId, h.SaveDir)).IsUnlocked(CourtyardAchievements.Warden), "Unlocks are on disk.");
+        Assert.IsTrue(new AchievementTracker(CourtyardAchievements.Catalog, new SaveStore(h.Saves)).IsUnlocked(CourtyardAchievements.Warden), "Unlocks are in the run's saves.");
         h.WaitUntil(() => play.Actors.OfType<Pickup>().Any(p => p.Kind == PickupKind.HeartContainer), 600, "the heart container");
         int maxBefore = play.Hero.Health.Max;
         var container = play.Actors.OfType<Pickup>().First(p => p.Kind == PickupKind.HeartContainer);

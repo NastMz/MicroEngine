@@ -14,12 +14,13 @@ using MicroEngine.World;
 namespace CourtyardKey.Tests;
 
 /// <summary>
-/// Runs the real game on the headless platform with a private save folder and drives it through
+/// Runs the real game on the headless platform, with saves of its own in memory, and drives it through
 /// the keyboard, exactly as a player would. Every helper fails loudly when it runs out of time.
 /// </summary>
 internal sealed class Harness : IDisposable
 {
-    public string SaveDir { get; } = Path.Combine(Path.GetTempPath(), "courtyard-tests", Guid.NewGuid().ToString("N"));
+    /// <summary>The saves of this run: empty at the start, read by a test that checks what the game wrote.</summary>
+    public MemorySaveStorage Saves { get; } = new();
     public CourtyardKeyGame Game { get; }
     public HeadlessPlatform Platform { get; }
 
@@ -27,9 +28,9 @@ internal sealed class Harness : IDisposable
     /// <param name="updateRate">Updates per second the game is simulated at (the game's 60 by default).</param>
     public Harness(string? start = null, int updateRate = 60)
     {
-        Game = new CourtyardKeyGame(SaveDir, start, updateRate);
+        Game = new CourtyardKeyGame(start, updateRate);
         Platform = HeadlessPlatform.For(Game.Settings);
-        Game.InitializeForTest(Platform);
+        Game.InitializeForTest(Platform, saves: Saves);
     }
 
     public PlayScene Play => Game.Play ?? throw new InvalidOperationException("No adventure is running.");
@@ -303,8 +304,6 @@ internal sealed class Harness : IDisposable
         foreach (var k in new[] { Key.Left, Key.Right, Key.Up, Key.Down }) Platform.Keys.Set(k, false);
     }
 
-    public void Dispose()
-    {
-        try { if (Directory.Exists(SaveDir)) Directory.Delete(SaveDir, true); } catch (IOException) { }
-    }
+    /// <summary>Nothing to release: the saves are in memory. Kept so tests scope a run with <c>using</c>.</summary>
+    public void Dispose() { }
 }

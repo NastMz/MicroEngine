@@ -3,12 +3,13 @@ using CourtyardKey.Model;
 using MicroEngine.Core;
 using MicroEngine.Hosting;
 using MicroEngine.Platform;
+using MicroEngine.Testing;
 
 namespace CourtyardKey.Tests;
 
 /// <summary>
 /// The adventure's save is versioned by the engine (<see cref="Progress.Schema"/>), the files earlier releases wrote
-/// still load, and the game keeps its saves where its host says.
+/// still load, and the game keeps its saves where its run says: the host's medium, or the one a test hands it.
 /// </summary>
 [TestClass]
 public sealed class SaveFormatTests
@@ -44,18 +45,19 @@ public sealed class SaveFormatTests
         }
         """;
 
-    private string _dir = "";
+    /// <summary>The saves of one test: what a release left on the player's disk, handed to the run that starts over them.</summary>
+    private readonly MemorySaveStorage _saves = new();
 
-    [TestInitialize]
-    public void Init() => _dir = Path.Combine(Path.GetTempPath(), "courtyard-save-format-" + Guid.NewGuid().ToString("N"));
+    private string? Saved => _saves.Read(SaveSlots.Slot);
 
-    [TestCleanup]
-    public void Cleanup()
+    /// <summary>The game started over <see cref="_saves"/> and stepped once, as a launch finds them.</summary>
+    private CourtyardKeyGame Launched(string? start = null)
     {
-        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
+        var game = new CourtyardKeyGame(start);
+        game.InitializeForTest(new HeadlessPlatform(), saves: _saves);
+        game.StepForTest();
+        return game;
     }
-
-    private string SaveFile => Path.Combine(_dir, SaveSlots.Slot + ".json");
 
     private static void AssertTheAdventure(Progress? loaded)
     {
@@ -73,20 +75,65 @@ public sealed class SaveFormatTests
     [TestMethod]
     public void ASaveWrittenByThePreviousReleaseLoads()
     {
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
-        AssertTheAdventure(new CourtyardKeyGame(_dir).Slots.Load());
+        _saves.Write(SaveSlots.Slot, SavedByThePreviousRelease);
+        AssertTheAdventure(Launched().Slots.Load());
+    }
+
+    private static string FixtureFolder => Path.Combine(StateTraceRuns.RepositoryRoot(), "tests/CourtyardKey.Tests/Fixtures/saves");
+
+    /// <summary>
+    /// The saves the game wrote before it was moved to the run's own store and the engine's state machines, kept as it
+    /// wrote them (<c>Fixtures/saves</c>: a new game with the sword, the village, two dungeon rooms and the boss room,
+    /// written by scripted runs with <c>--saves</c>).
+    /// </summary>
+    public static IEnumerable<object[]> WrittenBeforeTheModernization =>
+        Directory.GetFiles(FixtureFolder, "*.json").Select(f => new object[] { Path.GetFileName(f) });
+
+    [TestMethod]
+    public void TheFixturesAreThere() => Assert.AreEqual(5, WrittenBeforeTheModernization.Count());
+
+    /// <summary>Each loads whole (every property the file holds is in the progress) and is written back as it was.</summary>
+    [TestMethod]
+    [DynamicData(nameof(WrittenBeforeTheModernization))]
+    public void ASaveWrittenBeforeTheModernizationLoadsAndIsWrittenBackUnchanged(string file)
+    {
+        string text = File.ReadAllText(Path.Combine(FixtureFolder, file)).ReplaceLineEndings("\n");
+        _saves.Write(SaveSlots.Slot, text);
+        var slots = Launched().Slots;
+        Assert.AreEqual(SaveLoadStatus.Loaded, slots.Check());
+        var loaded = slots.Load();
+        Assert.IsNotNull(loaded);
+
+        var json = JsonNode.Parse(text)!.AsObject();
+        Assert.AreEqual((int)json["MaxHealth"]!, loaded.MaxHealth);
+        Assert.AreEqual((int)json["Health"]!, loaded.Health);
+        Assert.AreEqual((int)json["Gems"]!, loaded.Gems);
+        Assert.AreEqual((int)json["SmallKeys"]!, loaded.SmallKeys);
+        Assert.AreEqual((bool)json["HasSword"]!, loaded.HasSword);
+        Assert.AreEqual((bool)json["HasBoomerang"]!, loaded.HasBoomerang);
+        Assert.AreEqual((bool)json["HasBossKey"]!, loaded.HasBossKey);
+        Assert.AreEqual((bool)json["HasCourtyardKey"]!, loaded.HasCourtyardKey);
+        Assert.AreEqual((int)json["Deaths"]!, loaded.Deaths);
+        Assert.AreEqual((double)json["PlaySeconds"]!, loaded.PlaySeconds);
+        CollectionAssert.AreEquivalent(json["Flags"]!.AsArray().Select(n => (string)n!).ToArray(), loaded.Flags.ToArray());
+        CollectionAssert.AreEquivalent(json["Visited"]!.AsArray().Select(n => (string)n!).ToArray(), loaded.Visited.ToArray());
+        var entrance = json["Entrance"]!;
+        Assert.AreEqual(new Checkpoint((string)entrance["Area"]!, (int)entrance["RoomX"]!, (int)entrance["RoomY"]!,
+            (float)entrance["TileX"]!, (float)entrance["TileY"]!, (Dir)(int)entrance["Facing"]!), loaded.Entrance);
+        Assert.AreEqual(14, json.Count, "a property this test does not compare");
+
+        Assert.IsTrue(slots.Save(loaded));
+        Assert.AreEqual(text, Saved!.ReplaceLineEndings("\n"), "saving it again writes the same file");
     }
 
     [TestMethod]
     public void SavingWritesTheEnginesVersionAndTheSameAdventure()
     {
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
-        var slots = new CourtyardKeyGame(_dir).Slots;
+        _saves.Write(SaveSlots.Slot, SavedByThePreviousRelease);
+        var slots = Launched().Slots;
         slots.Save(slots.Load()!);
 
-        var written = JsonNode.Parse(File.ReadAllText(SaveFile))!.AsObject();
+        var written = JsonNode.Parse(Saved!)!.AsObject();
         Assert.AreEqual(SaveSchema.VersionProperty, written.First().Key, "the version is the first property");
         Assert.AreEqual(1, (int?)written[SaveSchema.VersionProperty]);
         Assert.IsFalse(written.ContainsKey("Version"), "the game's own version property is gone");
@@ -96,7 +143,7 @@ public sealed class SaveFormatTests
         before.Remove("Version");
         written.Remove(SaveSchema.VersionProperty);
         Assert.AreEqual(before.ToJsonString(), written.ToJsonString());
-        AssertTheAdventure(new CourtyardKeyGame(_dir).Slots.Load());
+        AssertTheAdventure(Launched().Slots.Load());
     }
 
     [TestMethod]
@@ -105,23 +152,19 @@ public sealed class SaveFormatTests
         var json = JsonNode.Parse(SavedByThePreviousRelease)!.AsObject();
         json.Insert(0, SaveSchema.VersionProperty, 2);
         string newer = json.ToJsonString();
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, newer);
+        _saves.Write(SaveSlots.Slot, newer);
 
-        var slots = new CourtyardKeyGame(_dir).Slots;
+        var slots = Launched().Slots;
         Assert.IsNull(slots.Load());
         slots.Save(new Progress());
-        Assert.AreEqual(newer, File.ReadAllText(SaveFile));
+        Assert.AreEqual(newer, Saved);
     }
 
     [TestMethod]
     public void ASaveFromANewerReleaseIsNotOfferedAsContinue()
     {
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, """{ "@version": 2, "Gems": 5 }""");
-        var game = new CourtyardKeyGame(_dir);
-        game.InitializeForTest(new HeadlessPlatform());
-        game.StepForTest();
+        _saves.Write(SaveSlots.Slot, """{ "@version": 2, "Gems": 5 }""");
+        var game = Launched();
 
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
         Assert.AreEqual("Newer save", title.Menu.Options[1], "the entry says why it cannot be chosen");
@@ -132,11 +175,8 @@ public sealed class SaveFormatTests
     [TestMethod]
     public void ASaveThatLoadsIsOfferedAsContinue()
     {
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
-        var game = new CourtyardKeyGame(_dir);
-        game.InitializeForTest(new HeadlessPlatform());
-        game.StepForTest();
+        _saves.Write(SaveSlots.Slot, SavedByThePreviousRelease);
+        var game = Launched();
 
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
         Assert.AreEqual("Continue", title.Menu.Options[1]);
@@ -148,17 +188,14 @@ public sealed class SaveFormatTests
     public void ARefusedSaveIsNotReportedAsSaved()
     {
         const string newer = """{ "@version": 2, "Gems": 5 }""";
-        Directory.CreateDirectory(_dir);
-        File.WriteAllText(SaveFile, newer);
-        var game = new CourtyardKeyGame(_dir, "road");
-        game.InitializeForTest(new HeadlessPlatform());
-        game.StepForTest();
+        _saves.Write(SaveSlots.Slot, newer);
+        var game = Launched("road");
 
         game.Play!.SaveGame();
         Assert.AreEqual("Could not save", game.Play.Hud.ToastText);
-        Assert.AreEqual(newer, File.ReadAllText(SaveFile));
+        Assert.AreEqual(newer, Saved);
 
-        File.Delete(SaveFile);
+        _saves.Delete(SaveSlots.Slot);
         game.Play.SaveGame();
         Assert.AreEqual("Progress saved", game.Play.Hud.ToastText);
     }
