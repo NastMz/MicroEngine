@@ -29,62 +29,47 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     private static readonly bool[] Headers = Array.ConvertAll(Lines, line => line == line.ToUpperInvariant() && line.Length > 0);
 
     private const float LineHeight = 14;
+    /// <summary>Where the roll stops: its last line has gone up the screen.</summary>
+    private static readonly float ScrollEnd = Lines.Length * LineHeight + 60;
+    /// <summary>The ending's parts: the champion card, the rolling credits, and leaving for the title.</summary>
+    private enum Part { Card, Roll, Leaving }
+
     private CachedText _timeText;
     private float _scroll;
     /// <summary>The scroll in the scene's objects, so the world draws the rolling credits between steps.</summary>
     private EntityId _scrollEntity;
-    private bool _champion = true;
-    private float _phase;
-    private bool _leaving;
+    private StateMachine<Part> _part = null!;
+    /// <summary>Whether the champion card is still up (the roll has not started).</summary>
+    internal bool OnChampionCard => _part.Current == Part.Card;
 
     public override void Enter()
     {
         Audio.PlayMusic("victory", 0f);
         _scrollEntity = Objects.Create();
+        // The scene steps the machine before Update and adds its part and the time in it to the state hash.
+        _part = Machines.Add(new StateMachine<Part>(Part.Card));
+        _part.State(Part.Card)
+            .When(() => _part.Time > 2.5f && Input.Pressed("confirm"), Part.Roll)
+            .When(() => _part.Time > 7f, Part.Roll);
+        _part.State(Part.Roll)
+            .OnEnter(() => Audio.PlayMusic("credits", 0.6f))
+            .OnUpdate(dt => _scroll = MathF.Min(ScrollEnd, _scroll + dt * (Input.Down("confirm") ? 70 : 18)))
+            .When(() => _scroll >= ScrollEnd && (Input.Pressed("confirm") || _part.Time > Lines.Length * LineHeight / 18 + 10), Part.Leaving);
+        _part.State(Part.Leaving).OnEnter(() =>
+        {
+            onDone();
+            Game.Scenes.Reset(new TitleScene(game), Transition.Fade(1.5f, Pal.Ink));
+        });
     }
 
     /// <summary>
-    /// State hash: the champion card or the roll, its phase clock, the scroll (it decides when the credits end) and
-    /// whether it is leaving. Left out: the time text cache (the scroll's entity is in the scene's objects, which the
-    /// engine hashes).
+    /// State hash: the scroll (it decides when the credits end); the part and its clock are the machine's, which the
+    /// scene hashes. Left out: the time text cache (the scroll's entity is in the scene's objects, which the engine
+    /// hashes).
     /// </summary>
-    public override void HashState(StateHasher hash)
-    {
-        hash.Add(_champion);
-        hash.Add(_phase);
-        hash.Add(_scroll);
-        hash.Add(_leaving);
-    }
+    public override void HashState(StateHasher hash) => hash.Add(_scroll);
 
-    public override void Update(float dt)
-    {
-        Advance(dt);
-        Objects.Local(_scrollEntity).Position2D = new Vector2(0, _scroll);
-    }
-
-    private void Advance(float dt)
-    {
-        _phase += dt;
-        if (_champion)
-        {
-            if (_phase > 2.5f && (Input.Pressed("confirm") || _phase > 7f))
-            {
-                _champion = false;
-                _phase = 0;
-                Audio.PlayMusic("credits", 0.6f);
-            }
-            return;
-        }
-        float end = Lines.Length * LineHeight + 120;
-        float speed = Input.Down("confirm") ? 70 : 18;
-        _scroll = MathF.Min(end - 60, _scroll + dt * speed);
-        if (_scroll >= end - 60 && !_leaving && (Input.Pressed("confirm") || _phase > Lines.Length * LineHeight / 18 + 10))
-        {
-            _leaving = true;
-            onDone();
-            Game.Scenes.Reset(new TitleScene(game), Transition.Fade(1.5f, Pal.Ink));
-        }
-    }
+    public override void Update(float dt) => Objects.Local(_scrollEntity).Position2D = new Vector2(0, _scroll);
 
     public override void Draw(IRenderer r)
     {
@@ -94,12 +79,12 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         var party = game.State.Party;
         for (int i = 0; i < party.Count; i++)
         {
-            float x = _champion ? 160 + (i - (party.Count - 1) / 2f) * MathF.Min(60, 280f / Math.Max(1, party.Count)) : (i * 60 + Age * 22) % 400 - 40;
-            float hop = MathF.Abs(MathF.Sin(Age * 3 + i)) * (_champion ? 6 : 3);
+            float x = OnChampionCard ? 160 + (i - (party.Count - 1) / 2f) * MathF.Min(60, 280f / Math.Max(1, party.Count)) : (i * 60 + Age * 22) % 400 - 40;
+            float hop = MathF.Abs(MathF.Sin(Age * 3 + i)) * (OnChampionCard ? 6 : 3);
             r.Draw(game.Sprite(SpriteKeys.Shadow[party[i].SpeciesId]), new Vector2(MathF.Round(x), 149), Color.White.WithAlpha(1 - hop / 12f));
             r.Draw(game.Sprite(SpriteKeys.Front[party[i].SpeciesId]), new Vector2(MathF.Round(x), MathF.Round(150 - hop)));
         }
-        if (_champion)
+        if (OnChampionCard)
         {
             UiKit.Title(r, Font, "TRAIL CHAMPION", new Vector2(160, 40), 2, Pal.Gold);
             UiKit.Title(r, Font, $"Congratulations, {GameState.PlayerName}!", new Vector2(160, 66));
