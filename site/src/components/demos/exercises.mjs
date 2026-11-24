@@ -9,7 +9,7 @@
 
 /** @type {Record<string, Feature>} */
 export const features = {
-  saves: { id: 'saves', family: 'kernel', name: 'Saves and achievements', href: '/docs/manual/persistence/', evidence: [/\bSaveStore\b/, /\bAchievement\b/] },
+  saves: { id: 'saves', family: 'kernel', name: 'Saves and achievements', href: '/docs/manual/persistence/', evidence: [/\bSaves\.\w+|\bSaveSlots?\b/, /\bAchievement\b/] },
   tiles: { id: 'tiles', family: 'graphics', name: 'Tile maps', href: '/docs/manual/world/', evidence: /\bTileLayer\b/ },
   particles: { id: 'particles', family: 'graphics', name: 'Particles', href: '/docs/manual/rendering/#particles', evidence: /\bParticleSystem\b/ },
   collision: { id: 'collision', family: 'physics', name: 'Tile collision', href: '/docs/manual/world/#moving-through-the-grid', evidence: /\bTileMotion\b/ },
