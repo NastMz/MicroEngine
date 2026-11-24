@@ -276,7 +276,8 @@ world, for its `Blend`, reads `Objects` once in `Enter`). The world
 holds entities: each has an `EntityId` (a slot and a generation, so the id of a destroyed entity never reaches the entity
 that reuses its slot), a `Transform` relative to an optional parent (stored in 3D; `Position2D`, `Rotation2D` and
 `Scale2D` read and write the 2D part) and typed attachments, which are your own classes (`Attach`, `TryGet`, `Get`,
-`Detach`; `All<T>()` walks every attachment of a type). `SceneWorld` is the engine's implementation; game code
+`Detach`; `All<T>()` walks every attachment of a type, `Children(parent)` the children of an entity and
+`Children<T>(parent)` the attachments of a type among them). `SceneWorld` is the engine's implementation; game code
 programs against `IWorld`. The rules a game can rely on:
 
 - **Creating** an entity takes effect at once: its id is valid and its transform writable. A walk over `All<T>()` or
@@ -286,7 +287,13 @@ programs against `IWorld`. The rules a game can rely on:
   implement `IDestroyedCallback` are told, in the order the entities were destroyed, and the slot is released.
 - **Order**: `All<T>()` walks attachments in the order they were attached, and destroying entities never reorders the
   rest, so rules that take the first match or consume random numbers in update order behave the same every run.
-  `foreach` over `All<T>()` and `Children(parent)` allocates nothing.
+  `Children(parent)` and `Children<T>(parent)` walk the children in the order they were given that parent.
+  `foreach` over any of the three allocates nothing.
+- **Groups**: an entity with children is a group (the actors of a room, the pieces on a board, the items in a chest).
+  `Children<T>(group)` walks the attachments of type `T` of its direct live children and skips the children that have
+  none; its enumerator also gives the child's id (`Entity`). Destroying the group destroys what is in it. Attachments
+  are found by the type they were attached under: actors attached as `Actor` are walked with `Children<Actor>(room)`,
+  and a kind among them is picked with `is`.
 - **Drawing between steps**: `DrawPosition2D(id)` and `WorldMatrix(id)` blend each entity from where it was at the
   start of the step to where it is now, by the world's `Blend`; at blend 1, or for an entity that did not move, they
   return exactly the simulated transform. A new, `Teleport`ed or re-parented entity is drawn where it is until the
