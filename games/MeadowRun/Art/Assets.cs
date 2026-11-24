@@ -15,6 +15,37 @@ internal sealed class Assets : IDisposable
     private readonly Sprite[,,] _ground;
     private readonly Dictionary<(Biome, int), Sprite> _tiles = [];
     private readonly Dictionary<(PipForm, string), IReadOnlyList<Sprite>> _pip = [];
+    private readonly Dictionary<string, AnimationClip> _clips = [];
+    private readonly Dictionary<(PipForm, string), AnimationClip> _pipClips = [];
+
+    /// <summary>
+    /// The animations that play at a rate of their own: the frames of a strip they show (from, count) and how many a
+    /// second. They are declared to the atlas with the frames (<see cref="SpriteAtlasBuilder.AddClip"/>), so drawing
+    /// asks a clip for the frame of a time and holds no rate. What is not here is not a clip: Pip's run follows the
+    /// distance he covers, the fire bars and torches start each instance on a frame of its own, and the Mole King
+    /// picks poses.
+    /// </summary>
+    private static readonly (string Name, string Strip, int From, int Count, float FramesPerSecond)[] Clips =
+    [
+        ("coin", "coin", 0, 6, 8),
+        ("coin_pop", "coin", 0, 6, 24),
+        ("sunpetal", "sunpetal", 0, 4, 6),
+        ("emberseed", "emberseed", 0, 2, 4),
+        ("checkpoint_lit", "checkpoint", 1, 2, 6),
+        ("pennant", "pennant", 0, 4, 8),
+        ("seedshot", "seedshot", 0, 4, 16),
+        ("sunstone", "sunstone", 0, 4, 6),
+        ("bumblet_walk", "bumblet", 0, 2, 6),
+        ("thornback", "thornback", 0, 2, 5),
+        ("mothwing", "mothwing", 0, 2, 10),
+        ("mound", "mound", 0, 2, 8),
+    ];
+
+    /// <summary>Pip's clips that play at a rate of their own, in every form.</summary>
+    private static readonly (string Clip, int Count, float FramesPerSecond)[] PipClips = [("idle", 2, 1.6f), ("victory", 2, 4)];
+
+    private static SheetClip Strip(string name, string strip, int from, int count, float framesPerSecond) =>
+        new(name, [.. Enumerable.Range(from, count).Select(i => strip + i)], null, framesPerSecond);
     private readonly Sprite[] _formIcons;
 
     public Assets(IGraphicsDevice device)
@@ -80,7 +111,16 @@ internal sealed class Assets : IDisposable
         for (int s = 0; s < 4; s++) b.Add("node" + s, UiArt.MapNode(s), new Vector2(8, 7));
         b.Add("map", UiArt.MapBackdrop());
 
+        foreach (var (name, strip, from, count, rate) in Clips) b.AddClip(Strip(name, strip, from, count, rate));
+        foreach (var form in Enum.GetValues<PipForm>())
+        foreach (var (clip, count, rate) in PipClips)
+            b.AddClip(Strip($"pip_{form}_{clip}", $"pip_{form}_{clip}", 0, count, rate));
+
         _atlas = b.Build(device);
+        foreach (var (name, _, _, _, _) in Clips) _clips[name] = _atlas.Clip(name);
+        foreach (var form in Enum.GetValues<PipForm>())
+        foreach (var (clip, _, _) in PipClips)
+            _pipClips[(form, clip)] = _atlas.Clip($"pip_{form}_{clip}");
 
         _ground = new Sprite[biomes.Length, 16, GroundVariants];
         foreach (var biome in biomes)
@@ -110,11 +150,15 @@ internal sealed class Assets : IDisposable
 
     public Sprite this[string name] => _atlas[name];
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
+    /// <summary>An animation by name: <c>Clip("coin").FrameAt(time)</c> is the frame to draw.</summary>
+    public AnimationClip Clip(string name) => _clips[name];
     public Sprite Ground(Biome biome, int mask, int variant) => _ground[(int)biome, mask, variant];
     public const int BackWallVariants = 4;
 
     public Sprite? TileSprite(Biome biome, int id) => _tiles.TryGetValue((biome, id), out var s) ? s : null;
     public IReadOnlyList<Sprite> Pip(PipForm form, string clip) => _pip[(form, clip)];
+    /// <summary>One of Pip's animations that play at a rate of their own ("idle", "victory").</summary>
+    public AnimationClip PipClip(PipForm form, string clip) => _pipClips[(form, clip)];
     /// <summary>The HUD's badge for Pip's form (cached: it is drawn every frame).</summary>
     public Sprite FormIcon(PipForm form) => _formIcons[(int)form];
 

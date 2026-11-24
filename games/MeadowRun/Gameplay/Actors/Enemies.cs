@@ -100,7 +100,7 @@ internal sealed class Bumblet : Enemy
     public Bumblet(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft) => Hitbox = new RectF(2, 4, 12, 12);
     public override bool Walker => true;
     protected override void Live(float dt) => Patrol(dt, 30, ledgeAware: false);
-    protected override Sprite Frame(Assets a, float time) => a.Frames("bumblet")[Death == DeathKind.Squash ? 2 : (int)(Age * 6) % 2];
+    protected override Sprite Frame(Assets a, float time) => Death == DeathKind.Squash ? a["bumblet2"] : a.Clip("bumblet_walk").FrameAt(Age);
 }
 
 /// <summary>Thornback: a spiny walker that cannot be stomped and keeps to its platform.</summary>
@@ -111,7 +111,7 @@ internal sealed class Thornback : Enemy
     public override bool Walker => true;
     public override int Points => 200;
     protected override void Live(float dt) => Patrol(dt, 26, ledgeAware: true);
-    protected override Sprite Frame(Assets a, float time) => a.Frames("thornback")[(int)(Age * 5) % 2];
+    protected override Sprite Frame(Assets a, float time) => a.Clip("thornback").FrameAt(Age);
 }
 
 /// <summary>Hopkin: sits, crouches as a tell, then leaps toward Pip.</summary>
@@ -173,7 +173,7 @@ internal sealed class Mothwing : Enemy
     }
 
     public override void Stomped() => Knocked(Facing);
-    protected override Sprite Frame(Assets a, float time) => a.Frames("mothwing")[(int)(time * 10) % 2];
+    protected override Sprite Frame(Assets a, float time) => a.Clip("mothwing").FrameAt(time);
 
     public override void Render(IRenderer r, Assets a, float time)
     {

@@ -56,7 +56,7 @@ internal sealed class Checkpoint : Actor
             r.Draw(a["glow"], pos + new Vector2(0, -26), Pal.Amber.WithAlpha(0.45f + MathX.Wave(time, 3, 0.08f)));
             r.SetBlendMode(BlendMode.Alpha);
         }
-        r.Draw(a.Frames("checkpoint")[Lit ? 1 + (int)(time * 6) % 2 : 0], pos);
+        r.Draw(Lit ? a.Clip("checkpoint_lit").FrameAt(time) : a["checkpoint0"], pos);
     }
 }
 
@@ -77,8 +77,7 @@ internal sealed class GoalPole : Actor
     {
         var foot = Snap(new Vector2(Position.X + 8, Bounds.Bottom));
         r.Draw(a["goalpole"], foot);
-        var pennant = a.Frames("pennant")[(int)(time * 8) % 4];
-        r.Draw(pennant, Snap(new Vector2(Position.X + 9, Position.Y + 16 + PennantDrop)));
+        r.Draw(a.Clip("pennant").FrameAt(time), Snap(new Vector2(Position.X + 9, Position.Y + 16 + PennantDrop)));
     }
 }
 

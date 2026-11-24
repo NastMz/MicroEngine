@@ -48,7 +48,7 @@ internal sealed class SeedShot : Actor
         r.SetBlendMode(BlendMode.Additive);
         r.Draw(a["glow_small"], Snap(DrawCenter), Pal.Flame.WithAlpha(0.5f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.Draw(a.Frames("seedshot")[(int)(Age * 16) % 4], Snap(DrawCenter));
+        r.Draw(a.Clip("seedshot").FrameAt(Age), Snap(DrawCenter));
     }
 }
 
@@ -383,7 +383,7 @@ internal sealed class Grumbold : Enemy
         if (_mode == Mode.Stalk)
         {
             float shake = _timer < 0.55f ? MathF.Round(MathF.Sin(time * 80) * 1.5f) : 0;
-            r.Draw(a.Frames("mound")[(int)(time * 8) % 2], Snap(new Vector2(_moundX + shake, Arena.Bottom)));
+            r.Draw(a.Clip("mound").FrameAt(time), Snap(new Vector2(_moundX + shake, Arena.Bottom)));
             return;
         }
         if (_mode == Mode.Recover)
@@ -423,6 +423,6 @@ internal sealed class Sunstone : Actor
         r.SetBlendMode(BlendMode.Additive);
         r.Draw(a["glow"], Snap(DrawCenter), Pal.Gold.WithAlpha(0.7f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.Draw(a.Frames("sunstone")[(int)(time * 6) % 4], Snap(DrawCenter));
+        r.Draw(a.Clip("sunstone").FrameAt(time), Snap(DrawCenter));
     }
 }

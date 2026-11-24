@@ -200,14 +200,12 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         if (p.Invulnerable > 0 && stage.Phase == StagePhase.Playing && (int)(time * 20) % 2 == 0) return;
         string clip = ClipFor(stage);
         var frames = art.Pip(p.Form, clip);
-        int index = clip switch
+        var sprite = clip switch
         {
-            "run" => (int)_runFrame % frames.Count,
-            "idle" => (int)(time * 1.6f) % frames.Count,
-            "victory" => (int)(time * 4) % frames.Count,
-            _ => 0,
+            "run" => frames[(int)_runFrame % frames.Count],   // the legs follow the distance covered
+            "idle" or "victory" => art.PipClip(p.Form, clip).FrameAt(time),
+            _ => frames[0],
         };
-        var sprite = frames[index];
         var scale = _squash;
         if (!p.Grounded && stage.Phase == StagePhase.Playing)
         {
