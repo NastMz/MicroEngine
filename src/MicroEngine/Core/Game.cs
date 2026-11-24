@@ -103,15 +103,24 @@ public abstract class Game : IEngineModule, IStateHashed
             _uiLayer = new SceneUiLayer(this);
             InputSystem.Layers.Add(_uiLayer, InputLayerOrder.UI);
         }
-        return new UI.UiRoot(Input, InputSystem.Text)
+        var root = new UI.UiRoot(Input, InputSystem.Text)
         {
             Clipboard = TryGetCapability(out IClipboard? clipboard) ? clipboard : null,
             Font = Font,
             Localization = Localization,
-            PointerToUi = Views.CanvasToUi,
-            UiToCanvas = Views.UiToCanvas,
         };
+        // A root lives in the UI view or, when the scene says so (UiSpace.Canvas), in the canvas: its size and the
+        // pointer are then the canvas's, and the scene draws it from its own Draw instead of the engine in the UI view.
+        root.PointerToUi = p => root.Space == UI.UiSpace.Canvas ? p : Views.CanvasToUi(p);
+        root.UiToCanvas = p => root.Space == UI.UiSpace.Canvas ? p : Views.UiToCanvas(p);
+        root.UiViewToRoot = p => root.Space == UI.UiSpace.Canvas ? Views.UiToCanvas(p) : p;
+        root.ViewSize = space => space == UI.UiSpace.Canvas ? Views.CanvasSize : Views.UiSize;
+        root.InterfacePass = () => _drawingInterfaces;
+        return root;
     }
+
+    /// <summary>Whether the scenes' interfaces are being drawn (the UI view, or the canvas where the platform has no UI view).</summary>
+    private bool _drawingInterfaces;
 
     /// <summary>The UI input layer: what reaches it goes to the widgets of the scene on top, when it has any.</summary>
     private sealed class SceneUiLayer(Game game) : IInputLayer
@@ -688,14 +697,19 @@ public abstract class Game : IEngineModule, IStateHashed
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
         // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
         // captured as the canvas alone, IViewCapture).
-        if (!TryGetCapability(out IScreenView? screen))
+        _drawingInterfaces = true;
+        try
         {
-            Scenes.DrawUi(renderer);
-            return;
+            if (!TryGetCapability(out IScreenView? screen))
+            {
+                Scenes.DrawUi(renderer);
+                return;
+            }
+            var ui = _uiView.Begin(screen);
+            Scenes.DrawUi(ui);
+            if (ui.Started) Scenes.DrawTransitionUi(ui);
         }
-        var ui = _uiView.Begin(screen);
-        Scenes.DrawUi(ui);
-        if (ui.Started) Scenes.DrawTransitionUi(ui);
+        finally { _drawingInterfaces = false; }
     }
 
     /// <summary>

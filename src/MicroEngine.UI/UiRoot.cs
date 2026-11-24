@@ -112,6 +112,22 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         }
     }
 
+    /// <summary>
+    /// The view the widgets live in (<see cref="UiSpace.UiView"/> by default). With <see cref="UiSpace.Canvas"/> they
+    /// are laid out in canvas pixels, on whole pixels, take the pointer in canvas pixels, and are part of the scene's
+    /// picture: the engine does not draw them in the UI view, the scene draws them from its own <c>Draw</c>
+    /// (<c>Widgets.Draw(renderer)</c>) where they belong, under or over what else it draws. Set it before the content,
+    /// usually first thing in <c>Enter</c>.
+    /// </summary>
+    public UiSpace Space { get; set; }
+
+    /// <summary>The size of the view of a space, when the engine made the root: it then sets <see cref="Size"/> at every update.</summary>
+    internal Func<UiSpace, Vector2>? ViewSize { get; set; }
+    /// <summary>Whether the engine is drawing the scenes' interfaces in the UI view now: a root on the canvas then draws nothing.</summary>
+    internal Func<bool>? InterfacePass { get; set; }
+    /// <summary>Maps a point of the UI view into this root's units, when the engine made the root (see <see cref="Contains"/>).</summary>
+    internal Func<Vector2, Vector2>? UiViewToRoot { get; set; }
+
     /// <summary>The font widgets measure and draw text with. The engine sets the game's font; it must be set before drawing.</summary>
     public IFont? Font { get; set; }
     /// <summary>
@@ -147,6 +163,12 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
     /// <summary>The widget with the focus, or null.</summary>
     public Widget? Focused { get; private set; }
+    /// <summary>
+    /// Seconds the focused widget has had the focus, on this root's clock; zero while nothing has it. It starts again
+    /// whenever the focus moves, so a cursor drawn from it always starts its motion at the same point.
+    /// </summary>
+    public float FocusTime => Focused is null ? 0 : Time - _focusedAt;
+    private float _focusedAt;
     /// <summary>The widget under the pointer, or null.</summary>
     public Widget? Hovered { get; private set; }
     /// <summary>The widget a held pointer press started on, or null.</summary>
@@ -161,7 +183,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     public event Action<FocusChange>? FocusChanged;
 
     private UiContext Context => new(Font ?? throw new InvalidOperationException("Set UiRoot.Font before laying out or drawing the UI."),
-        Theme, UiTheme.Unit(Font), Time) { Localization = Localization };
+        Theme, UiTheme.Unit(Font), Time) { Localization = Localization, PixelSnap = Space == UiSpace.Canvas };
 
     /// <summary>The visible widgets of the content in focus and drawing order (depth first).</summary>
     public IEnumerable<Widget> AllWidgets
@@ -189,6 +211,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         if (ReferenceEquals(widget, Focused)) return true;
         var previous = Focused;
         Focused = widget;
+        _focusedAt = Time;
         previous?.OnFocusChanged(false);
         widget?.OnFocusChanged(true);
         FocusChanged?.Invoke(new FocusChange(previous, widget));
@@ -243,8 +266,16 @@ public sealed class UiRoot : IInputLayer, IStateHashed
             if (w.CanFocus) _focusable.Add(w);
     }
 
-    /// <summary>Whether <paramref name="uiPoint"/> (UI units) lies on a widget of the content that takes the pointer (<see cref="Widget.BlocksPointer"/>): there the root takes presses and the wheel.</summary>
-    public bool Contains(Vector2 uiPoint) => WidgetAt(uiPoint) is not null;
+    /// <summary>
+    /// Whether <paramref name="uiPoint"/>, a point of the UI view in UI units, lies on a widget of the content that takes
+    /// the pointer (<see cref="Widget.BlocksPointer"/>): there the root takes presses and the wheel. A scene's root on
+    /// the canvas (<see cref="UiSpace.Canvas"/>) maps the point into canvas pixels first; a root made by hand takes it
+    /// in its own units. <see cref="WidgetAt"/> always takes the root's own units.
+    /// </summary>
+    public bool Contains(Vector2 uiPoint) => WidgetAt(UiViewToRoot is { } map ? map(uiPoint) : uiPoint) is not null;
+
+    /// <summary>Whether a point in the root's own units lies on a widget that takes the pointer.</summary>
+    private bool Takes(Vector2 point) => WidgetAt(point) is not null;
 
     /// <summary>
     /// The deepest visible widget under <paramref name="uiPoint"/>, or null; the last one drawn where several overlap.
@@ -314,6 +345,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     public void Update(float dt)
     {
         Time += dt;
+        if (ViewSize is { } view) _size = view(Space);
         if (_content is null || !_content.Visible)
         {
             _events.Clear();
@@ -427,16 +459,36 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         }
     }
 
-    /// <summary>Lays the content out for <paramref name="ui"/>'s size (UI units) and draws it there.</summary>
+    /// <summary>
+    /// Lays the content out for <paramref name="ui"/>'s size and draws it there. The engine calls it for a scene's
+    /// widgets in the UI view. A scene whose widgets are on the canvas (<see cref="UiSpace.Canvas"/>) calls it from its
+    /// own <c>Draw</c> with the canvas's renderer: the widgets are then drawn in canvas pixels, not moved by the scene's
+    /// world camera, and the engine's own call in the UI view draws nothing.
+    /// </summary>
     /// <exception cref="InvalidOperationException"><see cref="Font"/> is not set.</exception>
     public void Draw(IRenderer ui)
     {
         ArgumentNullException.ThrowIfNull(ui);
         if (_content is null) return;
+        if (Space != UiSpace.Canvas)
+        {
+            _size = new Vector2(ui.Width, ui.Height);
+            Layout();
+            _content.Draw(ui, Context);
+            return;
+        }
+        if (InterfacePass?.Invoke() == true) return;
         _size = new Vector2(ui.Width, ui.Height);
         Layout();
-        _content.Draw(ui, Context);
+        // Canvas pixels whatever camera the scene draws its world with.
+        if (_canvasCamera is null || _canvasCamera.ViewWidth != ui.Width || _canvasCamera.ViewHeight != ui.Height)
+            _canvasCamera = new Camera2D(ui.Width, ui.Height);
+        ui.PushCamera(_canvasCamera);
+        try { _content.Draw(ui, Context); }
+        finally { ui.PopCamera(); }
     }
+
+    private Camera2D? _canvasCamera;
 
     /// <summary>
     /// Takes an event as the UI's input layer (see <see cref="IInputLayer"/>): a pointer press on the content, everything
@@ -451,8 +503,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         switch (e.Kind)
         {
             case InputEventKind.PointerDown:
-                if (e.PointerKind == PointerKind.Mouse && e.PointerButton != PointerButton.Primary) return Contains(PointerToUi(e.Position));
-                if (!Contains(PointerToUi(e.Position))) return false;
+                if (e.PointerKind == PointerKind.Mouse && e.PointerButton != PointerButton.Primary) return Takes(PointerToUi(e.Position));
+                if (!Takes(PointerToUi(e.Position))) return false;
                 _pressPointer = e.Pointer;
                 _events.Enqueue(e);
                 return true;
@@ -465,7 +517,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
                 _events.Enqueue(e);
                 return e.Pointer == _pressPointer;
             case InputEventKind.Wheel:
-                if (!Contains(PointerToUi(e.Position))) return false;
+                if (!Takes(PointerToUi(e.Position))) return false;
                 _events.Enqueue(e);
                 return true;
             case InputEventKind.KeyDown or InputEventKind.KeyUp:

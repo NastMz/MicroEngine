@@ -158,6 +158,21 @@ public sealed class Button : Widget
     public LocalizedText? Localized { get => _localized.Text; set => _localized.Text = value; }
     /// <summary>Raised when the button is clicked.</summary>
     public event Action? Clicked;
+
+    /// <summary>
+    /// Draws the button in the game's own look, from its state (the focus, the pointer, the press, the time it has had
+    /// the focus): a menu row that is a bar, an underline and a bobbing cursor, a tab, a card. Null (the default) is
+    /// the theme's (<see cref="UiTheme.ButtonSkin"/>), or the built-in box around the label. The button keeps its
+    /// behaviour and its size (<see cref="Padding"/>).
+    /// </summary>
+    public ControlSkin? Skin { get; set; }
+
+    /// <summary>
+    /// The room around the label in UI units, each side: X to its left and to its right, Y above and below. Null (the
+    /// default) is 6 and 4 layout units, the built-in box's. A skin without a box usually sets it: a row as tall as a
+    /// line of text is <c>new(5, 0)</c>.
+    /// </summary>
+    public Vector2? Padding { get; set; }
     /// <inheritdoc/>
     public override bool Focusable => true;
 
@@ -179,7 +194,8 @@ public sealed class Button : Widget
     protected override Vector2 MeasureContent(UiContext context)
     {
         _localized.Resolve(context, ref _text);
-        return new(context.Font.MeasureWidth(Text) + 12 * context.Unit, context.Font.LineHeight + 8 * context.Unit);
+        var padding = Padding ?? new Vector2(6 * context.Unit, 4 * context.Unit);
+        return new(context.Font.MeasureWidth(Text) + 2 * padding.X, context.Font.LineHeight + 2 * padding.Y);
     }
 
     /// <inheritdoc/>
@@ -188,6 +204,11 @@ public sealed class Button : Widget
         _localized.Resolve(context, ref _text);
         var theme = context.Theme;
         bool enabled = IsEnabledInTree;
+        if ((Skin ?? theme.ButtonSkin) is { } skin)
+        {
+            skin(renderer, context, new ControlState(Bounds, Text, enabled, IsFocused, IsHovered, IsPressed, FocusTime));
+            return;
+        }
         var style = theme.Panel;
         if (style.Image is not null)
         {
@@ -236,6 +257,13 @@ public sealed class Panel : Widget
     /// <summary>The box's colours; null (the default) is the theme's panel.</summary>
     public PanelStyle? Style { get; set; }
 
+    /// <summary>
+    /// Draws the box in the game's own look (a double border, a shadow of its own, a speech bubble's tail) instead of
+    /// <see cref="Style"/>; the content is drawn over it as always. Null (the default) is the theme's
+    /// (<see cref="UiTheme.PanelSkin"/>), or the panel style.
+    /// </summary>
+    public ControlSkin? Skin { get; set; }
+
     /// <inheritdoc/>
     public override IReadOnlyList<Widget> Children => _content is null ? [] : [_content];
 
@@ -255,7 +283,9 @@ public sealed class Panel : Widget
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
-        renderer.Panel(Bounds, Style is { } own ? context.Fade(own) : context.Theme.Panel);
+        if ((Skin ?? (Style is null ? context.Theme.PanelSkin : null)) is { } skin)
+            skin(renderer, context, new ControlState(Bounds, "", IsEnabledInTree, IsFocused, IsHovered, IsPressed, FocusTime));
+        else renderer.Panel(Bounds, Style is { } own ? context.Fade(own) : context.Theme.Panel);
         _content?.Draw(renderer, context);
     }
 }
