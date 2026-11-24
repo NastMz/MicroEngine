@@ -1,0 +1,14 @@
+// What Courtyard Key cuts from the two pack images (CREDITS.md): which image, where each piece is and where it is
+// anchored. Visuals/PackArt.cs and Visuals/MonsterArt.cs repaint these pieces in the game's colours at load.
+{
+  "sheets": [
+    // ArMM1998's overworld sheet: the round tree (anchored at the bottom-left of its 2x2 footprint) and the front of
+    // the wooden house (PackArt.cs anchors it after shortening its roof).
+    { "image": "vale/overworld.png",
+      "sprites": { "tree": { "rect": [80, 256, 32, 32], "origin": [0, 32] }, "house": [96, 0, 80, 80] } },
+    // The heart-trap: 16x16 cells, columns face down, up, left, right and rows are animation frames. The game uses
+    // the three frames that face down, anchored at the feet.
+    { "image": "monsters/spitter.png", "cell": [16, 16], "origin": [8, 14],
+      "strips": { "spitter": { "cells": [[0, 0], [0, 1], [0, 2]] } } }
+  ]
+}

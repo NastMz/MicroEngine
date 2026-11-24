@@ -6,15 +6,12 @@ namespace CourtyardKey.Visuals;
 
 /// <summary>
 /// The vale's houses and trees: hand-drawn pieces of ArMM1998's "Zelda-like tilesets and sprites" (CC0, see
-/// CREDITS.md) in <c>Content/vale</c>, cut from the sheet along their own silhouettes and repainted at load in the
+/// CREDITS.md) in <c>Content/vale</c>, cut as <c>Content/pack.sheet</c> says, along their own silhouettes, and repainted at load in the
 /// world ramps of <see cref="Pal"/> (timber, foliage, the coloured ink outline and the one cool cast shadow), so they
 /// stand in the same light as the procedural ground.
 /// </summary>
 public static class PackArt
 {
-    /// <summary>The sheet, as copied unedited from the pack.</summary>
-    public const string Sheet = "vale/overworld.png";
-
     // The pack's own colours, by role.
     private static readonly Color PackInk = Color.Hex("201729");
     private static readonly Color[] PackWood = [Color.Hex("563a3f"), Color.Hex("79584f"), Color.Hex("94785c"), Color.Hex("a89080")];
@@ -35,25 +32,24 @@ public static class PackArt
     /// <summary>The left edge of the house walls in the cropped picture; its eaves overhang the footprint by this much.</summary>
     private const int HouseLeft = 6;
 
-    public static void AddAll(SpriteAtlasBuilder b, Func<string, PixelImage> image)
+    public static void AddAll(SpriteAtlasBuilder b, SpriteSheet pack)
     {
-        foreach (var (name, img, origin) in Pieces(image)) b.Add(name, img, origin);
+        foreach (var (name, img, origin) in Pieces(pack)) b.Add(name, img, origin);
     }
 
     /// <summary>Every repainted pack piece with its pivot: the bottom-left corner of the solid footprint it stands on.</summary>
-    /// <param name="image">Reads a content image by path.</param>
-    public static IEnumerable<(string Name, PixelImage Image, Vector2 Origin)> Pieces(Func<string, PixelImage> image)
+    /// <param name="pack">The pack pieces (<c>Content/pack.sheet</c>): the frames "tree" and "house".</param>
+    public static IEnumerable<(string Name, PixelImage Image, Vector2 Origin)> Pieces(SpriteSheet pack)
     {
-        var sheet = image(Sheet);
         // A tree fills its 2x2 footprint; its cast shadow falls inside it, to the lower right.
-        var tree = sheet.Crop(80, 256, 32, 32);
+        var tree = pack.Frames.Single(f => f.Name == "tree");
         // Three tones so a row of trees does not read as one stamp: the vale's green, a deeper one, a sunlit one.
         var l = Pal.Foliage;
-        yield return ("tree0", Tree(tree, [l[1], l[2], l[3], l[3], l[4], l[5]]), new Vector2(0, 32));
-        yield return ("tree1", Tree(tree, [l[0], l[1], l[2], l[2], l[3], l[4]]), new Vector2(0, 32));
-        yield return ("tree2", Tree(tree, [l[1], l[2], l[3], l[4], l[5], Pal.Turf[5]]), new Vector2(0, 32));
+        yield return ("tree0", Tree(tree.Image, [l[1], l[2], l[3], l[3], l[4], l[5]]), tree.Origin);
+        yield return ("tree1", Tree(tree.Image, [l[0], l[1], l[2], l[2], l[3], l[4]]), tree.Origin);
+        yield return ("tree2", Tree(tree.Image, [l[1], l[2], l[3], l[4], l[5], Pal.Turf[5]]), tree.Origin);
         // Houses stand on a 4x3 footprint; the roof rises above it and the eaves overhang it a little.
-        var house = sheet.Crop(96, 0, 80, 80);
+        var house = pack.Frames.Single(f => f.Name == "house").Image;
         yield return ("house_home", House(house, HomeRoof, shop: false), new Vector2(HouseLeft, HouseWallBottom));
         yield return ("house_shop", House(house, ShopRoof, shop: true), new Vector2(HouseLeft, HouseWallBottom));
     }

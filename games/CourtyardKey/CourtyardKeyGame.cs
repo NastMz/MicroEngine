@@ -75,9 +75,9 @@ public sealed class CourtyardKeyGame : Game
 
     protected override void Load()
     {
-        // The one content file (the heart-trap's sheet) is read through Assets, so it comes from whatever content source
-        // the host composed: a folder on desktop, the packaged assets on phones, the fetched files in browsers.
-        Art = Sprites.Build(Graphics, Assets.Image);
+        // The pack pieces are read through Assets, so they come from whatever content source the host composed: a folder
+        // on desktop, the packaged assets on phones, the fetched files in browsers.
+        Art = Sprites.Build(Graphics, Assets.Sheet(Sprites.PackSheet));
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
         // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
