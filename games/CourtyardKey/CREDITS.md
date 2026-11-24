@@ -2,7 +2,8 @@
 
 Courtyard Key is a hybrid game. Its ground, dungeon, props, hero, villagers, the slime, bat and knight, the Moss
 Warden boss, items, music and sound effects are generated in code at startup. The village houses and the trees
-under `Content/vale` and the seed-spitting heart-trap under `Content/monsters` come from the packs below.
+under `Content/vale` and the seed-spitting heart-trap under `Content/monsters` come from the packs below. `Content/pack.sheet`
+is the game's own file: it says which pieces of those two images the game uses.
 
 ## Zelda-like tilesets and sprites — ArMM1998
 
