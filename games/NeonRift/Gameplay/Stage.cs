@@ -6,10 +6,14 @@ using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.World;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Gameplay;
 
 public enum StagePhase { Playing, Warning, Boss, Cleared, GameOver }
+
+/// <summary>What play needs to know of a clip of the art: how many frames it has and the rate it plays at.</summary>
+public readonly record struct Strip(int Frames, float Fps);
 
 /// <summary>
 /// One stage in play: forward-only scrolling camera, spawn triggers, collisions between the player,
@@ -106,10 +110,10 @@ public sealed class Stage : IStateHashed
     public Action<Enemy>? DefeatSink { get; set; }
     /// <summary>Optional lookup of the hero's arm rigs so bullets leave the drawn gun; tests can leave it null.</summary>
     internal Func<string, ArmRig?>? Rigs { get; set; }
-    /// <summary>Optional lookup of an animation strip's length in frames (an effect plays its strip once); 1 frame when null, as in tests.</summary>
-    public Func<string, int>? Strips { get; set; }
-    /// <summary>The length in frames of the strip <paramref name="sprite"/>, from <see cref="Strips"/>; 1 without it.</summary>
-    public int StripLength(string sprite) => Strips?.Invoke(sprite) ?? 1;
+    /// <summary>Optional lookup of a clip's length and rate (an effect plays its clip once, the run cycle places the muzzle); null in tests that need neither.</summary>
+    public Func<string, Strip>? Strips { get; set; }
+    /// <summary>The length and rate of the clip <paramref name="clip"/>, from <see cref="Strips"/>; one frame at 16 a second without it.</summary>
+    public Strip Strip(string clip) => Strips?.Invoke(clip) ?? new Strip(1, 16);
     /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
     internal List<Enemy> HitBuffer { get; } = [];
 
@@ -393,19 +397,19 @@ public sealed class Stage : IStateHashed
 
     public void Explode(Vector2 at, bool big)
     {
-        Spawn(new Effect(big ? "explosion_big" : "explosion", at, big ? 14 : 18));
+        Spawn(new Effect(big ? Names.Clips.ExplosionBig : Names.Clips.Explosion, at));
         if (big) Camera.Shake(0.15f);
     }
 
     /// <summary>A shot's impact effect (<see cref="WeaponSpec.Impact"/>) at <paramref name="at"/>.</summary>
-    public void Impact(Vector2 at, ImpactSpec impact) => Spawn(new Effect(impact.Sprite, at, impact.Fps) { Scale = impact.Scale });
+    public void Impact(Vector2 at, ImpactSpec impact) => Spawn(new Effect(impact.Clip, at) { Scale = impact.Scale });
 
     /// <summary>The burst of sparks of a shot glancing off armour.</summary>
     public void Deflect(Vector2 at) => Impact(at, Deflection);
 
-    private static readonly ImpactSpec Deflection = new("hit3", 28, 0.5f);
+    private static readonly ImpactSpec Deflection = new(Names.Clips.Hit3, 0.5f);
 
-    public void Flash(Vector2 at) => Spawn(new Effect("shot_hit", at, 40));
+    public void Flash(Vector2 at) => Spawn(new Effect(Names.Clips.MuzzleFlash, at));
 
     public float Pan(float worldX) => Math.Clamp((worldX - Camera.View.Left) / Camera.ViewWidth, 0.1f, 0.9f);
 

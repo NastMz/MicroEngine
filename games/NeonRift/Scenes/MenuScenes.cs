@@ -301,7 +301,7 @@ internal sealed class EndingScene(RiftGame game) : Scene
             Ui.Centered(r, Font, _final.Get(game.Session.Score, game.Session.Deaths), r.Width / 2f, 120, Ui.Gold);
             if ((int)(Age * 2) % 2 == 0) Ui.Centered(r, Font, Game.Prompts.Format("PRESS {confirm}").ToUpperInvariant(), r.Width / 2f, 150, Ui.Text);
         }
-        r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (age * 8 % 400), 262));
+        r.Draw(game.Art.Clip(Names.Clips.HeroRunCredits).FrameAt(Age), new Vector2(60 + (age * 8 % 400), 262));
         Ui.Scanlines(r);
     }
 }

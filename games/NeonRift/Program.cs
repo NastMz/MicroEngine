@@ -12,15 +12,14 @@ namespace NeonRift
     {
         /// <summary>
         /// Developer shortcuts come from the host's developer variables (RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT,
-        /// RIFT_WEAPON, RIFT_GOD=1 for invulnerable capture runs, RIFT_AUTO=1 to let the autopilot play, RIFT_SAVE_DIR
-        /// for a separate folder of achievements and high score): environment variables on desktop, a phone test's <c>--env</c> values,
+        /// RIFT_WEAPON, RIFT_GOD=1 for invulnerable capture runs, RIFT_AUTO=1 to let the autopilot play): environment
+        /// variables on desktop, a phone test's <c>--env</c> values,
         /// because the desktop launcher rejects unknown arguments.
         /// </summary>
         public static void Configure(HostBuilder host)
         {
-            var saveDir = host.Environment.Variable("RIFT_SAVE_DIR");
             var launch = LaunchOptions.From(host.Environment.Variable);
-            host.UseGame(() => new RiftGame(launch, saveDirectory: saveDir));
+            host.UseGame(() => new RiftGame(launch));
         }
     }
 }

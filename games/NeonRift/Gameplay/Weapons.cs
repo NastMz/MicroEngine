@@ -1,14 +1,15 @@
 using System.Numerics;
+using Names = NeonRift.Art.GameContent.Sprites;
 
 namespace NeonRift.Gameplay;
 
 public enum WeaponKind { Pulse, Spread, Lance, Rapid }
 
-/// <summary>The effect a shot leaves where it hits: a strip of the atlas played once at <paramref name="Fps"/>, scaled.</summary>
-public readonly record struct ImpactSpec(string Sprite, float Fps = 20, float Scale = 1)
+/// <summary>The effect a shot leaves where it hits: a clip of the sheet played once, scaled.</summary>
+public readonly record struct ImpactSpec(string Clip, float Scale = 1)
 {
     /// <summary>The hero pack's own small spark (the Pulse blaster's impact).</summary>
-    public static readonly ImpactSpec Spark = new("shot_hit");
+    public static readonly ImpactSpec Spark = new(Names.Clips.ShotHit);
 }
 
 /// <summary>How a weapon fires: cadence, bullet count and fan, speed, damage and whether it pierces.</summary>
@@ -32,21 +33,21 @@ public sealed record WeaponSpec(
     public static readonly IReadOnlyDictionary<WeaponKind, WeaponSpec> All = new Dictionary<WeaponKind, WeaponSpec>
     {
         // Default blaster: honest single shots.
-        [WeaponKind.Pulse] = new(WeaponKind.Pulse, 'P', "PULSE", 0.13f, 1, 0, 360, 1, false, "shot", "shot", 5),
+        [WeaponKind.Pulse] = new(WeaponKind.Pulse, 'P', "PULSE", 0.13f, 1, 0, 360, 1, false, Names.Clips.Shot, "shot", 5),
         // Spread: a five-way fan that covers diagonals; the signature crowd-clearer. Its star-shaped pellets burst into stars.
-        [WeaponKind.Spread] = new(WeaponKind.Spread, 'S', "SCATTER", 0.26f, 5, 13, 300, 1, false, "crossed", "spread", 15)
+        [WeaponKind.Spread] = new(WeaponKind.Spread, 'S', "SCATTER", 0.26f, 5, 13, 300, 1, false, Names.Clips.Crossed, "spread", 15)
         {
-            Impact = new("hit2", 28, 0.5f),
+            Impact = new(Names.Clips.Hit2, 0.5f),
         },
         // Lance: slow, piercing beams that hit everything in a line for heavy damage, with a wide ring burst.
-        [WeaponKind.Lance] = new(WeaponKind.Lance, 'L', "LANCE", 0.42f, 1, 0, 420, 3, true, "waveform", "laser", 3)
+        [WeaponKind.Lance] = new(WeaponKind.Lance, 'L', "LANCE", 0.42f, 1, 0, 420, 3, true, Names.Clips.Waveform, "laser", 3)
         {
-            Impact = new("hit4", 24, 0.75f),
+            Impact = new(Names.Clips.Hit4, 0.75f),
         },
         // Rapid: a stream of light bolts with a little jitter, each popping a small ring.
-        [WeaponKind.Rapid] = new(WeaponKind.Rapid, 'R', "RAPID", 0.075f, 1, 0, 380, 1, false, "bolt", "rapid", 9)
+        [WeaponKind.Rapid] = new(WeaponKind.Rapid, 'R', "RAPID", 0.075f, 1, 0, 380, 1, false, Names.Clips.Bolt, "rapid", 9)
         {
-            Impact = new("hit1", 28, 0.5f),
+            Impact = new(Names.Clips.Hit1, 0.5f),
         },
     };
 

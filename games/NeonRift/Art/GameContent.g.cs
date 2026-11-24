@@ -9,7 +9,7 @@ namespace NeonRift.Art;
 /// <summary>The names of the game's content: every file's path, and the sprites, strips and clips of its sheets and atlases.</summary>
 internal static class GameContent
 {
-    /// <summary>sprites.sheet: 216 sprites, 14 clips.</summary>
+    /// <summary>sprites.sheet: 216 sprites, 30 clips.</summary>
     public static class Sprites
     {
         public const string Path = "sprites.sheet";
@@ -287,18 +287,34 @@ internal static class GameContent
         {
             public const string HeroIdle = "hero_idle";
             public const string HeroRun = "hero_run";
+            public const string HeroRunShoot = "hero_run-shoot";
             public const string Drone = "drone";
             public const string TrooperIdle = "trooper_idle";
             public const string TrooperRun = "trooper_run";
             public const string EggIdle = "egg_idle";
             public const string Skiff = "skiff";
+            public const string EnemyBullet = "enemy_bullet";
+            public const string Explosion = "explosion";
+            public const string ExplosionBig = "explosion_big";
+            public const string Shot = "shot";
+            public const string ShotHit = "shot_hit";
+            public const string Bolt = "bolt";
             public const string Charged = "charged";
+            public const string Crossed = "crossed";
+            public const string Waveform = "waveform";
+            public const string Hit1 = "hit1";
+            public const string Hit2 = "hit2";
+            public const string Hit3 = "hit3";
+            public const string Hit4 = "hit4";
             public const string Gunship = "gunship";
             public const string GunshipThrust = "gunship_thrust";
             public const string Interceptor = "interceptor";
             public const string InterceptorThrust = "interceptor_thrust";
             public const string Dreadnought = "dreadnought";
             public const string DreadThrustBack = "dread_thrust_back";
+            public const string HeroSomersault = "hero_somersault";
+            public const string HeroRunCredits = "hero_run_credits";
+            public const string MuzzleFlash = "muzzle_flash";
         }
     }
 

@@ -1,6 +1,7 @@
 using MicroEngine.Core;
 using MicroEngine.Hosting;
 using MicroEngine.Platform;
+using MicroEngine.Saves;
 
 namespace NeonRift.Tests;
 
@@ -18,43 +19,35 @@ public sealed class SaveFormatTests
         }
         """;
 
-    private string _dir = "";
+    /// <summary>The saves of one test: every launch of it is a restart over them.</summary>
+    private readonly MemorySaveStorage _saves = new();
 
-    [TestInitialize]
-    public void Init() => _dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "neonrift-save-format-" + Guid.NewGuid().ToString("N"))).FullName;
-
-    [TestCleanup]
-    public void Cleanup()
-    {
-        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
-    }
-
-    private string SaveFile => Path.Combine(_dir, RiftGame.RecordSlot + ".json");
+    private string? Saved => _saves.Read(RiftGame.RecordSlot);
 
     private RiftGame Launch()
     {
-        var game = new RiftGame(saveDirectory: _dir);
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        var game = new RiftGame();
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings), saves: _saves);
         return game;
     }
 
     [TestMethod]
     public void ARecordWrittenByThePreviousReleaseLoads()
     {
-        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
+        _saves.Write(RiftGame.RecordSlot, SavedByThePreviousRelease);
         Assert.AreEqual(12340, Launch().Session.HighScore);
     }
 
     [TestMethod]
     public void SavingWritesTheEnginesVersionAndTheSameRecord()
     {
-        File.WriteAllText(SaveFile, SavedByThePreviousRelease);
+        _saves.Write(RiftGame.RecordSlot, SavedByThePreviousRelease);
         var game = Launch();
         game.Session.AddScore(20000);
         game.SaveHighScore();
 
         string expected = string.Join(Environment.NewLine, "{", """  "@version": 1,""", """  "HighScore": 20000""", "}");
-        Assert.AreEqual(expected, File.ReadAllText(SaveFile));
+        Assert.AreEqual(expected, Saved);
         Assert.AreEqual(20000, Launch().Session.HighScore);
     }
 
@@ -62,12 +55,12 @@ public sealed class SaveFormatTests
     public void ARecordFromANewerReleaseIsNotLoadedAndNotReplaced()
     {
         const string newer = """{ "@version": 2, "Best": { "Score": 99999 } }""";
-        File.WriteAllText(SaveFile, newer);
+        _saves.Write(RiftGame.RecordSlot, newer);
         var game = Launch();
         Assert.AreEqual(0, game.Session.HighScore);
         game.Session.AddScore(500);
         game.SaveHighScore();
-        Assert.AreEqual(newer, File.ReadAllText(SaveFile));
+        Assert.AreEqual(newer, Saved);
     }
 
     private sealed class MemoryStorage : IStorage

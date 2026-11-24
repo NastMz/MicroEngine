@@ -2,7 +2,9 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using NeonRift.Gameplay;
 using Names = NeonRift.Art.GameContent.Sprites;
+using Files = NeonRift.Art.GameContent.Stages;
 
 namespace NeonRift.Art;
 
@@ -21,9 +23,6 @@ internal sealed class Assets : IDisposable
 {
     /// <summary>The asset kind the game's store keeps this bundle under.</summary>
     public const string Kind = "neon rift art";
-    public const int HeroFrame = 71;
-    /// <summary>Feet pivot of the hero frames (all frames share one 71×67 canvas).</summary>
-    public static readonly Vector2 HeroOrigin = new(31, 66);
 
     private readonly SpriteAtlas _atlas;
     private readonly List<Texture> _textures = [];
@@ -33,33 +32,35 @@ internal sealed class Assets : IDisposable
     public Assets(IGraphicsDevice device, AssetCache content)
     {
         // Content/sprites.sheet says how every image is cut: cell sizes, anchors, tile rectangles and the rates strips play at.
-        var b = new SpriteAtlasBuilder().AddSheet(content.Sheet(Names.Path));
-        // The aiming poses are derived from authored frames.
-        AddRig(b, "shoot0", content.Image("hero/shoot.png"));
-        var runShoot = content.Image("hero/run-shoot.png");
-        for (int i = 0; i < 8; i++) AddRig(b, "run-shoot" + i, runShoot.Crop(i * HeroFrame, 0, HeroFrame, 67));
+        var sheet = content.Sheet(Names.Path);
+        var b = new SpriteAtlasBuilder().AddSheet(sheet);
+        // The aiming poses are derived from authored frames: the standing shot and every frame of the run, as the sheet cuts them.
+        const string run = Names.Strips.HeroRunShoot;
+        AddRig(b, "shoot0", sheet.Frames.First(static f => f.Name == Names.SpriteNames.HeroShoot0));
+        foreach (var frame in sheet.Frames)
+            if (frame.Name.StartsWith(run, StringComparison.Ordinal)) AddRig(b, "run-shoot" + frame.Name[run.Length..], frame);
         _atlas = b.Build(device);
         ResolveRigs();
 
         _backdrops["city"] =
         [
-            Layer(device, content, "stages/city/sky.png", 0f, 0),
-            Layer(device, content, "stages/city/far.png", 0.12f, 40),
-            Layer(device, content, "stages/city/near.png", 0.3f, 60),
+            Layer(device, content, Files.City.Sky, 0f, 0),
+            Layer(device, content, Files.City.Far, 0.12f, 40),
+            Layer(device, content, Files.City.Near, 0.3f, 60),
         ];
         _backdrops["grotto"] =
         [
-            Layer(device, content, "stages/grotto/back.png", 0f, 15),
-            Layer(device, content, "stages/grotto/far.png", 0.15f, 30),
-            Layer(device, content, "stages/grotto/middle.png", 0.35f, 30),
+            Layer(device, content, Files.Grotto.Back, 0f, 15),
+            Layer(device, content, Files.Grotto.Far, 0.15f, 30),
+            Layer(device, content, Files.Grotto.Middle, 0.35f, 30),
         ];
         _backdrops["lab"] =
         [
-            Layer(device, content, "stages/lab/back.png", 0.1f, 15),
-            Layer(device, content, "stages/lab/middle.png", 0.3f, 15),
-            Layer(device, content, "stages/lab/front.png", 1.25f, 15, foreground: true),
+            Layer(device, content, Files.Lab.Back, 0.1f, 15),
+            Layer(device, content, Files.Lab.Middle, 0.3f, 15),
+            Layer(device, content, Files.Lab.Front, 1.25f, 15, foreground: true),
         ];
-        Title = Upload(device, content.Image("stages/city/far.png"));
+        Title = Upload(device, content.Image(Files.City.Far));
     }
 
     /// <summary>The game's pixel font, shared so actors can label pickups.</summary>
@@ -75,6 +76,12 @@ internal sealed class Assets : IDisposable
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
     /// <summary>The strip <paramref name="name"/> playing at the rate <c>Content/sprites.sheet</c> gives it.</summary>
     public AnimationClip Clip(string name) => _atlas.Clip(name);
+    /// <summary>What play reads of the clip <paramref name="name"/>: its length in frames and its rate.</summary>
+    public Strip Strip(string name)
+    {
+        var clip = _atlas.Clip(name);
+        return new Strip(clip.Frames.Count, clip.FramesPerSecond);
+    }
     public bool Contains(string name) => _atlas.Contains(name);
     public ArmRig Rig(string pose) => _rigs[pose];
     public IReadOnlyList<BackdropLayer> Backdrop(string theme) => _backdrops[theme];
@@ -98,8 +105,9 @@ internal sealed class Assets : IDisposable
     /// Splits a gun pose into body and arm. The gun tip is the right-most opaque pixel in the upper
     /// body; walking left along its row, the shoulder is where the silhouette becomes tall (the torso).
     /// </summary>
-    private void AddRig(SpriteAtlasBuilder b, string pose, PixelImage frame)
+    private void AddRig(SpriteAtlasBuilder b, string pose, SheetFrame authored)
     {
+        var frame = authored.Image;
         int tipX = -1, tipY = 0;
         for (int y = 18; y < 40; y++)
         for (int x = frame.Width - 1; x > tipX; x--)
@@ -116,9 +124,9 @@ internal sealed class Assets : IDisposable
         var body = frame.Clone().ClearRect(shoulder, top, tipX - shoulder + 1, height);
         // The gun row sits one pixel below the arm's top edge in these frames; pivot on the arm's middle.
         var pivot = new Vector2(0, 4);
-        b.Add("rigbody_" + pose, body, HeroOrigin);
+        b.Add("rigbody_" + pose, body, authored.Origin);
         b.Add("rigarm_" + pose, arm, pivot);
-        _pendingRigs.Add((pose, new Vector2(shoulder, top + 4) - HeroOrigin, tipX - shoulder));
+        _pendingRigs.Add((pose, new Vector2(shoulder, top + 4) - authored.Origin, tipX - shoulder));
     }
 
     private readonly List<(string Pose, Vector2 Shoulder, float Length)> _pendingRigs = [];

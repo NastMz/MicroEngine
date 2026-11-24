@@ -239,14 +239,14 @@ public sealed class RulesTests
     [TestMethod]
     public void The_game_loads_every_asset_and_reaches_play_from_the_title()
     {
-        var game = new RiftGame(saveDirectory: Path.Combine(Path.GetTempPath(), "neonrift-tests", Guid.NewGuid().ToString("N")));
+        var game = new RiftGame();
         var platform = HeadlessPlatform.For(game.Settings);
         game.InitializeForTest(platform);
-        Assert.AreEqual(Sounds.Effects.Length, Sounds.Effects.Count(game.Audio.HasSound));
+        Assert.AreEqual(Sounds.Effects.Length, Sounds.Effects.Count(e => game.Audio.HasSound(e.Name)));
         Assert.IsTrue(Sounds.Tracks.All(t => game.Audio.HasMusic(t.Name)));
         // Everything comes through the game's content source and is held (and later disposed) by its asset store.
         Assert.IsTrue(game.Assets.IsLoaded("art"), "the art bundle is not held by Game.Assets");
-        Assert.IsTrue(Sounds.Effects.All(name => game.Assets.IsLoaded($"sfx/{name}.wav")));
+        Assert.IsTrue(Sounds.Effects.All(e => game.Assets.IsLoaded(e.File)));
         Assert.IsTrue(Sounds.Tracks.All(t => game.Assets.IsLoaded(t.File)));
         var atlas = game.Art.AtlasTexture;
         Console.WriteLine($"atlas {atlas.Width}x{atlas.Height}");
