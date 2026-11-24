@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 Two shapes began or stopped touching during the latest [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_); only pairs with at least
 one dynamic body report them (a kinematic body's contacts come from [MoveResult](MicroEngine.Physics.MoveResult.md)).
@@ -127,6 +127,18 @@ public EntityId OwnerB { get; init; }
 #### Property Value
 
  [EntityId](MicroEngine.Scenes.EntityId.md)
+
+### <a id="MicroEngine_Physics_ContactEvent_Point"></a> Point
+
+For a begin, where the two shapes touch (the middle of the contact when it has two points), a world point; zero for an end.
+
+```csharp
+public Vector2 Point { get; init; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 ## Methods
 

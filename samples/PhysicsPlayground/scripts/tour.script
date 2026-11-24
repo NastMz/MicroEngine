@@ -1,7 +1,25 @@
-# The chain and the lantern settle; the cart drives right into the crates and over the ramp, then hops.
+# The chain and the lantern settle; the cart drives right into the crates and over the ramp, hops, then blasts what is near.
 60 capture settled.png
 60 hold right 150
 150 capture driving.png
 215 press confirm
 230 capture hop.png
-300 quit
+250 press cancel
+262 capture blast.png
+# The character room: run, reverse (a skid), walk under the hidden block and jump: the head finds it.
+280 press up
+300 hold right 70
+370 hold left 6
+374 capture classic-skid.png
+376 hold right 52
+440 hold confirm 20
+446 capture classic-jump.png
+520 capture classic-found.png
+# The tile level: balls and crates over slopes and a one-way platform, then an explosion of Box2D.
+530 press pause
+540 press down
+580 capture tiles-falling.png
+760 capture tiles-settled.png
+762 press confirm
+775 capture tiles-explosion.png
+860 quit

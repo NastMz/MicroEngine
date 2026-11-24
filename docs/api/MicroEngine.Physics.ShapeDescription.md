@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 What [AddShape](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_AddShape_MicroEngine_Physics_BodyId_MicroEngine_Physics_ShapeDescription__) attaches to a body. Build one with [Box](MicroEngine.Physics.ShapeDescription.md#MicroEngine_Physics_ShapeDescription_Box_System_Numerics_Vector2_System_Numerics_Vector2_) (common) or a capability's factory.
 

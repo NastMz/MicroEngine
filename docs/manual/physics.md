@@ -61,7 +61,7 @@ it; nothing is approximated silently.
 
 | Capability | Meaning | Tiles | Box2D |
 | --- | --- | --- | --- |
-| `TileGeometry` | `AddTiles`: a tile grid as static geometry | yes | no |
+| `TileGeometry` | `AddTiles`: a tile grid as static geometry | yes | yes |
 | `OneWayPlatforms` | `ShapeDescription.OneWay`, `QueryFilter.PassOneWay` | yes | yes |
 | `DynamicBodies` | bodies moved by the solver: gravity, velocities, forces, impulses, contact events | no | yes |
 | `Rotation` | rotated bodies, angular velocity, torque | no | yes |
@@ -74,6 +74,10 @@ it; nothing is approximated silently.
 | `MassProperties` | `ShapeDescription.Density`, `MassOf`, `CenterOfMassOf`, `InertiaOf` | no | yes |
 | `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that pushes and carries kinematic bodies | yes | no |
 | `ShapeInspection` | `ShapesOf`, `DescriptionOf`, `BoundsOf`: what a debug view needs | yes | yes |
+| `ShapeQueries` | `RayCastAll`, `ShapeCast`, `Overlap` with a box, a circle or a capsule, `OverlapPoint`, `ClosestPoint` | yes | yes |
+| `ContactDetail` | `ContactImpacts` (speed and impulse of each hit), `ContactsOf` (the points a body touches at) | no | yes |
+| `FilterPredicates` | `QueryFilter.Where`: a predicate that leaves single shapes out of a move or a query | yes | yes |
+| `TileSlopes` | slope tiles in tile geometry: `TileFlags.SlopeRight`, `TileFlags.SlopeLeft` | no | yes |
 
 ## The common core
 
@@ -160,10 +164,15 @@ player and an AI drive it the same way. What it does with it:
 | Air jumps | `AirJumps` (1: a double jump) |
 | Wall slide and wall jump | `WallSlideSpeed`, `WallJumpSpeed`, `WallJumpLockTime` (off by default) |
 | Staying on ground that falls away (slopes, steps) | `GroundSnap` |
+| A gravity for the top of a jump: it floats while jump is held | `ApexGravityScale`, `ApexSpeed` |
+| A skid: reversing at speed brakes before it turns | `SkidDeceleration`, `SkidSpeed` |
+| Corner correction: a head that would clip the corner of a ceiling is moved past it | `CornerCorrection` |
+| A ceiling that sends the character down at once | `CeilingReboundSpeed` |
+| A run-up that jumps higher | `RunJumpBonus` |
 
 What a game reads back, without deriving it again: `IsGrounded`, `Ground`, `IsOnWall`, `WallNormal`, `IsJumping`,
-`Velocity`, `LastMove`, and `Events` for the step (`Landed`, `LeftGround`, `Jumped`, `HitCeiling`, `HitWall`,
-`DroppedThrough`). `Launch(velocity)` throws the character (a spring, a knock-back); `Teleport` places it.
+`IsSkidding`, `AirTime`, `LandingSpeed`, `Velocity`, `LastMove`, and `Events` for the step (`Landed`, `LeftGround`,
+`Jumped`, `HitCeiling`, `HitWall`, `DroppedThrough`, `Skidded`, `CornerCorrected`). `Launch(velocity)` throws the character (a spring, a knock-back); `Teleport` places it.
 
 A character standing on a body the game moved (a platform moved with `SetPosition` or `Move`) is carried by it. A
 character at rest is not moved at all. On Box2D a capsule character walks up and down slopes; give it a `GroundSnap`
@@ -178,6 +187,85 @@ hero.Step(dt, new Vector2(Input.Axis("left", "right"), Input.Axis("up", "down"))
 ```
 
 Both controllers are deterministic; `Physics.Track(controller)` adds one to the scene's state hash.
+
+### A feel of its own
+
+How a character feels is its numbers. A platform game with four gravities (rising, rising with jump released, the
+top of the jump, falling), a skid, corner correction and a run-up bonus is one `CharacterMotion`:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#motion -->
+```csharp
+// Every number of the character's feel, in pixels and seconds.
+private static readonly CharacterMotion Walk = new()
+{
+    MoveSpeed = 92, Acceleration = 520, Deceleration = 620, AirControl = 0.8f,
+    SkidDeceleration = 1500, SkidSpeed = 30,             // reversing above 30 px/s brakes hard before it turns
+    JumpSpeed = 302, RunJumpBonus = 26,                  // a run-up adds up to 26 px/s to the jump
+    Gravity = 640,                                       // while it rises with jump held
+    JumpReleaseGravityScale = 1900f / 640,               // while it rises with jump released: a tap is a hop
+    ApexGravityScale = 380f / 640, ApexSpeed = 48,       // under 48 px/s near the top: the jump floats
+    FallGravityScale = 1050f / 640, MaxFallSpeed = 270,  // falling
+    CoyoteTime = 0.1f, JumpBuffer = 0.12f,
+    CornerCorrection = 4,                                // up to 4 px sideways past a corner
+    CeilingReboundSpeed = 20,                            // a bumped head comes down at once
+};
+// Running is another record: the game swaps them, the controller keeps its state.
+private static readonly CharacterMotion Run = Walk with { MoveSpeed = 152, Acceleration = 600 };
+```
+
+`Motion` can be replaced at any time (running, water, a power-up): the controller keeps its state. Each step the
+game sends intent and reads what happened, for its own effects:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#step -->
+```csharp
+Hero.Motion = Input.Down("cancel") ? Run : Walk;
+Hero.Step(dt, new CharacterInput(Input.Axis("left", "right"), Input.Pressed("confirm"), Input.Down("confirm")));
+
+// What the step did, for the game's effects.
+var feet = Hero.Position + new Vector2(0, Size.Y / 2);
+if (Hero.IsSkidding) { SkidSteps++; _dust.Add((feet, 0.2f)); }
+if ((Hero.Events & CharacterEvents.CornerCorrected) != 0) Corrections++;
+if ((Hero.Events & CharacterEvents.Landed) != 0)
+{
+    HardestLanding = MathF.Max(HardestLanding, Hero.LandingSpeed);
+    if (Hero.AirTime > 0.3f) _dust.Add((feet, 0.35f));
+}
+if ((Hero.Events & CharacterEvents.HitCeiling) != 0)
+    foreach (var contact in Hero.LastMove.Contacts)
+        if (contact.Shape == _hidden) Revealed = true;                    // the head found the block
+```
+
+Solids that depend on how the character meets them are a rule of the character, `Solid`: it is asked about each
+shape near the character before each of its moves, and a shape it returns false for is passed through. A hidden block
+that only a head coming from below finds is an ordinary shape and one rule:
+
+<!-- code: samples/PhysicsPlayground/ClassicScene.cs#hidden -->
+```csharp
+// A hidden block is a shape like any other. What makes it hidden is the character's rule for it: it is solid
+// only for a head that comes up from below, until it has been found.
+_hidden = world.AddShape(_room, ShapeDescription.Box(new Vector2(16, 16), new Vector2(210, 118)));
+Hero = Physics.Track(CharacterController2D.Create(world, default, new Vector2(40, 161), Size, Walk));
+Hero.Solid = (hero, shape) =>
+{
+    if (shape != _hidden || Revealed) return true;
+    float head = hero.Position.Y - Size.Y / 2, under = world.BoundsOf(_hidden).Bottom;
+    return hero.Velocity.Y < 0 && head >= under - 1;
+};
+```
+
+What the parameters do not cover, the game writes over the controller instead of replacing it:
+
+- **A sideways model of its own** (momentum kept in the air, ice, conveyor belts): set `Acceleration` and
+  `Deceleration` to 0, so the controller never changes the sideways speed, and write `Velocity` before each step.
+  Walls still stop it.
+- **Another gravity for a while** (gliding, water, a low-gravity room): replace `Motion`.
+- **Solids by state** (a character that passes enemies while it flashes, blocks of a colour that is switched off):
+  change the mask of `Filter`; layers are cheaper than a rule.
+- **A world for a game that has only a tile grid**: `Physics.World.AddTiles(body, grid, columns, rows)` on the
+  scene's world is the whole setup, and moving platforms are kinematic bodies the character is carried by.
+
+A rule of `Solid` sees one shape at a time, so a conditional solid is a shape of its own, not a cell of a tile grid.
+It may read the world (`BoundsOf`, `PositionOf`) but must not query or change it.
 
 ## Bodies and forces
 
@@ -209,18 +297,17 @@ Forces are mass × world units per second squared, impulses mass × world units 
 
 <!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#drive -->
 ```csharp
-public override void Update(float dt)
-{
-    if (Input.Pressed("pause")) { Game.Quit(); return; }
-    var world = Physics.World;
+if (Input.Pressed("pause")) { Game.Quit(); return; }
+if (Input.Pressed("up")) { Game.Scenes.Push(new ClassicScene()); return; }   // the character room
+if (Input.Pressed("down")) { Game.Scenes.Push(new TileScene()); return; }    // the tile level
+var world = Physics.World;
 
-    // Throttle: the wheels' motors aim for a speed; the joints do the rest.
-    float throttle = Input.Axis("left", "right");
-    foreach (var wheel in _wheels) world.SetJointMotor(wheel, true, throttle * MotorSpeed, 9000);
+// Throttle: the wheels' motors aim for a speed; the joints do the rest.
+float throttle = Input.Axis("left", "right");
+foreach (var wheel in _wheels) world.SetJointMotor(wheel, true, throttle * MotorSpeed, 9000);
 
-    // A hop: an impulse through the centre of mass changes the velocity at once.
-    if (Input.Pressed("confirm")) world.ApplyImpulse(Chassis, world.Up * world.MassOf(Chassis) * 140);
-}
+// A hop: an impulse through the centre of mass changes the velocity at once.
+if (Input.Pressed("confirm")) world.ApplyImpulse(Chassis, world.Up * world.MassOf(Chassis) * 140);
 ```
 
 ## Joints
@@ -292,24 +379,251 @@ broke in the latest step. Destroying a body destroys its joints. Joints are part
 
 ## Queries and contacts
 
+Every backend answers these:
+
 | Query | Result |
 | --- | --- |
 | `RayCast(from, to, filter, out hit)` | the closest shape the segment enters: shape, owner, point, normal and fraction |
 | `Overlap(area, filter, results)` | the shapes that truly overlap a rectangle (sharing an edge does not count), written into your buffer |
 | `BoundsOf(shape)` | a shape's world bounds now |
 
-Queries leave sensors out unless the filter sets `IncludeSensors`.
+A backend that declares `ShapeQueries` (both of the engine's do) also answers these:
+
+| Query | Result |
+| --- | --- |
+| `RayCastAll(from, to, filter, hits)` | every shape the segment enters, nearest first, one hit per shape: a shot that goes through several targets |
+| `ShapeCast(shape, from, to, filter, out hit)` | the first shape a moving box, circle or capsule would touch: how far it gets (`Fraction`), where the two touch and the surface normal. "Is there room to stand up", "what would this dash hit" |
+| `Overlap(shape, center, filter, results)` | the shapes under a box, a circle or a capsule: an explosion's radius, a sword's reach |
+| `OverlapPoint(point, filter, results)` | the shapes that hold a point: what is under the pointer |
+| `ClosestPoint(point, maxDistance, filter, out hit)` | the nearest surface within a distance, with the point on it and how far it is |
+
+The shape of a query is a `QueryShape`: `QueryShape.Box(size)`, `QueryShape.Circle(radius)` or
+`QueryShape.Capsule(radius, height)` (a capsule stands along the world's up direction). It is not a shape of the
+world, so the tile backend takes circles and capsules in queries although its bodies have boxes only.
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#beam -->
+```csharp
+// A beam from the cart to the right wall: every shape it goes through, nearest first.
+var from = world.PositionOf(Chassis) + new Vector2(20, 0);
+_beamHits = Math.Min(world.RayCastAll(from, new Vector2(312, from.Y), default, _beam), _beam.Length);
+```
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#blast -->
+```csharp
+// A blast: every dynamic body within reach of the cart is thrown away from it, nearer ones harder.
+if (Input.Pressed("cancel"))
+{
+    var centre = world.PositionOf(Chassis);
+    Span<ShapeId> near = stackalloc ShapeId[32];
+    int count = Math.Min(world.Overlap(QueryShape.Circle(BlastRadius), centre, default, near), near.Length);
+    foreach (var shape in near[..count])
+    {
+        var body = world.BodyOf(shape);
+        if (body == Chassis || world.KindOf(body) != BodyKind.Dynamic) continue;
+        var away = world.PositionOf(body) - centre;
+        float reach = 1 - MathF.Min(1, away.Length() / BlastRadius);
+        world.ApplyImpulse(body, Vector2.Normalize(away) * (world.MassOf(body) * 220 * reach));
+    }
+    Blasts++;
+}
+```
+
+Rules they share:
+
+- Results go into a span you provide, and the count returned is the whole count: when it exceeds the span's length,
+  only the first ones were written.
+- Queries leave sensors out unless the filter sets `IncludeSensors`.
+- Layers decide which shapes a move or a query sees; `QueryFilter.Where` leaves single shapes out
+  (`new QueryFilter { Where = shape => world.BodyOf(shape) != self }` for a ray that must not hit the body that fires
+  it). It is asked once per shape near the query, before it runs; keep the delegate in a field rather than making one
+  each step.
+- Edges follow one rule on both backends:
+  - A point on a shape's edge or corner is not inside it, and touching is not overlapping: a circle exactly one
+    radius from a wall does not overlap it.
+  - A ray hits a shape where it enters it. One that starts inside a shape does not hit it. One that starts on its
+    edge hits it at fraction 0 going in, and nothing going out or along the edge. One that only runs along an edge
+    or clips a corner hits nothing.
+  - A cast shape does not hit what it overlaps where it starts. What it only touches there it hits at fraction 0
+    when it moves into it, and not when it leaves it or slides along it. That is what `Move` does from the same
+    place, so a cast answers "can I move there": a box standing on a floor, cast along it, is stopped by the wall and
+    not by the floor.
+  - A one-way platform is hit only from above, coming down.
+- On the tile backend a cast stops flush against what it hits. On Box2D it stops within a millimetre of that, and two
+  shapes that overlap by less than half a centimetre (Box2D lets resting bodies sink that far) count as touching.
+- A tile grid is one shape: a ray that crosses several of its cells reports one hit, at the first one.
+
+### Contacts
 
 A kinematic body's contacts are in its `MoveResult` (and a character's in `LastMove`). `ContactEvents` reports the
-pairs with a dynamic body that began or stopped touching in the latest step, with the contact normal; `SensorEvents`
-reports entries and exits.
+pairs with a dynamic body that began or stopped touching in the latest step; a begin has the contact normal and the
+`Point` where the two touch. `SensorEvents` reports entries and exits.
+
+A backend that declares `ContactDetail` (Box2D) says what a contact is made of:
+
+- `ContactImpacts` lists the hits of the latest step: every pair whose surfaces met faster than the world's impact
+  speed, with the point, the normal, the `Speed` they approached at and the `Impulse` the contact applied. The impulse
+  grows with the masses as well as the speed, so it is the number for damage; the speed is the number for the
+  loudness of a sound. A body that bounces or rolls reports again each time it hits.
+- `ContactsOf(body, results)` lists the points at which a body touches other shapes now, each with the other shape,
+  the normal (pointing from the other shape towards the body: up for a body that rests on a floor), the separation
+  and the impulse the solver applied there in the latest step: how hard a crate presses on a plate, whether a
+  dynamic body stands on something.
+
+<!-- code: samples/PhysicsPlayground/PlaygroundScene.cs#impacts -->
+```csharp
+// Impacts of the step that just ran: how fast the two surfaces met and the impulse that stopped them.
+foreach (ref readonly var hit in world.ContactImpacts)
+{
+    Impacts++;
+    HardestImpact = MathF.Max(HardestImpact, hit.Impulse);
+    _sparks.Add((hit.Point, 0.25f));
+}
+```
+
+Events and impacts stay readable until the next step: a scene reads them in `Update`, which runs before its physics
+world steps again. The impact speed is `Box2DWorldOptions.ImpactSpeed` (one metre per second by default); contacts
+slower than that are not impacts. On the tile backend `ContactImpacts` is empty and `ContactsOf` is refused: it has
+no dynamic bodies.
 
 ## Tile levels
 
-`AddTiles(body, grid, columns, rows)` attaches a tile grid to a static body: solid cells block, one-way cells are
-platforms. On the tile backend the grid is read at every query, so changing a tile changes collisions at once. The
-Box2D backend does not declare `TileGeometry`: build the level from boxes there, merging runs of tiles (the
-`PhysicsSubstitution` sample's `LevelBoxes` does it).
+`AddTiles(body, grid, columns, rows)` attaches a tile grid to a static body, as one shape: solid cells block, one-way
+cells are platforms. Both backends take it, each in its own way:
+
+| | Tile backend | Box2D backend |
+| --- | --- | --- |
+| When the grid is read | at every query: changing a tile changes collisions at once | once, when the tiles are added: remove the shape and add the tiles again after changing them |
+| What the level is | its cells | the outline of its solid cells: one smooth boundary for each region of open space |
+| A body that slides along a row of tiles | rests and slides exactly | meets no seam between tiles: a flat row is one straight edge |
+| Slopes (`TileSlopes`) | refused when the tiles are added | `TileFlags.SlopeRight` (rising to the right) and `TileFlags.SlopeLeft` cells: half tiles cut along their diagonal; a row of them is one straight ramp |
+| One-way cells | a platform at the top of the cell | a run of them is one platform |
+| The inside of solid tiles | solid | hollow: a dynamic body placed inside solid tiles is not pushed out. Overlaps, point queries and the nearest surface still answer that it is inside |
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#tiles -->
+```csharp
+private const int Tile = 16, Solid = 1, Ledge = 2, Up = 3, Down = 4;
+
+// '#' solid, '=' one-way platform, '/' a slope that rises to the right, '\' one that rises to the left.
+private static readonly string[] Rows =
+[
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#....====..........#",
+    "#..................#",
+    "#...........\\......#",
+    "#...........#\\.....#",
+    "#......../####\\....#",
+    "#......./######\\...#",
+    "#....../########\\..#",
+    "####################",
+];
+
+private readonly TileGrid _grid = new(
+    TileLayer.Parse(Rows, new Dictionary<char, int> { ['#'] = Solid, ['='] = Ledge, ['/'] = Up, ['\\'] = Down }),
+    Tile,
+    new Dictionary<int, TileFlags>
+    {
+        [Solid] = TileFlags.Solid, [Ledge] = TileFlags.OneWay, [Up] = TileFlags.SlopeRight, [Down] = TileFlags.SlopeLeft,
+    });
+```
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#world -->
+```csharp
+// This scene makes its own world instead of the game's: one whose Box2D ids the game may read.
+_world = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 16, YDown = true, NativeAccess = true });
+Systems.Add(new ScenePhysics(_world) { SyncTransforms = false });
+
+// The whole level is one shape of one static body: the outline of its tiles.
+var level = _world.CreateBody(default, BodyDescription.Static());
+Level = _world.AddTiles(level, _grid, _grid.Layer.Width, _grid.Layer.Height);
+```
+
+On both backends the level is one shape with one surface. The faces between two solid tiles are not surfaces, so a
+shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
+cell: moves, rays and cast shapes meet its top edge, and overlaps, point queries and the nearest surface see it a
+quarter of a tile thick (`PhysicsContract.OneWayTileThickness`).
+
+**Slopes need a capsule character.** A character that walks on slope tiles is a capsule
+(`ShapeDescription.Capsule`) with a `GroundSnap` of a few units: it walks up a ramp and over the joint onto flat ground
+without meeting a wall, on the ground all the way. A box character does not climb: `Move` takes a box along x and then
+along y, and the foot of a ramp stops the first of the two like a wall. `CharacterController2D.Create` makes a box;
+for a level with slopes make the body yourself:
+
+```csharp
+var body = world.CreateBody(entity, BodyDescription.Kinematic(start));
+world.AddShape(body, ShapeDescription.Capsule(5, 14));
+var hero = new CharacterController2D(world, body, new CharacterMotion { GroundSnap = 4 });
+```
+
+A slope tile under a ceiling, steeper or gentler slopes and slopes on the tile backend are not there: build those
+from polygon shapes on Box2D.
+
+**One call per level.** The outline has no seams inside one `AddTiles` call. Two areas added with two calls are two
+outlines: where they meet there is a seam, as between two boxes side by side, and a dynamic box that slides over it
+can stop there. Add a level with one call; for a level kept in pieces, give `AddTiles` one `ICollisionGrid` that
+answers for all of them.
+
+**Size.** On Box2D the cost of a level is its outline, not its tiles: about 0.7 KB of native memory for each straight
+edge. A 250 × 250 map of random tiles (46,000 edges, far more than a drawn level of that size has) takes a tenth of
+a second to add and 27 MB; a 1000 × 1000 one (750,000 edges) takes 1.6 seconds and 520 MB, and 0.15 seconds to
+remove. The tile backend keeps nothing for a grid: its size costs nothing.
+
+## Box2D's own API
+
+The physics contract covers what the engine's backends share and what most games need of Box2D. For the rest (an
+explosion, the surface speed of a conveyor belt, a motor joint that drives a velocity, wind) a game calls Box2D's C
+functions itself. The package's native library exports them; the world gives the ids they take, when it was made for
+it:
+
+<!-- code: samples/PhysicsPlayground/TileScene.cs#native -->
+```csharp
+// Box2D's own explosion: no member of the physics contract does this. The game declares the function it calls.
+[StructLayout(LayoutKind.Sequential)]
+private struct ExplosionDef
+{
+    public ulong MaskBits;
+    public Vector2 Position;                     // metres, y up: Box2D's units, not the game's
+    public float Radius, Falloff, ImpulsePerLength;
+}
+
+[DllImport(Box2DNative.Library)]
+private static extern void b2World_Explode(B2WorldId world, in ExplosionDef explosion);
+
+private void Explode(Vector2 at)
+{
+    var explosion = new ExplosionDef
+    {
+        MaskBits = ulong.MaxValue,
+        Position = new Vector2(at.X / 16, -at.Y / 16),
+        Radius = 3, Falloff = 2, ImpulsePerLength = 4,
+    };
+    b2World_Explode(_world.NativeIds.World, explosion);
+}
+```
+
+`Box2DWorldOptions.NativeAccess` is the switch, where the world is made; without it `NativeIds` throws. `NativeIds`
+gives `World`, `Body(body)`, `Shape(shape)` and `Joint(joint)` as `B2WorldId`, `B2BodyId`, `B2ShapeId` and
+`B2JointId`, laid out as Box2D declares them. What it costs:
+
+- **Units are Box2D's**: metres, radians, y up, whatever the world's options map the game's units to.
+- **The engine does not know what you changed.** It is not in the state hash and not in `DescriptionOf`; bodies,
+  shapes and joints created through Box2D have no engine id, so queries and events skip them.
+- **An id lives as long as its engine object.** After `DestroyBody`, `RemoveShape` or `DestroyJoint` (or after the
+  world is disposed) the Box2D id you read before is dead; passing it to Box2D is undefined. Read ids when you use
+  them rather than keeping them.
+- **Destroying an engine object through Box2D is not supported.** The engine then refuses that body or joint with an
+  `InvalidOperationException` when it is next used, and its shapes, contacts and events are in an undefined state:
+  destroy engine objects with the engine.
+- **Stepping the world through Box2D** (`b2World_Step`) moves the bodies but is not a step of the engine: `StepCount`
+  does not move, and the events of those steps (contacts, sensors, impacts, broken joints) are never reported. Step
+  with `Step`.
+- **Box2D's API changes between its releases.** `Box2DPhysicsWorld2D.Box2DVersion` says which one the package carries
+  (3.2.0); a later package may carry another.
+- **Platforms.** Windows, Linux, macOS and Android. Not the browser (the runtime there does not pass these ids), and
+  not iOS.
+- **No call while the world steps**, and none from another thread.
+- A tile shape is many Box2D shapes and has no id of its own: `Shape` refuses it.
 
 ## What differs on Box2D
 
@@ -337,10 +651,12 @@ normal for each contact that began in the latest step. See [diagnosing a game](d
 
 ## Limits
 
-- Tile backend: axis-aligned boxes only, no slopes, no dynamic bodies, no joints.
-- Box2D backend: no tile geometry (boxes instead), no solids that push kinematic bodies (the character controller
-  carries a character standing on a moved body on either backend).
-- One closest-hit ray and one rectangle overlap; no shape casts or point queries.
+- Tile backend: axis-aligned boxes only, no slopes, no dynamic bodies, no joints, no contact detail.
+- Box2D backend: no solids that push kinematic bodies (the character controller carries a character standing on a
+  moved body on either backend); tile geometry is read when it is added and is hollow inside; slope tiles are the two
+  diagonals of a tile, and only a capsule character walks on them; a level costs memory by the edges of its outline
+  ([Tile levels](#tile-levels)).
+- A query shape is a box, a circle or a standing capsule: no rotated or polygon query shapes.
 - 2D only.
 
 ## Common mistakes

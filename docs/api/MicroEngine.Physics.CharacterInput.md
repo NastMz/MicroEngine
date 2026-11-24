@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 What a character wants to do in one step: the game fills it from input, an AI from its plan. The controller never
 reads input devices.

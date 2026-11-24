@@ -148,6 +148,9 @@ internal static class TileSweep
                 bool oneWay = !solid && g.OneWayAllowed && !ignoreOneWay && !horizontal && (flags & TileFlags.OneWay) != 0
                     && box.Bottom <= tile.Top + OneWaySlack && moved.Bottom > tile.Top;
                 if (!solid && !oneWay) continue;
+                // The exact rule treats the grid as one shape: the face between two solid cells is not a surface, so a
+                // box that starts sunk into tiles is not stopped by the next one.
+                if (solid && !requireGap && (g.Grid.FlagsAt(horizontal ? x - Math.Sign(d) : x, horizontal ? y : y - Math.Sign(d)) & TileFlags.Solid) != 0) continue;
                 Consider(tile, g.Source, moved, d, horizontal, eps, ref found, ref gap, ref best, ref block, ref source);
             }
         }

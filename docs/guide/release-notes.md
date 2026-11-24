@@ -220,11 +220,37 @@ modelled as components and systems.
     fixed rotation, sleep), `IsAwake`, `SetAwake`, `MassOf`, `CenterOfMassOf`, `InertiaOf`, `BoundsOf`.
   - Joints (`PhysicsCapabilities.Joints`, on Box2D): revolute, distance and rope, prismatic, weld, wheel and target
     joints, with limits, motors, springs, anchors, reaction forces and a break force.
+  - Queries on both backends (`PhysicsCapabilities.ShapeQueries`): `RayCastAll` (every hit of a ray, nearest first),
+    `ShapeCast` (the first thing a moving box, circle or capsule would touch), `Overlap` with a box, a circle or a
+    capsule, `OverlapPoint` and `ClosestPoint`. The shape of a query is a `QueryShape`, so the tile backend answers
+    circle and capsule queries although its bodies are boxes
+    ([Queries and contacts](../manual/physics.md#queries-and-contacts)).
+  - Character rules for a feel of the game's own, on `CharacterMotion`: a gravity for the top of a jump
+    (`ApexGravityScale`, `ApexSpeed`), a skid when reversing at speed (`SkidDeceleration`, `SkidSpeed`), corner
+    correction (`CornerCorrection`), a ceiling rebound (`CeilingReboundSpeed`) and a run-up bonus (`RunJumpBonus`).
+    The controller reports `IsSkidding`, `AirTime`, `LandingSpeed` and the events `Skidded` and `CornerCorrected`,
+    and `CharacterController2D.Solid` decides shape by shape what is solid for a character (a hidden block that only
+    a head from below finds) ([A feel of its own](../manual/physics.md#a-feel-of-its-own)).
+  - `QueryFilter.Where` leaves single shapes out of a move or a query on both backends
+    (`PhysicsCapabilities.FilterPredicates`): a ray that skips the body that fires it.
+  - Contact detail on Box2D (`PhysicsCapabilities.ContactDetail`): `ContactImpacts` lists the hits of a step with
+    their point, speed and impulse (for impact sounds and damage), `ContactsOf(body, results)` the points a body
+    touches at and how hard it presses there, and a `ContactEvent` that begins has its `Point`.
+    `Box2DWorldOptions.ImpactSpeed` sets how fast a contact must be to count as an impact.
   - `AddTiles` and `TilesOf` are members of `IPhysicsWorld2D`, so debug drawing shows tile geometry on any backend.
+  - Tile levels on Box2D: `AddTiles` builds the outline of the solid tiles as one shape of one body (Box2D chains),
+    so a body that slides along a row of tiles meets no seam; one-way tiles are platforms, and
+    `TileFlags.SlopeRight` and `TileFlags.SlopeLeft` are slopes (`PhysicsCapabilities.TileSlopes`). The tile backend
+    refuses a level with slope tiles ([Tile levels](../manual/physics.md#tile-levels)).
+  - Box2D's own API for what the contract does not cover: a world made with `Box2DWorldOptions.NativeAccess` gives
+    the Box2D ids of its world, bodies, shapes and joints (`NativeIds`), and the package's native library exports
+    Box2D's functions ([Box2D's own API](../manual/physics.md#box2ds-own-api)).
   - A capability error names the backend that declares what is missing.
   - Box2D worlds can be created and disposed from different threads at the same time (two worlds created at once
     could end the process).
-  - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels.
+  - The `PhysicsPlayground` sample: a chain, a rope and a cart on sprung, motor-driven wheels, with sparks at
+    impacts, a beam that lists what is ahead and a blast, a room with a character that has the feel of a classic
+    platform game, and a tile level with slopes and an explosion made with Box2D's own function.
 - Scene systems: a `SceneSystem` added to `Scene.Systems` is started, stepped before and after the scene's `Update`,
   added to the scene's state hash and stopped when the scene leaves, with no call from the scene
   ([Scene systems](../manual/scenes.md#scene-systems)). `Scenes.AddSystem` gives one to every scene, and

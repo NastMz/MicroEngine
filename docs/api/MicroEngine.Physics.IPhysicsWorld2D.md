@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 A 2D physics world: bodies owned by entities, shapes with collision layers, kinematic collide-and-slide moves, ray
 and overlap queries, sensors, and a step. The members below are the common contract every backend passes (one
@@ -30,7 +30,15 @@ while the others go on. It may stop short of a surface by a gap of at most [Skin
 backend declares (0 on the tile backend). The body's contacts and its ground are in the [MoveResult](MicroEngine.Physics.MoveResult.md); a
 shape the box already overlaps when the move starts does not block it, so a body is never trapped.</li><li><b>Queries.</b> [RayCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_RayCast_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__) returns the closest hit; [Overlap](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__) is exact (shapes that
 truly overlap the area, not their bounding boxes; sharing an edge is not overlapping). Both leave sensors out unless
-the filter includes them.</li><li><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
+the filter includes them.</li><li><b>Edges.</b> One rule for every backend. A point on a shape's edge or corner is not inside it. A ray hits a
+shape where it enters it: one that starts inside a shape does not hit it; one that starts on its edge hits it at
+fraction 0 going in, and not going out or along the edge; one that only runs along an edge or clips a corner does
+not hit. A cast shape does not hit what it overlaps where it starts; what it only touches there it hits at fraction
+0 going in, and not going out or sliding along it, which is what [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__) does from the same place. On a
+backend with a [Skin](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Skin), two shapes that overlap by less than the skin touch.</li><li><b>Tile geometry is one shape with one surface.</b> The faces between two solid tiles are not surfaces: a
+shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
+cell, [OneWayTileThickness](MicroEngine.Physics.PhysicsContract.md#MicroEngine_Physics_PhysicsContract_OneWayTileThickness) of a tile thick for overlaps, points and the nearest
+surface.</li><li><b>Sensors.</b> A sensor reports the non-sensor shapes of kinematic and dynamic bodies that begin or stop
 overlapping it, when the layers of both accept each other and the visitor has
 [SensorEvents](MicroEngine.Physics.ShapeDescription.md#MicroEngine_Physics_ShapeDescription_SensorEvents) (the default). Sensors do not see other sensors or static shapes.</li><li><b>Events are buffered per step.</b> [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_) computes [SensorEvents](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_SensorEvents) and
 [ContactEvents](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactEvents) from the poses at its end (moves made before it count in it); they stay readable until
@@ -106,6 +114,20 @@ ReadOnlySpan<ContactEvent> ContactEvents { get; }
 #### Property Value
 
  [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ContactEvent](MicroEngine.Physics.ContactEvent.md)\>
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ContactImpacts"></a> ContactImpacts
+
+The impacts of the latest step: every pair with a dynamic body whose surfaces met faster than the backend's
+impact speed, with the point, the speed and the impulse ([ContactDetail](MicroEngine.Physics.PhysicsCapabilities.md)). Empty
+on a backend that does not declare it.
+
+```csharp
+ReadOnlySpan<ContactImpact> ContactImpacts { get; }
+```
+
+#### Property Value
+
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ContactImpact](MicroEngine.Physics.ContactImpact.md)\>
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_Joints"></a> Joints
 
@@ -577,6 +599,70 @@ Vector2 CenterOfMassOf(BodyId body)
 
 The backend does not declare [MassProperties](MicroEngine.Physics.PhysicsCapabilities.md).
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ClosestPoint_System_Numerics_Vector2_System_Single_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_ClosestPointHit__"></a> ClosestPoint\(Vector2, float, in QueryFilter, out ClosestPointHit\)
+
+The surface nearest <code class="paramref">point</code> among the shapes within <code class="paramref">maxDistance</code> of it
+(shapes at the same distance: the first created); a shape that holds the point is at distance 0.
+
+```csharp
+bool ClosestPoint(Vector2 point, float maxDistance, in QueryFilter filter, out ClosestPointHit hit)
+```
+
+#### Parameters
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`maxDistance` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hit` [ClosestPointHit](MicroEngine.Physics.ClosestPointHit.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The point is not finite, or the distance is negative or not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ContactsOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ContactPoint__"></a> ContactsOf\(BodyId, Span<ContactPoint\>\)
+
+Writes into <code class="paramref">results</code> the points at which <code class="paramref">body</code> touches other shapes now
+(up to two per pair of shapes), as the latest step left them, and returns how many there are (which may exceed
+the span's length). Contacts exist between a dynamic body and anything else: how hard a crate presses on a
+plate, whether a dynamic body stands on something.
+
+```csharp
+int ContactsOf(BodyId body, Span<ContactPoint> results)
+```
+
+#### Parameters
+
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ContactPoint](MicroEngine.Physics.ContactPoint.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ContactDetail](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The id is stale.
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_CreateBody_MicroEngine_Scenes_EntityId_MicroEngine_Physics_BodyDescription__"></a> CreateBody\(EntityId, in BodyDescription\)
 
 Creates a body owned by <code class="paramref">owner</code>.
@@ -946,6 +1032,72 @@ int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results)
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__"></a> Overlap\(in QueryShape, Vector2, in QueryFilter, Span<ShapeId\>\)
+
+Writes into <code class="paramref">results</code> the shapes that truly overlap <code class="paramref">shape</code> centred at
+<code class="paramref">center</code> (touching is not overlapping), in an order that depends only on the world's history,
+and returns how many overlap, like [Overlap](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__): an explosion's
+radius, a sword's reach.
+
+```csharp
+int Overlap(in QueryShape shape, Vector2 center, in QueryFilter filter, Span<ShapeId> results)
+```
+
+#### Parameters
+
+`shape` [QueryShape](MicroEngine.Physics.QueryShape.md)
+
+`center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The shape is invalid or the centre is not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_OverlapPoint_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__"></a> OverlapPoint\(Vector2, in QueryFilter, Span<ShapeId\>\)
+
+Writes into <code class="paramref">results</code> the shapes that hold <code class="paramref">point</code> (inside them, not on their
+edge) and returns how many do: what is under the pointer.
+
+```csharp
+int OverlapPoint(Vector2 point, in QueryFilter filter, Span<ShapeId> results)
+```
+
+#### Parameters
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The point is not finite.
+
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_OwnerOf_MicroEngine_Physics_BodyId_"></a> OwnerOf\(BodyId\)
 
 The entity that owns <code class="paramref">body</code>.
@@ -992,7 +1144,9 @@ The id is stale.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_RayCast_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__"></a> RayCast\(Vector2, Vector2, in QueryFilter, out RayHit\)
 
-The closest shape the segment from <code class="paramref">from</code> to <code class="paramref">to</code> enters; a shape holding <code class="paramref">from</code> is not hit.
+The closest shape the segment from <code class="paramref">from</code> to <code class="paramref">to</code> enters. A shape holding
+<code class="paramref">from</code> is not hit; one whose edge <code class="paramref">from</code> is on is hit at fraction 0 when the
+segment goes into it, and not when it leaves it or runs along the edge.
 
 ```csharp
 bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
@@ -1013,6 +1167,42 @@ bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 #### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+A point is not finite.
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_RayCastAll_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_RayHit__"></a> RayCastAll\(Vector2, Vector2, in QueryFilter, Span<RayHit\>\)
+
+Writes into <code class="paramref">hits</code> every shape the segment from <code class="paramref">from</code> to <code class="paramref">to</code>
+enters, nearest first (shapes at the same distance in creation order), one hit per shape, and returns how many
+it enters (which may exceed the span's length: only the nearest ones are written). The rules of
+[RayCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_RayCast_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__) apply to each: a shape holding <code class="paramref">from</code> is not hit. For a shot that goes
+through several targets, or a line of sight that must skip some of them.
+
+```csharp
+int RayCastAll(Vector2 from, Vector2 to, in QueryFilter filter, Span<RayHit> hits)
+```
+
+#### Parameters
+
+`from` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`to` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hits` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[RayHit](MicroEngine.Physics.RayHit.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md).
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
@@ -1355,6 +1545,46 @@ void SetVelocity(BodyId body, Vector2 velocity)
  [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
 
 The backend does not declare [DynamicBodies](MicroEngine.Physics.PhysicsCapabilities.md).
+
+### <a id="MicroEngine_Physics_IPhysicsWorld2D_ShapeCast_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__"></a> ShapeCast\(in QueryShape, Vector2, Vector2, in QueryFilter, out RayHit\)
+
+Moves <code class="paramref">shape</code> with its centre going from <code class="paramref">from</code> to <code class="paramref">to</code> and
+returns the first shape it would touch: [Fraction](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Fraction) is how far along the way its centre is
+then, [Point](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Point) where the two touch and [Normal](MicroEngine.Physics.RayHit.md#MicroEngine_Physics_RayHit_Normal) the surface normal there. A
+shape it overlaps where it starts is not hit, and one it touches there is hit at fraction 0 when it moves into
+it and not when it leaves it or slides along it: like [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__), which this predicts ("is there room
+to stand up", "what would this dash hit", "can I move there"). One-way platforms are hit only from above, coming
+down. The shape stops within [Skin](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Skin) of the exact place.
+
+```csharp
+bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
+```
+
+#### Parameters
+
+`shape` [QueryShape](MicroEngine.Physics.QueryShape.md)
+
+`from` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`to` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hit` [RayHit](MicroEngine.Physics.RayHit.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+The backend does not declare [ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md).
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The shape is invalid ([Validate](MicroEngine.Physics.QueryShape.md#MicroEngine_Physics_QueryShape_Validate)) or a point is not finite.
 
 ### <a id="MicroEngine_Physics_IPhysicsWorld2D_ShapesOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ShapeId__"></a> ShapesOf\(BodyId, Span<ShapeId\>\)
 

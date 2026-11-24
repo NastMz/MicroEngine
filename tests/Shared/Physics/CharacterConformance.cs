@@ -11,7 +11,7 @@ namespace MicroEngine.Testing.Physics;
 /// rules. Speeds and distances are suite units (a 12 × 14 character, 16-unit tiles), converted with
 /// <see cref="PhysicsConformanceHelpers.Scale"/>.
 /// </summary>
-public abstract class CharacterControllerConformance : PhysicsConformanceHelpers
+public abstract partial class CharacterControllerConformance : PhysicsConformanceHelpers
 {
     protected const float Dt = 1 / 60f;
     protected static readonly EntityId HeroOwner = new(1, 1), LevelOwner = new(2, 1), PlatformOwner = new(3, 1);

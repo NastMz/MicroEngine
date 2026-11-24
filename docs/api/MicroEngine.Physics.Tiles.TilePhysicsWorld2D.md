@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics.Tiles](MicroEngine.Physics.Tiles.md)  
 Assembly: MicroEngine.Physics.Tiles.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 The tile backend of [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md): static and kinematic bodies with axis-aligned box shapes, tile grids
 as static geometry ([AddTiles](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md#MicroEngine_Physics_Tiles_TilePhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_UInt64_System_UInt64_)), and an exact swept mover. It declares
@@ -73,7 +73,7 @@ public const float ContactDistance = 0.01
 The capabilities this backend declares.
 
 ```csharp
-public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | MovingSolids | ShapeInspection
+public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | MovingSolids | ShapeInspection | ShapeQueries | FilterPredicates
 ```
 
 #### Field Value
@@ -309,6 +309,10 @@ The body is stale or not static.
 
 <code class="paramref">columns</code> or <code class="paramref">rows</code> is not positive.
 
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
+
+A tile of the area is a slope.
+
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_BodyOf_MicroEngine_Physics_ShapeId_"></a> BodyOf\(ShapeId\)
 
 The body <code class="paramref">shape</code> is attached to.
@@ -352,6 +356,26 @@ public RectF BoundsOf(ShapeId shape)
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 The id is stale.
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_ClosestPoint_System_Numerics_Vector2_System_Single_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_ClosestPointHit__"></a> ClosestPoint\(Vector2, float, in QueryFilter, out ClosestPointHit\)
+
+```csharp
+public bool ClosestPoint(Vector2 point, float maxDistance, in QueryFilter filter, out ClosestPointHit hit)
+```
+
+#### Parameters
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`maxDistance` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hit` [ClosestPointHit](MicroEngine.Physics.ClosestPointHit.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_CreateBody_MicroEngine_Scenes_EntityId_MicroEngine_Physics_BodyDescription__"></a> CreateBody\(EntityId, in BodyDescription\)
 
@@ -509,6 +533,48 @@ public int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results)
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_Overlap_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__"></a> Overlap\(in QueryShape, Vector2, in QueryFilter, Span<ShapeId\>\)
+
+```csharp
+public int Overlap(in QueryShape shape, Vector2 center, in QueryFilter filter, Span<ShapeId> results)
+```
+
+#### Parameters
+
+`shape` [QueryShape](MicroEngine.Physics.QueryShape.md)
+
+`center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_OverlapPoint_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__"></a> OverlapPoint\(Vector2, in QueryFilter, Span<ShapeId\>\)
+
+```csharp
+public int OverlapPoint(Vector2 point, in QueryFilter filter, Span<ShapeId> results)
+```
+
+#### Parameters
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Remarks
+
+A tile grid holds the point when the cell it is in blocks.
+
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_OwnerOf_MicroEngine_Physics_BodyId_"></a> OwnerOf\(BodyId\)
 
 The entity that owns <code class="paramref">body</code>.
@@ -572,6 +638,30 @@ public bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_RayCastAll_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_RayHit__"></a> RayCastAll\(Vector2, Vector2, in QueryFilter, Span<RayHit\>\)
+
+```csharp
+public int RayCastAll(Vector2 from, Vector2 to, in QueryFilter filter, Span<RayHit> hits)
+```
+
+#### Parameters
+
+`from` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`to` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hits` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[RayHit](MicroEngine.Physics.RayHit.md)\>
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Remarks
+
+A tile grid is one shape: it is hit once, at the first of its cells the ray enters.
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_RemoveShape_MicroEngine_Physics_ShapeId_"></a> RemoveShape\(ShapeId\)
 
@@ -644,6 +734,32 @@ public void SetVelocity(BodyId body, Vector2 velocity)
  [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
 
 Always.
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_ShapeCast_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__"></a> ShapeCast\(in QueryShape, Vector2, Vector2, in QueryFilter, out RayHit\)
+
+```csharp
+public bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
+```
+
+#### Parameters
+
+`shape` [QueryShape](MicroEngine.Physics.QueryShape.md)
+
+`from` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`to` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
+
+`hit` [RayHit](MicroEngine.Physics.RayHit.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Remarks
+
+Exact: the shape stops flush against what it hits. A tile grid is hit at the first of its cells the shape touches.
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_ShapesOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ShapeId__"></a> ShapesOf\(BodyId, Span<ShapeId\>\)
 

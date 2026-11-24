@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 How a [TopDownController2D](MicroEngine.Physics.TopDownController2D.md) moves, in the physics world's units and seconds.
 

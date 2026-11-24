@@ -220,7 +220,7 @@ public readonly record struct ShapeDescription
 }
 
 /// <summary>
-/// Which shapes a query (<see cref="IPhysicsWorld2D.RayCast"/>, <see cref="IPhysicsWorld2D.Overlap"/>) or a
+/// Which shapes a query (<see cref="IPhysicsWorld2D.RayCast"/>, <see cref="IPhysicsWorld2D.Overlap(in RectF, in QueryFilter, Span{ShapeId})"/>) or a
 /// <see cref="IPhysicsWorld2D.Move"/> considers. A shape matches when its category is in the filter's
 /// <see cref="Mask"/> and the filter's <see cref="Category"/> is in the shape's mask. <c>default</c> is
 /// <see cref="Default"/>: category <see cref="CollisionLayers.Default"/>, every layer, sensors left out.
@@ -266,6 +266,21 @@ public readonly record struct QueryFilter
 
     /// <summary>Whether one-way platforms are passed through (dropping down through a platform); false by default.</summary>
     public bool PassOneWay { get; init; }
+
+    /// <summary>
+    /// Leaves single shapes out, whatever their layers: a move or a query considers a shape only when this returns
+    /// true for it (null, the default, considers every shape the layers accept). For what layers cannot say: a ray
+    /// that must skip the body that fires it, a block that is solid only for a character that comes from below. It
+    /// needs <see cref="PhysicsCapabilities.FilterPredicates"/>, which both of the engine's backends declare. It is
+    /// called before the move or the query runs, once per shape near it; it may read the world
+    /// (<see cref="IPhysicsWorld2D.BodyOf"/>, <see cref="IPhysicsWorld2D.PositionOf"/>,
+    /// <see cref="IPhysicsWorld2D.BoundsOf"/>) but must not query or change it. Keep the delegate in a field: one made
+    /// in every step allocates in every step.
+    /// </summary>
+    public Func<ShapeId, bool>? Where { get; init; }
+
+    /// <summary>Whether <see cref="Where"/> leaves <paramref name="shape"/> in (true without a predicate).</summary>
+    public bool Considers(ShapeId shape) => Where is null || Where(shape);
 
     /// <summary>Whether a shape in <paramref name="category"/> colliding with <paramref name="mask"/> matches the filter's layers.</summary>
     public bool Accepts(ulong category, ulong mask) => (category & Mask) != 0 && (mask & Category) != 0;

@@ -33,7 +33,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 {
     /// <summary>The capabilities this backend declares.</summary>
     public const PhysicsCapabilities Declared = PhysicsCapabilities.TileGeometry | PhysicsCapabilities.OneWayPlatforms | PhysicsCapabilities.MovingSolids
-        | PhysicsCapabilities.ShapeInspection;
+        | PhysicsCapabilities.ShapeInspection | PhysicsCapabilities.ShapeQueries | PhysicsCapabilities.FilterPredicates;
 
     /// <summary>The distance within which a surface counts as touching a box at the end of a move (the ground probe).</summary>
     public const float ContactDistance = 0.01f;
@@ -233,11 +233,22 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     }
 
     /// <inheritdoc/>
-    /// <remarks>The grid is read at every query, inside and outside <paramref name="columns"/> × <paramref name="rows"/>.</remarks>
+    /// <remarks>
+    /// The grid is read at every query, inside and outside <paramref name="columns"/> × <paramref name="rows"/>. Slope
+    /// tiles are not geometry on this backend: the area and one tile around it are looked at once, here, and a slope
+    /// tile in them is refused (<see cref="PhysicsCapabilities.TileSlopes"/>); one that appears later is empty space.
+    /// </remarks>
+    /// <exception cref="PhysicsCapabilityException">A tile of the area is a slope.</exception>
     public ShapeId AddTiles(BodyId body, ICollisionGrid grid, int columns, int rows, ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+        ArgumentNullException.ThrowIfNull(grid);
+        // Slope tiles are not geometry here: a level that holds one is refused, not played without its slopes.
+        for (int y = -1; y <= rows; y++)
+        for (int x = -1; x <= columns; x++)
+            if ((grid.FlagsAt(x, y) & (TileFlags.SlopeRight | TileFlags.SlopeLeft)) != 0)
+                throw new PhysicsCapabilityException($"AddTiles (a slope tile at {x}, {y})", Name, PhysicsCapabilities.TileSlopes);
         var id = AddTiles(body, grid, category, mask);
         _shapeSlots[(int)id.Index].Columns = columns;
         _shapeSlots[(int)id.Index].Rows = rows;
@@ -470,7 +481,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || s.Body == bodySlot || s.Body == exclude || s.Description.IsSensor) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             var owner = _bodySlots[s.Body];
             if (s.Grid is not null) _grids.Add(new GridObstacle(s.Grid, owner.Position, i));
             else _boxes.Add(new BoxObstacle(BoxOf(owner.Position, s.Description), s.Description.OneWay, i));
@@ -539,7 +550,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         }
         if (shape < 0) return false;
         var d = _shapeSlots[shape].Description;
-        if (!filter.Accepts(d.Category, d.Mask)) return false;
+        if (!filter.Accepts(d.Category, d.Mask) || !filter.Considers(IdOf(shape))) return false;
         box = BoxOf(o.Position, d);
         return true;
     }
@@ -559,7 +570,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             var owner = _bodySlots[s.Body];
             bool any = s.Grid is not null
                 ? TileRay.Cast(s.Grid, owner.Position, from, dir, filter.PassOneWay, out float t, out var normal)
@@ -579,7 +590,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
-            if (!filter.Accepts(s.Description.Category, s.Description.Mask)) continue;
+            if (!filter.Accepts(s.Description.Category, s.Description.Mask) || !filter.Considers(IdOf(i))) continue;
             if (s.Description.OneWay && filter.PassOneWay) continue;
             var position = _bodySlots[s.Body].Position;
             bool overlaps = s.Grid is not null ? GridOverlaps(s.Grid, position, area, filter.PassOneWay) : BoxOf(position, s.Description).Intersects(area);
@@ -599,9 +610,185 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         var mask = passOneWay ? TileFlags.Solid : TileFlags.Solid | TileFlags.OneWay;
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
-            if ((grid.FlagsAt(x, y) & mask) != 0 && new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts).Intersects(area))
+        {
+            var flags = grid.FlagsAt(x, y);
+            if ((flags & mask) != 0 && TileCast.Blocking(flags, new RectF(x * ts + origin.X, y * ts + origin.Y, ts, ts)).Intersects(area))
                 return true;
+        }
         return false;
+    }
+
+    // ------------------------------------------------------------------ shape queries
+
+    private readonly List<RayHit> _hits = [];
+
+    private static void Finite(Vector2 value, string name, string what)
+    {
+        if (!float.IsFinite(value.X) || !float.IsFinite(value.Y)) throw new ArgumentOutOfRangeException(name, value, what);
+    }
+
+    /// <summary>Whether a query with <paramref name="filter"/> looks at shape slot <paramref name="i"/>.</summary>
+    private bool Queried(int i, in QueryFilter filter, out Shape s)
+    {
+        s = _shapeSlots[i];
+        if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) return false;
+        return filter.Accepts(s.Description.Category, s.Description.Mask) && filter.Considers(IdOf(i));
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>A tile grid is one shape: it is hit once, at the first of its cells the ray enters.</remarks>
+    public int RayCastAll(Vector2 from, Vector2 to, in QueryFilter filter, Span<RayHit> hits)
+    {
+        Finite(from, nameof(from), "The ray must be finite.");
+        Finite(to, nameof(to), "The ray must be finite.");
+        _hits.Clear();
+        var dir = to - from;
+        var span = new RectF(MathF.Min(from.X, to.X), MathF.Min(from.Y, to.Y), MathF.Abs(dir.X), MathF.Abs(dir.Y));
+        foreach (int i in Candidates(Grow(span, BroadPhaseMargin)))
+        {
+            if (!Queried(i, filter, out var s)) continue;
+            var owner = _bodySlots[s.Body];
+            bool any = s.Grid is not null
+                ? TileRay.Cast(s.Grid, owner.Position, from, dir, filter.PassOneWay, out float t, out var normal)
+                : TileRay.Box(BoxOf(owner.Position, s.Description), from, dir, s.Description.OneWay && !filter.PassOneWay, s.Description.OneWay && filter.PassOneWay, out t, out normal);
+            if (!any) continue;
+            // Nearest first; shapes at the same distance stay in slot order.
+            int at = _hits.Count;
+            while (at > 0 && _hits[at - 1].Fraction > t) at--;
+            _hits.Insert(at, new RayHit(IdOf(i), owner.Owner, from + dir * t, normal, t));
+        }
+        for (int i = 0; i < _hits.Count && i < hits.Length; i++) hits[i] = _hits[i];
+        return _hits.Count;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>Exact: the shape stops flush against what it hits. A tile grid is hit at the first of its cells the shape touches.</remarks>
+    public bool ShapeCast(in QueryShape shape, Vector2 from, Vector2 to, in QueryFilter filter, out RayHit hit)
+    {
+        shape.Validate();
+        Finite(from, nameof(from), "The cast must be finite.");
+        Finite(to, nameof(to), "The cast must be finite.");
+        var (half, radius) = shape.Rounded;
+        var dir = to - from;
+        var reach = half + new Vector2(radius);
+        var span = new RectF(MathF.Min(from.X, to.X) - reach.X, MathF.Min(from.Y, to.Y) - reach.Y, MathF.Abs(dir.X) + 2 * reach.X, MathF.Abs(dir.Y) + 2 * reach.Y);
+        hit = default;
+        bool found = false;
+        foreach (int i in Candidates(Grow(span, BroadPhaseMargin)))
+        {
+            if (!Queried(i, filter, out var s)) continue;
+            var owner = _bodySlots[s.Body];
+            float t;
+            Vector2 normal;
+            RectF surface;
+            if (s.Grid is not null)
+            {
+                if (!TileCast.Grid(s.Grid, owner.Position, half, radius, from, dir, filter.PassOneWay, out t, out normal, out surface)) continue;
+            }
+            else
+            {
+                surface = BoxOf(owner.Position, s.Description);
+                if (s.Description.OneWay && filter.PassOneWay) continue;
+                if (!TileCast.Rounded(surface, half, radius, from, dir, out t, out normal)) continue;
+                if (s.Description.OneWay && !TileCast.OneWayStops(surface, half, radius, from, normal)) continue;
+            }
+            if (found && t >= hit.Fraction) continue;
+            found = true;
+            hit = new RayHit(IdOf(i), owner.Owner, TileCast.Nearest(surface, from + dir * t), normal, t);
+        }
+        return found;
+    }
+
+    /// <inheritdoc/>
+    public int Overlap(in QueryShape shape, Vector2 center, in QueryFilter filter, Span<ShapeId> results)
+    {
+        shape.Validate();
+        Finite(center, nameof(center), "The centre must be finite.");
+        var (half, radius) = shape.Rounded;
+        var reach = half + new Vector2(radius);
+        int count = 0;
+        foreach (int i in Candidates(Grow(new RectF(center.X - reach.X, center.Y - reach.Y, 2 * reach.X, 2 * reach.Y), BroadPhaseMargin)))
+        {
+            if (!Queried(i, filter, out var s)) continue;
+            if (s.Description.OneWay && filter.PassOneWay) continue;
+            var position = _bodySlots[s.Body].Position;
+            bool overlaps = s.Grid is not null
+                ? TileCast.GridOverlaps(s.Grid, position, half, radius, center, filter.PassOneWay)
+                : TileCast.Overlaps(BoxOf(position, s.Description), half, radius, center);
+            if (!overlaps) continue;
+            if (count < results.Length) results[count] = IdOf(i);
+            count++;
+        }
+        return count;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>A tile grid holds the point when the cell it is in blocks.</remarks>
+    public int OverlapPoint(Vector2 point, in QueryFilter filter, Span<ShapeId> results)
+    {
+        Finite(point, nameof(point), "The point must be finite.");
+        int count = 0;
+        foreach (int i in Candidates(Grow(new RectF(point.X, point.Y, 0, 0), BroadPhaseMargin)))
+        {
+            if (!Queried(i, filter, out var s)) continue;
+            if (s.Description.OneWay && filter.PassOneWay) continue;
+            var position = _bodySlots[s.Body].Position;
+            bool holds;
+            if (s.Grid is not null)
+            {
+                // Inside a solid cell (the faces between solid cells are inside too), or inside a one-way cell's platform.
+                int ts = s.Grid.TileSize;
+                float tx = (point.X - position.X) / ts, ty = (point.Y - position.Y) / ts;
+                int cx = (int)MathF.Floor(tx), cy = (int)MathF.Floor(ty);
+                var flags = s.Grid.FlagsAt(cx, cy);
+                if ((flags & TileFlags.Solid) != 0)
+                    holds = (tx > cx || (s.Grid.FlagsAt(cx - 1, cy) & TileFlags.Solid) != 0) && (ty > cy || (s.Grid.FlagsAt(cx, cy - 1) & TileFlags.Solid) != 0);
+                else
+                    holds = !filter.PassOneWay && (flags & TileFlags.OneWay) != 0 && tx > cx && ty > cy && ty - cy < PhysicsContract.OneWayTileThickness;
+            }
+            else
+            {
+                var box = BoxOf(position, s.Description);
+                holds = point.X > box.Left && point.X < box.Right && point.Y > box.Top && point.Y < box.Bottom;
+            }
+            if (!holds) continue;
+            if (count < results.Length) results[count] = IdOf(i);
+            count++;
+        }
+        return count;
+    }
+
+    /// <inheritdoc/>
+    public bool ClosestPoint(Vector2 point, float maxDistance, in QueryFilter filter, out ClosestPointHit hit)
+    {
+        Finite(point, nameof(point), "The point must be finite.");
+        if (!(maxDistance >= 0) || float.IsInfinity(maxDistance)) throw new ArgumentOutOfRangeException(nameof(maxDistance), maxDistance, "The distance must be finite and zero or more.");
+        hit = default;
+        bool found = false;
+        float best = maxDistance * maxDistance;
+        foreach (int i in Candidates(Grow(new RectF(point.X - maxDistance, point.Y - maxDistance, 2 * maxDistance, 2 * maxDistance), BroadPhaseMargin)))
+        {
+            if (!Queried(i, filter, out var s)) continue;
+            if (s.Description.OneWay && filter.PassOneWay) continue;
+            var owner = _bodySlots[s.Body];
+            Vector2 nearest;
+            float d;
+            if (s.Grid is not null)
+            {
+                if (!TileCast.GridNearest(s.Grid, owner.Position, point, maxDistance, filter.PassOneWay, out nearest, out d)) continue;
+            }
+            else
+            {
+                var box = BoxOf(owner.Position, s.Description);
+                d = TileCast.DistanceSquared(box, point);
+                nearest = TileCast.Nearest(box, point);
+            }
+            if (d > best || (found && d >= best)) continue;
+            found = true;
+            best = d;
+            hit = new ClosestPointHit(IdOf(i), owner.Owner, nearest, MathF.Sqrt(d));
+        }
+        return found;
     }
 
     // ------------------------------------------------------------------ step

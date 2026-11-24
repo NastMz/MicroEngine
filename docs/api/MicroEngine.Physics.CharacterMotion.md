@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 How a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) moves, in the physics world's units and seconds. The defaults suit a
 pixel-art game with 16-pixel tiles; a world in metres sets its own numbers.
@@ -67,6 +67,58 @@ public int AirJumps { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Physics_CharacterMotion_ApexGravityScale"></a> ApexGravityScale
+
+Gravity is multiplied by this near the top of a jump, while the vertical speed is under
+[ApexSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_ApexSpeed): on the way up unless the jump was released, and on the way down while jump is held.
+Under 1 it makes the top of a jump float; 1 (the default) has no such phase.
+
+```csharp
+public float ApexGravityScale { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_ApexSpeed"></a> ApexSpeed
+
+The vertical speed under which [ApexGravityScale](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_ApexGravityScale) applies, in units per second; 0 (the default) turns the phase off.
+
+```csharp
+public float ApexSpeed { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_CeilingReboundSpeed"></a> CeilingReboundSpeed
+
+The downward speed a character leaves a ceiling with, in units per second; 0 (the default) leaves it to gravity.
+
+```csharp
+public float CeilingReboundSpeed { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_CornerCorrection"></a> CornerCorrection
+
+How far a rising character is moved sideways to get past the corner of a ceiling that only its edge would
+clip, in units; 0 (the default) turns it off. It is moved the least of four equal parts of this that frees the
+way, and only where there is room for it.
+
+```csharp
+public float CornerCorrection { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Physics_CharacterMotion_CoyoteTime"></a> CoyoteTime
 
@@ -197,6 +249,45 @@ The sideways speed at full intent, in units per second.
 
 ```csharp
 public float MoveSpeed { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_RunJumpBonus"></a> RunJumpBonus
+
+Extra jump speed at full [MoveSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MoveSpeed), in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher.
+
+```csharp
+public float RunJumpBonus { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_SkidDeceleration"></a> SkidDeceleration
+
+How fast a character on the ground brakes when the intent is against its motion and it moves faster than
+[SkidSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_SkidSpeed), in units per second squared: it skids to that speed before it turns
+([IsSkidding](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_IsSkidding)). 0 (the default) turns skidding off: a reversal is ordinary
+acceleration.
+
+```csharp
+public float SkidDeceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_SkidSpeed"></a> SkidSpeed
+
+The sideways speed above which reversing is a skid, in units per second.
+
+```csharp
+public float SkidSpeed { get; init; }
 ```
 
 #### Property Value

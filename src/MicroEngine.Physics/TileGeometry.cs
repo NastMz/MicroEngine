@@ -8,7 +8,10 @@ public enum TileFlags
     None = 0,
     /// <summary>Blocks movement from every side.</summary>
     Solid = 1,
-    /// <summary>Blocks only bodies moving down onto its top edge (jump-through platform).</summary>
+    /// <summary>
+    /// Blocks only bodies moving down onto its top edge (jump-through platform). For overlaps, point queries and the
+    /// nearest surface it is a platform at the top of the tile, <c>PhysicsContract.OneWayTileThickness</c> of a tile thick.
+    /// </summary>
     OneWay = 2,
     /// <summary>Hurts on contact; does not block.</summary>
     Hazard = 4,
@@ -22,6 +25,19 @@ public enum TileFlags
     Custom3 = 64,
     /// <summary>Free for the game's own meaning.</summary>
     Custom4 = 128,
+    /// <summary>
+    /// A slope that rises to the right: the half of the tile under the line from its lower left corner to its upper
+    /// right one is solid. Geometry only on a backend that declares
+    /// <see cref="MicroEngine.Physics.PhysicsCapabilities.TileSlopes"/>. A character walks on slopes as a capsule; a
+    /// box is stopped at the foot of one.
+    /// </summary>
+    SlopeRight = 256,
+    /// <summary>
+    /// A slope that rises to the left: the half of the tile under the line from its upper left corner to its lower
+    /// right one is solid. Geometry only on a backend that declares
+    /// <see cref="MicroEngine.Physics.PhysicsCapabilities.TileSlopes"/>.
+    /// </summary>
+    SlopeLeft = 512,
 }
 
 /// <summary>

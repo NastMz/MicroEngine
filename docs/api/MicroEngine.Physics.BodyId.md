@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 A body of an [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md): a slot index and the generation of the body that held the slot when the
 id was made. A destroyed body's slot is reused with a new generation, so an old id never reaches the new body.

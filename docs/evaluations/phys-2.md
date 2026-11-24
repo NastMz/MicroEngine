@@ -19,8 +19,8 @@ backend can do. No benchmark campaign was run: nothing here adds work to an exis
 | A physics world is made with `new`, registered by hand, not hashed or disposed with its scene | `PhysicsModule.cs` | `Scene.Physics` (a scene system) |
 | `DebugDraw.Physics` casts to `TilePhysicsWorld2D` | `DebugDraw.cs` | reads `TilesOf` from the contract |
 | Character movement rewritten in five places over `TileMotion` | two demos, two samples | `CharacterController2D`, `TopDownController2D`; both samples moved to it |
-| Queries: closest-hit ray and rectangle overlap only; no contact detail | `IPhysicsWorld2D` | **not done** (section 6) |
-| Box2D lacks `TileGeometry` and `MovingSolids`; no way to reach the native world | `Box2DPhysicsWorld2D` | **not done** (section 7); `AddTiles` is a contract member the tile backend implements |
+| Queries: closest-hit ray and rectangle overlap only; no contact detail | `IPhysicsWorld2D` | shape queries on both backends, contact detail on Box2D (section 6) |
+| Box2D lacks `TileGeometry` and `MovingSolids`; no way to reach the native world | `Box2DPhysicsWorld2D` | tile levels as chains with slopes, and the native ids with Box2D's API exported (section 7); `MovingSolids` not done |
 
 ## 2. Character controller
 
@@ -101,24 +101,133 @@ hash adds a body's dynamics only once they were set, so worlds that never set th
 - **Validation.** 11 tests in metres and pixels; the native self-test gained a pendulum, a rope and a joint that ends
   with its body, so every platform's build runs them.
 
-## 6. Queries and contacts (not done)
+## 6. Queries and contacts
 
-Still missing: shape casts (box, circle, capsule), a point query, a circle overlap, an all-hits ray into a caller's
-buffer, and contact points and impulses. Design notes for when it is done: Box2D already casts shapes inside the
-layer's mover (`b2World_CastShape`), so `me_cast_shape` is a thin export; the tile backend can cast a box with its
-sweep and should refuse circles and capsules; contact detail needs `b2Contact_GetData` at the begin event (points)
-and hit events for impulses (`b2ContactHitEvent` gives an approach speed, not an impulse).
+- **Need (A).** Hit scans that go through several targets, an explosion's radius, "is there room to stand up", what a
+  dash would hit, picking with the pointer, the nearest wall, impact sounds, fall and crush damage. Before (B): a
+  closest ray and a rectangle; a game wrote the rest over `ShapesOf` and `DescriptionOf`, shape by shape, and could
+  not get an impact's strength at all.
+- **Alternatives (C).** Box2D 3.2 has all of it (`b2World_CastRay` with a callback, `b2World_CastShape`,
+  `b2World_OverlapShape`, `b2Shape_GetClosestPoint`, hit events, `b2Body_GetContactData`): the Box2D side is a thin
+  export. For the tile backend the choice was between refusing round query shapes (it has no circle shapes) and
+  answering them exactly. A query shape is a rounded box, and moving one against a rectangle is a ray against the
+  rectangle grown and rounded: one exact routine of about sixty lines covers boxes, circles and standing capsules.
+- **Target experience (D).** `world.Overlap(QueryShape.Circle(70), centre, default, near)` for a blast and
+  `foreach (ref readonly var hit in world.ContactImpacts)` for sparks, written first in `samples/PhysicsPlayground`.
+- **Limit (E).** The engine answers the geometric question; what a hit means (damage, sound) is the game's. Query
+  shapes are a box, a circle and a standing capsule: rotated and polygon query shapes are not offered.
+- **Decision (H): Extend.** One capability, `ShapeQueries`, declared by both backends, for `RayCastAll`, `ShapeCast`,
+  `Overlap(QueryShape)`, `OverlapPoint` and `ClosestPoint`; `QueryShape` is its own type, so the tile backend takes a
+  circle in a query without declaring circle shapes. `ContactDetail`, declared by Box2D, for `ContactImpacts` (Box2D's
+  hit events, with the manifold's total normal impulse added, because the event has a speed and damage needs the
+  masses) and `ContactsOf` (the manifold points of a body). `ContactEvent` gained `Point`.
+- **Trade-offs (G).** A cast on Box2D stops a slop short of a surface for a polygon and a slop into it for a round
+  shape, so the contract promises the place within `Skin`, as for `Move`. A surface less than a millimetre away where
+  a cast starts counts as overlapped on Box2D. The tile backend has no dynamic bodies and so no contact detail: it
+  refuses with the typed error.
+- **Predicates.** `QueryFilter.Where` (`FilterPredicates`, both backends) leaves single shapes out: a ray that skips
+  the body that fires it, and the mechanism behind a character's conditional solids (section 2b). A managed callback
+  cannot be called from inside the native layer (the browser's interpreter mishandles function pointers), so the
+  Box2D backend asks the predicate about the shapes near the query before it runs and hands the layer the handles to
+  leave out.
+- **Validation (I).** `ShapeQueryConformance` (9 tests) on tiles and on Box2D in metres and in pixels,
+  `ContactDetailConformance` (3 tests) and `FilterPredicateConformance` (2 tests), the tile grid's queries in
+  `TileGeometryConformance`, the native self-test, the playground's captures.
 
-## 7. Tile levels on Box2D and the native world (not done)
+## 2b. Character rules for a game's own feel
 
-- `AddTiles` on Box2D: the contract member exists with its rule (row 0 is the top row whichever way y grows; a backend
-  that builds shapes reads the area and one tile around it). The implementation needs one managed shape that stands
-  for many native shapes. Boxes merged by rows, then stacked, keep every walkable surface in one piece; wall faces can
-  be split, where a dynamic body may catch. Chains remove that but need outline tracing and chain support in the
-  layer's mover, which reads polygons.
-- An opt-in handle to the native world was not added.
-- Slopes on the tile backend: not done; they need a new capability and a different sweep. `MovingSolids` on Box2D: not
-  done; the controller's carrying covers characters on both backends, which is the case games hit first.
+- **Need.** Section 2 left Meadow Run on its own movement code because the controller's rules were fixed. Read again
+  from the developer's side: a platform game with a feel of its own needs a gravity per phase of the jump, a skid, a
+  nudge past ceiling corners, a ceiling response, and solids that depend on how they are met (its hidden blocks).
+- **Alternatives.** Godot's `CharacterBody2D` leaves all of it to the game's script over `move_and_slide`; Unity ships
+  nothing. A controller with virtual methods to override (gravity, sideways model) was weighed against parameters:
+  every one of the rules above is a few numbers that games tune, the order of the step is where the bugs are, and a
+  subclass would have to know that order. So the rules are parameters, and the escape is to write `Velocity` and
+  replace `Motion`, which needs no subclass.
+- **Decision: Extend.** `ApexGravityScale`, `ApexSpeed`, `SkidDeceleration`, `SkidSpeed`, `CornerCorrection`,
+  `CeilingReboundSpeed`, `RunJumpBonus` on `CharacterMotion`; `IsSkidding`, `AirTime`, `LandingSpeed`, the events
+  `Skidded` and `CornerCorrected`; `Solid`, a rule per character over `QueryFilter.Where`. Corner correction is written
+  over `Move` and `SetPosition` only, so it is the same on both backends.
+- **What stays the game's.** Meadow Run's air momentum that is never slowed toward a lower cap and its separate air
+  drag: a sideways model of its own, written over `Velocity` (the manual says how). A stage without a physics world:
+  `Physics.World.AddTiles` is that world. Hidden blocks that are cells of the level's grid: a conditional solid is a
+  shape of its own, because a predicate sees shapes, not cells.
+- **Meadow Run is still not migrated here**: `games/` belongs to the demo modernization. The proof that the rules are
+  enough is `The_rules_of_a_classic_platformer_fit_together` and the six rule tests, on tiles and on Box2D, and
+  `ClassicScene` in `samples/PhysicsPlayground`, which uses Meadow Run's numbers.
+
+## 7. Tile levels on Box2D and the native world
+
+- **Need.** A level drawn with tiles in a world of dynamic bodies: crates, balls and vehicles over tile floors.
+  Before: `AddTiles` was refused on Box2D and a game merged boxes by hand; a body sliding over two boxes that meet
+  catches on the seam (measured here: over one box per tile a frictionless box sent at 64 px/s dips to 63.93 at seams
+  and ends 0.2 px short after six seconds; over the outline it never leaves 64).
+- **Alternatives.** (1) One box per tile: seams everywhere, a shape per tile. (2) Boxes merged by rows and stacked:
+  every walkable surface in one piece, wall faces still split. (3) Box2D's chain shapes: its own answer to ghost
+  collisions, smooth and one-sided, at the price of a hollow inside. Chains were chosen: the mover, the casts and the
+  rays of the layer already go through `b2World_CastShape` and `b2World_CastRay`, which take chain segments, so the
+  work was the outline, not the layer.
+- **Decision: Extend.** `Box2DPhysicsWorld2D.AddTiles` traces the outline of the solid cells in managed code
+  (`TileOutline`): one loop per region of open space, collinear edges merged, wound so the segments face the open
+  space; where two solid cells touch only at a corner the loops follow the open space, so the corner is the inner
+  corner it is for a body there. Runs of one-way cells are boxes (the top quarter of a tile, so a body coming up
+  through one is not pushed onto it from half way). `TileFlags.SlopeRight` and `SlopeLeft` are new flags, part of the
+  outline under a new capability `TileSlopes`; the tile backend refuses a level that holds one when it is added with
+  an area, instead of playing it without its slopes. One managed shape stands for the tile geometry; the native layer
+  maps every segment to one handle, and the backend counts contacts per pair so that a body touching a floor and a
+  wall of the tiles begins and ends one contact.
+- **Hollow.** Overlaps, point queries and the nearest surface are answered for the inside from the copy of the flags
+  the backend keeps. A dynamic body put inside solid tiles is not pushed out: stated in the manual.
+- **Not done.** Slopes on the tile backend (a different sweep; its character is a box, which climbs a slope as a
+  staircase anyway), ceiling slopes and half-height slopes (no flags for them; polygons on Box2D cover them),
+  `MovingSolids` on Box2D.
+- **The native world.** What a developer needs is to call a Box2D function with the id of an engine object. That
+  takes two things: the ids, and Box2D's functions in a library the game can bind to. The package's shared library
+  linked Box2D statically and exported only the layer, so the second was the real gap: it now links Box2D whole and
+  exports its API (`box2d_EXPORTS`, `$<LINK_LIBRARY:WHOLE_ARCHIVE,box2d>`, CMake 3.24); the self-test calls
+  `b2GetVersion` itself, so a platform whose library does not export it fails to link. `Box2DWorldOptions.NativeAccess`
+  is the opt-in and `NativeIds` gives `B2WorldId`, `B2BodyId`, `B2ShapeId`, `B2JointId`. Alternatives rejected: a
+  generic call gateway in the layer (as much API as Box2D itself), and growing the contract for every Box2D feature
+  (the contract is what backends share). Cost in portability, stated in the manual: not in the browser (ids are
+  structs passed by value, which the interpreter does not do), not on iOS (untested), outside the state hash, tied to
+  Box2D's version. The library grew from 436 KB to 710 KB on win-x64.
+
+## 7b. What an independent verification found, and the rules it led to
+
+Eleven minor defects, most of them places where the two backends answered differently at an edge. Each was given one
+rule, written in the contract's comments and the manual, and a test both backends run:
+
+- **Rays at an edge.** Box2D does not report a polygon for a ray that starts exactly on its edge, and reported a chain
+  segment for a ray that starts on it and leaves. The layer now casts from a millimetre before the start and keeps
+  only hits the ray enters (the direction goes against the normal, and the ray is inside the shape just past the
+  hit), so both backends hit at fraction 0 going in and nothing going out or along.
+- **Points.** `b2Shape_TestPoint` holds a point on an edge; the layer tests the inside itself.
+- **A cast from a touching start.** Box2D's cast stops a slop away and calls anything nearer an initial overlap. The
+  layer casts a box made smaller by a slop (a round shape with its radius made larger), so the shape stops where it
+  touches, and tells touching from overlapping by the distance of the cores: a flush box is stopped at once going in,
+  as `Move` is, and slides free along the surface.
+- **Tiles are one shape.** The tile backend stopped a shape sunk into tiles at the next cell's face; the faces between
+  two solid cells are no longer surfaces for casts or for the world's mover (the legacy `TileMotion` rule is
+  untouched).
+- **One-way tiles** are a platform a quarter of a tile thick for overlaps, points and the nearest surface on both
+  backends (`PhysicsContract.OneWayTileThickness`); the tile backend used the whole cell.
+- **A count that depended on the room given**: the layer reports a tile shape's two handles as one.
+- **A capsule at the top of a ramp** reported a wall for two steps: Box2D's mover gives a plane for the end of the
+  next chain segment when the capsule has sunk a little into this one. The layer drops planes of a chain segment that
+  do not face the way the segment does or lie between its normal and its neighbour's at an outer corner.
+- **A box character does not climb slope tiles** (it was said to, as a staircase): the manual now says slopes need a
+  capsule and shows how to make one. Making the box mover climb means a step-up rule in the controller, a feature of
+  its own; not done.
+- **Removal was quadratic**: Box2D unlinks a chain by walking its body's list from the newest; chains are now
+  destroyed newest first. 1000 × 1000 random tiles (746,000 outline edges in 51,000 loops): removal 5.7 s before,
+  0.15 s after; adding 1.5 to 1.7 s and about 520 MB, unchanged, of which 3 MB is managed (the copy of the flags) and
+  the rest is Box2D's (about 0.7 KB per segment). 250 × 250: 46,500 edges, 0.1 s, 27 MB, removal 8 ms. The memory is
+  the price of chain segments on a map where almost every tile edge is a boundary; it is stated in the manual, not
+  reduced.
+- **Native access**: an engine body or joint destroyed through Box2D is now refused with a typed error by worlds made
+  for native access (`me_native_valid`) instead of ending the process; the manual says ids die with their objects and
+  that stepping through Box2D skips events and `StepCount`.
+- **Bounds of tiles** on a turned body follow the body.
 
 ## 8. Performance
 
@@ -126,7 +235,13 @@ No existing path does more work: the tile backend gained members that only refus
 break check's loop body, and a character at rest costs one zero-length move instead of a gravity move. The physics
 benchmarks were not rerun.
 
+The later slices add one null check of the filter's predicate per shape a move or a query looks at on the tile
+backend, hit events on Box2D's dynamic shapes (the self-test's determinism hash is unchanged) and three values in a
+character's hash. Still not rerun.
+
 ## 9. Verification
 
-See the task record for commands and results. Not run: natives of other platforms (CI builds them from the changed
-layer), Box2D in the browser, phones.
+See the task records ([consolidation-1](../../odd/tasks/consolidation-1.md) for slices 1 to 4,
+[phys-2](../../odd/tasks/phys-2.md) for the rest) for commands and results. Not run: natives of other platforms (CI
+builds them from the changed layer; the export of Box2D's API is checked there by the self-test's link), Box2D in the
+browser, phones.

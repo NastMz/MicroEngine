@@ -30,7 +30,29 @@ helper. A rope, a vehicle or a ragdoll could not be built with the published API
   checks after each step. Box2D declares it; the target joint is Box2D's motor joint with a bounded spring.
 - **Tile geometry** (`AddTiles`, `TilesOf`) and `BoundsOf` are contract members; `ICollisionGrid` and `TileFlags` live
   in the contract's assembly, same namespace.
-- **The native layer** is version 3 (2: dynamics, 3: joints). The managed assembly refuses another version.
+- **The native layer** is version 7 (2: dynamics, 3: joints, 4: queries and contact detail, 5: shapes left out of a
+  query, 6: tile geometry and the native ids, 7: the rules of edges and `me_native_valid`). The managed assembly refuses another version.
+
+Amended 2026-11-22 (the remaining slices, still contract version 2, which no release has carried):
+
+- **Shape queries** under `ShapeQueries`, on both backends: `RayCastAll`, `ShapeCast`, `Overlap(QueryShape)`,
+  `OverlapPoint`, `ClosestPoint`. A `QueryShape` (box, circle, standing capsule) is not a `ShapeDescription`: the tile
+  backend answers round queries exactly without having round shapes. A cast returns a `RayHit`, within `Skin`.
+- **Contact detail** under `ContactDetail`, on Box2D: `ContactImpacts` (point, normal, approach speed, impulse) and
+  `ContactsOf` (the points a body touches at); `ContactEvent.Point`.
+- **Filter predicates** under `FilterPredicates`, on both backends: `QueryFilter.Where`. No managed callback is called
+  from inside a backend's native code: the Box2D backend asks before the query and passes a list.
+- **Character rules** are parameters of `CharacterMotion` (apex gravity, skid, corner correction, ceiling rebound,
+  run-up bonus) and `CharacterController2D.Solid`; a game with rules beyond them writes `Velocity` and replaces
+  `Motion` rather than subclassing.
+- **Tile levels on Box2D** are the outline of the solid tiles as chain shapes, one managed shape for the level;
+  `TileFlags.SlopeRight` and `SlopeLeft` under `TileSlopes`. The tile backend refuses slope tiles.
+- **Edges have one rule on every backend**, written in the contract: a point on an edge is not inside; a ray hits
+  where it enters (at fraction 0 from an edge going in, nothing going out or along it); a cast shape hits at once
+  what it touches and moves into, as `Move` is blocked there; tile geometry is one shape whose faces between solid
+  tiles are not surfaces; a one-way tile is a platform a quarter of a tile thick for overlaps.
+- **Box2D's own API** is the way out: `Box2DWorldOptions.NativeAccess`, `Box2DPhysicsWorld2D.NativeIds`, and a shared
+  library that exports Box2D whole. Not in the browser or on iOS; outside the state hash.
 
 ## Alternatives
 
@@ -53,9 +75,11 @@ helper. A rope, a vehicle or a ragdoll could not be built with the published API
   joints once it had one and a body's dynamics once they were set, so earlier worlds hash as before.
 - The natives of every runtime are rebuilt: the layer's sources are in the cache key of `box2d-natives.yml`, so CI
   rebuilds them without a workflow change. `samples/PhysicsPlayground` uses the package.
-- Not done, recorded in PHYS-2: shape casts, point and circle queries, all-hits rays, contact points and impulses;
-  `AddTiles` on Box2D; an opt-in handle to the native world; slopes on the tile backend; `MovingSolids` on Box2D.
-  Meadow Run keeps its own movement code.
+- Not done, recorded in PHYS-2: slopes on the tile backend, ceiling and half-height slope tiles, `MovingSolids` on
+  Box2D, rotated and polygon query shapes. Meadow Run keeps its own movement code until the demos are modernized; the
+  controller has the rules it needs.
+- The Box2D library exports Box2D's API (it grew from 436 KB to 710 KB on win-x64) and its build needs CMake
+  3.24. A character's state hash has three more values.
 
 ## Verification
 

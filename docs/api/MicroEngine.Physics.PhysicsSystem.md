@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Physics](MicroEngine.Physics.md)  
 Assembly: MicroEngine.Physics.dll  
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 Steps physics worlds, each optionally bound to the scene world whose entities own its bodies. A bound physics world
 steps only in the engine steps its scene world stepped in, by that world's scaled step ([Delta](MicroEngine.Scenes.WorldClock.md#MicroEngine_Scenes_WorldClock_Delta)),

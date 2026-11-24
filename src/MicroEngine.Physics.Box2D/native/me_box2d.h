@@ -10,6 +10,9 @@
 // issues in creation order and never reuses within a world; a destroyed handle stays invalid. Results that name shapes
 // give handles, or -1 for a shape that no longer exists. A world is single-threaded (no Box2D task system), so the
 // same calls give the same bits on every target built with floating-point contraction off.
+//
+// The shared library (desktop, Android) also exports Box2D's own API (box2d/box2d.h), for the callers of
+// me_native_id; the static archives (browser, iOS) carry it as any archive does.
 #ifndef ME_BOX2D_H
 #define ME_BOX2D_H
 
@@ -28,7 +31,7 @@ extern "C" {
 #endif
 
 // Raised whenever a signature or a rule of this layer changes; the managed side refuses another value.
-#define ME_API_VERSION 3
+#define ME_API_VERSION 7
 
 typedef struct MeWorld MeWorld;
 
@@ -85,6 +88,17 @@ ME_API void me_world_destroy( MeWorld* world );
 // Advances the world by timeStep seconds (0 is allowed: events are recomputed, nothing moves). The events of the
 // step replace the previous ones.
 ME_API void me_world_step( MeWorld* world, float timeStep );
+// The shapes every query and move leaves out until this is called again (count 0 clears the list): how a predicate
+// of the caller reaches the callbacks of this layer without a function pointer. The handles are copied.
+ME_API void me_world_set_ignored( MeWorld* world, const int* shapes, int count );
+// The Box2D id behind the world (kind 0; handle unused), a body (1), a shape (2) or a joint (3), copied as Box2D
+// declares it (b2WorldId is 4 bytes; b2BodyId, b2ShapeId and b2JointId are 8) into out8; returns 0, and zeros, when
+// the handle is not alive or stands for tile geometry. For callers that reach Box2D's own API, which the shared
+// library exports next to this layer; this layer does not know what they change.
+ME_API int me_native_id( MeWorld* world, int kind, int handle, void* out8 );
+// Whether a body (kind 1), a shape (2) or a joint (3) of this layer still exists in Box2D: 0 once something destroyed
+// it through Box2D's own API, after which every other call with that handle is undefined.
+ME_API int me_native_valid( MeWorld* world, int kind, int handle );
 // bodies, shapes, contacts, awake bodies.
 ME_API void me_world_counters( MeWorld* world, int* out4 );
 
@@ -120,6 +134,17 @@ ME_API void me_body_mass_data( MeWorld* world, int body, float* out4 );
 ME_API int me_shape_create( MeWorld* world, int body, int kind, const float* geometry, int pointCount, float radius,
 	uint64_t category, uint64_t mask, int flags, float density, float friction, float restitution );
 ME_API void me_shape_destroy( MeWorld* world, int shape );
+// Tile geometry on a static body: the outline of the solid tiles as closed chains (Box2D's chain shapes: smooth,
+// one-sided, no ghost collisions where tiles meet) and the one-way tiles as boxes. points holds the loops one after
+// another, x and y of each point, body-local; loopCounts the number of points of each (at least 3). A loop keeps the
+// solid on its left (counter-clockwise round solid ground, clockwise round a hole), so the segments face the open
+// space. oneWayBoxes holds min x, min y, max x, max y of each one-way box. Returns the handle that stands for the solid
+// geometry (queries and contacts name it for any of its segments) and writes to *outOneWay the handle of the one-way
+// boxes, or -1 when there are none; -1 when the body is not alive. me_shape_destroy takes either handle;
+// me_shape_bounds does not take them. The inside of the outline is hollow: a query wholly inside solid tiles finds
+// nothing.
+ME_API int me_tiles_create( MeWorld* world, int body, const float* points, const int* loopCounts, int loopCount,
+	const float* oneWayBoxes, int oneWayCount, uint64_t category, uint64_t mask, int* outOneWay );
 // The shape's world bounds: min x, min y, max x, max y.
 ME_API void me_shape_bounds( MeWorld* world, int shape, float* out4 );
 
@@ -156,6 +181,30 @@ ME_API int me_ray_cast( MeWorld* world, float x, float y, float dx, float dy, ui
 ME_API int me_overlap_box( MeWorld* world, float minX, float minY, float maxX, float maxY, uint64_t category,
 	uint64_t mask, int queryFlags, int* outShapes, int maxShapes );
 
+/// Every shape the segment enters, nearest first (handle order at the same fraction), one hit per shape, by the rules
+// of me_ray_cast. Writes at most maxHits handles and five floats each (point x, y, normal x, y, fraction) and returns
+// how many shapes the segment enters.
+ME_API int me_ray_cast_all( MeWorld* world, float x, float y, float dx, float dy, uint64_t category, uint64_t mask,
+	int queryFlags, int* outShapes, float* outHits5, int maxHits );
+// Query shapes are rounded boxes centred at a point: a core of half extents (hx, hy) with a radius around it. A box
+// has no radius, a circle no core, a standing capsule a core with hx 0.
+// The first shape the query shape would touch moving its centre from (x, y) by (dx, dy); returns its handle or -1.
+// out5: the point where they touch x, y, the surface normal x, y, fraction. A shape it overlaps at the start is not
+// hit; one within the slop of it but apart is hit at fraction 0 when the cast moves into it. A one-way platform is hit
+// only on its top by a shape that started above it going down. The shape stops B2_LINEAR_SLOP short of the surface.
+ME_API int me_shape_cast( MeWorld* world, float hx, float hy, float radius, float x, float y, float dx, float dy,
+	uint64_t category, uint64_t mask, int queryFlags, float* out5 );
+// The shapes that truly overlap the query shape centred at (x, y), in handle order, like me_overlap_box.
+ME_API int me_overlap_shape( MeWorld* world, float hx, float hy, float radius, float x, float y, uint64_t category,
+	uint64_t mask, int queryFlags, int* outShapes, int maxShapes );
+// The shapes that hold the point (b2Shape_TestPoint), in handle order.
+ME_API int me_overlap_point( MeWorld* world, float x, float y, uint64_t category, uint64_t mask, int queryFlags,
+	int* outShapes, int maxShapes );
+// The shape whose surface is nearest (x, y) within maxDistance (the lowest handle at the same distance); returns its
+// handle or -1. out3: the nearest point x, y and its distance; a shape holding the point is at distance 0.
+ME_API int me_closest_point( MeWorld* world, float x, float y, float maxDistance, uint64_t category, uint64_t mask,
+	int queryFlags, float* out3 );
+
 // Moves a kinematic body by (dx, dy) with collide-and-slide of its shape `shape` against the shapes the query accepts
 // (sensors never block; MeQueryFlags as for queries; shapes of the body itself and shapes it already overlaps at the
 // start never block). A box (or polygon) moves along x, then y, each as a shape cast that stops within me_move_skin of
@@ -170,10 +219,22 @@ ME_API int me_move( MeWorld* world, int body, int shape, float dx, float dy, uin
 // *outEndCount. Visitors are non-sensor shapes of kinematic and dynamic bodies; a destroyed shape is -1. Returns the
 // begin count (more than maxBegin when the buffer was short; likewise *outEndCount).
 ME_API int me_sensor_events( MeWorld* world, int* outBegin, int maxBegin, int* outEnd, int maxEnd, int* outEndCount );
-// The contact events of the last step (pairs with a dynamic body): begins as (a, b) handle pairs with the contact
-// normal from a to b in outNormals, ends as pairs through outEnd and *outEndCount; a destroyed shape is -1.
-ME_API int me_contact_events( MeWorld* world, int* outBegin, float* outNormals, int maxBegin, int* outEnd, int maxEnd,
+// The contact events of the last step (pairs with a dynamic body): begins as (a, b) handle pairs with four floats each
+// in outBegin4 (the contact normal from a to b x, y, the contact point x, y: the middle of the manifold's points), ends
+// as pairs through outEnd and *outEndCount; a destroyed shape is -1.
+ME_API int me_contact_events( MeWorld* world, int* outBegin, float* outBegin4, int maxBegin, int* outEnd, int maxEnd,
 	int* outEndCount );
+// The speed (m/s) two shapes must approach each other at for their contact to be an impact (Box2D's hit event
+// threshold, 1 m/s by default).
+ME_API void me_world_set_impact_speed( MeWorld* world, float speed );
+// The impacts of the last step (Box2D's hit events; pairs with a dynamic body): (a, b) handle pairs and six floats
+// each (point x, y, normal from a to b x, y, approach speed, the normal impulse the contact applied in the step, 0
+// when it no longer exists). Writes at most maxImpacts and returns how many there are.
+ME_API int me_impact_events( MeWorld* world, int* outShapes, float* out6, int maxImpacts );
+// The manifold points of the body's touching contacts: (own shape, other shape) handle pairs and six floats each
+// (point x, y, normal from the other shape to the body x, y, separation, total normal impulse of the last step).
+// Writes at most maxPoints and returns how many there are.
+ME_API int me_body_contacts( MeWorld* world, int body, int* outShapes, float* out6, int maxPoints );
 
 #ifdef __cplusplus
 }

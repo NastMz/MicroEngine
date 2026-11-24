@@ -48,6 +48,123 @@ public sealed class PhysicsPlaygroundTests
     }
 
     [TestMethod]
+    public void Impacts_are_counted_the_beam_lists_what_is_ahead_and_a_blast_throws_the_crates()
+    {
+        var (game, scene) = Start();
+        var world = scene.Physics.World;
+        Step(game, 120);
+        Assert.IsTrue(scene.Impacts >= 1, $"the cart and the crates landed: {scene.Impacts} impacts");
+        Assert.IsTrue(scene.HardestImpact > 0);
+        Assert.IsTrue(scene.Beam.Length >= 2, $"the beam goes through the crates to the wall: {scene.Beam.Length}");
+        for (int i = 1; i < scene.Beam.Length; i++)
+            Assert.IsTrue(scene.Beam[i].Fraction >= scene.Beam[i - 1].Fraction, "nearest first");
+        Assert.AreEqual(BodyKind.Static, world.KindOf(world.BodyOf(scene.Beam[^1].Shape)), "the last thing it reaches is the room");
+
+        // Drive up to the crates, then blast: they fly away from the cart.
+        game.Input.SetForced("right", true);
+        Step(game, 60);
+        game.Input.SetForced("right", false);
+        var crates = new List<BodyId>();
+        foreach (var body in world.Bodies)
+            if (world.KindOf(body) == BodyKind.Dynamic && Math.Abs(world.MassOf(body) - 0.5f * 144 / 256) < 0.01f) crates.Add(body);
+        Assert.AreEqual(3, crates.Count);
+        float before = crates.Max(c => world.VelocityOf(c).Length());
+        game.Input.SetForced("cancel", true);
+        Step(game, 1);
+        game.Input.SetForced("cancel", false);
+        Assert.AreEqual(1, scene.Blasts);
+        float after = crates.Max(c => world.VelocityOf(c).Length());
+        Assert.IsTrue(after > before + 40, $"the blast threw a crate: {before} -> {after}");
+    }
+
+    [TestMethod]
+    public void The_classic_character_skids_clears_a_corner_and_finds_the_hidden_block()
+    {
+        var (game, _) = Start();
+        var scene = new ClassicScene();
+        game.Scenes.Push(scene);
+        Step(game, 30);
+        var hero = scene.Hero;
+        Assert.IsTrue(hero.IsGrounded);
+        float floor = hero.Position.Y;
+
+        // Run right, then reverse: a skid.
+        game.Input.SetForced("right", true);
+        Step(game, 40);
+        game.Input.SetForced("right", false);
+        game.Input.SetForced("left", true);
+        Step(game, 6);
+        game.Input.SetForced("left", false);
+        Assert.IsTrue(scene.SkidSteps >= 2, $"reversing at speed skids: {scene.SkidSteps} steps");
+        Step(game, 40);
+
+        // Under the edge of the ledge (x 90..150): the head would clip 2 pixels of it and is nudged past.
+        hero.Teleport(new Vector2(86, floor));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 5);
+        game.Input.SetForced("confirm", true);
+        float highest = floor;
+        for (int i = 0; i < 40; i++)
+        {
+            Step(game, 1);
+            highest = MathF.Min(highest, hero.Position.Y);
+        }
+        game.Input.SetForced("confirm", false);
+        Assert.AreEqual(1, scene.Corrections, "nudged past the corner once");
+        Assert.IsTrue(highest < 110, $"the jump went on past the ledge: {highest}");
+        Step(game, 90);
+
+        // The hidden block (x 202..218, y 110..126): falling onto it goes through; a head from below finds it.
+        hero.Teleport(new Vector2(210, 90));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 90);
+        Assert.AreEqual(floor, hero.Position.Y, 0.5f, "it fell through the hidden block to the floor");
+        Assert.IsFalse(scene.Revealed);
+        game.Input.SetForced("confirm", true);
+        Step(game, 30);
+        game.Input.SetForced("confirm", false);
+        Assert.IsTrue(scene.Revealed, "the head found it");
+        Step(game, 60);
+        hero.Teleport(new Vector2(210, 90));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 90);
+        Assert.AreEqual(103, hero.Position.Y, 0.5f, "found, it is a block to stand on");
+        Assert.IsTrue(scene.HardestLanding > 100, $"landings report their speed: {scene.HardestLanding}");
+    }
+
+    [TestMethod]
+    public void The_tile_level_holds_what_rolls_over_it_and_an_explosion_of_Box2D_throws_it()
+    {
+        var (game, _) = Start();
+        var scene = new TileScene();
+        game.Scenes.Push(scene);
+        Step(game, 1);
+        var world = scene.Physics.World;
+        Assert.AreEqual(PhysicsCapabilities.TileSlopes, world.Capabilities & PhysicsCapabilities.TileSlopes);
+        Step(game, 240);
+        foreach (var body in scene.Balls)
+        {
+            var at = world.PositionOf(body);
+            Assert.IsTrue(at.X > 16 && at.X < 304 && at.Y > 16 && at.Y < 160, $"inside the level, on its tiles: {at}");
+            Assert.IsTrue(world.VelocityOf(body).Length() < 30, $"come to rest or nearly: {world.VelocityOf(body)}");
+        }
+        Span<ShapeId> shapes = stackalloc ShapeId[4];
+        Assert.AreEqual(1, world.ShapesOf(world.BodyOf(scene.Level), shapes), "the whole level is one shape");
+        float before = scene.Balls.Max(b => world.VelocityOf(b).Length());
+        game.Input.SetForced("confirm", true);
+        Step(game, 2);
+        game.Input.SetForced("confirm", false);
+        Assert.AreEqual(1, scene.Explosions);
+        Assert.IsTrue(scene.Balls.Max(b => world.VelocityOf(b).Length()) > before + 20, "the explosion threw something");
+        Step(game, 120);
+        foreach (var body in scene.Balls)
+        {
+            var at = world.PositionOf(body);
+            Assert.IsTrue(at.X > 16 && at.X < 304 && at.Y > 16 && at.Y < 160, $"still inside the level: {at}");
+        }
+    }
+
+    [TestMethod]
     public void The_same_run_gives_the_same_state_hash_and_the_world_ends_with_the_scene()
     {
         ulong Run(out PlaygroundGame game, out IPhysicsWorld2D world)

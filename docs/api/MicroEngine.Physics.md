@@ -4,9 +4,11 @@
 
 The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms.
 
-Guide: [Physics worlds](../manual/world.md#physics-worlds)  
+Guide: [Physics](../manual/physics.md)  
 
 ### Namespaces
+
+ [MicroEngine.Physics.Box2D](MicroEngine.Physics.Box2D.md)
 
  [MicroEngine.Physics.Tiles](MicroEngine.Physics.Tiles.md)
 
@@ -90,10 +92,24 @@ id was made. A destroyed body's slot is reused with a new generation, so an old 
 What a character wants to do in one step: the game fills it from input, an AI from its plan. The controller never
 reads input devices.
 
+ [ClosestPointHit](MicroEngine.Physics.ClosestPointHit.md)
+
+The surface nearest a point ([ClosestPoint](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ClosestPoint_System_Numerics_Vector2_System_Single_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_ClosestPointHit__)).
+
  [ContactEvent](MicroEngine.Physics.ContactEvent.md)
 
 Two shapes began or stopped touching during the latest [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_); only pairs with at least
 one dynamic body report them (a kinematic body's contacts come from [MoveResult](MicroEngine.Physics.MoveResult.md)).
+
+ [ContactImpact](MicroEngine.Physics.ContactImpact.md)
+
+Two shapes hit each other during the latest [Step](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Step_System_Single_) faster than the backend's impact
+speed ([ContactDetail](MicroEngine.Physics.PhysicsCapabilities.md)): what an impact sound or damage needs. Pairs with a dynamic
+body only; a pair that keeps touching reports again whenever it hits again (a bouncing or rolling body).
+
+ [ContactPoint](MicroEngine.Physics.ContactPoint.md)
+
+One point at which a body touches another shape now ([ContactsOf](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ContactsOf_MicroEngine_Physics_BodyId_System_Span_MicroEngine_Physics_ContactPoint__)).
 
  [JointDescription](MicroEngine.Physics.JointDescription.md)
 
@@ -127,6 +143,13 @@ Which shapes a query ([RayCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngi
 [Move](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Move_MicroEngine_Physics_BodyId_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__) considers. A shape matches when its category is in the filter's
 [Mask](MicroEngine.Physics.QueryFilter.md#MicroEngine_Physics_QueryFilter_Mask) and the filter's [Category](MicroEngine.Physics.QueryFilter.md#MicroEngine_Physics_QueryFilter_Category) is in the shape's mask. <code>default</code> is
 [Default](MicroEngine.Physics.QueryFilter.md#MicroEngine_Physics_QueryFilter_Default): category [Default](MicroEngine.Physics.CollisionLayers.md#MicroEngine_Physics_CollisionLayers_Default), every layer, sensors left out.
+
+ [QueryShape](MicroEngine.Physics.QueryShape.md)
+
+A shape a query asks with ([ShapeCast](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ShapeCast_MicroEngine_Physics_QueryShape__System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_RayHit__), [Overlap](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__)):
+it is not a shape of the world and is centred where the query says. Every backend that declares
+[ShapeQueries](MicroEngine.Physics.PhysicsCapabilities.md) takes the three kinds, whatever shapes its bodies may have: an
+explosion's circle works on the tile backend, which has no circle shapes.
 
  [RayHit](MicroEngine.Physics.RayHit.md)
 
@@ -179,6 +202,10 @@ What a physics backend offers beyond the common contract of [IPhysicsWorld2D](Mi
 common conformance suite; each flag it declares has a suite of its own that runs only on backends declaring it. A
 request that needs an undeclared flag fails with [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md): a backend never emulates
 a capability silently.
+
+ [QueryShapeKind](MicroEngine.Physics.QueryShapeKind.md)
+
+The geometry of a [QueryShape](MicroEngine.Physics.QueryShape.md).
 
  [SensorEventKind](MicroEngine.Physics.SensorEventKind.md)
 

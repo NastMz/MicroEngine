@@ -20,7 +20,7 @@
   <ItemGroup>
     <!-- The physics conformance suites every 2D backend runs (common contract and capability suites). The tile
          geometry suite needs the tile backend's types and is not one Box2D runs. -->
-    <Compile Include="../Shared/Physics/*.cs" Exclude="../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
+    <Compile Include="../Shared/Physics/*.cs" LinkBase="Shared/Physics" />
     <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
     <!-- Browser/ is the browser runner of these same tests, a project of its own (web toolchain only). -->
     <Compile Remove="Browser/**" />
