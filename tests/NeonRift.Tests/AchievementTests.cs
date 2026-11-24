@@ -1,5 +1,6 @@
 using MicroEngine.Core;
 using MicroEngine.Input;
+using MicroEngine.Saves;
 using MicroEngine.UI;
 using NeonRift.Gameplay;
 using NeonRift.Scenes;
@@ -10,12 +11,10 @@ namespace NeonRift.Tests;
 [TestClass]
 public sealed class AchievementTests
 {
-    private static string TempDir() => Path.Combine(Path.GetTempPath(), "neonrift-tests", Guid.NewGuid().ToString("N"));
-
-    private static RiftGame Play(int stage, string dir)
+    private static RiftGame Play(int stage, MemorySaveStorage? saves = null)
     {
-        var game = new RiftGame(new LaunchOptions("stage", stage, God: true, Auto: true), saveDirectory: dir);
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        var game = new RiftGame(new LaunchOptions("stage", stage, God: true, Auto: true));
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings), saves: saves);
         for (int i = 0; i < 60 * 60 * 8 && game.Scenes.Current is PlayScene; i++) game.StepForTest();
         Assert.IsNotInstanceOfType<PlayScene>(game.Scenes.Current, $"Stage {stage} was not cleared.");
         return game;
@@ -24,8 +23,8 @@ public sealed class AchievementTests
     [TestMethod]
     public void Clearing_the_rooftops_earns_the_stage_and_kill_achievements()
     {
-        string dir = TempDir();
-        var game = Play(1, dir);
+        var saves = new MemorySaveStorage();
+        var game = Play(1, saves);
         var a = game.Achievements;
         Assert.IsTrue(a.IsUnlocked(RiftAchievements.FirstScrap));
         Assert.IsGreaterThan(1, a.Progress(RiftAchievements.ScrapDealer), "Every destroyed robot counts.");
@@ -34,7 +33,7 @@ public sealed class AchievementTests
         Assert.IsFalse(a.IsUnlocked(RiftAchievements.Leviathan));
 
         game.StepForTest();
-        var reopened = new AchievementTracker(RiftAchievements.Catalog, new SaveStore("NeonRift", dir));
+        var reopened = new AchievementTracker(RiftAchievements.Catalog, new SaveStore(saves));
         Assert.IsTrue(reopened.IsUnlocked(RiftAchievements.Rooftops), "Unlocks survive a restart.");
         Assert.AreEqual(3, reopened.UnlockedCount);
     }
@@ -42,7 +41,7 @@ public sealed class AchievementTests
     [TestMethod]
     public void Destroying_the_leviathan_earns_its_achievement()
     {
-        var game = Play(3, TempDir());
+        var game = Play(3);
         Assert.IsInstanceOfType<EndingScene>(game.Scenes.Current);
         Assert.IsTrue(game.Achievements.IsUnlocked(RiftAchievements.Leviathan));
         Assert.IsFalse(game.Achievements.IsUnlocked(RiftAchievements.Rooftops), "Only the cleared stage counts.");
@@ -51,7 +50,7 @@ public sealed class AchievementTests
     [TestMethod]
     public void The_title_menu_lists_the_achievements()
     {
-        var game = new RiftGame(saveDirectory: TempDir());
+        var game = new RiftGame();
         var platform = HeadlessPlatform.For(game.Settings);
         game.InitializeForTest(platform);
         void Tap(Key key) { platform.Keys.Set(key, true); game.StepForTest(); platform.Keys.Set(key, false); game.StepForTest(); }

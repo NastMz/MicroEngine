@@ -11,8 +11,7 @@ public sealed class TouchTests
 {
     private static (RiftGame Game, HeadlessPlatform Platform, PlayScene Play) Stage()
     {
-        var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "neonrift-tests", Guid.NewGuid().ToString("N"))).FullName;
-        var game = new RiftGame(new LaunchOptions("stage", God: true), saveDirectory: dir);
+        var game = new RiftGame(new LaunchOptions("stage", God: true));
         var platform = HeadlessPlatform.For(game.Settings);
         platform.TouchScreen.TouchFirst = true;
         game.InitializeForTest(platform);

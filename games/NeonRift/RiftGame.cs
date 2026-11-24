@@ -57,7 +57,7 @@ public sealed record RiftRecord(int HighScore);
 /// Neon Rift: a run &amp; gun about Vela, a courier who storms Halcyon's rooftops, the drowned grotto
 /// beneath them and the lab where the Leviathan dreadnought is built.
 /// </summary>
-public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot = null, string? saveDirectory = null) : Game
+public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot = null) : Game
 {
     private readonly LaunchOptions _launch = launch ?? new LaunchOptions();
 
@@ -76,8 +76,6 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
     protected override string SaveId => "NeonRift";
 
-    /// <summary>The game's store (<see cref="Game.Saves"/>): the composition's, or one in the folder a test or a developer variable names.</summary>
-    protected override SaveStore CreateSaves() => saveDirectory is null ? base.CreateSaves() : new SaveStore(SaveId, saveDirectory);
     /// <summary>The slot of the high score in the game's saves (the achievements have their own).</summary>
     public const string RecordSlot = "record";
     /// <summary>

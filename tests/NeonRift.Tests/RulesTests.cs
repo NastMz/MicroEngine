@@ -239,7 +239,7 @@ public sealed class RulesTests
     [TestMethod]
     public void The_game_loads_every_asset_and_reaches_play_from_the_title()
     {
-        var game = new RiftGame(saveDirectory: Path.Combine(Path.GetTempPath(), "neonrift-tests", Guid.NewGuid().ToString("N")));
+        var game = new RiftGame();
         var platform = HeadlessPlatform.For(game.Settings);
         game.InitializeForTest(platform);
         Assert.AreEqual(Sounds.Effects.Length, Sounds.Effects.Count(game.Audio.HasSound));

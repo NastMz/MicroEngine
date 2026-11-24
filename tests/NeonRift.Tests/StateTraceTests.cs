@@ -34,19 +34,9 @@ public sealed partial class StateTraceTests
 
     private static string ScriptPath(string name) => $"games/NeonRift/scripts/{name}.script";
 
-    /// <summary>Runs the script once with a fresh save folder, deleted afterwards.</summary>
-    private static TracedRun RunOnce(string name, LaunchOptions options)
-    {
-        string saves = Path.Combine(Path.GetTempPath(), "neonrift-state-trace", Guid.NewGuid().ToString("N"));
-        try
-        {
-            return StateTraceRuns.Run(new RiftGame(options, saveDirectory: saves), StateTraceRuns.Script(ScriptPath(name)));
-        }
-        finally
-        {
-            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
-        }
-    }
+    /// <summary>Runs the script once; a scripted run keeps its saves to itself, empty at the start.</summary>
+    private static TracedRun RunOnce(string name, LaunchOptions options) =>
+        StateTraceRuns.Run(new RiftGame(options), StateTraceRuns.Script(ScriptPath(name)));
 
     [GeneratedRegex(@"^\s*(\d+)\s+quit\b", RegexOptions.Multiline)]
     private static partial Regex QuitLine();
