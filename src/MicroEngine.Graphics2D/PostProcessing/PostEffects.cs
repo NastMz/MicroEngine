@@ -256,12 +256,19 @@ public sealed class Scanlines : PostEffect
     /// </summary>
     public int Lines { get => _lines; set => _lines = Math.Clamp(value, 0, MaxLines); }
     private int _lines;
+    /// <summary>
+    /// Where the lines start, as a fraction of one line (a bright row and a dark row): 0 (the default) makes the first
+    /// row bright and the second dark; 0.5 moves the lines half a line down, so the first row is the dark one; values
+    /// between scroll them. Kept within 0 to 1 (1 is 0 again); a value that is not a number is ignored.
+    /// </summary>
+    public float Phase { get => _phase; set => _phase = PostValue.Kept(value, _phase, 0f, 1f); }
+    private float _phase;
 
     /// <inheritdoc/>
     public override PostEffectSupport SupportOn(IGraphicsDevice graphics) => PostEffectSupport.Full;
 
     /// <inheritdoc/>
-    protected internal override void Apply(PostPass pass) => PostLines.Draw(pass, Strength, Lines);
+    protected internal override void Apply(PostPass pass) => PostLines.Draw(pass, Strength, Lines, Phase);
 }
 
 /// <summary>The one rule for the values of the ready effects.</summary>
@@ -278,7 +285,7 @@ internal static class PostValue
 /// <summary>The dark rows of <see cref="Scanlines"/>, which <see cref="Crt"/> also draws where its shader does not run.</summary>
 internal static class PostLines
 {
-    public static void Draw(PostPass pass, float strength, int lines)
+    public static void Draw(PostPass pass, float strength, int lines, float phase = 0)
     {
         strength = Math.Clamp(strength, 0f, 1f);
         if (strength <= 0) return;
@@ -293,7 +300,11 @@ internal static class PostLines
         var r = pass.BeginOver();
         // Multiplied in, so the picture keeps its transparency.
         r.PushState(DrawState.Multiply.Filtered(TextureFilter.Nearest));
-        r.DrawStretched(rows, rows.Bounds, new RectF(0, 0, r.Width, r.Height), Color.Black.WithAlpha(strength));
+        var tint = Color.Black.WithAlpha(strength);
+        // The lines moved down by a fraction of one; what leaves at the bottom comes back at the top.
+        float shift = phase > 0 && phase < 1 ? phase * r.Height / count : 0;
+        r.DrawStretched(rows, rows.Bounds, new RectF(0, shift, r.Width, r.Height), tint);
+        if (shift > 0) r.DrawStretched(rows, rows.Bounds, new RectF(0, shift - r.Height, r.Width, r.Height), tint);
         r.PopState();
         pass.EndOver();
     }
