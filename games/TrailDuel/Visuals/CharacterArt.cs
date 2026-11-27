@@ -59,6 +59,9 @@ internal static class CharacterArt
 
     public static string Key(string look, Direction dir, int frame) => $"chr:{look}:{(int)dir}{frame}";
 
+    /// <summary>The atlas sprite of <paramref name="frame"/> of a look facing <paramref name="dir"/> (the key <see cref="Key"/> gives), found without making the key.</summary>
+    public static Sprite Sprite(SpriteAtlas atlas, string look, Direction dir, int frame) => atlas[$"chr:{look}:{(int)dir}{frame}"];
+
     public static string PortraitKey(string look, Direction dir) => $"portrait:{look}:{(int)dir}";
 
     private static PixelImage Frame(PixelImage[] sheets, CharacterLook look, Direction dir, int frame)

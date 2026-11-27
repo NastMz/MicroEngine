@@ -38,7 +38,6 @@ internal sealed partial class BattleScene
     private Display _enemy = null!, _player = null!;
     private readonly ParticleSystem _fx = new(600, 41);
     private readonly ParticleSystem _glow = new(200, 43) { Additive = true };
-    private SpriteFx _sprites = null!;
     private float _introT, _enemyTrainerX = 1, _playerTrainerX = 1, _shake, _flash;
     private bool _orbVisible;
     private Vector2 _orbPos;
@@ -65,21 +64,9 @@ internal sealed partial class BattleScene
     private void UpdateEffects(float dt)
     {
         _fx.Update(dt);
-        _sprites.Update(dt);
         _glow.Update(dt);
         _shake = MathF.Max(0, _shake - dt * 3);
         _flash = MathF.Max(0, _flash - dt * 3);
-    }
-
-    private IEnumerator Tween(float seconds, Action<float> apply, Func<float, float>? ease = null)
-    {
-        ease ??= Ease.OutQuad;
-        for (float t = 0; t < seconds; t += EngineStep)
-        {
-            apply(ease(Math.Clamp(t / seconds, 0, 1)));
-            yield return null;
-        }
-        apply(1);
     }
 
     private IEnumerator Intro()
@@ -91,12 +78,12 @@ internal sealed partial class BattleScene
         _enemy.MaxHp = _battle.Enemy.MaxHp;
         _enemyTrainerX = _setup.Trainer is null ? 1 : 0;
         _playerTrainerX = 0;
-        yield return Tween(0.9f, t => _introT = t, Ease.OutCubic);
+        yield return Tweens.Add(0.9f, t => _introT = t, Ease.OutCubic);
         if (_setup.Trainer is null)
         {
             // The wild creature cries out with a little hop.
             Audio.Play("atk:" + _battle.Enemy.Type, 0.6f);
-            yield return Tween(0.3f, t => _enemy.Offset = new Vector2(0, -MathF.Sin(t * MathF.PI) * 6));
+            yield return Tweens.Add(0.3f, t => _enemy.Offset = new Vector2(0, -MathF.Sin(t * MathF.PI) * 6));
         }
     }
 
@@ -148,7 +135,7 @@ internal sealed partial class BattleScene
                 case LevelUpEvent l: yield return LevelUpAnim(l); break;
                 case LearnMoveEvent lm: yield return LearnMove(lm); break;
                 case OrbThrowEvent o: yield return OrbThrow(o); break;
-                case TrainerReturnsEvent: yield return Tween(0.5f, t => _enemyTrainerX = 1 - t); break;
+                case TrainerReturnsEvent: yield return Tweens.Add(0.5f, t => _enemyTrainerX = 1 - t); break;
                 case MoneyEvent: Audio.Play("buy"); break;
                 case EndEvent end:
                     if (end.Outcome == BattleOutcome.Won) Audio.PlayMusic("victory", 0.2f);
@@ -178,14 +165,14 @@ internal sealed partial class BattleScene
             yield break;
         }
         // Trainers step aside, an orb arcs onto the platform and bursts open.
-        if (s.Side == Side.Enemy && _enemyTrainerX < 1) yield return Tween(0.4f, t => _enemyTrainerX = t);
-        if (s.Side == Side.Player && _playerTrainerX < 1) yield return Tween(0.4f, t => _playerTrainerX = t);
+        if (s.Side == Side.Enemy && _enemyTrainerX < 1) yield return Tweens.Add(0.4f, t => _enemyTrainerX = t);
+        if (s.Side == Side.Player && _playerTrainerX < 1) yield return Tweens.Add(0.4f, t => _playerTrainerX = t);
         var target = BaseOf(s.Side) + new Vector2(0, s.Side == Side.Player ? -30 : -18);
         var start = s.Side == Side.Player ? new Vector2(-10, 110) : new Vector2(330, 30);
         _orbSprite = "orb";
         ShowOrb();
         Audio.Play("throw", 0.7f);
-        yield return Tween(0.35f, t =>
+        yield return Tweens.Add(0.35f, t =>
         {
             _orbPos = Vector2.Lerp(start, target, t) + new Vector2(0, -MathF.Sin(t * MathF.PI) * 24);
             _orbAngle = t * 12;
@@ -195,11 +182,11 @@ internal sealed partial class BattleScene
         Audio.Play("sendout");
         _flash = 0.6f;
         BattleFx.Stars(_glow, target);
-        _sprites.Play("spark-ring", target, fps: 20);
+        PlayFx("spark-ring", target, framesPerSecond: 20);
         d.Visible = true;
         d.White = 1;
-        yield return Tween(0.28f, t => { d.Scale = t; }, Ease.OutBack);
-        yield return Tween(0.2f, t => d.White = 1 - t);
+        yield return Tweens.Add(0.28f, t => { d.Scale = t; }, Ease.OutBack);
+        yield return Tweens.Add(0.2f, t => d.White = 1 - t);
         d.HudVisible = true;
         Audio.Play("atk:" + s.Creature.Type, 0.4f);
     }
@@ -209,7 +196,7 @@ internal sealed partial class BattleScene
         var d = Of(side);
         d.White = 1;
         Audio.Play("sendout", 0.5f, 0.8f);
-        yield return Tween(0.25f, t => d.Scale = 1 - t, Ease.InQuad);
+        yield return Tweens.Add(0.25f, t => d.Scale = 1 - t, Ease.InQuad);
         d.Visible = false;
         d.HudVisible = false;
         d.Scale = 1;
@@ -227,13 +214,13 @@ internal sealed partial class BattleScene
             bool self = move.Effect is MoveEffect.RaiseSelf or MoveEffect.HealSelf;
             var at = CenterOf(self ? user : target);
             ud.Tint = Pal.TypeColor(move.Type);
-            if (move.Effect == MoveEffect.RaiseSelf) _sprites.Play("boost", BaseOf(user) + new Vector2(0, -2));
-            else if (move.Effect == MoveEffect.HealSelf) _sprites.Play("sparkle", at);
-            else _sprites.Play("aura", BaseOf(target) + new Vector2(0, -4), tint: Pal.TypeColor(move.Type));
+            if (move.Effect == MoveEffect.RaiseSelf) PlayFx("boost", BaseOf(user) + new Vector2(0, -2));
+            else if (move.Effect == MoveEffect.HealSelf) PlayFx("sparkle", at);
+            else PlayFx("aura", BaseOf(target) + new Vector2(0, -4), tint: Pal.TypeColor(move.Type));
             for (int i = 0; i < 3; i++)
             {
                 BattleFx.Attack(_glow, move.Type, at, false);
-                yield return Tween(0.12f, t =>
+                yield return Tweens.Add(0.12f, t =>
                 {
                     ud.Offset = new Vector2(0, -MathF.Sin(t * MathF.PI) * 3);
                     ud.TintAlpha = 0.35f * MathF.Sin(t * MathF.PI);
@@ -245,21 +232,21 @@ internal sealed partial class BattleScene
         if (move.Category == MoveCategory.Physical)
         {
             // Anticipation: crouch back and down, a beat, then a fast lunge that stops dead on contact.
-            yield return Tween(0.15f, t => ud.Offset = new Vector2(-dir * 8 * t, 2 * t));
+            yield return Tweens.Add(0.15f, t => ud.Offset = new Vector2(-dir * 8 * t, 2 * t));
             yield return Wait.Seconds(0.05f);
-            yield return Tween(0.09f, t => ud.Offset = new Vector2(-dir * 8 + dir * 34 * t, 2 - (dir * 10 + 2) * t), Ease.InQuad);
+            yield return Tweens.Add(0.09f, t => ud.Offset = new Vector2(-dir * 8 + dir * 34 * t, 2 - (dir * 10 + 2) * t), Ease.InQuad);
             Impact(move, target, user == Side.Enemy);
             BattleFx.Attack(_glow, move.Type, CenterOf(target), false);
             yield return Wait.Seconds(0.06f);
             var reach = ud.Offset;
-            yield return Tween(0.2f, t => ud.Offset = reach * (1 - t));
+            yield return Tweens.Add(0.2f, t => ud.Offset = reach * (1 - t));
             ud.Offset = Vector2.Zero;
         }
         else
         {
             // Charge: the user glows in its element's colour and rises, then a projectile crosses the field.
             ud.Tint = Pal.TypeColor(move.Type);
-            yield return Tween(0.22f, t =>
+            yield return Tweens.Add(0.22f, t =>
             {
                 ud.TintAlpha = 0.6f * MathF.Sin(t * MathF.PI);
                 ud.Offset = new Vector2(-dir * 2 * MathF.Sin(t * MathF.PI), -2 * MathF.Sin(t * MathF.PI));
@@ -268,7 +255,7 @@ internal sealed partial class BattleScene
             ud.Offset = Vector2.Zero;
             var from = CenterOf(user);
             var to = CenterOf(target);
-            yield return Tween(0.3f, t =>
+            yield return Tweens.Add(0.3f, t =>
             {
                 var p = Vector2.Lerp(from, to, t) + new Vector2(0, -MathF.Sin(t * MathF.PI) * 16);
                 BattleFx.Trail(_glow, move.Type, p);
@@ -281,6 +268,10 @@ internal sealed partial class BattleScene
         }
     }
 
+    /// <summary>Plays the effect <paramref name="name"/> once (the clip "fx:{name}" of <c>Content/fx/fx.sheet</c>), at the clip's rate unless this moment has its own.</summary>
+    private void PlayFx(string name, Vector2 at, float delay = 0, bool flipX = false, Color? tint = null, float? framesPerSecond = null) =>
+        Effects.Play(_game.Atlas.Clip("fx:" + name), at, delay, flipX, tint, framesPerSecond);
+
     /// <summary>The element's hand-animated impact on the target, mirrored when the enemy attacks.</summary>
     private void Impact(MoveData move, Side target, bool mirrored)
     {
@@ -291,20 +282,20 @@ internal sealed partial class BattleScene
         {
             case ElementType.Volt:
                 // Two bolts strike a beat apart, then the spark ring.
-                _sprites.Play("thunder", feet + new Vector2(-7, -6));
-                _sprites.Play("thunder", feet + new Vector2(8, -2), delay: 0.08f, flipX: true);
-                if (big) _sprites.Play("spark-ring", at, delay: 0.12f);
+                PlayFx("thunder", feet + new Vector2(-7, -6));
+                PlayFx("thunder", feet + new Vector2(8, -2), delay: 0.08f, flipX: true);
+                if (big) PlayFx("spark-ring", at, delay: 0.12f);
                 break;
             case ElementType.Tide when big:
             case ElementType.Stone when big:
-                _sprites.Play(FxArt.Impact(move.Type, big), feet, flipX: mirrored);
+                PlayFx(FxArt.Impact(move.Type, big), feet, flipX: mirrored);
                 break;
             case ElementType.Leaf:
-                _sprites.Play("leaves", at, flipX: mirrored);
-                if (big) _sprites.Play("leaves", at + new Vector2(6, 4), delay: 0.1f, flipX: !mirrored);
+                PlayFx("leaves", at, flipX: mirrored);
+                if (big) PlayFx("leaves", at + new Vector2(6, 4), delay: 0.1f, flipX: !mirrored);
                 break;
             default:
-                _sprites.Play(FxArt.Impact(move.Type, big), at, flipX: mirrored);
+                PlayFx(FxArt.Impact(move.Type, big), at, flipX: mirrored);
                 break;
         }
     }
@@ -323,7 +314,7 @@ internal sealed partial class BattleScene
         disp.Offset = new Vector2(away * push, 0);
         yield return Wait.Seconds(0.07f);
         disp.White = 0;
-        yield return Tween(0.16f, t => disp.Offset = new Vector2(away * push * (1 - t), 0));
+        yield return Tweens.Add(0.16f, t => disp.Offset = new Vector2(away * push * (1 - t), 0));
         for (int i = 0; i < 3; i++)
         {
             disp.Blink = true;
@@ -351,7 +342,7 @@ internal sealed partial class BattleScene
         var disp = Of(h.Target);
         Audio.Play("heal", 0.7f);
         BattleFx.Healing(_glow, CenterOf(h.Target));
-        _sprites.Play("sparkle", CenterOf(h.Target));
+        PlayFx("sparkle", CenterOf(h.Target));
         yield return DrainHp(disp, h.HpAfter);
     }
 
@@ -360,10 +351,10 @@ internal sealed partial class BattleScene
         var d = Of(side);
         Audio.Play("faint");
         // A last little lurch upward, then the slide down behind the platform.
-        yield return Tween(0.12f, t => d.Offset = new Vector2(0, -3 * MathF.Sin(t * MathF.PI)));
+        yield return Tweens.Add(0.12f, t => d.Offset = new Vector2(0, -3 * MathF.Sin(t * MathF.PI)));
         d.Offset = Vector2.Zero;
-        _sprites.Play("smoke", BaseOf(side) + new Vector2(0, side == Side.Player ? -8 : -6), delay: 0.15f);
-        yield return Tween(0.4f, t => d.SinkDepth = t, Ease.InQuad);
+        PlayFx("smoke", BaseOf(side) + new Vector2(0, side == Side.Player ? -8 : -6), delay: 0.15f);
+        yield return Tweens.Add(0.4f, t => d.SinkDepth = t, Ease.InQuad);
         d.Visible = false;
         d.SinkDepth = 0;
         d.HudVisible = false;
@@ -377,7 +368,7 @@ internal sealed partial class BattleScene
         if (x.Fraction < from) { _player.Xp = x.Fraction; yield break; }
         Audio.Play("xp", 0.5f);
         float seconds = 0.25f + (x.Fraction - from) * 0.9f;
-        yield return Tween(seconds, t => _player.Xp = MathX.Lerp(from, x.Fraction, t), Ease.Linear);
+        yield return Tweens.Add(seconds, t => _player.Xp = MathX.Lerp(from, x.Fraction, t), Ease.Linear);
     }
 
     private IEnumerator LevelUpAnim(LevelUpEvent l)
@@ -447,7 +438,7 @@ internal sealed partial class BattleScene
         var top = EnemyBase + new Vector2(0, -34);
         var rest = EnemyBase + new Vector2(0, -6);
         Audio.Play("throw");
-        yield return Tween(0.5f, t =>
+        yield return Tweens.Add(0.5f, t =>
         {
             _orbPos = Vector2.Lerp(start, top, t) + new Vector2(0, -MathF.Sin(t * MathF.PI) * 40);
             _orbAngle = t * 14;
@@ -457,16 +448,16 @@ internal sealed partial class BattleScene
         Audio.Play("sendout", 0.8f, 1.2f);
         _enemy.White = 1;
         BattleFx.Stars(_glow, top);
-        yield return Tween(0.3f, t => _enemy.Scale = 1 - t, Ease.InQuad);
+        yield return Tweens.Add(0.3f, t => _enemy.Scale = 1 - t, Ease.InQuad);
         _enemy.Visible = false;
         _orbOpen = false;
-        yield return Tween(0.35f, t => _orbPos = Vector2.Lerp(top, rest, Ease.OutBounce(t)), Ease.Linear);
+        yield return Tweens.Add(0.35f, t => _orbPos = Vector2.Lerp(top, rest, Ease.OutBounce(t)), Ease.Linear);
         Audio.Play("land", 0.6f);
         yield return Wait.Seconds(0.35f);
         for (int i = 0; i < o.Shakes; i++)
         {
             Audio.Play("shake");
-            yield return Tween(0.4f, t => _orbAngle = MathF.Sin(t * MathF.Tau) * 0.45f, Ease.Linear);
+            yield return Tweens.Add(0.4f, t => _orbAngle = MathF.Sin(t * MathF.Tau) * 0.45f, Ease.Linear);
             _orbAngle = 0;
             yield return Wait.Seconds(0.35f);
         }
@@ -474,7 +465,7 @@ internal sealed partial class BattleScene
         {
             Audio.Play("click");
             BattleFx.Stars(_glow, rest + new Vector2(0, -4));
-            _sprites.Play("spark-ring", rest + new Vector2(0, -4), fps: 16);
+            PlayFx("spark-ring", rest + new Vector2(0, -4), framesPerSecond: 16);
             _enemy.HudVisible = false;
             yield return Wait.Seconds(0.3f);
             Audio.Play("jingle:catch");
@@ -486,7 +477,7 @@ internal sealed partial class BattleScene
         _flash = 0.5f;
         BattleFx.Stars(_glow, rest);
         _enemy.Visible = true;
-        yield return Tween(0.25f, t => { _enemy.Scale = t; _enemy.White = 1 - t; }, Ease.OutBack);
+        yield return Tweens.Add(0.25f, t => { _enemy.Scale = t; _enemy.White = 1 - t; }, Ease.OutBack);
         _enemy.White = 0;
     }
 }

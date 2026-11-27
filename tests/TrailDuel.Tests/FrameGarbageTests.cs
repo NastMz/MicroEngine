@@ -4,11 +4,10 @@ using MicroEngine.Graphics;
 using MicroEngine.Scenes;
 using MicroEngine.Testing;
 using TrailDuel.Scenes;
-using TrailDuel.Ui;
 
 namespace TrailDuel.Tests;
 
-/// <summary>Drawing a screen that does not change makes no garbage: keys, numbers and lines are built once and kept.</summary>
+/// <summary>Drawing a screen that does not change makes no garbage: sprite names and numbers are written where they are drawn, without a string.</summary>
 [TestClass]
 public sealed class FrameGarbageTests
 {
@@ -47,6 +46,7 @@ public sealed class FrameGarbageTests
     [DataRow("party", typeof(PartyScene))]
     [DataRow("shop", typeof(ShopScene))]
     [DataRow("summary", typeof(SummaryScene))]
+    [DataRow("bag", typeof(BagScene))]
     public void DrawingAStillScreenMakesNoGarbage(string start, Type scene)
     {
         using var h = new Harness(start);
@@ -85,18 +85,5 @@ public sealed class FrameGarbageTests
         h.Step(5);
         var controls = Assert.IsInstanceOfType<ControlsScene>(h.Game.Scenes.Current);
         AssertNoGarbage(controls, "the controls page");
-    }
-
-    [TestMethod]
-    public void KeptNumbersReadExactlyAsPlainFormatting()
-    {
-        Assert.AreEqual("Lv12", NumberTexts.Level(12));
-        Assert.AreEqual("Lv500", NumberTexts.Level(500));
-        Assert.AreEqual("17/40", NumberTexts.Ratio(17, 40));
-        Assert.AreEqual("$1250", NumberTexts.Money(1250));
-        Assert.AreEqual("×3", NumberTexts.Count(3));
-        Assert.AreEqual("7", NumberTexts.Of(7));
-        Assert.AreEqual("12345", NumberTexts.Of(12345));
-        Assert.AreSame(NumberTexts.Ratio(17, 40), NumberTexts.Ratio(17, 40), "built once, then kept");
     }
 }

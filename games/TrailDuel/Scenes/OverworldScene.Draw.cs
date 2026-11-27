@@ -16,43 +16,20 @@ internal sealed partial class OverworldScene
     /// <summary>Orders what stands on the ground: a row covers the rows above it, and a character the row it walks out of.</summary>
     private readonly SortedRenderer _standing = new();
 
-    // Tile keys built once: formatting them per tile per frame was most of the overworld's garbage.
-    private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", TileArt.FlowerKinds * TileArt.FlowerFrames), TallKeys = SpriteKeys.Numbered("t:tall", 2),
-        PathKeys = SpriteKeys.Numbered("t:path", 16), LedgeKeys = SpriteKeys.Numbered("t:ledge", 4), CarpetKeys = SpriteKeys.Numbered("t:carpet", 16),
-        FloorKeys = SpriteKeys.Numbered("t:floor", 2), GrassKeys = SpriteKeys.Numbered("t:grass", 4), WaterInKeys = SpriteKeys.Numbered("t:waterin", 4),
-        FenceKeys = SpriteKeys.Numbered("t:fence", 4), TableKeys = SpriteKeys.Numbered("t:table", 4), CounterKeys = SpriteKeys.Numbered("t:counter", 16),
-        RustleKeys = SpriteKeys.Numbered("t:rustle", 3);
     private const int WaterFrames = TileArt.WaterFrames;
-    private static readonly string[] WaterKeys = WaterKeyTable();
-    private MapDef? _mapKeysFor;
-    private string _groundKey = "";
-    private string[] _buildingKeys = [];
+    private MapDef? _treesFor;
     /// <summary>The tree drawn on each tile of the current map (null where there is none), chosen once per map.</summary>
-    private string?[] _treeKeys = [];
+    private TreePlacement?[] _trees = [];
 
-    private static string[] WaterKeyTable()
+    /// <summary>The trees of the current map, laid out again when the map changes.</summary>
+    private void RefreshTrees()
     {
-        var keys = new string[16 * WaterFrames];
-        for (int mask = 0; mask < 16; mask++)
-            for (int frame = 0; frame < WaterFrames; frame++) keys[mask * WaterFrames + frame] = $"t:water{mask}_{frame}";
-        return keys;
-    }
-
-    private static string WaterKey(int mask, int frame)
-        => (uint)mask < 16 && (uint)frame < WaterFrames ? WaterKeys[mask * WaterFrames + frame] : $"t:water{mask}_{frame}";
-
-    /// <summary>The ground layer and building keys of the current map, rebuilt when the map changes.</summary>
-    private void RefreshMapKeys()
-    {
-        if (_mapKeysFor == _map.Def) return;
-        _mapKeysFor = _map.Def;
-        _groundKey = "ground:" + _map.Def.Id;
-        _buildingKeys = new string[_map.Def.Buildings.Count];
-        for (int i = 0; i < _buildingKeys.Length; i++) _buildingKeys[i] = $"bld:{_map.Def.Id}:{i}";
-        _treeKeys = new string?[_map.Width * _map.Height];
+        if (_treesFor == _map.Def) return;
+        _treesFor = _map.Def;
+        _trees = new TreePlacement?[_map.Width * _map.Height];
         for (int y = 0; y < _map.Height; y++)
         for (int x = 0; x < _map.Width; x++)
-            _treeKeys[y * _map.Width + x] = TreeLayout.At(_map.Def, x, y)?.Key;
+            _trees[y * _map.Width + x] = TreeLayout.At(_map.Def, x, y);
     }
 
     /// <summary>The camera position drawn this frame, between the start and the end of the scene's latest step.</summary>
@@ -68,7 +45,8 @@ internal sealed partial class OverworldScene
 
     private void DrawWorld(IRenderer r)
     {
-        RefreshMapKeys();
+        RefreshTrees();
+        var atlas = _game.Atlas;
         var view = _camera.VisibleBounds;
         int x0 = Math.Max(0, (int)MathF.Floor(view.X / Tile) - 1), x1 = Math.Min(_map.Width - 1, (int)MathF.Ceiling(view.Right / Tile) + 1);
         int y0 = Math.Max(0, (int)MathF.Floor(view.Y / Tile) - 1), y1 = Math.Min(_map.Height - 1, (int)MathF.Ceiling(view.Bottom / Tile) + 2);
@@ -77,7 +55,7 @@ internal sealed partial class OverworldScene
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
             DrawGround(r, x, y);
-        r.Draw(_game.Sprite(_groundKey), Vector2.Zero);
+        r.Draw(atlas[$"ground:{_map.Def.Id}"], Vector2.Zero);
 
         // The depth is the row: within one, tiles, then item balls, then buildings (by their bottom row), then the
         // characters whose feet are in it, the lower ones last.
@@ -99,7 +77,7 @@ internal sealed partial class OverworldScene
             int row = b.Y + b.H - 1;
             if (row < y0 || row > y1) continue;
             standing.Depth = row;
-            standing.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * Tile, b.Y * Tile));
+            standing.Draw(atlas[$"bld:{_map.Def.Id}:{i}"], new Vector2(b.X * Tile, b.Y * Tile));
         }
         foreach (var npc in _map.Npcs) if (npc.Visible) DrawStanding(standing, npc, y0, y1);
         DrawStanding(standing, _player, y0, y1);
@@ -108,7 +86,7 @@ internal sealed partial class OverworldScene
         foreach (var (rx, ry, time) in _rustles)
         {
             int frame = Math.Min(2, (int)((Age - time) / 0.15f));
-            r.Draw(_game.Sprite(SpriteKeys.Pick(RustleKeys, "t:rustle", frame)), new Vector2(rx * Tile, ry * Tile));
+            r.Draw(atlas[$"t:rustle{frame}"], new Vector2(rx * Tile, ry * Tile));
         }
         _dust.Draw(r);
         if (_healGlow >= 0) DrawHealGlow(r);
@@ -125,22 +103,22 @@ internal sealed partial class OverworldScene
     {
         var kind = _map.KindAt(x, y);
         var pos = new Vector2(x * Tile, y * Tile);
-        string? key = kind switch
+        var atlas = _game.Atlas;
+        var sprite = kind switch
         {
-            TileKind.Flowers => SpriteKeys.Pick(FlowerKeys, "t:flowers",
-                (int)(Art.Hash(x, y, 33) * TileArt.FlowerKinds) * TileArt.FlowerFrames + (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % TileArt.FlowerFrames),
-            TileKind.TallGrass => SpriteKeys.Pick(TallKeys, "t:tall", (int)(Age * 0.9f + (x + y) * 0.5f) % 2),
-            TileKind.Path => SpriteKeys.Pick(PathKeys, "t:path", AutotileMask(x, y)),
-            TileKind.Water => WaterKey(AutotileMask(x, y), (int)(Age * 5f) % WaterFrames),
-            TileKind.Ledge => SpriteKeys.Pick(LedgeKeys, "t:ledge", (_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)),
-            TileKind.Wall => _map.KindAt(x, y + 1) == TileKind.Wall ? "t:walltop" : (x % 4 == 2 && !_map.Def.Id.Equals("hall") ? "t:wallwin" : "t:wall"),
-            TileKind.Mat => "t:mat",
-            TileKind.Carpet => SpriteKeys.Pick(CarpetKeys, "t:carpet", AutotileMask(x, y)),
-            TileKind.Rug => "t:rug",
+            TileKind.Flowers => atlas[$"t:flowers{(int)(Art.Hash(x, y, 33) * TileArt.FlowerKinds) * TileArt.FlowerFrames + (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % TileArt.FlowerFrames}"],
+            TileKind.TallGrass => atlas[$"t:tall{(int)(Age * 0.9f + (x + y) * 0.5f) % 2}"],
+            TileKind.Path => atlas[$"t:path{AutotileMask(x, y)}"],
+            TileKind.Water => atlas[$"t:water{AutotileMask(x, y)}_{(int)(Age * 5f) % WaterFrames}"],
+            TileKind.Ledge => atlas[$"t:ledge{(_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)}"],
+            TileKind.Wall => atlas[_map.KindAt(x, y + 1) == TileKind.Wall ? "t:walltop" : (x % 4 == 2 && !_map.Def.Id.Equals("hall") ? "t:wallwin" : "t:wall")],
+            TileKind.Mat => atlas["t:mat"],
+            TileKind.Carpet => atlas[$"t:carpet{AutotileMask(x, y)}"],
+            TileKind.Rug => atlas["t:rug"],
             TileKind.Void => null,
-            _ => _map.Def.Id is "hall" or "shrine" ? "t:stone" : _map.Def.Indoor ? SpriteKeys.Pick(FloorKeys, "t:floor", (x + y) % 2) : SpriteKeys.Pick(GrassKeys, "t:grass", (int)(Art.Hash(x, y, 31) * 4)),
+            _ => _map.Def.Id is "hall" or "shrine" ? atlas["t:stone"] : _map.Def.Indoor ? atlas[$"t:floor{(x + y) % 2}"] : atlas[$"t:grass{(int)(Art.Hash(x, y, 31) * 4)}"],
         };
-        if (key is not null) r.Draw(_game.Sprite(key), pos);
+        if (sprite is not null) r.Draw(sprite, pos);
         if (kind == TileKind.Water)
         {
             // Concave corners: both edge neighbours are water but the diagonal is land.
@@ -148,7 +126,7 @@ internal sealed partial class OverworldScene
             for (int c = 0; c < 4; c++)
             {
                 int dx = c % 2 == 0 ? -1 : 1, dy = c < 2 ? -1 : 1;
-                if (W(x + dx, y) && W(x, y + dy) && !W(x + dx, y + dy)) r.Draw(_game.Sprite(WaterInKeys[c]), pos);
+                if (W(x + dx, y) && W(x, y + dy) && !W(x + dx, y + dy)) r.Draw(atlas[$"t:waterin{c}"], pos);
             }
         }
     }
@@ -206,26 +184,27 @@ internal sealed partial class OverworldScene
     {
         var kind = _map.KindAt(x, y);
         var pos = new Vector2(x * Tile, y * Tile);
-        string? key = kind switch
+        var atlas = _game.Atlas;
+        var sprite = kind switch
         {
-            TileKind.Tree or TileKind.Pine => _treeKeys[y * _map.Width + x],
-            TileKind.Rock => "t:rock",
-            TileKind.Bush => "t:bush",
-            TileKind.Fence => SpriteKeys.Pick(FenceKeys, "t:fence", (_map.KindAt(x - 1, y) == TileKind.Fence ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Fence ? 2 : 0)),
-            TileKind.Bookshelf => "t:bookshelf",
-            TileKind.Bed => _map.KindAt(x, y - 1) == TileKind.Bed ? "t:bedbottom" : "t:bedtop",
-            TileKind.Table or TileKind.Pedestal => SpriteKeys.Pick(TableKeys, "t:table", (IsTable(x - 1, y) ? 1 : 0) | (IsTable(x + 1, y) ? 2 : 0)),
-            TileKind.Plant => "t:plant",
-            TileKind.Counter => SpriteKeys.Pick(CounterKeys, "t:counter", AutotileMask(x, y)),
-            TileKind.Tv => "t:tv",
-            TileKind.Kitchen => "t:kitchen",
-            TileKind.Altar => "t:altar",
-            TileKind.Shelf => "t:shelf",
-            TileKind.Machine => "t:machine",
-            TileKind.Statue => "t:statue",
+            TileKind.Tree or TileKind.Pine => _trees[y * _map.Width + x]?.Sprite(atlas),
+            TileKind.Rock => atlas["t:rock"],
+            TileKind.Bush => atlas["t:bush"],
+            TileKind.Fence => atlas[$"t:fence{(_map.KindAt(x - 1, y) == TileKind.Fence ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Fence ? 2 : 0)}"],
+            TileKind.Bookshelf => atlas["t:bookshelf"],
+            TileKind.Bed => atlas[_map.KindAt(x, y - 1) == TileKind.Bed ? "t:bedbottom" : "t:bedtop"],
+            TileKind.Table or TileKind.Pedestal => atlas[$"t:table{(IsTable(x - 1, y) ? 1 : 0) | (IsTable(x + 1, y) ? 2 : 0)}"],
+            TileKind.Plant => atlas["t:plant"],
+            TileKind.Counter => atlas[$"t:counter{AutotileMask(x, y)}"],
+            TileKind.Tv => atlas["t:tv"],
+            TileKind.Kitchen => atlas["t:kitchen"],
+            TileKind.Altar => atlas["t:altar"],
+            TileKind.Shelf => atlas["t:shelf"],
+            TileKind.Machine => atlas["t:machine"],
+            TileKind.Statue => atlas["t:statue"],
             _ => null,
         };
-        if (key is not null) r.Draw(_game.Sprite(key), pos);
+        if (sprite is not null) r.Draw(sprite, pos);
         if (_map.SignAt(x, y) is not null) r.Draw(_game.Sprite("t:sign"), pos);
         if (kind == TileKind.Pedestal && _map.Def.Id == "lab") DrawStarterOrb(r, x, y);
     }
@@ -258,7 +237,7 @@ internal sealed partial class OverworldScene
         r.Draw(_game.Sprite("t:shadow"), p + new Vector2(0, 1));
         int frame = a.Frame;
         if (a == _player && !a.Moving && _bumpTimer > 0 && !Busy && AnyDirectionHeld()) frame = a.BumpFrame(Age);
-        var sprite = _game.Sprite(a.SpriteKey(frame));
+        var sprite = CharacterArt.Sprite(_game.Atlas, a.Look.Key, a.Facing, frame);
         var s = a.DrawSpritePosition;
         r.Draw(sprite, new Vector2(MathF.Round(s.X), MathF.Round(s.Y)));
         // Tall grass hides the feet of anyone standing in it.
@@ -333,7 +312,7 @@ internal sealed partial class OverworldScene
         r.FillGradient(new RectF(rect.X + 4, rect.Y + 4, rect.Width - 8, 70), Pal.Sky.WithAlpha(0.6f), Pal.Cream, 6);
         r.Draw(_game.Sprite("platform:enemy"), new Vector2(160, 72));
         float bob = MathF.Round(MathX.Wave(Age, 1.2f, 1.5f));
-        r.Draw(_game.Sprite(SpriteKeys.Front[species]), new Vector2(160, 74 + bob));
+        r.Draw(_game.Atlas[$"front:{species}"], new Vector2(160, 74 + bob));
         UiKit.Text(r, Font, data.Name, rect.X + 10, rect.Y + 82);
         int bw = UiKit.TypeBadgeWidth(Font, data.Type);
         UiKit.TypeBadge(r, Font, data.Type, rect.Right - bw - 10, rect.Y + 81);

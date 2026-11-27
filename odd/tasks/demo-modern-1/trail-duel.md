@@ -196,3 +196,177 @@ Written as what a developer outside the repository has to write. None was worked
 - L10 A capture differed between two runs of the same build (G5); found while comparing T3 with the baseline, which
   had the odd one. The baseline's capture was replaced by one of five later identical runs of the same `main` build;
   the odd file itself was overwritten by that repair and is not kept.
+
+## Second pass (after DEMO-GAPS-1, issue #218)
+
+Branch `feat/demo2-trail`, from `main` at `debaa4a7`. The engine closed G1 to G5 (ADR 0074 to 0077 and the scripted
+run's own key names); this pass goes through every row of the map again with the engine as it is now and deletes
+what it makes unnecessary.
+
+### Method
+
+- Baseline from a build of `debaa4a7` exported outside the worktree: the game's eight scripts with captures, state
+  traces and `--audio-capture`, and the first pass's wider set (the `fx` start with a capture every 3 updates, a
+  generic input script on 20 debug starts and the title, a battle script on five battle starts): 991 captures, 35
+  traces and 8 audio captures, run twice and identical to the byte (1,034 files).
+- `tests/TrailDuel.Tests/PresentationTimelineTests.cs`, written first against the old code and seen passing: five
+  runs (the master's battle, a wild battle with a thrown orb, the move showcase, a lost trainer battle and the
+  healing shrine) list every sound that starts, every time the battle menu opens or closes and every change of
+  screen, each with its update (222, 109, 54, 106 and 93 events). It has not changed since.
+- After each step: `dotnet build MicroEngine.slnx -c Release` (0 warnings), the game's tests, the 1,034 files
+  compared byte for byte, and for every trace that changed, which sections changed and on which updates.
+
+### The map again
+
+| Piece | First pass | Now |
+| --- | --- | --- |
+| Tween and fade coroutines (G1) | gap | **Replaced**: the battle's 24 `Tween(...)` calls are `yield return Tweens.Add(...)` and `BattleScene.Tween` is deleted; the overworld's `FadeOut` and `FadeIn` are one tween each. **Kept**: `ShowBubble` and the shrine's glow, see L11; `DrainHp`, a rate and not a length |
+| One-shot sprite effects (G2) | gap | **Replaced**: `Scenes/SpriteFx.cs` deleted; `Effects.Play(clip, ...)` with `Effects.SnapToPixels` |
+| Text caches (G3) | gap | **Replaced**: `Ui/NumberTexts.cs`, `Ui/CachedText.cs` and `Visuals/SpriteKeys.cs` deleted, with the key tables of the tiles, trees, actors, buildings, battle creatures, level panel and dex numbers. Text is `$"{hp}/{max}"` given to `UiKit.Text`, `TextRight` (the font's `DrawRight`) and `Title`; a sprite is `atlas[$"t:water{mask}_{frame}"]`; hints are `Prompts.Cached`. Kept: the wrapped lines of the move card and the summary, the per-map tree layout (worked out, not formatted) |
+| Typewriter and list cursor (G4) | gap | **Replaced**: `TextReveal` in `TextPanel` (its line split cache is gone too) and `MenuCursor` in the title, pause menu, bag, shop, party, trail log and the yes/no box |
+| Two-by-two menu grid | kept | **Replaced**: `MenuCursor(4, columns: 2)` with `Wrap = false`; `BattleScene.GridMove` deleted. One difference, see L13 |
+| Text box and menus on widgets | kept, left as work | **Kept**, decided: see L14 |
+| Battle menu mode, title flags | kept | **Kept**: nothing in either leaves by time, so `AfterSteps` has nothing to count; see L15 |
+| Hand timers | kept | **Kept**: L6 stands with `Timers` as a plain object too; see L15 |
+| Strings in code | kept, left as work | **Kept**: see L16 |
+| Prompt text and the keyboard layout (G5) | gap | Closed in the engine; nothing to change in the game |
+| Every other row | | Unchanged |
+
+### Tasks
+
+| ID | Task | Route | Status |
+| --- | --- | --- | --- |
+| T6 | Pin the updates of the presentation (old code) | inline | [x] `34c30bc8` |
+| T7 | Eases and fades on the scene's tweens | inline | [x] `d3d7872a` |
+| T8 | One-shot effects on `Scene.Effects` | inline | [x] `204d1f3d` |
+| T9 | Numbers and sprite names written where they are drawn | inline | [x] `fc71bfd0` |
+| T10 | `TextReveal` and `MenuCursor` | inline | [x] `41315cb7` |
+| T11 | The differing frames of `master-battle` looked at | inline | [x] L17 |
+
+### Lines of game code
+
+Lines of `*.cs`, `debaa4a7` against the branch:
+
+| Area | Before | After |
+| --- | --- | --- |
+| `TrailDuelGame.cs`, `Program.cs` | 163 | 163 |
+| `Scenes/` | 3,724 | 3,584 |
+| `Ui/` | 541 | 468 |
+| `World/` | 855 | 840 |
+| `Visuals/` | 3,223 | 3,182 |
+| `Rules/`, `Sound/` | 1,722 | 1,722 |
+| Game total | 10,228 | 9,959 |
+| `tests/TrailDuel.Tests` | 2,391 | 2,524 |
+
+Deleted: four files (`SpriteFx.cs`, `NumberTexts.cs`, `CachedText.cs`, `SpriteKeys.cs`, 170 lines), `BattleScene.Tween`
+and `GridMove`, 12 arrays of tile keys and the water key table, the trees' key arrays, `Actor.SpriteKey` with its four
+fields, the battle's creature key records and backdrop and platform key fields, the level panel's ten kept strings,
+`BagScene.SyncList`, the text box's line cache. The tests grew by the timeline (116 lines) and the grid test.
+
+### Captures, traces, sound
+
+- Captures: 991 of 991 identical to `main` after every step. Audio captures: 8 of 8 identical.
+- State traces: 22 of 35 identical. 13 changed, in T7 and T8 only, and only in the engine's part of the scene's hash
+  (`scene[n]:BattleScene`, `scene[0]:OverworldScene`): a coroutine that waits for a tween instead of a nested one
+  (on the updates an ease or a fade runs: 29 to 564 updates of a run) and the effects, now a hashed scene system (on
+  every update of a battle). The game's own sections (`battle.rules`, `battle.screen`, `overworld`,
+  `overworld.player`, `overworld.npcs`, `game`) are equal on every update of every run. T9 and T10 change no trace:
+  the scenes hash the same values (cursor index, characters shown) as before.
+- Behaviour on the same updates: `PresentationTimelineTests` passes unchanged after every step.
+- Saves: a save written by the `main` build (`--saves`, the pause menu's SAVE from the `town` start) continued from
+  the title by both builds gives the same 2 captures and the same state trace, byte for byte (430 updates).
+- Drawing makes no garbage: `FrameGarbageTests` (town, route, lab, party, shop, summary, the battle menu, the
+  shrine's glow, the controls page), with the bag added.
+
+### What the game still takes from `games/Shared`
+
+`AchievementList` (the achievements screen, pushed from the title) and `AchievementBanners` (the unlock banner, drawn
+above the scenes). Neither uses `OptionList` or `Typewriter`. The SDK has no achievements screen and no banner: to
+stop using them the game would carry about 170 lines of its own for both (the list's clamped cursor and its window
+are `MenuCursor { Wrap = false }` and `Top(visible)`). The banner outlives scenes (a frame system, drawn in
+`DrawAboveScenes`), and widgets belong to a scene's root, so it cannot be a scene's canvas widgets. `OptionList` and
+`Typewriter` are no longer referenced by this game.
+
+### Engine gaps that remain
+
+- G6 **An achievements screen and an unlock banner.** A developer whose game has achievements writes the list
+  (rows with icon, name, description, progress bar, a scrolling window) and the banner queue that slides in over
+  any scene (`games/Shared/AchievementList.cs`, `AchievementBanners.cs`, 197 lines, shared by the four demos)
+  because the engine tracks achievements and shows nothing, and has no widget root above the scenes for something
+  that stays up while they change.
+- G7 **A label's line pitch.** A developer whose dialogue box has lines 13 pixels apart cannot use `Label` with
+  `Reveal`: a label's lines are `Font.LineHeight + Unit` apart (11 pixels with the built-in font on the canvas)
+  and nothing sets it. The game keeps `TextPanel.Draw` over `TextReveal.VisibleLines`. Read in
+  `src/MicroEngine.UI/Widgets.cs`, not run.
+- G8 **Seconds since a tween or a wait began.** A developer whose cutscene shows something for 0.7 s and draws it
+  from the seconds elapsed (a bubble that pops in during the first 0.12 s, a glow that pulses with `sin(t * 9)`)
+  still writes `for (float t = 0; t < 0.7f; t += EngineStep) { _time = t; yield return null; }` because a tween
+  gives only eased progress (`Tween.Progress` is time divided by length, and `progress * length` is not the same
+  `float` as the accumulated time). Missing: `Tween.Time`, or the elapsed seconds given to `apply`.
+- G9 **`VisibleLines` enumerated with `foreach` allocates.** `TextReveal.VisibleLines` and `Label.VisibleLines`
+  are `IReadOnlyList<string>` over an array: `foreach` boxes an enumerator (32 bytes a draw, caught by the game's
+  allocation test); a `for` over the index does not. A type with its own enumerator, or a note in the manual.
+- G10 **`SnapToPixels` rounds the point, not the picture.** `SpriteEffects.Draw` rounds the effect's position and
+  then subtracts the frame's origin; a clip whose pivot is a fraction of an odd cell (the flame's 25 x 30 cell with
+  pivot 0.5, 0.75: origin 12.5, 22.5) is drawn exactly between pixels, which two rasterizers resolve differently
+  (L17). `SpriteFx` did the same, so the game's pictures are unchanged; rounding the top-left would change them.
+
+### Log
+
+- L11 `ShowBubble` (0.7 s) and the shrine's glow (1.8 s) keep their loops: what they give drawing is the seconds
+  elapsed, not progress (G8). `Tweens.Add(0.7f, p => _bubbleTime = p * 0.7f, Ease.Linear)` would run the same
+  number of updates with values that differ from the accumulated `t` in the last bits, and the glow feeds `sin`.
+- L12 T8. The scene steps its effects after the coroutines and before `Update`, where the game stepped `SpriteFx`
+  from `Update`: the same order relative to the flow coroutine that plays them. The battle never waited on its
+  effects (`SpriteFx.Busy` had no caller); they are in the hash now because the engine's are.
+- L13 T10. `GridMove` and `MenuCursor` differ in one case: opposite directions pressed in the same update. The game
+  moved (left won over right, up over down); the cursor cancels them, as `OptionList` did in every other list of
+  the game. No script of the game presses opposite directions on the same update (checked: 8 scripts, 70 presses
+  and holds), so no capture or trace can show it; a player can, by pressing both keys within one update. Not
+  papered over: `MoveInspectionTests.BattleMoveMenuIsATwoByTwoGridThatStopsAtItsEdges` states the new behaviour.
+- L14 The text box and the menus stay drawn by the game, over `TextReveal` and `MenuCursor`, which is the path the
+  manual gives a scene that draws its own boxes. Judged by reading the widgets, not by building them. The text box
+  cannot be a `Label` with the same pixels (G7: 11 against 13 pixels between lines). The menus can be buttons with
+  a skin on the canvas (`WrapFocus`, `FocusChanged` for the sound, `UiContext.Time` for the cursor's bob), with
+  three costs: a panel has one padding and the game's boxes have 6 above and 4 below the rows (a fixed height
+  works around it); the rows would take the mouse and touch, which they do not today, and `touch.script` taps the
+  canvas; and each of the nine screens trades a draw loop of about five lines for the construction of its rows,
+  while `UiKit.Box` and `UiKit.Cursor` stay as the skins. No private infrastructure would leave.
+- L15 `Mode` and the title's flags again, with `AfterSteps`: neither has a way out by time. The low-HP beep
+  (`_lowHpBeep`) is the one clock near them: it fires on the first update a menu is up, then every 0.55 s, runs
+  only while a menu is open and keeps what is left between turns (it is in the hash). As `Timers.EverySteps` owned
+  by the scene it needs the first call by hand and a step of its own behind the same two conditions: three lines
+  for three lines. The overworld's timers are consulted and reset by the walking rule in several places (L6).
+- L16 Strings: about 330 sentences in code, 66 of them built with names or numbers, most inside the map records
+  (`World/Maps.cs`), the cutscenes and the rules (`Rules/Battle.cs` emits `MessageEvent(text)`, and the rules'
+  tests read the text). A table would not change a pixel; it would move the rules from text to keys with
+  arguments, which is a change of the rules' contract and not the removal of infrastructure, and there is no
+  second language to check it against. Not done.
+- L17 The frames `b_732` to `b_748` of `master-battle`. Looked at (captures read, both rasterizers run here):
+  - What is on screen: Blazehound's Ember reaches Gustwing. The trail of round flame particles ends, the impact
+    bursts (72 round particles, half of them additive) and the one-shot `flame` effect plays over the enemy; from
+    `b_740` the enemy is knocked back 6 pixels and slides home.
+  - This machine's GPU against the stored WARP reference: all 81 frames differ a little; `b_732` to `b_748` differ
+    by 7 to 17 in the mean of the cells (22..24, 3..5), over the tolerance of 3; the others by at most 3. Run here
+    with `SDL_RENDER_DIRECT3D11_WARP=1 SDL_RENDER_DRIVER=direct3d11`, the same build gives all 81 frames within 1
+    of the WARP reference, and two such runs are identical. So the five frames are the rasterizer, not the run.
+  - Pixel by pixel, GPU against WARP on this machine: in every frame where the enemy is drawn, 108 pixels (12
+    canvas pixels under the enemy: its shadow or feet) differ by up to 56; during the trail, up to 2,100 pixels
+    differ by 1 (blending of the translucent particles rounds differently); in `b_732` to `b_752`, 360 to 1,683
+    pixels differ by more than 16 and up to 243, whole pixels of the picture.
+  - The cause of the large difference is the `flame` effect: its sheet gives a 25 x 30 cell the pivot (0.5, 0.75),
+    an origin of (12.5, 22.5), so the sprite is drawn exactly half a pixel off in both axes, and at three device
+    pixels a canvas pixel every third device pixel's centre falls on a texel edge, which each rasterizer resolves
+    its own way. Tried, not committed: with `"origin": [12, 22]` in a scratch build the pixels more than 16 apart
+    in `b_732` to `b_752` fall from 360..1,683 to the constant 108, and the largest difference from 243 to 56.
+    Other effects have such origins too (geyser, sparkle, boost, gale, aura, thunder, splash).
+  - Frame pacing: the particles are drawn where the last update left them (`ParticleSystem.Draw` with its default
+    blend), the effects and the text too. What is drawn between updates in these frames is the enemy's knockback
+    (its offset is an entity of the scene's objects, set 6 pixels away at once and eased home over 10 updates) and
+    nothing else; a frame drawn mid-step would show the enemy up to 6 pixels off in `b_740` to `b_748`, over the
+    whole silhouette. The differences seen here are not that shape and start at `b_732`, before the knockback.
+    Whether a browser ever draws mid-step in a scripted run was not tested here; a browser that fell back to its
+    software rasterizer for one run would give the half-pixel difference above. Not proven.
+  - Every stored reference (`sdl.json`, `sdl-windows-ci.json`) differs by 1 from this build in the same 15 cells of
+    all 81 frames (the corners and shadows of the two HUD boxes), with either rasterizer. Within the tolerance; the
+    cause was not looked for.

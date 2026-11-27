@@ -45,7 +45,8 @@ internal static class TreeArt
 /// <summary>Where a tree tile's tree reaches: its variant, a sideways shift of its crown (-1 left, 1 right) or a low tree.</summary>
 internal readonly record struct TreePlacement(int Variant, int Shift, bool Low)
 {
-    public string Key => Low ? TreeLayout.LowKey(Variant) : TreeLayout.TallKey(Variant, Shift);
+    /// <summary>Its sprite: "t:treelow{variant}", or "t:tree{variant}" followed by c, l or r for where the crown leans.</summary>
+    public Sprite Sprite(SpriteAtlas atlas) => Low ? atlas[$"t:treelow{Variant}"] : atlas[$"t:tree{Variant}{(Shift < 0 ? "l" : Shift > 0 ? "r" : "c")}"];
 }
 
 /// <summary>
@@ -57,17 +58,9 @@ internal readonly record struct TreePlacement(int Variant, int Shift, bool Low)
 /// </summary>
 internal static class TreeLayout
 {
-    private static readonly string[] Tall = Keys("c"), TallLeft = Keys("l"), TallRight = Keys("r"), LowKeys = SpriteKeys.Numbered("t:treelow", TreeArt.Variants);
-
-    private static string[] Keys(string suffix)
-    {
-        var keys = new string[TreeArt.Variants];
-        for (int i = 0; i < keys.Length; i++) keys[i] = $"t:tree{i}{suffix}";
-        return keys;
-    }
-
-    public static string TallKey(int variant, int shift) => (shift < 0 ? TallLeft : shift > 0 ? TallRight : Tall)[variant];
-    public static string LowKey(int variant) => LowKeys[variant];
+    /// <summary>The atlas names of a tall tree (its crown centred, leaning left or leaning right) and of a low one.</summary>
+    public static string TallKey(int variant, int shift) => $"t:tree{variant}{(shift < 0 ? "l" : shift > 0 ? "r" : "c")}";
+    public static string LowKey(int variant) => $"t:treelow{variant}";
 
     /// <summary>The tree on (<paramref name="x"/>, <paramref name="y"/>), or null when the tile holds none.</summary>
     public static TreePlacement? At(MapDef map, int x, int y)

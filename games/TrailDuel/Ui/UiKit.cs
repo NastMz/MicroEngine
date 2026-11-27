@@ -37,11 +37,29 @@ internal static class UiKit
     public static void Text(IRenderer r, BitmapFont font, string text, float x, float y, Color? color = null)
         => font.DrawShadowed(r, text, new Vector2(MathF.Round(x), MathF.Round(y)), color ?? TextColor, TextShade);
 
+    /// <summary>As <see cref="Text(IRenderer, BitmapFont, string, float, float, Color?)"/> for a text written where it is drawn (<c>$"Lv{level}"</c>): no string is made.</summary>
+    public static void Text(IRenderer r, BitmapFont font, InterpolatedText text, float x, float y, Color? color = null)
+        => font.DrawShadowed(r, text, new Vector2(MathF.Round(x), MathF.Round(y)), color ?? TextColor, TextShade);
+
     public static void TextRight(IRenderer r, BitmapFont font, string text, float right, float y, Color? color = null)
-        => Text(r, font, text, right - font.MeasureWidth(text), y, color);
+        => font.DrawRight(r, text, new Vector2(right, y), color ?? TextColor, shadow: TextShade);
+
+    /// <summary>As <see cref="TextRight(IRenderer, BitmapFont, string, float, float, Color?)"/> for a text written where it is drawn (<c>$"{hp}/{max}"</c>).</summary>
+    public static void TextRight(IRenderer r, BitmapFont font, InterpolatedText text, float right, float y, Color? color = null)
+        => font.DrawRight(r, text, new Vector2(right, y), color ?? TextColor, shadow: TextShade);
 
     /// <summary>White text with a dark outline: legible over the battle scene and overworld.</summary>
     public static void Title(IRenderer r, BitmapFont font, string text, Vector2 center, float scale = 1f, Color? color = null)
+        => Title(r, font, text.AsSpan(), center, scale, color);
+
+    /// <summary>As <see cref="Title(IRenderer, BitmapFont, string, Vector2, float, Color?)"/> for a text written where it is drawn (<c>$"${money}"</c>).</summary>
+    public static void Title(IRenderer r, BitmapFont font, InterpolatedText text, Vector2 center, float scale = 1f, Color? color = null)
+    {
+        try { Title(r, font, text.Text, center, scale, color); }
+        finally { text.Dispose(); }
+    }
+
+    private static void Title(IRenderer r, BitmapFont font, ReadOnlySpan<char> text, Vector2 center, float scale, Color? color)
     {
         var size = font.Measure(text, scale);
         var pos = new Vector2(MathF.Round(center.X - size.X / 2), MathF.Round(center.Y - size.Y / 2));
@@ -49,14 +67,14 @@ internal static class UiKit
     }
 
     /// <summary>
-    /// The engine's list navigation (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens draw
-    /// their lists themselves, with <see cref="Cursor"/> beside the highlighted row.
+    /// The engine's cursor for a list (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens
+    /// draw their rows themselves, with <see cref="Cursor"/> beside the highlighted one.
     /// </summary>
-    public static DemoKit.OptionList List(AudioMixer audio, params string[] options)
+    public static MenuCursor Menu(AudioMixer audio, int count, int columns = 1)
     {
-        var list = new DemoKit.OptionList(options);
-        list.Moved += () => audio.Play("move", 0.6f);
-        return list;
+        var menu = new MenuCursor(count, columns);
+        menu.Moved += () => audio.Play("move", 0.6f);
+        return menu;
     }
 
     public static void Cursor(IRenderer r, BitmapFont font, float x, float y, float time)

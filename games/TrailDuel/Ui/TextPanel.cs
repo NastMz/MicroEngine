@@ -23,7 +23,7 @@ internal sealed class TextPanel : IStateHashed
 {
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
-    private readonly DemoKit.Typewriter _typewriter = new() { CharactersPerSecond = 60 };
+    private readonly TextReveal _reveal = new() { CharactersPerSecond = 60 };
     private readonly Queue<string> _pages = new();
     private float _time;
     private int _blips;
@@ -34,7 +34,7 @@ internal sealed class TextPanel : IStateHashed
     public bool Active { get; private set; }
     /// <summary>When false the last page stays up until code calls <see cref="Close"/> (battle menus sit under it).</summary>
     public bool WaitForConfirmOnLast { get; set; } = true;
-    public bool PageComplete => Active && _typewriter.Complete;
+    public bool PageComplete => Active && _reveal.Complete;
     public bool Silent { get; set; }
     /// <summary>When above zero, a fully typed last page closes by itself after this many seconds.</summary>
     public float AutoAdvance { get; set; }
@@ -44,7 +44,7 @@ internal sealed class TextPanel : IStateHashed
     {
         _font = font;
         _audio = audio;
-        _typewriter.Revealed += _ =>
+        _reveal.CharacterRevealed += _ =>
         {
             if (Silent || _blips++ % 3 != 0) return;
             _audio.Play("blip", 0.35f, 1f, 0.06f);
@@ -64,7 +64,7 @@ internal sealed class TextPanel : IStateHashed
     private void Next()
     {
         if (_pages.Count == 0) { Close(); return; }
-        _typewriter.Start(_pages.Dequeue());
+        _reveal.Start(_pages.Dequeue());
         Active = true;
         _time = 0;
     }
@@ -75,19 +75,19 @@ internal sealed class TextPanel : IStateHashed
         _pages.Clear();
     }
 
-    public void FinishTyping() => _typewriter.Finish();
+    public void FinishTyping() => _reveal.Finish();
 
     /// <summary>
     /// State hash: whether it is open, the speaker, the page being typed and how much of it shows, the pages waiting,
     /// the paging settings, how long the page has been complete and the blip counter (which reveals play a sound).
-    /// Left out: <c>_time</c> (only bobs the "more" arrow) and the visible-line cache that drawing fills.
+    /// Left out: <c>_time</c> (only bobs the "more" arrow).
     /// </summary>
     public void HashState(StateHasher hash)
     {
         hash.Add(Active);
         hash.Add(Speaker);
-        hash.Add(_typewriter.Text);
-        hash.Add(_typewriter.VisibleCount);
+        hash.Add(_reveal.Text);
+        hash.Add(_reveal.Revealed);
         hash.Add(_pages.Count);
         foreach (var page in _pages) hash.Add(page);
         hash.Add(WaitForConfirmOnLast);
@@ -101,11 +101,11 @@ internal sealed class TextPanel : IStateHashed
     {
         if (!Active) return;
         _time += dt;
-        _typewriter.Update(dt);
-        _completeTime = _typewriter.Complete ? _completeTime + dt : 0;
+        _reveal.Update(dt);
+        _completeTime = _reveal.Complete ? _completeTime + dt : 0;
         if (AutoAdvance > 0 && _pages.Count == 0 && WaitForConfirmOnLast && _completeTime >= AutoAdvance) { Next(); return; }
-        if (!input.Pressed("confirm") && !(input.Pressed("cancel") && _typewriter.Complete)) return;
-        if (!_typewriter.Complete) { _typewriter.Finish(); return; }
+        if (!input.Pressed("confirm") && !(input.Pressed("cancel") && _reveal.Complete)) return;
+        if (!_reveal.Complete) { _reveal.Finish(); return; }
         if (_pages.Count == 0 && !WaitForConfirmOnLast) return;
         _audio.Play("text", 0.5f);
         Next();
@@ -119,31 +119,13 @@ internal sealed class TextPanel : IStateHashed
         while (Active) yield return null;
     }
 
-    private string? _linesText;
-    private int _linesCount = -1;
-    private string[] _lines = [];
-
-    /// <summary>The revealed lines, split again only when another character shows (not every frame).</summary>
-    private string[] VisibleLines()
-    {
-        if (!ReferenceEquals(_linesText, _typewriter.Text) || _linesCount != _typewriter.VisibleCount)
-        {
-            (_linesText, _linesCount) = (_typewriter.Text, _typewriter.VisibleCount);
-            _lines = _typewriter.Visible.Split('\n');
-        }
-        return _lines;
-    }
-
     public void Draw(IRenderer r)
     {
         if (!Active) return;
         UiKit.Box(r, Area);
         float y = Area.Y + 9;
-        foreach (var line in VisibleLines())
-        {
-            UiKit.Text(r, _font, line, Area.X + 10, y);
-            y += 13;
-        }
+        var lines = _reveal.VisibleLines;
+        for (int i = 0; i < lines.Count; i++, y += 13) UiKit.Text(r, _font, lines[i], Area.X + 10, y);
         if (Speaker is { Length: > 0 } name)
         {
             int w = _font.MeasureWidth(name) + 12;
@@ -153,7 +135,7 @@ internal sealed class TextPanel : IStateHashed
             r.FillRect(new RectF(tag.X + 1, tag.Y + 1, tag.Width - 2, tag.Height - 3), Pal.Coral);
             _font.Draw(r, name, new Vector2(tag.X + 6, tag.Y + 3), Pal.White);
         }
-        if (_typewriter.Complete && (_pages.Count > 0 || WaitForConfirmOnLast))
+        if (_reveal.Complete && (_pages.Count > 0 || WaitForConfirmOnLast))
         {
             float bob = MathF.Round(MathX.Wave(_time, 2f, 1.5f));
             _font.Draw(r, "▼", new Vector2(Area.Right - 14, Area.Bottom - 12 + bob), Pal.Coral);
@@ -163,7 +145,7 @@ internal sealed class TextPanel : IStateHashed
 
 /// <summary>
 /// A small vertical menu box (Yes/No, learning moves...). Returns the chosen index, or -1 on cancel. The engine's
-/// <see cref="DemoKit.OptionList"/> moves the cursor and chooses; the box and cursor are drawn in the game's <see cref="UiKit"/> look.
+/// <see cref="MenuCursor"/> moves the cursor and chooses; the box and cursor are drawn in the game's <see cref="UiKit"/> look.
 /// </summary>
 internal sealed class ChoiceMenu : IStateHashed
 {
@@ -173,15 +155,16 @@ internal sealed class ChoiceMenu : IStateHashed
     /// </summary>
     public void HashState(StateHasher hash)
     {
-        hash.Add(_list.Options.Count);
-        foreach (var option in _list.Options) hash.Add(option);
+        hash.Add(_options.Length);
+        foreach (var option in _options) hash.Add(option);
         hash.Add(Index);
         hash.Add(CanCancel);
         hash.Add(Result is not null);
         hash.Add(Result ?? 0);
     }
 
-    private readonly DemoKit.OptionList _list;
+    private readonly string[] _options;
+    private readonly MenuCursor _list;
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
     private float _time;
@@ -194,14 +177,15 @@ internal sealed class ChoiceMenu : IStateHashed
     {
         _font = font;
         _audio = audio;
-        _list = UiKit.List(audio, options);
+        _options = options;
+        _list = UiKit.Menu(audio, options.Length);
     }
 
     public RectF Bounds(Vector2 anchorBottomRight)
     {
-        if (_width < 0) _width = _list.Options.Max(o => _font.MeasureWidth(o)) + 24;
+        if (_width < 0) _width = _options.Max(o => _font.MeasureWidth(o)) + 24;
         int w = _width;
-        int h = _list.Options.Count * 12 + 10;
+        int h = _options.Length * 12 + 10;
         return new RectF(anchorBottomRight.X - w, anchorBottomRight.Y - h, w, h);
     }
 
@@ -217,10 +201,10 @@ internal sealed class ChoiceMenu : IStateHashed
     {
         var b = Bounds(anchorBottomRight);
         UiKit.Box(r, b);
-        for (int i = 0; i < _list.Options.Count; i++)
+        for (int i = 0; i < _options.Length; i++)
         {
             float y = b.Y + 6 + i * 12;
-            UiKit.Text(r, _font, _list.Options[i], b.X + 14, y);
+            UiKit.Text(r, _font, _options[i], b.X + 14, y);
             if (i == Index) UiKit.Cursor(r, _font, b.X + 5, y, _time);
         }
     }

@@ -63,4 +63,34 @@ public sealed class MoveInspectionTests
         Assert.IsFalse(battle.MoveInfoOpen);
         Assert.IsTrue(battle.InMoveMenu, "Toggling the card never picks a move.");
     }
+
+    /// <summary>
+    /// The move menu is a grid two wide: a direction moves one cell and stops at the edge (no wrapping), and opposite
+    /// directions pressed in the same update cancel out, as in every other list of the game.
+    /// </summary>
+    [TestMethod]
+    public void BattleMoveMenuIsATwoByTwoGridThatStopsAtItsEdges()
+    {
+        using var h = new Harness("battle");
+        var battle = (BattleScene)h.Game.Scenes.Current!;
+        for (int i = 0; i < 1200 && !battle.AwaitingChoice; i++) h.Step();
+        h.Press("confirm", 6);
+        Assert.IsTrue(battle.InMoveMenu);
+        Assert.AreEqual(4, battle.Battle.Player.Moves.Count, "the debug start's first creature knows four moves");
+        var path = new List<int>();
+        foreach (string direction in new[] { "right", "right", "down", "down", "left", "left", "up", "up" })
+        {
+            h.Press(direction, 6);
+            path.Add(battle.MoveCursor);
+        }
+        CollectionAssert.AreEqual(new[] { 1, 1, 3, 3, 2, 2, 0, 0 }, path);
+
+        h.Game.Input.SetForced("left", true);
+        h.Game.Input.SetForced("right", true);
+        h.Step(2);
+        h.Game.Input.SetForced("left", false);
+        h.Game.Input.SetForced("right", false);
+        h.Step(4);
+        Assert.AreEqual(0, battle.MoveCursor, "left and right together move nothing");
+    }
 }

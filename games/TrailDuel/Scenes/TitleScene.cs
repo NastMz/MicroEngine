@@ -13,9 +13,10 @@ namespace TrailDuel.Scenes;
 /// <summary>Title screen: a sunny hilltop with the three starters, the logo, and Continue / New Game.</summary>
 internal sealed class TitleScene(TrailDuelGame game) : Scene
 {
-    private CachedText _pressText;
+    private CachedText<int> _pressText;
     /// <summary>The title menu, built on entering (Continue only with a save).</summary>
-    private DemoKit.OptionList _list = null!;
+    private string[] _options = [];
+    private MenuCursor _list = null!;
     private bool _menu;
     private bool _confirmOverwrite;
     private ChoiceMenu? _confirm;
@@ -26,22 +27,23 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         string[] options = ["NEW GAME", "CONTROLS", "ACHIEVEMENTS", "QUIT"];
         // Asked once, here: a save from a newer release, or one that cannot be read, is not an adventure to continue.
         _canContinue = game.CanContinue;
-        _list = UiKit.List(Audio, _canContinue ? ["CONTINUE", .. options] : options);
+        _options = _canContinue ? ["CONTINUE", .. options] : options;
+        _list = UiKit.Menu(Audio, _options.Length);
     }
 
     private bool _canContinue;
 
     /// <summary>The title's options, top to bottom.</summary>
-    internal IReadOnlyList<string> Options => _list.Options;
+    internal IReadOnlyList<string> Options => _options;
 
     public override void Resume() => Audio.PlayMusic("title");
 
-    /// <summary>State hash: whether the menu is open, its options and cursor, and the overwrite question. Left out: the prompt text cache.</summary>
+    /// <summary>State hash: whether the menu is open, its options and cursor, and the overwrite question. Left out: the prompt text, kept until the prompts change.</summary>
     public override void HashState(StateHasher hash)
     {
         hash.Add(_menu);
-        hash.Add(_list.Options.Count);
-        foreach (var option in _list.Options) hash.Add(option);
+        hash.Add(_options.Length);
+        foreach (var option in _options) hash.Add(option);
         hash.Add(_list.Index);
         hash.Add(_confirmOverwrite);
         hash.Add(_confirm);
@@ -69,7 +71,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         if (Input.Pressed("cancel")) { _menu = false; Audio.Play("cancel", 0.6f); return; }
         if (chosen is not { } index) return;
         Audio.Play("confirm");
-        switch (_list.Options[index])
+        switch (_options[index])
         {
             case "CONTINUE": game.ContinueGame(); break;
             case "NEW GAME":
@@ -104,7 +106,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
             // The middle starter stands closer to the viewer so the menu never hides it.
             float x = 100 + i * 60, ground = i == 1 ? 168 : 152, hop = MathF.Max(0, MathF.Sin(Age * 2.4f + i * 2.1f)) * 5;
             r.FillEllipse(new Vector2(x, ground - 1), 11, 2.5f, Pal.Ink.WithAlpha(0.2f));
-            r.Draw(game.Sprite(SpriteKeys.Front[starters[i]]), new Vector2(x, MathF.Round(ground - hop)));
+            r.Draw(game.Atlas[$"front:{starters[i]}"], new Vector2(x, MathF.Round(ground - hop)));
         }
 
         // Logo
@@ -116,14 +118,14 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
 
         if (!_menu)
         {
-            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, _pressText.Get(Game.Prompts.Version, Game.Prompts, static p => p.Format("PRESS {confirm} TO START").ToUpperInvariant()), new Vector2(160, 98));
+            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, _pressText.Get(Game.Prompts.Version, Game.Prompts, static (p, _) => p.Format("PRESS {confirm} TO START").ToUpperInvariant()), new Vector2(160, 98));
         }
         else
         {
-            var options = _list.Options;
-            var box = new RectF(112, 66, 96, options.Count * 12 + 10);
+            var options = _options;
+            var box = new RectF(112, 66, 96, options.Length * 12 + 10);
             UiKit.Box(r, box);
-            for (int i = 0; i < options.Count; i++)
+            for (int i = 0; i < options.Length; i++)
             {
                 float y = box.Y + 6 + i * 12;
                 UiKit.Text(r, Font, options[i], box.X + 18, y);

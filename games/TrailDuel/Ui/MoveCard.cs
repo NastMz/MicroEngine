@@ -39,7 +39,10 @@ internal static class MoveCard
         }
         Stat("POW", MoveText.Power(move));
         Stat("ACC", MoveText.Accuracy(move));
-        Stat("PP", pp is { } current ? NumberTexts.Ratio(current, move.Pp) : NumberTexts.Of(move.Pp));
+        UiKit.Text(r, font, "PP", cx, row, UiKit.Muted);
+        cx += font.MeasureWidth("PP") + 3;
+        if (pp is { } current) UiKit.Text(r, font, $"{current}/{move.Pp}", cx, row);
+        else UiKit.Text(r, font, $"{move.Pp}", cx, row);
 
         row += 11;
         if (Matchup(move, foe) is { } matchup)

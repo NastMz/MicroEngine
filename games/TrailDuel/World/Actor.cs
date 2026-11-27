@@ -170,19 +170,4 @@ internal sealed class Actor : IStateHashed
 
     /// <summary>Walking in place against a wall still animates the legs.</summary>
     public int BumpFrame(float time) => ((int)(time * 6) % 4) switch { 1 => 1, 3 => 2, _ => 0 };
-
-    private string? _spriteKey, _spriteKeyLook;
-    private Direction _spriteKeyFacing;
-    private int _spriteKeyFrame;
-
-    /// <summary>The atlas key of <paramref name="frame"/> facing <see cref="Facing"/>, formatted only when it changes.</summary>
-    public string SpriteKey(int frame)
-    {
-        if (_spriteKey is null || !ReferenceEquals(_spriteKeyLook, Look.Key) || _spriteKeyFacing != Facing || _spriteKeyFrame != frame)
-        {
-            _spriteKey = CharacterArt.Key(Look.Key, Facing, frame);
-            (_spriteKeyLook, _spriteKeyFacing, _spriteKeyFrame) = (Look.Key, Facing, frame);
-        }
-        return _spriteKey;
-    }
 }
