@@ -1,5 +1,6 @@
 using System.Numerics;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Localization;
 
 namespace MicroEngine.UI;
@@ -54,26 +55,71 @@ public sealed class Label : Widget
     /// </summary>
     public int? VisibleCharacters { get; set; }
 
+    /// <summary>
+    /// Reveals the label's text a character at a time (<see cref="TextReveal"/>): the label starts it whenever its
+    /// text changes (a new page, another language) and advances it at every update of its root, on the scene's clock,
+    /// so a dialogue sets the text and reads <see cref="TextReveal.Complete"/>. Characters are counted as a reader
+    /// counts them, so text in any script is never cut inside one. While it is set it decides what shows, and
+    /// <see cref="VisibleCharacters"/> is not read. It is part of the scene's state hash. Null (the default) reveals
+    /// nothing by itself.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var text = new Label { Width = 280, Wrap = true, Reveal = new TextReveal { CharactersPerSecond = 45 } };
+    /// text.Reveal.CharacterRevealed += _ =&gt; Audio.TryPlay("blip", 0.3f);
+    /// text.Text = "The gems only grow at night.";      // starts the reveal
+    /// // on confirm
+    /// if (!text.Reveal.Complete) text.Reveal.Finish(); else text.Text = NextPage();
+    /// </code>
+    /// </example>
+    public TextReveal? Reveal { get; set; }
+
     /// <summary>The lines the text is drawn in, after wrapping, as of the last layout.</summary>
     public IReadOnlyList<string> Lines => _lines;
 
-    /// <summary>The part of each of <see cref="Lines"/> that <see cref="VisibleCharacters"/> shows.</summary>
+    /// <summary>
+    /// The part of each of <see cref="Lines"/> that shows: all of it, or what <see cref="Reveal"/> or
+    /// <see cref="VisibleCharacters"/> lets through. The list is made again only when what shows changes.
+    /// </summary>
     public IReadOnlyList<string> VisibleLines
     {
         get
         {
-            if (VisibleCharacters is not { } count) return _lines;
+            if (ShownCharacters() is not { } count) return _lines;
+            if (ReferenceEquals(_visibleOf, _lines) && _visibleCount == count && _visible is not null) return _visible;
             var visible = new string[_lines.Length];
             int at = 0;
             for (int i = 0; i < _lines.Length; i++)
             {
                 var line = _lines[i];
                 at = StartOf(line, at);
-                visible[i] = line[..Math.Clamp(count - at, 0, line.Length)];
+                int shown = Math.Clamp(count - at, 0, line.Length);
+                visible[i] = shown == line.Length ? line : shown == 0 ? "" : line[..shown];
                 at += line.Length;
             }
+            (_visible, _visibleOf, _visibleCount) = (visible, _lines, count);
             return visible;
         }
+    }
+    private string[]? _visible, _visibleOf;
+    private int _visibleCount;
+
+    /// <summary>How many <c>char</c>s of the text show, or null for all: the reveal's, once it is revealing this text, else <see cref="VisibleCharacters"/>.</summary>
+    private int? ShownCharacters() =>
+        Reveal is { } reveal ? (reveal.Text == _text ? reveal.VisibleLength : 0) : VisibleCharacters;
+
+    /// <inheritdoc/>
+    protected internal override void Update(float dt)
+    {
+        if (Reveal is not { } reveal) return;
+        if (reveal.Text != _text) reveal.Start(_text);
+        reveal.Update(dt);
+    }
+
+    /// <inheritdoc/>
+    protected internal override void HashState(StateHasher hash)
+    {
+        if (Reveal is { } reveal) hash.Add(reveal);
     }
 
     /// <summary>Where <paramref name="line"/> starts in the text, from <paramref name="from"/>: past the spaces and line breaks a wrap took.</summary>
