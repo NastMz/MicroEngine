@@ -964,8 +964,13 @@ public sealed class TopDownController2D : IStateHashed
     }
     /// <summary>The shapes that block the character; the default filter unless set.</summary>
     public QueryFilter Filter { get; set; }
-    /// <summary>The body's origin.</summary>
-    public Vector2 Position => World.PositionOf(Body);
+    /// <summary>The body's origin. Setting it places the body there without collision; the velocity is kept.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is not finite.</exception>
+    public Vector2 Position
+    {
+        get => World.PositionOf(Body);
+        set => World.SetPosition(Body, value);
+    }
     /// <summary>The character's velocity, in units per second.</summary>
     public Vector2 Velocity { get; set; }
     /// <summary>The result of the latest step's move: every surface the character touches.</summary>
