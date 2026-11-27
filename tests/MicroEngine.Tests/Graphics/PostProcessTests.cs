@@ -264,6 +264,54 @@ public sealed class PostProcessTests
     [TestMethod]
     [DataRow("headless")]
     [DataRow("reference")]
+    public void Scanlines_start_on_the_row_their_phase_says(string backend)
+    {
+        var lines = new Scanlines { Strength = 0.5f };
+        var chain = new PostProcess().Add(lines);
+        PixelImage Picture() => Frame(backend, (r, graphics) =>
+        {
+            chain.Begin(r, graphics, White);
+            chain.End(r, opaque: true);
+        });
+        var dark = new Color(128, 128, 128);
+        Assert.AreEqual(0f, lines.Phase, "by default the first row is bright");
+
+        lines.Phase = 0.5f;                   // half a line later: the first row is the dark one
+        var frame = Picture();
+        for (int y = 0; y < 16; y += 2)
+        {
+            Near(dark, frame[5, y], $"row {y} is half as bright");
+            Assert.AreEqual(White, frame[5, y + 1], $"row {y + 1} is as it was");
+        }
+
+        lines.Lines = 4;                      // lines of four rows: bright, bright, dark, dark
+        lines.Phase = 0.25f;                  // a quarter of a line later: dark, bright, bright, dark
+        frame = Picture();
+        Near(dark, frame[5, 0], "the row that wrapped around from the end of the last line");
+        Assert.AreEqual(White, frame[5, 1]);
+        Assert.AreEqual(White, frame[5, 2]);
+        Near(dark, frame[5, 3], "row 3");
+        Near(dark, frame[5, 4], "row 4");
+        Assert.AreEqual(White, frame[5, 5]);
+        Near(dark, frame[5, 15], "row 15");
+
+        lines.Phase = float.NaN;
+        Assert.AreEqual(0.25f, lines.Phase, "a value that is not a number is ignored");
+        lines.Phase = 7;
+        Assert.AreEqual(1f, lines.Phase, "kept within 0 to 1");
+        lines.Phase = -3;
+        Assert.AreEqual(0f, lines.Phase);
+        lines.Lines = 0;
+        lines.Phase = 1;                      // a whole line later is where it started
+        frame = Picture();
+        Assert.AreEqual(White, frame[5, 0]);
+        Near(dark, frame[5, 1], "row 1");
+        Near(dark, frame[5, 15], "row 15");
+    }
+
+    [TestMethod]
+    [DataRow("headless")]
+    [DataRow("reference")]
     public void Without_shaders_colour_grading_applies_its_tint_and_brightness_and_says_what_it_leaves_out(string backend)
     {
         var grade = new ColorGrade();

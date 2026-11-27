@@ -6,6 +6,45 @@ it. Newest first.
 
 ## Next release
 
+### Text: an interpolated string given to a font is no longer a `string`
+
+Every method of a font that draws or measures text has an overload that takes the interpolated string itself, so
+`font.Draw(r, $"{hp}/{max}", at, color)` now writes into a reused buffer instead of building a string. The text drawn
+is the same, character for character, and nothing needs changing in almost every game. What a developer may notice:
+
+| Code | What happens now | Fix |
+| --- | --- | --- |
+| `font.Draw(r, $"{await Load()}", ...)` | does not compile (CS4007): the buffer cannot live across an `await` | `var n = await Load(); font.Draw(r, $"{n}", ...)` |
+| `font.Draw(r, $"{(dynamic)value}", ...)` | does not compile (CS9230) | `string text = $"{value}"; font.Draw(r, text, ...)` |
+| A game's own extension `DrawRight(this BitmapFont, ...)` | still compiles, but the call binds to the engine's `BitmapFont.DrawRight` (a method of the type is chosen before an extension), which ends the text at the point given | delete the helper, or rename it if it did something else |
+| A game's own extension `DrawRight(this IFont, IRenderer, string, Vector2, Color)` | binds to the game's helper where its namespace is nearer than the engine's, and is ambiguous (CS0121) where both are imported side by side | delete the helper, or rename it |
+| `font.Draw(r, text, ...)` and the other text methods of `BitmapFont` with a null `string` | `ArgumentNullException` (it was a `NullReferenceException`) | pass `""` for no text |
+| A class that implements `IFont` | compiles unchanged; an interpolated string or a span given to it is copied to a string for its two members | implement `Measure(ReadOnlySpan<char>)` and `Draw(IRenderer, ReadOnlySpan<char>, ...)` to draw without the copy |
+
+`string s = $"..."`, `var s = $"..."`, `string.Create(...)`, concatenations and conditional expressions are strings as
+before.
+
+### A run nobody plays formats with the invariant culture
+
+A scripted run, a capture, a headless run and a game stepped by a test (`InitializeForTest` on `HeadlessPlatform`)
+run with `CultureInfo.CurrentCulture` set to the invariant culture on the game's thread, from loading to shutdown,
+so `$"{3.5f}"` is `3.5` on every machine (`CurrentUICulture` is left alone). A capture or a recorded trace made on a machine with a decimal comma that
+shows a formatted fraction (`3,5`) is recorded again. A test that checks text formatted in a culture of its choice
+passes the culture to the formatting call. A run somebody plays is unchanged.
+
+### `AnimationClip.FrameAt` before time 0
+
+The frame position is rounded down, not towards zero: a looping clip asked for a time between one frame before 0 and
+0 gives its last frame (it gave the first), and an earlier time, which threw `ArgumentOutOfRangeException`, wraps. A
+clip that plays once gives its first frame for any time before 0. Times from 0 on are unchanged.
+
+### `microengine content names`: the strips of a sheet are the ones it declares
+
+The generated file's `Strips` group of a `.sheet` file listed any run of sprite names ending in `0`, `1`... and
+missed a strip whose own name ends in a digit. It now lists the strips the file declares. Run `microengine content
+names` again; a constant for a run that was never a strip (three sprites named `tank-1`, `tank-2`, `tank-3`) is gone:
+name the sprites (`Sprites.Tank1`) or declare the strip in the sheet. Aseprite files and packing tools' atlases are
+listed as before.
 ### Tweens: the starting value is applied when the tween is added, and tweens run before coroutines
 
 `Tweens.Add` now calls `apply` with the starting value (`ease(0)`) before it returns (a delayed tween, on the update

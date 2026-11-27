@@ -25,6 +25,7 @@ public abstract class SceneSystem : IStateHashed
 #### Derived
 
 [SceneAudio](MicroEngine.Scenes.SceneAudio.md), 
+[SceneEffects](MicroEngine.Scenes.SceneEffects.md), 
 [ScenePhysics](MicroEngine.Scenes.ScenePhysics.md), 
 [SceneTimers](MicroEngine.Scenes.SceneTimers.md), 
 [StateMachines](MicroEngine.Scenes.StateMachines.md)

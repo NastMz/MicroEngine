@@ -27,8 +27,17 @@ public sealed class BitmapFont : IFont, IDisposable
 #### Extension Methods
 
 [FontExtensions.DrawCentered\(IFont, IRenderer, string, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawCentered\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_String\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawCentered\(IFont, IRenderer, ReadOnlySpan<char\>, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawCentered\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_ReadOnlySpan\_System\_Char\_\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawCentered\(IFont, IRenderer, InterpolatedText, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawCentered\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_InterpolatedText\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawRight\(IFont, IRenderer, string, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawRight\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_String\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawRight\(IFont, IRenderer, ReadOnlySpan<char\>, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawRight\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_ReadOnlySpan\_System\_Char\_\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawRight\(IFont, IRenderer, InterpolatedText, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawRight\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_InterpolatedText\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
 [FontExtensions.DrawShadowed\(IFont, IRenderer, string, Vector2, Color, Color, Vector2?\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawShadowed\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_String\_System\_Numerics\_Vector2\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Nullable\_System\_Numerics\_Vector2\_\_), 
+[FontExtensions.DrawShadowed\(IFont, IRenderer, ReadOnlySpan<char\>, Vector2, Color, Color, Vector2?\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawShadowed\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_ReadOnlySpan\_System\_Char\_\_System\_Numerics\_Vector2\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Nullable\_System\_Numerics\_Vector2\_\_), 
+[FontExtensions.DrawShadowed\(IFont, IRenderer, InterpolatedText, Vector2, Color, Color, Vector2?\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawShadowed\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_InterpolatedText\_System\_Numerics\_Vector2\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Nullable\_System\_Numerics\_Vector2\_\_), 
 [FontExtensions.MeasureWidth\(IFont, string\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_MeasureWidth\_MicroEngine\_Graphics\_IFont\_System\_String\_), 
+[FontExtensions.MeasureWidth\(IFont, ReadOnlySpan<char\>\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_MeasureWidth\_MicroEngine\_Graphics\_IFont\_System\_ReadOnlySpan\_System\_Char\_\_), 
+[FontExtensions.MeasureWidth\(IFont, InterpolatedText\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_MeasureWidth\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_InterpolatedText\_), 
 [FontExtensions.Wrap\(IFont, string, float\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_Wrap\_MicroEngine\_Graphics\_IFont\_System\_String\_System\_Single\_)
 
 ## Remarks
@@ -153,6 +162,47 @@ Size multiplier; whole numbers keep the pixels crisp.
 
 The font was created without a graphics device.
 
+### <a id="MicroEngine_Graphics_BitmapFont_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_System_Single_"></a> Draw\(IRenderer, InterpolatedText, Vector2, Color, float\)
+
+Draws an interpolated string (<code>$"{hp}/{max}"</code>) with its top-left at <code class="paramref">position</code>. The text is
+written into a reused buffer instead of a string, so a number drawn every frame makes no garbage.
+
+```csharp
+public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_BitmapFont_Draw_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_System_Single_"></a> Draw\(IRenderer, ReadOnlySpan<char\>, Vector2, Color, float\)
+
+Draws <code class="paramref">text</code>, as [Draw](MicroEngine.Graphics.BitmapFont.md#MicroEngine_Graphics_BitmapFont_Draw_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_System_Single_), for text that is not a string (a buffer a number was written into).
+
+```csharp
+public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Graphics_BitmapFont_DrawCentered_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawCentered\(IRenderer, string, Vector2, Color, float, Color?\)
 
 Draws <code class="paramref">text</code> centred on <code class="paramref">center</code>, rounded to whole pixels, with an optional 1px drop shadow.
@@ -166,6 +216,50 @@ public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color 
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`shadow` [Color](MicroEngine.Color.md)?
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawCentered_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawCentered\(IRenderer, InterpolatedText, Vector2, Color, float, Color?\)
+
+Draws an interpolated string (<code>$"{minutes}:{seconds:00}"</code>) centred on <code class="paramref">center</code>, without making a string.
+
+```csharp
+public void DrawCentered(IRenderer renderer, InterpolatedText text, Vector2 center, Color color, float scale = 1, Color? shadow = null)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`shadow` [Color](MicroEngine.Color.md)?
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawCentered_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawCentered\(IRenderer, ReadOnlySpan<char\>, Vector2, Color, float, Color?\)
+
+Draws <code class="paramref">text</code> centred on <code class="paramref">center</code>, rounded to whole pixels, with an optional 1px drop shadow.
+
+```csharp
+public void DrawCentered(IRenderer renderer, ReadOnlySpan<char> text, Vector2 center, Color color, float scale = 1, Color? shadow = null)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
 
 `center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -197,6 +291,118 @@ public void DrawOutlined(IRenderer renderer, string text, Vector2 position, Colo
 
 `scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Graphics_BitmapFont_DrawOutlined_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawOutlined\(IRenderer, InterpolatedText, Vector2, Color, Color, float\)
+
+Draws an interpolated string (<code>$"{score}"</code>) with a full 1px outline, without making a string.
+
+```csharp
+public void DrawOutlined(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color outline, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`outline` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawOutlined_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawOutlined\(IRenderer, ReadOnlySpan<char\>, Vector2, Color, Color, float\)
+
+Draws text with a full 1px outline (8 directions).
+
+```csharp
+public void DrawOutlined(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, Color outline, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`outline` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawRight_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawRight\(IRenderer, string, Vector2, Color, float, Color?\)
+
+Draws <code class="paramref">text</code> so that it ends at <code class="paramref">topRight</code>: a score against the right edge of
+the screen, whatever its number of digits.
+
+```csharp
+public void DrawRight(IRenderer renderer, string text, Vector2 topRight, Color color, float scale = 1, Color? shadow = null)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`topRight` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`shadow` [Color](MicroEngine.Color.md)?
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawRight_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawRight\(IRenderer, InterpolatedText, Vector2, Color, float, Color?\)
+
+Draws an interpolated string (<code>$"{score}"</code>) so that it ends at <code class="paramref">topRight</code>, without making a string.
+
+```csharp
+public void DrawRight(IRenderer renderer, InterpolatedText text, Vector2 topRight, Color color, float scale = 1, Color? shadow = null)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`topRight` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`shadow` [Color](MicroEngine.Color.md)?
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawRight_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_System_Single_System_Nullable_MicroEngine_Color__"></a> DrawRight\(IRenderer, ReadOnlySpan<char\>, Vector2, Color, float, Color?\)
+
+Draws <code class="paramref">text</code> so that it ends at <code class="paramref">topRight</code>: a score against the right edge of
+the screen, whatever its number of digits.
+
+```csharp
+public void DrawRight(IRenderer renderer, ReadOnlySpan<char> text, Vector2 topRight, Color color, float scale = 1, Color? shadow = null)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`topRight` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`shadow` [Color](MicroEngine.Color.md)?
+
 ### <a id="MicroEngine_Graphics_BitmapFont_DrawShadowed_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawShadowed\(IRenderer, string, Vector2, Color, Color, float\)
 
 Draws text with a 1px drop shadow, the most legible style over busy pixel art.
@@ -210,6 +416,50 @@ public void DrawShadowed(IRenderer renderer, string text, Vector2 position, Colo
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`shadow` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawShadowed_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawShadowed\(IRenderer, InterpolatedText, Vector2, Color, Color, float\)
+
+Draws an interpolated string (<code>$"{coins}"</code>) with a 1px drop shadow, without making a string.
+
+```csharp
+public void DrawShadowed(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color shadow, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+`shadow` [Color](MicroEngine.Color.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_BitmapFont_DrawShadowed_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawShadowed\(IRenderer, ReadOnlySpan<char\>, Vector2, Color, Color, float\)
+
+Draws text with a 1px drop shadow, the most legible style over busy pixel art.
+
+```csharp
+public void DrawShadowed(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, Color shadow, float scale = 1)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -237,6 +487,42 @@ public Vector2 Measure(string text, float scale = 1)
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
+### <a id="MicroEngine_Graphics_BitmapFont_Measure_System_ReadOnlySpan_System_Char__System_Single_"></a> Measure\(ReadOnlySpan<char\>, float\)
+
+Size of <code class="paramref">text</code> in pixels at <code class="paramref">scale</code>: the widest line by the height of its lines (8 pixels for one line at scale 1).
+
+```csharp
+public Vector2 Measure(ReadOnlySpan<char> text, float scale = 1)
+```
+
+#### Parameters
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_BitmapFont_Measure_MicroEngine_Graphics_InterpolatedText_System_Single_"></a> Measure\(InterpolatedText, float\)
+
+Size of an interpolated string (<code>$"{score}"</code>) at <code class="paramref">scale</code>, measured without making a string.
+
+```csharp
+public Vector2 Measure(InterpolatedText text, float scale = 1)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ### <a id="MicroEngine_Graphics_BitmapFont_MeasureWidth_System_String_"></a> MeasureWidth\(string\)
 
 Width in pixels of the widest line (unscaled).
@@ -248,6 +534,38 @@ public int MeasureWidth(string text)
 #### Parameters
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Graphics_BitmapFont_MeasureWidth_MicroEngine_Graphics_InterpolatedText_"></a> MeasureWidth\(InterpolatedText\)
+
+Width of an interpolated string (<code>$"{score}"</code>), measured without making a string.
+
+```csharp
+public int MeasureWidth(InterpolatedText text)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Graphics_BitmapFont_MeasureWidth_System_ReadOnlySpan_System_Char__"></a> MeasureWidth\(ReadOnlySpan<char\>\)
+
+Width in pixels of the widest line (unscaled).
+
+```csharp
+public int MeasureWidth(ReadOnlySpan<char> text)
+```
+
+#### Parameters
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
 
 #### Returns
 

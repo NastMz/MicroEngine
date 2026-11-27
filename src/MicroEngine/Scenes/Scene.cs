@@ -118,6 +118,13 @@ public abstract class Scene : IStateHashed
     /// which stop when the scene leaves. Read it first outside drawing, from <see cref="Enter"/> on.
     /// </summary>
     public SceneAudio Sounds => Systems.GetOrAdd<SceneAudio>();
+    /// <summary>
+    /// The scene's one-shot sprite effects (<see cref="Graphics.SpriteEffects"/>), a system added the first time it is
+    /// read: <c>Effects.Play(clip, at)</c> plays a clip once there and removes it, the scene steps it before
+    /// <see cref="Update"/> and drops it when the scene leaves; draw them with <c>Effects.Draw(renderer)</c>. Read it
+    /// first outside drawing.
+    /// </summary>
+    public Graphics.SpriteEffects Effects => Systems.GetOrAdd<SceneEffects>().Effects;
     /// <summary>Whether the scene is on the stack: from just before <see cref="Enter"/> until its systems stopped after <see cref="Exit"/>.</summary>
 
     public bool OnStack { get; private set; }

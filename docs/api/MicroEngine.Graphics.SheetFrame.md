@@ -47,6 +47,18 @@ Its anchor in its own pixels (see [Origin](MicroEngine.Graphics.Sprite.md#MicroE
 
 ## Properties
 
+### <a id="MicroEngine_Graphics_SheetFrame_Boxes"></a> Boxes
+
+The frame's named boxes (a hit box, a hurt box), in its own pixels; empty by default.
+
+```csharp
+public IReadOnlyList<SpriteBox> Boxes { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpriteBox](MicroEngine.Graphics.SpriteBox.md)\>
+
 ### <a id="MicroEngine_Graphics_SheetFrame_Image"></a> Image
 
 Its pixels.
@@ -82,6 +94,18 @@ public Vector2 Origin { get; init; }
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_SheetFrame_Points"></a> Points
+
+The frame's named points (a shoulder, a muzzle), in its own pixels; empty by default.
+
+```csharp
+public IReadOnlyList<SpritePoint> Points { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpritePoint](MicroEngine.Graphics.SpritePoint.md)\>
 
 ## Methods
 

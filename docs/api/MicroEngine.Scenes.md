@@ -32,6 +32,12 @@ every [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_Syste
 it is on, moved there over the step so nothing clicks; an emitter that follows an entity goes where the entity
 goes and stops when it is destroyed; every emitter stops when the scene leaves.
 
+ [SceneEffects](MicroEngine.Scenes.SceneEffects.md)
+
+The scene system behind [Effects](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Effects): it steps the scene's one-shot sprite effects on the scene's
+time before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), adds them to the scene's state hash and drops them when the scene leaves.
+The scene draws them where they belong among its own drawing (<code>Effects.Draw(renderer)</code>).
+
  [SceneManager](MicroEngine.Scenes.SceneManager.md)
 
 Manages the scene stack and the transitions between scenes.

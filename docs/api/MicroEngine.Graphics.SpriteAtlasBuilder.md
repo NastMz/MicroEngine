@@ -94,6 +94,30 @@ This builder, for chaining.
 
 <code class="paramref">name</code> is empty or already added.
 
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Add_MicroEngine_Graphics_SheetFrame_"></a> Add\(SheetFrame\)
+
+Adds a frame with everything a sheet says about it: its name, pixels, anchor, points and boxes.
+
+```csharp
+public SpriteAtlasBuilder Add(SheetFrame frame)
+```
+
+#### Parameters
+
+`frame` [SheetFrame](MicroEngine.Graphics.SheetFrame.md)
+
+#### Returns
+
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+
+This builder, for chaining.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The frame's name is empty or already added.
+
 ### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddClip_MicroEngine_Graphics_SheetClip_"></a> AddClip\(SheetClip\)
 
 Names an animation of sprites added to this builder (before or after this call): the atlas gives it with
@@ -138,6 +162,48 @@ public SpriteAtlasBuilder AddFrames(string name, IEnumerable<PixelImage> frames,
 #### Returns
 
  [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Single_System_Nullable_System_Numerics_Vector2__System_Boolean_"></a> AddFrames\(string, IEnumerable<PixelImage\>, float, Vector2?, bool\)
+
+Adds each frame as "name0", "name1", ... and the clip <code class="paramref">name</code> that plays them at
+<code class="paramref">framesPerSecond</code>: a strip drawn in code is an animation without its frame names being listed
+([Clip](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Nullable_System_Boolean__)).
+
+```csharp
+public SpriteAtlasBuilder AddFrames(string name, IEnumerable<PixelImage> frames, float framesPerSecond, Vector2? origin = null, bool loop = true)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The strip's and the clip's name.
+
+`frames` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[PixelImage](MicroEngine.Graphics.PixelImage.md)\>
+
+The frames, in playing order.
+
+`framesPerSecond` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+The clip's rate; positive.
+
+`origin` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)?
+
+The anchor every frame shares; null for the top-left corner.
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the clip starts over after its last frame.
+
+#### Returns
+
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">framesPerSecond</code> is not a positive number.
 
 ### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_AddGrid_System_String_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_System_Nullable_System_Int32__System_Nullable_System_Numerics_Vector2__"></a> AddGrid\(string, PixelImage, int, int, int?, Vector2?\)
 

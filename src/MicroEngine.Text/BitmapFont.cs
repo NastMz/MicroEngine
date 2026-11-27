@@ -63,7 +63,20 @@ public sealed class BitmapFont : IFont, IDisposable
     public int Advance(char c) => (_glyphs.TryGetValue(c, out var g) ? g.Advance : _glyphs['?'].Advance) + Spacing;
 
     /// <summary>Width in pixels of the widest line (unscaled).</summary>
-    public int MeasureWidth(string text)
+    public int MeasureWidth(string text) => MeasureWidth(Checked(text).AsSpan());
+
+    /// <summary>Width of an interpolated string (<c>$"{score}"</c>), measured without making a string.</summary>
+    public int MeasureWidth(InterpolatedText text)
+    {
+        try { return MeasureWidth(text.Text); }
+        finally { text.Dispose(); }
+    }
+
+    /// <summary>A string that is not null: a null text is a mistake of the caller, named as such.</summary>
+    private static string Checked(string text) => text ?? throw new ArgumentNullException(nameof(text));
+
+    /// <inheritdoc cref="MeasureWidth(string)"/>
+    public int MeasureWidth(ReadOnlySpan<char> text)
     {
         int best = 0, current = 0;
         foreach (var c in text)
@@ -75,10 +88,20 @@ public sealed class BitmapFont : IFont, IDisposable
     }
 
     /// <summary>Size of <paramref name="text"/> in pixels at <paramref name="scale"/>: the widest line by the height of its lines (8 pixels for one line at scale 1).</summary>
-    public Vector2 Measure(string text, float scale = 1f)
+    public Vector2 Measure(string text, float scale = 1f) => Measure(Checked(text).AsSpan(), scale);
+
+    /// <inheritdoc cref="Measure(string, float)"/>
+    public Vector2 Measure(ReadOnlySpan<char> text, float scale = 1f)
     {
-        int lines = 1 + text.AsSpan().Count('\n'); // no enumerator: games measure text every frame
+        int lines = 1 + text.Count('\n'); // no enumerator: games measure text every frame
         return new Vector2(MeasureWidth(text) * scale, (lines * LineHeight - (LineHeight - 8)) * scale);
+    }
+
+    /// <summary>Size of an interpolated string (<c>$"{score}"</c>) at <paramref name="scale"/>, measured without making a string.</summary>
+    public Vector2 Measure(InterpolatedText text, float scale = 1f)
+    {
+        try { return Measure(text.Text, scale); }
+        finally { text.Dispose(); }
     }
 
     /// <summary>
@@ -122,6 +145,20 @@ public sealed class BitmapFont : IFont, IDisposable
     /// <param name="scale">Size multiplier; whole numbers keep the pixels crisp.</param>
     /// <exception cref="InvalidOperationException">The font was created without a graphics device.</exception>
     public void Draw(IRenderer renderer, string text, Vector2 position, Color color, float scale = 1f)
+        => Draw(renderer, Checked(text).AsSpan(), position, color, scale);
+
+    /// <summary>
+    /// Draws an interpolated string (<c>$"{hp}/{max}"</c>) with its top-left at <paramref name="position"/>. The text is
+    /// written into a reused buffer instead of a string, so a number drawn every frame makes no garbage.
+    /// </summary>
+    public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, float scale = 1f)
+    {
+        try { Draw(renderer, text.Text, position, color, scale); }
+        finally { text.Dispose(); }
+    }
+
+    /// <summary>Draws <paramref name="text"/>, as <see cref="Draw(IRenderer, string, Vector2, Color, float)"/>, for text that is not a string (a buffer a number was written into).</summary>
+    public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, float scale = 1f)
     {
         if (_texture is null) throw new InvalidOperationException("This font was created without a graphics device.");
         float x = position.X, y = position.Y;
@@ -137,6 +174,17 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws text with a 1px drop shadow, the most legible style over busy pixel art.</summary>
     public void DrawShadowed(IRenderer renderer, string text, Vector2 position, Color color, Color shadow, float scale = 1f)
+        => DrawShadowed(renderer, Checked(text).AsSpan(), position, color, shadow, scale);
+
+    /// <summary>Draws an interpolated string (<c>$"{coins}"</c>) with a 1px drop shadow, without making a string.</summary>
+    public void DrawShadowed(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color shadow, float scale = 1f)
+    {
+        try { DrawShadowed(renderer, text.Text, position, color, shadow, scale); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc cref="DrawShadowed(IRenderer, string, Vector2, Color, Color, float)"/>
+    public void DrawShadowed(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, Color shadow, float scale = 1f)
     {
         Draw(renderer, text, position + new Vector2(scale, scale), shadow, scale);
         Draw(renderer, text, position, color, scale);
@@ -144,6 +192,17 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws text with a full 1px outline (8 directions).</summary>
     public void DrawOutlined(IRenderer renderer, string text, Vector2 position, Color color, Color outline, float scale = 1f)
+        => DrawOutlined(renderer, Checked(text).AsSpan(), position, color, outline, scale);
+
+    /// <summary>Draws an interpolated string (<c>$"{score}"</c>) with a full 1px outline, without making a string.</summary>
+    public void DrawOutlined(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color outline, float scale = 1f)
+    {
+        try { DrawOutlined(renderer, text.Text, position, color, outline, scale); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc cref="DrawOutlined(IRenderer, string, Vector2, Color, Color, float)"/>
+    public void DrawOutlined(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color, Color outline, float scale = 1f)
     {
         for (int dy = -1; dy <= 1; dy++)
         for (int dx = -1; dx <= 1; dx++)
@@ -153,6 +212,17 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws <paramref name="text"/> centred on <paramref name="center"/>, rounded to whole pixels, with an optional 1px drop shadow.</summary>
     public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
+        => DrawCentered(renderer, Checked(text).AsSpan(), center, color, scale, shadow);
+
+    /// <summary>Draws an interpolated string (<c>$"{minutes}:{seconds:00}"</c>) centred on <paramref name="center"/>, without making a string.</summary>
+    public void DrawCentered(IRenderer renderer, InterpolatedText text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
+    {
+        try { DrawCentered(renderer, text.Text, center, color, scale, shadow); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc cref="DrawCentered(IRenderer, string, Vector2, Color, float, Color?)"/>
+    public void DrawCentered(IRenderer renderer, ReadOnlySpan<char> text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
     {
         var size = Measure(text, scale);
         var pos = new Vector2(MathF.Round(center.X - size.X / 2), MathF.Round(center.Y - size.Y / 2));
@@ -160,9 +230,33 @@ public sealed class BitmapFont : IFont, IDisposable
         else Draw(renderer, text, pos, color, scale);
     }
 
+    /// <summary>
+    /// Draws <paramref name="text"/> so that it ends at <paramref name="topRight"/>: a score against the right edge of
+    /// the screen, whatever its number of digits.
+    /// </summary>
+    public void DrawRight(IRenderer renderer, string text, Vector2 topRight, Color color, float scale = 1f, Color? shadow = null)
+        => DrawRight(renderer, Checked(text).AsSpan(), topRight, color, scale, shadow);
+
+    /// <summary>Draws an interpolated string (<c>$"{score}"</c>) so that it ends at <paramref name="topRight"/>, without making a string.</summary>
+    public void DrawRight(IRenderer renderer, InterpolatedText text, Vector2 topRight, Color color, float scale = 1f, Color? shadow = null)
+    {
+        try { DrawRight(renderer, text.Text, topRight, color, scale, shadow); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc cref="DrawRight(IRenderer, string, Vector2, Color, float, Color?)"/>
+    public void DrawRight(IRenderer renderer, ReadOnlySpan<char> text, Vector2 topRight, Color color, float scale = 1f, Color? shadow = null)
+    {
+        var pos = new Vector2(MathF.Round(topRight.X - MeasureWidth(text) * scale), MathF.Round(topRight.Y));
+        if (shadow is { } s) DrawShadowed(renderer, text, pos, color, s, scale);
+        else Draw(renderer, text, pos, color, scale);
+    }
+
     float IFont.LineHeight => LineHeight;
-    Vector2 IFont.Measure(string text) => Measure(text);
-    void IFont.Draw(IRenderer renderer, string text, Vector2 position, Color color) => Draw(renderer, text, position, color);
+    Vector2 IFont.Measure(string text) => Measure(Checked(text).AsSpan());
+    Vector2 IFont.Measure(ReadOnlySpan<char> text) => Measure(text);
+    void IFont.Draw(IRenderer renderer, string text, Vector2 position, Color color) => Draw(renderer, Checked(text).AsSpan(), position, color);
+    void IFont.Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color) => Draw(renderer, text, position, color);
 
     /// <summary>Releases the font's texture. The engine disposes <c>Game.Font</c> itself.</summary>
     public void Dispose() => _texture?.Dispose();

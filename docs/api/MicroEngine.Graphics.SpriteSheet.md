@@ -50,6 +50,16 @@ single cells (two numbers) or rectangles (four). A strip with <code>fps</code> o
 is also a clip of that name; <code>clips</code> name more of them, from frames listed by name or a whole strip.
 <code>direction</code> is forward, reverse, pingpong or pingpong_reverse. Image paths are relative to the file.
 </p>
+<p>
+A named image, a strip and a sprite written as an object may carry <code>points</code> and <code>boxes</code>, in the frame's
+pixels from its top-left corner: <code>"points": { "muzzle": [14, 3] }</code> and <code>"boxes": { "hit": [10, 2, 6, 4] }</code>
+give every frame the same one; an array with one entry per frame (<code>[[14, 3], [15, 3], null]</code>) gives each its
+own, and <code>null</code> leaves a frame without it. [Point](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_Point_System_String_System_Boolean_) and [Box](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_Box_System_String_System_Boolean_) read them.
+</p>
+<p>
+The format has no version number: it grows by optional properties, so a file written for an earlier SDK reads the
+same, and a file that uses a property this SDK does not know is refused with the property's name.
+</p>
 
 ## Constructors
 
@@ -98,6 +108,20 @@ public IReadOnlyList<SheetFrame> Frames { get; }
 #### Property Value
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SheetFrame](MicroEngine.Graphics.SheetFrame.md)\>
+
+### <a id="MicroEngine_Graphics_SpriteSheet_Strips"></a> Strips
+
+The names of the strips the description declares, in its order: runs of frames "name0", "name1"... that
+[Frames](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Frames_System_String_) takes. Empty for a sheet whose source declares none (an Aseprite file, a
+packing tool's atlas, a sheet made in code).
+
+```csharp
+public IReadOnlyList<string> Strips { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
 ## Methods
 

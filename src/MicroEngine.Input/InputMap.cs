@@ -108,7 +108,29 @@ public sealed partial class InputMap : IStateHashed
     private readonly HashSet<string> _impulses = new(StringComparer.Ordinal);
     private PointerButtons _previousButtons;
     // What the bindings use, found again after they change: maps with no wheel or pointer control do none of that work.
-    private bool _usesChanged = true, _usesWheel, _usesPointer;
+    private bool _usesWheel, _usesPointer;
+    private bool _usesStale = true;
+
+    /// <summary>
+    /// Set by every call that changes what an action is bound to (binding, unbinding, loading saved bindings): what the
+    /// map uses is found again, and <see cref="BindingsVersion"/> moves.
+    /// </summary>
+    private bool _usesChanged
+    {
+        get => _usesStale;
+        set
+        {
+            _usesStale = value;
+            if (value) BindingsVersion++;
+        }
+    }
+
+    /// <summary>
+    /// A number that moves every time the bindings may have changed: <see cref="Bind(string, Key[])"/> and its forms,
+    /// <see cref="Unbind(string)"/>, <see cref="BindFrom"/> and <see cref="ImportBindings"/>. What was built from the
+    /// bindings (the text of a prompt, a controls screen) is built again when it differs from the one it was built at.
+    /// </summary>
+    public int BindingsVersion { get; private set; }
 
     /// <summary>
     /// The direction of a stick an action is bound to (<c>None</c>, <c>Left</c>, <c>Right</c>, <c>Up</c>,

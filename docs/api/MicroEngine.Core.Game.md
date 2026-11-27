@@ -728,6 +728,12 @@ public void InitializeForTest(IPlatform platform, int seed = 1, IStorage? saves 
 
 `saves` [IStorage](MicroEngine.Platform.IStorage.md)?
 
+#### Remarks
+
+On a platform nobody plays on, the calling thread formats with the invariant culture from this call on, so the
+game's numbers read the same on every machine (a test that needs another culture sets it after this call, or
+passes it where it formats).
+
 #### Exceptions
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)

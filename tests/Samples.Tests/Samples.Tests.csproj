@@ -23,6 +23,7 @@
   <!-- The simulation-determinism helper shared with the engine's and the games' test projects. -->
   <ItemGroup>
     <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- The gallery's tour, played by the tests as the launcher plays it. -->

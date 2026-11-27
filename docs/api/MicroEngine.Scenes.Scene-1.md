@@ -58,6 +58,7 @@ What the scene returns.
 [Scene.Machines](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Machines), 
 [Scene.Physics](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Physics), 
 [Scene.Sounds](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Sounds), 
+[Scene.Effects](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Effects), 
 [Scene.OnStack](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_OnStack), 
 [Scene.TouchActions](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_TouchActions), 
 [Scene.WorldCamera](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_WorldCamera), 

@@ -7,7 +7,8 @@ namespace MicroEngine.Graphics;
 /// <summary>
 /// Sprites packed into one picture by <see cref="SpriteAtlasBuilder.Pack"/>, without a graphics device: the picture,
 /// where each sprite lies in it, and the clips. <see cref="ToJson"/> writes the description packing tools write, so the
-/// pair (a PNG and a JSON file) is an ordinary atlas for <c>Assets.Atlas</c>.
+/// pair (a PNG and a JSON file) is an ordinary atlas for <c>Assets.Atlas</c>. The frames' points and boxes are written
+/// with each frame and read back.
 /// </summary>
 /// <param name="Image">The packed picture.</param>
 /// <param name="Regions">Each sprite's name, rectangle and anchor, in the order they were added.</param>
@@ -100,6 +101,33 @@ public sealed record PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Re
                 json.WriteNumber("y", ((double)region.Origin.Y + trim.Y) / trim.SourceHeight);
                 json.WriteEndObject();
                 if (durations[i] is { } ms) json.WriteNumber("duration", ms);
+                // Points and boxes, in the whole (untrimmed) frame's pixels; tools that do not know them skip them.
+                if (region.Points is { Count: > 0 } points)
+                {
+                    json.WriteStartObject("points");
+                    foreach (var point in points)
+                    {
+                        json.WriteStartObject(point.Name);
+                        json.WriteNumber("x", (double)point.Position.X + trim.X);
+                        json.WriteNumber("y", (double)point.Position.Y + trim.Y);
+                        json.WriteEndObject();
+                    }
+                    json.WriteEndObject();
+                }
+                if (region.Boxes is { Count: > 0 } boxes)
+                {
+                    json.WriteStartObject("boxes");
+                    foreach (var box in boxes)
+                    {
+                        json.WriteStartObject(box.Name);
+                        json.WriteNumber("x", (double)box.Bounds.X + trim.X);
+                        json.WriteNumber("y", (double)box.Bounds.Y + trim.Y);
+                        json.WriteNumber("w", box.Bounds.Width);
+                        json.WriteNumber("h", box.Bounds.Height);
+                        json.WriteEndObject();
+                    }
+                    json.WriteEndObject();
+                }
                 json.WriteEndObject();
             }
             json.WriteEndArray();

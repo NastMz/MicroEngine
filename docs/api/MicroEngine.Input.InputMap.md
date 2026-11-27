@@ -87,6 +87,20 @@ public float AxisDeadZone { get; set; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Input_InputMap_BindingsVersion"></a> BindingsVersion
+
+A number that moves every time the bindings may have changed: [Bind](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Bind_System_String_MicroEngine_Input_Key___) and its forms,
+[Unbind](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Unbind_System_String_), [BindFrom](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindFrom_System_String_MicroEngine_Input_InputEvent__System_Boolean_) and [ImportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_System_Collections_Generic_IEnumerable_System_String__). What was built from the
+bindings (the text of a prompt, a controls screen) is built again when it differs from the one it was built at.
+
+```csharp
+public int BindingsVersion { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Input_InputMap_LastDevice"></a> LastDevice
 
 The device that most recently pressed an action. Touch controls use it to hide while a keyboard, mouse or gamepad plays.

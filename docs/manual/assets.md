@@ -242,6 +242,43 @@ var atlas = new SpriteAtlasBuilder()
 Source: [`games/NeonRift/Content/sprites.sheet`](../../games/NeonRift/Content/sprites.sheet) describes that game's
 sprite images; [`Art/Assets.cs`](../../games/NeonRift/Art/Assets.cs) adds the poses it derives from them.
 
+### Points and boxes on frames
+
+A frame has an anchor; a sheet may also name points of it (a shoulder, a gun tip, where a hat sits) and boxes (a hit
+box, a hurt box, the solid part). A named image, a strip, and a sprite written as an object take `points` and
+`boxes`, in the frame's pixels from its top-left corner, like `origin`:
+
+```json
+{ "image": "hero.png", "name": "hero", "cell": [16, 16], "origin": [8, 16], "fps": 8,
+  "points": { "hand": [[13, 7], [14, 6], [13, 7], [14, 8]] },
+  "boxes": { "body": [4, 3, 8, 13] } }
+```
+
+| Value | Meaning |
+| --- | --- |
+| `[x, y]` (a point) or `[x, y, width, height]` (a box) | the same in every frame |
+| an array with one entry per frame | each frame its own; `null` leaves a frame without it |
+
+The game reads them from the sprite, measured from its anchor and mirrored with it:
+
+```csharp
+var frame = atlas.Clip("hero").FrameAt(time);
+var hand = position + frame.Point("hand", flipX: facingLeft);      // where the hand is on screen
+var body = frame.Box("body", flipX: facingLeft);                   // add the position for the box on screen
+if (frame.TryBox("hit", out var hit)) { /* only the frames that strike have one */ }
+```
+
+A point is a position, not a pixel: `[13, 7]` is the top-left corner of that pixel, so a mirrored point lands on the
+mirrored corner; write `[13.5, 7.5]` for the pixel's centre. Points and boxes stay with the frame when an atlas is
+trimmed, packed to a file by `microengine content pack` and loaded again. `Sprite.Points` and `Sprite.Boxes` list them.
+
+`microengine content check` reports a number too large to be meant as an error, and warns about a point or a box
+that lies farther outside its frame than the frame is large (a coordinate of the whole image typed where the frame's
+own was meant).
+
+A file written for an earlier SDK reads the same: the sheet format has no version number and grows by optional
+properties. A file that uses a property an SDK does not know is refused by that SDK with the property's name.
+
 ### Aseprite files
 
 The optional `MicroEngine.Aseprite` package reads `.aseprite` and `.ase` files as the artist saved them, with no
@@ -256,7 +293,7 @@ var animator = hero.CreateAnimator("idle");                 // every frame tag i
 | --- | --- |
 | Frames | Sprites `hero 0`, `hero 1`... (the names Aseprite's own sheet export gives), each the picture Aseprite shows: visible layers flattened with their blend modes and opacity |
 | Frame tags | Clips with each frame's duration, the tag's direction and its repeat count (a tag that repeats a number of times plays once) |
-| Slices | A sprite per slice, named after it, anchored at the slice's pivot |
+| Slices | A sprite per slice, named after it, anchored at the slice's pivot; and on every frame the slice covers, a box of its name (`sprite.Box`) and, when it has a pivot, a point of its name (`sprite.Point`), following the slice's keys |
 | The first slice with a pivot | The anchor of every frame (the slice's corner plus its pivot), so the feet are set once in the editor; without one, `AtlasOptions.Pivot` |
 
 `Assets.Aseprite` registers the format on first use; `Assets.Loaders.AddAseprite()` registers it up front, after which
@@ -279,7 +316,8 @@ var sky = Assets.Texture(GameContent.Backgrounds.Sky);
 ```
 
 The file (`GameContent.g.cs` next to the project) has a class per folder and a constant per file; a sheet, an
-Aseprite file or an atlas is a class with its `Path`, `Sprites`, `Strips` (the names `atlas.Frames` takes) and `Clips`.
+Aseprite file or an atlas is a class with its `Path`, `Sprites`, `Strips` (the names `atlas.Frames` takes: for a
+sheet, the strips it declares) and `Clips`.
 Run the command again after changing content and commit the file; `microengine content names --check` fails in CI
 when it is out of date. The step is optional: strings keep working. See [the tool](../guide/cli.md#content).
 
@@ -475,8 +513,10 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
   per language ([Localization](localization.md#files-per-language)).
 - Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a
   browser page still copies the package's files into memory before the game starts.
-- Rotated frames of Starling XML atlases, slices in Aseprite's exported JSON (the `.aseprite` file's slices are
-  read), Aseprite tilemap layers as tile maps, libGDX `.atlas` and Spine files are not read.
+- Rotated frames of Starling XML atlases, Aseprite tilemap layers as tile maps, libGDX `.atlas` and Spine files are
+  not read. The slices of Aseprite's exported JSON are read as boxes and points of the frames, not as sprites of their
+  own (the `.aseprite` file's slices are both).
+- Points and boxes are per frame; a sheet has no user data of other kinds (text, numbers) on its frames.
 - A packed atlas is one page: `microengine content pack` and `SpriteAtlasBuilder` grow the picture instead of
   starting a second one. Tiled maps are read by the
   optional `MicroEngine.Tiled` package ([Maps from Tiled](world.md#maps-from-tiled)).

@@ -204,6 +204,46 @@ public void Draw(IRenderer renderer, string text, Vector2 position, float size, 
 
 `color` [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_Graphics_ScalableFont_Draw_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> Draw\(IRenderer, ReadOnlySpan<char\>, Vector2, float, Color\)
+
+Draws text that is not a string (a buffer a number was written into) at <code class="paramref">size</code>, without allocating.
+
+```csharp
+public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, float size, Color color)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`size` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`color` [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Graphics_ScalableFont_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> Draw\(IRenderer, InterpolatedText, Vector2, float, Color\)
+
+Draws an interpolated string (<code>$"{score}"</code>) at <code class="paramref">size</code>, without making a string.
+
+```csharp
+public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, float size, Color color)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`size` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`color` [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Graphics_ScalableFont_FromBytes_MicroEngine_Graphics_IGraphicsDevice_System_Byte___MicroEngine_Graphics_FontOptions_System_String_"></a> FromBytes\(IGraphicsDevice, byte\[\], FontOptions?, string?\)
 
 Opens a font from the bytes of a TTF or OTF file.
@@ -297,6 +337,42 @@ public Vector2 Measure(string text, float size)
 #### Parameters
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`size` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_ScalableFont_Measure_System_ReadOnlySpan_System_Char__System_Single_"></a> Measure\(ReadOnlySpan<char\>, float\)
+
+Size of <code class="paramref">text</code> at <code class="paramref">size</code>, in canvas pixels.
+
+```csharp
+public Vector2 Measure(ReadOnlySpan<char> text, float size)
+```
+
+#### Parameters
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`size` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_ScalableFont_Measure_MicroEngine_Graphics_InterpolatedText_System_Single_"></a> Measure\(InterpolatedText, float\)
+
+Size of an interpolated string (<code>$"{score}"</code>) at <code class="paramref">size</code>, measured without making a string.
+
+```csharp
+public Vector2 Measure(InterpolatedText text, float size)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
 
 `size` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

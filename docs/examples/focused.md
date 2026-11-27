@@ -563,6 +563,76 @@ public override void Enter()
 
 Guide: [Animation](../guide/animation.md).
 
+## Effects and HUD numbers
+
+Three things a game draws every frame, with no class of its own and no garbage: one-shot effects played from a named
+point of the sprite, a row of torches that share one clip and each start on their own frame, and a HUD of numbers
+written where they are drawn. Source: [`EffectsExample.cs`](../../samples/Examples/Examples/EffectsExample.cs); the
+sheet that names the hand and the body is [`effects.sheet`](../../samples/Examples/Content/effects.sheet).
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#setup -->
+```csharp
+public override void Enter()
+{
+    _assets = Assets.CreateScope("effects");
+    // effects.sheet gives every frame a point "hand" and a box "body".
+    _caster = _assets.Atlas("effects.sheet");
+    // Strips drawn in code are clips as soon as they are added with a rate.
+    _art = new SpriteAtlasBuilder()
+        .AddFrames("burst", Enumerable.Range(0, 6).Select(Burst), 18, new Vector2(8, 8), loop: false)
+        .AddFrames("torch", Enumerable.Range(0, 3).Select(Torch), 9, new Vector2(3, 10))
+        .Build(Game.Graphics);
+}
+```
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#play -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    _time += dt;
+    int turn = Input.Axis("left", "right");
+    if (turn != 0) _facingLeft = turn < 0;
+    if (!Input.Pressed("confirm")) return;
+
+    // Three bursts from the caster's hand: the point of the frame showing now, mirrored with the sprite.
+    var frame = _caster.Clip("caster").FrameAt(_time);
+    var hand = Feet + frame.Point("hand", _facingLeft) * Scale;
+    var burst = _art.Clip("burst");
+    Effects.Play(burst, hand);
+    Effects.Play(burst, hand + new Vector2(_facingLeft ? -22 : 22, -6), delay: 0.08f, flipX: true, tint: Gold);
+    Effects.Play(burst, hand + new Vector2(_facingLeft ? -44 : 44, 2), delay: 0.16f, tint: Sky, framesPerSecond: 12);
+    Casts++;
+    Score += 125;
+}
+```
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#draw -->
+```csharp
+public override void Draw(IRenderer r)
+{
+    // One clip, one clock: each torch starts as many frames in as its place in the row.
+    var torch = _art.Clip("torch");
+    for (int i = 0; i < 7; i++) r.Draw(torch.FrameAt(_time, frameOffset: i), new Vector2(40 + i * 40, 150));
+
+    var frame = _caster.Clip("caster").FrameAt(_time);
+    r.DrawPivoted(frame, Feet, scale: new Vector2(Scale), flipX: _facingLeft);
+    Effects.Draw(r);
+
+    // Numbers written where they are drawn: no string is made, whatever the values.
+    Font.DrawRight(r, $"{Score}", new Vector2(312, 30), Color.White, shadow: Color.Black);
+    Font.Draw(r, $"CASTS {Casts}   EFFECTS {Effects.Count}", new Vector2(8, 30), Color.White);
+    Font.DrawCentered(r, $"{(int)_time / 60}:{(int)_time % 60:00}.{(int)(_time * 10) % 10}", new Vector2(160, 34), Gold);
+    // A hint is built once and kept until the player changes device.
+    Font.DrawCentered(r, Game.Prompts.Cached("{confirm}: CAST   {left} {right}: TURN"), new Vector2(160, 168), Color.White);
+    Heading.Draw(r, Font, "EFFECTS", "CLIPS, OFFSETS, POINTS");
+}
+```
+
+Manual: [One-shot effects](../manual/rendering.md#one-shot-effects),
+[Points and boxes on frames](../manual/assets.md#points-and-boxes-on-frames),
+[Numbers and other text that changes every frame](../manual/text.md#numbers-and-other-text-that-changes-every-frame).
+
 ## Dialogue
 
 A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter by the label's

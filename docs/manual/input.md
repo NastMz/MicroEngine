@@ -489,6 +489,7 @@ player switches device, so read it when drawing, or lay text out again when `Pro
 | Member | Gives |
 | --- | --- |
 | `Format(template)` | the template with each `{action}` replaced; `{move}` is the movement controls; `{{` and `}}` are braces; unknown names stay as written |
+| `Cached(template)` | the same text, built once and kept until `Version` moves (another device or pad family, an action bound or unbound, saved bindings loaded, another touch layout, a label): a hint drawn every frame costs a lookup and no garbage, and shows a rebound key on the next frame. A keyboard layout switched while the game runs is the one change it does not see: call `Invalidate()` when the window regains the focus if that matters |
 | `Text(action)`, `Get(action)` | the first control's text, or the `ActionPrompt` (kind, key, button, pad style, touch control) |
 | `TextAll(action, separator)`, `All(action)` | every control that presses it on the device |
 | `Directions(separator: " / ")` | movement as a group: `↑←↓→ / WASD`, `D-pad`, or the touch d-pad or stick |

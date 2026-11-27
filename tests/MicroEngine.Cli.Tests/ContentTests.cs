@@ -88,6 +88,28 @@ public sealed class ContentTests
     }
 
     [TestMethod]
+    public void Points_and_boxes_that_cannot_be_meant_are_reported_with_their_file_and_name()
+    {
+        using var content = Good()
+            .Text("enemies/far.sheet", """
+                { "sheets": [ { "image": "drone.png", "name": "far", "cell": [8, 8],
+                    "points": { "muzzle": [11, 3], "typo": [[4, 4], [400, 4], null, [4, -90]] },
+                    "boxes": { "reach": [6, 0, 10, 8], "lost": [300, 300, 4, 4] } } ] }
+                """)
+            .Text("enemies/endless.sheet", """{ "sheets": [ { "image": "drone.png", "name": "endless", "cell": [8, 8], "points": { "p": [1e40, 2] } } ] }""")
+            .Text("enemies/wide.sheet", """{ "sheets": [ { "image": "drone.png", "name": "wide", "cell": [8, 8], "boxes": { "b": [0, 0, 1e40, 2] } } ] }""");
+        var report = ContentTool.Check(content.Root);
+        string all = string.Join("\n", report.Issues);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"typo\"", StringComparison.Ordinal) && w.Message.Contains("far1", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"typo\"", StringComparison.Ordinal) && w.Message.Contains("far3", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"lost\"", StringComparison.Ordinal)), all);
+        Assert.IsFalse(report.Issues.Any(i => i.Message.Contains("\"muzzle\"", StringComparison.Ordinal) || i.Message.Contains("\"reach\"", StringComparison.Ordinal)),
+            "a muzzle ahead of the sprite and a box that reaches out of it are what points and boxes are for:\n" + all);
+        Assert.IsTrue(report.Errors.Any(e => e.Path == "enemies/endless.sheet" && e.Message.Contains("\"p\"", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Errors.Any(e => e.Path == "enemies/wide.sheet" && e.Message.Contains("\"b\"", StringComparison.Ordinal)), all);
+    }
+
+    [TestMethod]
     public void Every_problem_names_its_file_and_says_what_to_do()
     {
         using var content = Good()
@@ -185,6 +207,37 @@ public sealed class ContentTests
         Assert.IsTrue(issues.Any(i => i.Error && i.Message.Contains("'Art'", StringComparison.Ordinal) && i.Message.Contains("'art'", StringComparison.Ordinal)), "folders too");
         Assert.AreEqual(2, issues.Count, "two files of one name and different extensions are no problem: " + string.Join("\n", issues));
         Assert.IsFalse(issues.Any(i => i.Path.StartsWith("ok/", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
+    public void The_strips_of_a_sheet_are_the_ones_it_declares()
+    {
+        // Neon Rift's sprites.sheet: three props named "prop_tank-1".."prop_tank-3", each an image of its own, were
+        // listed as a strip "prop_tank-", and the strips "hit1".."hit5" (frames "hit10", "hit11"...) were not listed.
+        using var content = new Folder()
+            .Bytes("tank-1.png", Png(Solid(2, 2, 1))).Bytes("tank-2.png", Png(Solid(2, 2, 2))).Bytes("tank-3.png", Png(Solid(2, 2, 3)))
+            .Bytes("hit1.png", Png(Solid(4, 2, 4))).Bytes("hit2.png", Png(Solid(4, 2, 5))).Bytes("tiles.png", Png(Solid(8, 2, 6)))
+            .Text("sprites.sheet", """
+                { "sheets": [
+                    { "image": "tank-1.png", "name": "prop_tank-1" },
+                    { "image": "tank-2.png", "name": "prop_tank-2" },
+                    { "image": "tank-3.png", "name": "prop_tank-3" },
+                    { "image": "hit1.png", "name": "hit1", "cell": [2, 2], "fps": 28, "loop": false },
+                    { "image": "hit2.png", "name": "hit2", "cell": [2, 2] },
+                    { "image": "tiles.png", "cell": [2, 2], "strips": { "lava": { "from": 1, "count": 2 } }, "sprites": { "rock1": [0, 0], "rock2": [3, 0] } }
+                ] }
+                """);
+        string code = ContentTool.Names(content.Root, "MyGame", "GameContent");
+        int strips = code.IndexOf("public static class Strips", StringComparison.Ordinal);
+        Assert.IsTrue(strips > 0, code);
+        string listed = code[strips..code.IndexOf('}', strips)];
+        StringAssert.Contains(listed, "public const string Hit1 = \"hit1\";", "a strip with a rate");
+        StringAssert.Contains(listed, "public const string Hit2 = \"hit2\";", "a strip without a rate");
+        StringAssert.Contains(listed, "public const string Lava = \"lava\";", "a strip of a sheet's \"strips\"");
+        Assert.IsFalse(listed.Contains("prop_tank-", StringComparison.Ordinal), "three sprites of their own are not a strip:\n" + listed);
+        Assert.IsFalse(listed.Contains("\"rock\"", StringComparison.Ordinal), "nor are two named sprites that end in a number:\n" + listed);
+        StringAssert.Contains(code, "public const string PropTank1 = \"prop_tank-1\";", "the sprites are still named");
+        CollectionAssert.AreEqual(new[] { "hit1", "hit2", "lava" }, MicroEngine.Graphics.SpriteSheet.Load(content.Path("sprites.sheet")).Strips.ToArray());
     }
 
     [TestMethod]

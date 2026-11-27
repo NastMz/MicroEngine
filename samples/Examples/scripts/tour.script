@@ -259,6 +259,12 @@
 5290 press confirm
 5360 capture 44-cutscene.png
 5366 press pause
-5380 quit
+5380 press down
+5390 press confirm
+5430 press left
+5460 press confirm
+5474 capture 45-effects.png
+5480 press pause
+5494 quit
 
 

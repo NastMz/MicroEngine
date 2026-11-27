@@ -63,6 +63,33 @@ public sealed class AsepriteTests
     }
 
     [TestMethod]
+    public void Slices_are_boxes_of_the_frames_they_cover_and_their_pivots_points()
+    {
+        // "body" anchors the frames at (4, 8); "hit" exists from frame 1 on.
+        var bytes = Hero().Slice("body", 0, 1, 0, 6, 8, pivot: (3, 8))
+            .Slice("gun", 0, 5, 2, 3, 2, pivot: (3, 1))
+            .Slice("hit", 1, 6, 0, 2, 4).ToBytes();
+        var sheet = AsepriteAssets.Read("hero", bytes);
+        var f0 = sheet.Frames[0];
+        var f1 = sheet.Frames[1];
+        var f2 = sheet.Frames[2];
+        Assert.AreEqual(new RectF(5, 2, 3, 2), f0.Boxes.Single(b => b.Name == "gun").Bounds);
+        Assert.AreEqual(new Vector2(8, 3), f0.Points.Single(p => p.Name == "gun").Position, "the slice's corner plus its pivot");
+        Assert.AreEqual(new Vector2(8, 3), f1.Points.Single(p => p.Name == "gun").Position, "a key holds until the next one");
+        Assert.AreEqual(new Vector2(8, 3), f2.Points.Single(p => p.Name == "gun").Position);
+        Assert.AreEqual(new RectF(5, 2, 3, 2), f2.Boxes.Single(b => b.Name == "gun").Bounds);
+        Assert.IsFalse(f0.Boxes.Any(b => b.Name == "hit"), "a slice starts at its first key");
+        Assert.AreEqual(new RectF(6, 0, 2, 4), f1.Boxes.Single(b => b.Name == "hit").Bounds);
+        Assert.IsFalse(f1.Points.Any(p => p.Name == "hit"), "a slice without a pivot is a box only");
+
+        using var atlas = new SpriteAtlasBuilder().AddSheet(sheet).Build(new MicroEngine.Core.HeadlessGraphicsDevice());
+        var sprite = atlas["hero 0"];
+        Assert.AreEqual(new Vector2(4, -5), sprite.Point("gun"), "from the frame's anchor (4, 8)");
+        Assert.AreEqual(new Vector2(-4, -5), sprite.Point("gun", flipX: true));
+        Assert.AreEqual(new RectF(1, -6, 3, 2), sprite.Box("gun"));
+    }
+
+    [TestMethod]
     public void A_slice_with_a_pivot_anchors_the_frames_and_every_slice_is_a_sprite()
     {
         var bytes = Hero().Slice("body", 0, 1, 0, 6, 8, pivot: (3, 8)).Slice("mark", 2, 2, 1, 2, 2).ToBytes();

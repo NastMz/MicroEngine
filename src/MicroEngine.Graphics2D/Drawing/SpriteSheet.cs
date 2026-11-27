@@ -7,7 +7,13 @@ namespace MicroEngine.Graphics;
 /// <param name="Name">The sprite's name in the atlas ("drone0", "prop_palm").</param>
 /// <param name="Image">Its pixels.</param>
 /// <param name="Origin">Its anchor in its own pixels (see <see cref="Sprite.Origin"/>).</param>
-public sealed record SheetFrame(string Name, PixelImage Image, Vector2 Origin);
+public sealed record SheetFrame(string Name, PixelImage Image, Vector2 Origin)
+{
+    /// <summary>The frame's named points (a shoulder, a muzzle), in its own pixels; empty by default.</summary>
+    public IReadOnlyList<SpritePoint> Points { get; init; } = [];
+    /// <summary>The frame's named boxes (a hit box, a hurt box), in its own pixels; empty by default.</summary>
+    public IReadOnlyList<SpriteBox> Boxes { get; init; } = [];
+}
 
 /// <summary>A named animation of a sprite sheet: frames by name, how long each shows, and how they play.</summary>
 /// <param name="Name">The clip's name (<see cref="SpriteAtlas.Clip(string, bool?)"/>).</param>
@@ -52,6 +58,16 @@ public sealed record SheetClip(string Name, IReadOnlyList<string> Frames, IReadO
 /// is also a clip of that name; <c>clips</c> name more of them, from frames listed by name or a whole strip.
 /// <c>direction</c> is forward, reverse, pingpong or pingpong_reverse. Image paths are relative to the file.
 /// </para>
+/// <para>
+/// A named image, a strip and a sprite written as an object may carry <c>points</c> and <c>boxes</c>, in the frame's
+/// pixels from its top-left corner: <c>"points": { "muzzle": [14, 3] }</c> and <c>"boxes": { "hit": [10, 2, 6, 4] }</c>
+/// give every frame the same one; an array with one entry per frame (<c>[[14, 3], [15, 3], null]</c>) gives each its
+/// own, and <c>null</c> leaves a frame without it. <see cref="Sprite.Point"/> and <see cref="Sprite.Box"/> read them.
+/// </para>
+/// <para>
+/// The format has no version number: it grows by optional properties, so a file written for an earlier SDK reads the
+/// same, and a file that uses a property this SDK does not know is refused with the property's name.
+/// </para>
 /// </remarks>
 public sealed class SpriteSheet
 {
@@ -59,6 +75,12 @@ public sealed class SpriteSheet
     public IReadOnlyList<SheetFrame> Frames { get; }
     /// <summary>The clips, in the description's order.</summary>
     public IReadOnlyList<SheetClip> Clips { get; }
+    /// <summary>
+    /// The names of the strips the description declares, in its order: runs of frames "name0", "name1"... that
+    /// <see cref="SpriteAtlas.Frames"/> takes. Empty for a sheet whose source declares none (an Aseprite file, a
+    /// packing tool's atlas, a sheet made in code).
+    /// </summary>
+    public IReadOnlyList<string> Strips { get; init; } = [];
 
     /// <summary>A sheet of <paramref name="frames"/> and <paramref name="clips"/> (a reader of another format makes one).</summary>
     /// <exception cref="InvalidDataException">Two frames or two clips share a name, a clip names a frame that is missing, or its timing does not fit its frames.</exception>
@@ -147,7 +169,7 @@ public sealed class SpriteSheet
                 if (clips.ValueKind != JsonValueKind.Object) throw new InvalidDataException("\"clips\" is an object of named clips.");
                 foreach (var clip in clips.EnumerateObject()) ReadClip(clip.Name, clip.Value);
             }
-            return new SpriteSheet(_frames, _clips);
+            return new SpriteSheet(_frames, _clips) { Strips = [.. _strips.Keys] };
         }
 
         private void ReadSheet(JsonElement sheet, Anchor inherited)
@@ -155,7 +177,10 @@ public sealed class SpriteSheet
             if (sheet.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Each entry of \"sheets\" is an object with an \"image\".");
             string file = Text(sheet, "image") ?? throw new InvalidDataException("An entry of \"sheets\" has no \"image\".");
             string where = $"sheet '{file}'";
-            Known(sheet, where, "image", "name", "cell", "margin", "spacing", "count", "pivot", "origin", "fps", "durations", "direction", "loop", "strips", "sprites");
+            Known(sheet, where, "image", "name", "cell", "margin", "spacing", "count", "pivot", "origin", "fps", "durations", "direction", "loop", "strips", "sprites", "points", "boxes");
+            if (Text(sheet, "name") is null)
+                foreach (var key in new[] { "points", "boxes" })
+                    if (sheet.TryGetProperty(key, out _)) throw new InvalidDataException($"{where} has \"{key}\" but no \"name\": points and boxes belong to the frames a \"name\", a strip or a sprite names.");
             var image = Image(file);
             var anchor = AnchorOf(sheet, where) ?? inherited;
             var grid = sheet.TryGetProperty("cell", out var cell) ? new Grid(image, file, Pair(cell, where, "cell"), PairOrOne(sheet, "margin", where), PairOrOne(sheet, "spacing", where)) : null;
@@ -167,7 +192,7 @@ public sealed class SpriteSheet
                 {
                     foreach (var key in new[] { "count", "fps", "durations", "direction", "loop" })
                         if (sheet.TryGetProperty(key, out _)) throw new InvalidDataException($"{where} has \"{key}\" but no \"cell\": without a cell size the whole image is the one sprite '{name}'.");
-                    Add(name, image.Clone(), anchor);
+                    Add(name, image.Clone(), anchor, ReadMarks(sheet, where, 1), 0);
                 }
                 else
                 {
@@ -198,7 +223,7 @@ public sealed class SpriteSheet
         {
             string where = $"strip '{name}' of '{file}'";
             if (strip.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"{where} is an object: {{ \"from\": 0, \"count\": 4 }}.");
-            Known(strip, where, "from", "at", "count", "cells", "rects", "pivot", "origin", "fps", "durations", "direction", "loop");
+            Known(strip, where, "from", "at", "count", "cells", "rects", "pivot", "origin", "fps", "durations", "direction", "loop", "points", "boxes");
             var anchor = AnchorOf(strip, where) ?? inherited;
             List<PixelImage> frames = [];
             if (strip.TryGetProperty("rects", out var rects))
@@ -243,21 +268,23 @@ public sealed class SpriteSheet
             string where = $"sprite '{name}' of '{file}'";
             var anchor = inherited;
             var place = sprite;
+            Marks? marks = null;
             if (sprite.ValueKind == JsonValueKind.Object)
             {
-                Known(sprite, where, "cell", "rect", "pivot", "origin");
+                Known(sprite, where, "cell", "rect", "pivot", "origin", "points", "boxes");
                 anchor = AnchorOf(sprite, where) ?? inherited;
+                marks = ReadMarks(sprite, where, 1);
                 if (!sprite.TryGetProperty("rect", out place) && !sprite.TryGetProperty("cell", out place))
                     throw new InvalidDataException($"{where} needs a \"cell\": [column, row] or a \"rect\": [x, y, width, height].");
             }
             if (place.ValueKind != JsonValueKind.Array || place.GetArrayLength() is not (2 or 4))
                 throw new InvalidDataException($"{where} is [column, row], [x, y, width, height] or an object with \"cell\" or \"rect\".");
-            if (place.GetArrayLength() == 4) Add(name, Cut(image, file, Numbers(place, 4, where, "rect"), where), anchor);
+            if (place.GetArrayLength() == 4) Add(name, Cut(image, file, Numbers(place, 4, where, "rect"), where), anchor, marks, 0);
             else
             {
                 var cells = grid ?? throw new InvalidDataException($"{where} names a cell, so its sheet needs a \"cell\": [width, height] (or give four numbers: x, y, width, height).");
                 var (column, row) = Pair(place, where, "cell");
-                Add(name, cells.Cell(column, row, where), anchor);
+                Add(name, cells.Cell(column, row, where), anchor, marks, 0);
             }
         }
 
@@ -288,7 +315,8 @@ public sealed class SpriteSheet
         private void AddStrip(string name, List<PixelImage> frames, Anchor anchor, JsonElement timing, string where)
         {
             var names = new string[frames.Count];
-            for (int i = 0; i < frames.Count; i++) Add(names[i] = name + i, frames[i], anchor);
+            var marks = ReadMarks(timing, where, frames.Count);
+            for (int i = 0; i < frames.Count; i++) Add(names[i] = name + i, frames[i], anchor, marks, i);
             if (!_strips.TryAdd(name, names)) throw new InvalidDataException($"The sheet has two strips named '{name}'.");
             if (AddClip(name, names, timing, where)) return;
             foreach (var key in new[] { "direction", "loop" })
@@ -330,11 +358,82 @@ public sealed class SpriteSheet
             return true;
         }
 
-        private void Add(string name, PixelImage frame, Anchor anchor)
+        private void Add(string name, PixelImage frame, Anchor anchor, Marks? marks = null, int index = 0)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new InvalidDataException("A frame has no name.");
             if (!_names.Add(name)) throw new InvalidDataException($"The sheet has two frames named '{name}'.");
-            _frames.Add(new SheetFrame(name, frame, anchor.Of(frame.Width, frame.Height)));
+            var added = new SheetFrame(name, frame, anchor.Of(frame.Width, frame.Height));
+            if (marks is not null)
+            {
+                List<SpritePoint>? points = null;
+                foreach (var (point, at) in marks.Points)
+                    if (at[at.Length == 1 ? 0 : index] is { } p) (points ??= []).Add(new SpritePoint(point, p));
+                List<SpriteBox>? boxes = null;
+                foreach (var (box, at) in marks.Boxes)
+                    if (at[at.Length == 1 ? 0 : index] is { } b) (boxes ??= []).Add(new SpriteBox(box, b));
+                if (points is not null) added = added with { Points = points };
+                if (boxes is not null) added = added with { Boxes = boxes };
+            }
+            _frames.Add(added);
+        }
+
+        /// <summary>The points and boxes an element gives its frames: for each name, one value for all of them or one (or none) per frame.</summary>
+        private sealed record Marks(List<(string Name, Vector2?[] At)> Points, List<(string Name, RectF?[] At)> Boxes);
+
+        private static Marks? ReadMarks(JsonElement element, string where, int frames)
+        {
+            bool hasPoints = element.TryGetProperty("points", out var points), hasBoxes = element.TryGetProperty("boxes", out var boxes);
+            if (!hasPoints && !hasBoxes) return null;
+            var marks = new Marks([], []);
+            if (hasPoints)
+                foreach (var (name, values) in Named(points, "points", where, 2, frames, "[x, y]"))
+                    marks.Points.Add((name, [.. values.Select(v => v is { } n ? new Vector2(n[0], n[1]) : (Vector2?)null)]));
+            if (hasBoxes)
+                foreach (var (name, values) in Named(boxes, "boxes", where, 4, frames, "[x, y, width, height]"))
+                {
+                    foreach (var v in values)
+                        if (v is { } n && (!(n[2] > 0) || !(n[3] > 0))) throw new InvalidDataException($"The box \"{name}\" of {where} is {n[2]} by {n[3]}; a box has a positive size.");
+                    marks.Boxes.Add((name, [.. values.Select(v => v is { } n ? new RectF(n[0], n[1], n[2], n[3]) : (RectF?)null)]));
+                }
+            return marks;
+        }
+
+        /// <summary>Each name of a "points" or "boxes" object with its values: one for every frame, or one (or null) per frame.</summary>
+        private static IEnumerable<(string Name, float[]?[] Values)> Named(JsonElement group, string key, string where, int numbers, int frames, string shape)
+        {
+            if (group.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"\"{key}\" of {where} is an object of named {key}: {{ \"name\": {shape} }}.");
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var result = new List<(string, float[]?[])>();
+            foreach (var entry in group.EnumerateObject())
+            {
+                string name = entry.Name;
+                if (string.IsNullOrWhiteSpace(name) || !seen.Add(name)) throw new InvalidDataException($"\"{key}\" of {where} names '{name}' twice or not at all.");
+                var value = entry.Value;
+                string wrong = $"\"{name}\" of {where} is {shape}, or one {shape} (or null) per frame.";
+                if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() == 0) throw new InvalidDataException(wrong);
+                bool perFrame = value[0].ValueKind is JsonValueKind.Array or JsonValueKind.Null;
+                if (!perFrame)
+                {
+                    result.Add((name, [Floats(value, numbers, where, name, wrong)]));
+                    continue;
+                }
+                if (value.GetArrayLength() != frames)
+                    throw new InvalidDataException($"\"{name}\" of {where} has {value.GetArrayLength()} entries for {frames} frames; give one per frame (null for a frame without it), or a single {shape} for all.");
+                var each = new float[]?[frames];
+                int i = 0;
+                foreach (var item in value.EnumerateArray()) each[i++] = item.ValueKind == JsonValueKind.Null ? null : Floats(item, numbers, where, name, wrong);
+                // One frame given one per-frame value reads like a single value.
+                result.Add((name, each));
+            }
+            return result;
+        }
+
+        private static float[] Floats(JsonElement value, int count, string where, string key, string wrong)
+        {
+            if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() != count) throw new InvalidDataException(wrong);
+            var numbers = new float[count];
+            for (int i = 0; i < count; i++) numbers[i] = Number(value[i], where, key);
+            return numbers;
         }
 
         private PixelImage Image(string file)
@@ -376,8 +475,13 @@ public sealed class SpriteSheet
         private static string? Text(JsonElement element, string name) =>
             element.TryGetProperty(name, out var v) ? v.ValueKind == JsonValueKind.String ? v.GetString() : throw new InvalidDataException($"\"{name}\" is text.") : null;
 
-        private static float Number(JsonElement value, string where, string key) =>
-            value.ValueKind == JsonValueKind.Number ? value.GetSingle() : throw new InvalidDataException($"\"{key}\" of {where} holds something that is not a number.");
+        private static float Number(JsonElement value, string where, string key)
+        {
+            if (value.ValueKind != JsonValueKind.Number) throw new InvalidDataException($"\"{key}\" of {where} holds something that is not a number.");
+            float number = value.GetSingle();
+            // A number too large for the engine's numbers reads as infinity: a slip of the hand, never a value.
+            return float.IsFinite(number) ? number : throw new InvalidDataException($"\"{key}\" of {where} holds {value.GetRawText()}, a number too large to be meant.");
+        }
 
         private static int Whole(JsonElement value, string where, string key) =>
             value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int n) ? n : throw new InvalidDataException($"\"{key}\" of {where} is a whole number.");

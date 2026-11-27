@@ -68,6 +68,20 @@ public int Lines { get; set; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Graphics_Scanlines_Phase"></a> Phase
+
+Where the lines start, as a fraction of one line (a bright row and a dark row): 0 (the default) makes the first
+row bright and the second dark; 0.5 moves the lines half a line down, so the first row is the dark one; values
+between scroll them. Kept within 0 to 1 (1 is 0 again); a value that is not a number is ignored.
+
+```csharp
+public float Phase { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Graphics_Scanlines_Strength"></a> Strength
 
 How dark the dark lines are: 0 nothing, 1 black. Kept within 0 to 1; a value that is not a number is ignored.

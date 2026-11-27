@@ -372,6 +372,7 @@ padding) when you call `Build(Graphics)`:
 | --- | --- |
 | `Add(name, image, origin?)` | One sprite; `origin` is its pivot (for example the feet) |
 | `AddFrames(name, frames, origin?)` | `name0`, `name1`, ... sharing one origin |
+| `AddFrames(name, frames, framesPerSecond, origin?, loop = true)` | The same frames and the clip `name` that plays them (`atlas.Clip(name)`) |
 | `AddGrid(name, sheet, cellWidth, cellHeight, count?, origin?)` | Slices a row-major sheet into `name0..N` |
 
 Atlases made by TexturePacker, Aseprite, ShoeBox and similar tools load with `Assets.Atlas` or `SpriteAtlas.Load`,
@@ -380,7 +381,13 @@ with trimming, pivots and Aseprite animation tags ([Assets](assets.md#atlases-fr
 The resulting `SpriteAtlas` returns `Sprite`s by name (`atlas["star"]`), lists `Names`, collects animation frames
 with `Frames("walk")`, and owns the texture (`Dispose` it in `Unload`). A `Sprite` is a texture region plus its
 origin. `Frames` returns a shared, read-only `IReadOnlyList<Sprite>`, collected once per name, so it can be
-called while drawing. Duplicate names and unknown names throw.
+called while drawing. Duplicate names and unknown names throw. A name built from numbers is looked up without making a
+string: `atlas[$"water{mask}_{frame}"]`.
+
+A sprite also carries what its sheet says about the frame beside the anchor: named points and named boxes.
+`sprite.Point("muzzle")` and `sprite.Box("hit")` give them measured from the anchor, so adding the position the sprite
+is drawn at gives the place on screen; pass `flipX: true` when the sprite is drawn mirrored and they mirror with it.
+`TryPoint` and `TryBox` answer for frames that may lack one ([Assets](assets.md#points-and-boxes-on-frames)).
 
 ## Animation
 
@@ -390,6 +397,74 @@ again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-
 [`src/MicroEngine.Graphics2D/Drawing/Animation.cs`](../../src/MicroEngine.Graphics2D/Drawing/Animation.cs). Games may equally pick
 frames themselves from `atlas.Frames(...)` and a timer. Values that move through several keys, and moments the game
 reacts to during a clip (a footstep, the frame a swing lands), are tracks and timelines: [Animation](../guide/animation.md).
+
+Many instances share one clip and one clock, each starting on a frame of its own: `clip.FrameAt(time, frameOffset)`
+is the frame of an instance that started `frameOffset` frames into the clip (the links of a chain, a row of torches,
+coins that spin one frame apart), and `clip.FrameIndexAt(time, frameOffset)` is its index in `Frames`. At a fixed rate
+the index is `time * FramesPerSecond + frameOffset` rounded down (`(int)(time * FramesPerSecond + frameOffset)` from 0
+on), wrapped by a looping clip and held at the ends by one that plays once; the offset may be a fraction or negative,
+and a time before 0 counts backwards the same way.
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#setup -->
+```csharp
+public override void Enter()
+{
+    _assets = Assets.CreateScope("effects");
+    // effects.sheet gives every frame a point "hand" and a box "body".
+    _caster = _assets.Atlas("effects.sheet");
+    // Strips drawn in code are clips as soon as they are added with a rate.
+    _art = new SpriteAtlasBuilder()
+        .AddFrames("burst", Enumerable.Range(0, 6).Select(Burst), 18, new Vector2(8, 8), loop: false)
+        .AddFrames("torch", Enumerable.Range(0, 3).Select(Torch), 9, new Vector2(3, 10))
+        .Build(Game.Graphics);
+}
+```
+
+## One-shot effects
+
+An impact, a puff of smoke or a sparkle is a clip played once at a point and forgotten. `Scene.Effects` plays them:
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#play -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    _time += dt;
+    int turn = Input.Axis("left", "right");
+    if (turn != 0) _facingLeft = turn < 0;
+    if (!Input.Pressed("confirm")) return;
+
+    // Three bursts from the caster's hand: the point of the frame showing now, mirrored with the sprite.
+    var frame = _caster.Clip("caster").FrameAt(_time);
+    var hand = Feet + frame.Point("hand", _facingLeft) * Scale;
+    var burst = _art.Clip("burst");
+    Effects.Play(burst, hand);
+    Effects.Play(burst, hand + new Vector2(_facingLeft ? -22 : 22, -6), delay: 0.08f, flipX: true, tint: Gold);
+    Effects.Play(burst, hand + new Vector2(_facingLeft ? -44 : 44, 2), delay: 0.16f, tint: Sky, framesPerSecond: 12);
+    Casts++;
+    Score += 125;
+}
+```
+
+`Effects.Play(clip, at, delay, flipX, tint, framesPerSecond, layer, depth)` shows nothing during the delay, then the
+clip's frames once at the clip's own timing (or at the rate given), and removes the effect on the update its time
+reaches the clip's length; a looping clip plays one pass. The scene steps its effects before `Update`, on the scene's
+time, and drops them when it leaves; the scene's `Draw` calls `Effects.Draw(renderer)` where they belong among its own
+drawing. They draw in the order they were played; inside a [sorted block](#draw-order) each draws at its own `layer`
+and `depth`.
+
+- `Play` returns the effect: `Effects.IsPlaying(effect)`, `Effects.Move(effect, at)` (an effect that follows
+  something is moved to it each update) and `Effects.Stop(effect)`. `Effects.Busy` says whether any is waiting or
+  playing, for a rule that waits for them.
+- `Effects.SnapToPixels = true` draws them on whole pixels.
+- A delay or a step that is not a time (negative, infinite, not a number) is none: every effect ends.
+- Playing, stepping and drawing effects allocates nothing once the pool is as large as the most effects alive at once.
+- A scene's effects are part of its state in a scripted run, because a rule may wait for them.
+- A game whose effects live outside a scene makes a `SpriteEffects` of its own and calls its `Update(dt)`.
+- An effect has no rotation and no scale, and is one clip: a burst of many moving pieces is a [particle
+  system](#particles).
+
+Source: [`EffectsExample.cs`](../../samples/Examples/Examples/EffectsExample.cs).
 
 ## Camera
 

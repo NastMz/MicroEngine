@@ -67,6 +67,7 @@ public sealed class ExamplesGame : Game
         ("Sounds with a place (listener, emitters)", g => new SpatialSoundExample()),
         ("Pixel menu and dialogue (widgets on the canvas)", g => new PixelMenuExample()),
         ("A cutscene (waiting for tweens)", g => new CutsceneExample()),
+        ("Effects and HUD numbers (one-shot clips)", g => new EffectsExample()),
 
 
     ];
@@ -117,7 +118,8 @@ public static class Heading
     {
         r.FillRect(new RectF(0, 0, r.Width, 12), Color.Black.WithAlpha(0.6f));
         font.Draw(r, title, new Vector2(4, 3), UiTheme.Default.Accent);
-        var back = hint.Length > 0 ? $"{hint}   ESC: BACK" : "ESC: BACK";
-        font.Draw(r, back, new Vector2(r.Width - 4 - font.MeasureWidth(back), 3), UiTheme.Default.Muted);
+        // Written where it is drawn: the hint and the fixed text are joined in a buffer, not in a new string each frame.
+        if (hint.Length > 0) font.DrawRight(r, $"{hint}   ESC: BACK", new Vector2(r.Width - 4, 3), UiTheme.Default.Muted);
+        else font.DrawRight(r, "ESC: BACK", new Vector2(r.Width - 4, 3), UiTheme.Default.Muted);
     }
 }

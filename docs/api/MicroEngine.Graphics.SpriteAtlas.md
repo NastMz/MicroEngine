@@ -92,6 +92,44 @@ public Sprite this[string name] { get; }
 
 No sprite has that name; check with [Contains](MicroEngine.Graphics.SpriteAtlas.md#MicroEngine_Graphics_SpriteAtlas_Contains_System_String_).
 
+### <a id="MicroEngine_Graphics_SpriteAtlas_Item_System_ReadOnlySpan_System_Char__"></a> this\[ReadOnlySpan<char\>\]
+
+The sprite named by text that is not a string: found without making one, so a name built from numbers costs
+nothing when it is looked up every frame.
+
+```csharp
+public Sprite this[ReadOnlySpan<char> name] { get; }
+```
+
+#### Property Value
+
+ [Sprite](MicroEngine.Graphics.Sprite.md)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No sprite has that name.
+
+### <a id="MicroEngine_Graphics_SpriteAtlas_Item_MicroEngine_Graphics_InterpolatedText_"></a> this\[InterpolatedText\]
+
+The sprite named by an interpolated string (<code>atlas[$"water{mask}_{frame}"]</code>), which is written into a reused
+buffer instead of a string.
+
+```csharp
+public Sprite this[InterpolatedText name] { get; }
+```
+
+#### Property Value
+
+ [Sprite](MicroEngine.Graphics.Sprite.md)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+No sprite has that name.
+
 ## Methods
 
 ### <a id="MicroEngine_Graphics_SpriteAtlas_Clip_System_String_System_Nullable_System_Boolean__"></a> Clip\(string, bool?\)
@@ -304,5 +342,23 @@ The atlas file or its image does not exist.
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 
 The file is not an atlas, or does not fit its image; the message names the file.
+
+### <a id="MicroEngine_Graphics_SpriteAtlas_TryGet_System_ReadOnlySpan_System_Char__MicroEngine_Graphics_Sprite__"></a> TryGet\(ReadOnlySpan<char\>, out Sprite\)
+
+The sprite named <code class="paramref">name</code>, or false when the atlas has none: no exception, no string.
+
+```csharp
+public bool TryGet(ReadOnlySpan<char> name, out Sprite sprite)
+```
+
+#### Parameters
+
+`name` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+`sprite` [Sprite](MicroEngine.Graphics.Sprite.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 </div>

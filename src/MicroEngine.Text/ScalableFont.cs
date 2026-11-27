@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 using FontStashSharp;
 using FontStashSharp.Interfaces;
 
@@ -204,6 +205,18 @@ public sealed class ScalableFont : IDisposable
     /// <summary>Size of <paramref name="text"/> at <paramref name="size"/>, in canvas pixels.</summary>
     public Vector2 Measure(string text, float size) => At(size).Measure(text);
 
+    /// <summary>Draws text that is not a string (a buffer a number was written into) at <paramref name="size"/>, without allocating.</summary>
+    public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, float size, Color color) => At(size).Draw(renderer, text, position, color);
+
+    /// <summary>Draws an interpolated string (<c>$"{score}"</c>) at <paramref name="size"/>, without making a string.</summary>
+    public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, float size, Color color) => At(size).Draw(renderer, text, position, color);
+
+    /// <inheritdoc cref="Measure(string, float)"/>
+    public Vector2 Measure(ReadOnlySpan<char> text, float size) => At(size).Measure(text);
+
+    /// <summary>Size of an interpolated string (<c>$"{score}"</c>) at <paramref name="size"/>, measured without making a string.</summary>
+    public Vector2 Measure(InterpolatedText text, float size) => At(size).Measure(text);
+
     /// <summary>Distance between the tops of two lines at <paramref name="size"/>.</summary>
     public float LineHeight(float size) => At(size).LineHeight;
 
@@ -239,6 +252,20 @@ public sealed class ScalableFont : IDisposable
     }
 
     internal void Render(IRenderer renderer, SpriteFontBase font, string text, Vector2 position, Color color)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _pages.Renderer = renderer;
+        try { font.DrawText(_pages, text, position, new FSColor(color.R, color.G, color.B, color.A)); }
+        finally { _pages.Renderer = null; }
+    }
+
+    // Text that is not a string is copied into this builder, which the rasterizer reads: it keeps its capacity, so
+    // drawing a number every frame allocates nothing.
+    private readonly StringBuilder _scratch = new(64);
+
+    internal StringBuilder Scratch(ReadOnlySpan<char> text) => _scratch.Clear().Append(text);
+
+    internal void Render(IRenderer renderer, SpriteFontBase font, StringBuilder text, Vector2 position, Color color)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         _pages.Renderer = renderer;
@@ -368,6 +395,37 @@ public sealed class SizedFont : IFont
         ArgumentNullException.ThrowIfNull(text);
         if (text.Length == 0) return;
         Family.Render(renderer, Font, text, position, color);
+    }
+
+    /// <inheritdoc/>
+    public Vector2 Measure(ReadOnlySpan<char> text)
+    {
+        if (text.Length == 0) return Vector2.Zero;
+        var size = Font.MeasureString(Family.Scratch(text));
+        int lines = 1 + text.Count('\n');
+        return new Vector2(size.X, MathF.Max(size.Y, lines * LineHeight));
+    }
+
+    /// <inheritdoc/>
+    public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        if (text.Length == 0) return;
+        Family.Render(renderer, Font, Family.Scratch(text), position, color);
+    }
+
+    /// <inheritdoc/>
+    public Vector2 Measure(InterpolatedText text)
+    {
+        try { return Measure(text.Text); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc/>
+    public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, Color color)
+    {
+        try { Draw(renderer, text.Text, position, color); }
+        finally { text.Dispose(); }
     }
 
     /// <summary>Rasterizes <paramref name="characters"/> at this size now (see <see cref="ScalableFont.Prepare"/>).</summary>
