@@ -128,8 +128,42 @@ public sealed class PhysicsPlaygroundTests
         hero.Teleport(new Vector2(210, 90));
         hero.Velocity = Vector2.Zero;
         Step(game, 90);
-        Assert.AreEqual(103, hero.Position.Y, 0.5f, "found, it is a block to stand on");
+        Assert.AreEqual(110, hero.Position.Y, 0.5f, "found, it is a block to stand on: its feet on the block's top");
         Assert.IsTrue(scene.HardestLanding > 100, $"landings report their speed: {scene.HardestLanding}");
+
+        // Run is held: it goes at the run's speed, and a running jump keeps that speed in the air with run released.
+        hero.Teleport(new Vector2(30, floor));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 10);
+        game.Input.SetForced("right", true);
+        game.Input.SetForced("cancel", true);
+        Step(game, 40);
+        Assert.AreEqual(152, hero.Velocity.X, 0.5f, "the run's speed");
+        game.Input.SetForced("confirm", true);
+        Step(game, 1);
+        game.Input.SetForced("cancel", false);
+        Step(game, 12);
+        Assert.IsFalse(hero.IsGrounded);
+        Assert.AreEqual(152, hero.Velocity.X, 0.5f, "a running jump keeps its speed in the air");
+        game.Input.SetForced("confirm", false);
+        game.Input.SetForced("right", false);
+        Step(game, 90);
+
+        // The plank (x 16..64, top at y 136): down alone stands, down and jump drops through to the floor.
+        hero.Teleport(new Vector2(40, 130));
+        hero.Velocity = Vector2.Zero;
+        Step(game, 30);
+        Assert.AreEqual(136, hero.Position.Y, 0.5f, "standing on the plank");
+        game.Input.SetForced("down", true);
+        Step(game, 10);
+        Assert.AreEqual(136, hero.Position.Y, 0.5f, "down alone does not drop");
+        game.Input.SetForced("confirm", true);
+        Step(game, 1);
+        Assert.IsTrue((hero.Events & CharacterEvents.DroppedThrough) != 0, "down and jump drops");
+        game.Input.SetForced("confirm", false);
+        game.Input.SetForced("down", false);
+        Step(game, 60);
+        Assert.AreEqual(floor, hero.Position.Y, 0.5f, "through the plank to the floor");
     }
 
     [TestMethod]

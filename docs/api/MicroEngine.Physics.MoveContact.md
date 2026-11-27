@@ -78,6 +78,21 @@ public ShapeId Shape { get; init; }
 
  [ShapeId](MicroEngine.Physics.ShapeId.md)
 
+### <a id="MicroEngine_Physics_MoveContact_Stopped"></a> Stopped
+
+Whether the surface stopped the movement in this move: the body was moving into it and went less far than it
+was asked to. False for a surface the body only touches where the move ended (a wall it slides along, the
+floor under a body that moved sideways and not down). A push rule reads it: "my move to the right was stopped
+by this shape in this step".
+
+```csharp
+public bool Stopped { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ## Methods
 
 ### <a id="MicroEngine_Physics_MoveContact_Deconstruct_MicroEngine_Physics_ShapeId__MicroEngine_Scenes_EntityId__System_Numerics_Vector2__"></a> Deconstruct\(out ShapeId, out EntityId, out Vector2\)

@@ -92,6 +92,12 @@ id was made. A destroyed body's slot is reused with a new generation, so an old 
 What a character wants to do in one step: the game fills it from input, an AI from its plan. The controller never
 reads input devices.
 
+ [CharacterState](MicroEngine.Physics.CharacterState.md)
+
+The whole state of a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) ([Snapshot](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Snapshot),
+[Restore](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Restore_MicroEngine_Physics_CharacterState__)). Every value can be read and, with <code>with</code>, changed: a game that
+keeps the character's state elsewhere (a save, a replay, another simulation) builds one.
+
  [ClosestPointHit](MicroEngine.Physics.ClosestPointHit.md)
 
 The surface nearest a point ([ClosestPoint](MicroEngine.Physics.IPhysicsWorld2D.md#MicroEngine_Physics_IPhysicsWorld2D_ClosestPoint_System_Numerics_Vector2_System_Single_MicroEngine_Physics_QueryFilter__MicroEngine_Physics_ClosestPointHit__)).
@@ -187,6 +193,10 @@ How a body moves.
  [CharacterEvents](MicroEngine.Physics.CharacterEvents.md)
 
 What happened to a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) during its latest step.
+
+ [CharacterStepOrder](MicroEngine.Physics.CharacterStepOrder.md)
+
+The order of the things a [CharacterController2D](MicroEngine.Physics.CharacterController2D.md) does in one step ([Order](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Order)).
 
  [ContactEventKind](MicroEngine.Physics.ContactEventKind.md)
 

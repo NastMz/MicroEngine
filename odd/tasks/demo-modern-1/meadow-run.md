@@ -142,3 +142,8 @@ Most important first. Each is what a developer making a classic platform game ha
   controller on its own.
 - L5 (2026-11-24): after each of the two refactors, 79 of 79 tests and 53 of 53 files identical to the baseline.
   Not every clip is in a capture (pennant, moths, thornbacks); they compute the expression they replaced.
+- L6 (2026-11-27): the answer of "Can Pip move with `CharacterController2D`?" has changed since this record.
+  GAPS-CHARACTER (issue #218, [`../gaps-character.md`](../gaps-character.md), ADR 0075) added what gaps 1 to 8 name,
+  and the same differential now compares the controller with one motion against `Player.Step` in position,
+  velocity, ground, jump state, timers and events: 0 of 94,285 steps apart (about 6,500 different situations) and 62
+  of 62 rules identical, with the game unchanged. Pip still moves with his own mover; moving him is a later pass.

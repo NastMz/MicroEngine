@@ -36,6 +36,37 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - **`microengine content names`** lists the strips a `.sheet` file declares: a strip whose name ends in a digit is
   listed, and sprites that merely end in consecutive numbers are not. Run the command again to refresh the generated
   file. `SpriteSheet.Strips` holds the declared names.
+### Physics: a character with the feel of a classic platformer
+
+- **A character's feel is one `CharacterMotion`.** New values: a run (`RunSpeed`, `RunAcceleration`, with
+  `CharacterInput.Run`), the air's own acceleration and drag (`AirAcceleration`, `AirDeceleration`), what happens to
+  speed above what the player asks for (`OverspeedDeceleration` on the ground, `AirOverspeedDeceleration` in the air:
+  0 keeps a run's momentum for the whole jump), a landing a little early (`LandingReach`, a pixel or two; at most
+  `MaxLandingReach`), a released jump cut to a
+  share of its speed at once (`JumpReleaseSpeedScale`), a drop that is "down and jump" and takes a buffered jump
+  (`DropWithJump`), and whether a jump leaves a moving platform before or after the platform moves the character
+  (`Order`). `RunJumpBonus` is measured against the motion's top speed, so the same speed gives the same jump
+  whether run is held or not. Every value defaults to what the controller did before
+  ([The feel of a classic platformer](../manual/physics.md#the-feel-of-a-classic-platformer)).
+- **`Launch(velocity, cuttable: true)`** is a rise the player shapes like a jump: a bounce off an enemy that goes
+  higher while jump is held.
+- **The state of a character can be kept and put back.** `Snapshot()` and `Restore(state)` with a `CharacterState`
+  a game can read and build: an AI that tries a jump and takes it back, a checkpoint. `Shift(delta)` moves a
+  character with collision and changes nothing else (keeping it inside the camera's view); `Position` can be set,
+  an exact placement without collision; `Teleport` stays the jump to another place.
+- **Ground the game decides.** `StandOn(shape, position)` puts a character on ground with a rule of the game's own;
+  it is then carried by it and jumps from it as from any other
+  ([Ground the game decides](../manual/physics.md#ground-the-game-decides)).
+- **A character's position can be its feet.** Both `Create` methods take `offset`, the box's centre relative to the
+  body's origin; the transform a scene's physics writes is then the feet.
+- **A move says what stopped it.** `MoveContact.Stopped` is true for a surface that stopped the body in that move,
+  not one it only touches; `MoveResult.StoppedGoing(direction)` asks it for a direction, which is what a push rule
+  needs. On both backends.
+- **Tiles that block some movers and not others.** `grid.Blocking(flags)` is a view of a tile grid in which the
+  tiles with any of those flags are solid: a level whose water stops walkers and not flyers adds a view for each,
+  in a layer each ([Tile levels](../manual/physics.md#tile-levels)).
+- The physics playground's character room is one motion read as what the player feels, with a run and a plank to
+  drop through.
 ### Time: tweens a cutscene waits for, timers and machines outside a scene, exact and countable times
 
 - **A coroutine waits for a tween.** `Tweens.Add` returns the `Tween`; `yield return Tweens.Add(0.9f, apply, ease)`
@@ -315,7 +346,7 @@ modelled as components and systems.
     correction (`CornerCorrection`), a ceiling rebound (`CeilingReboundSpeed`) and a run-up bonus (`RunJumpBonus`).
     The controller reports `IsSkidding`, `AirTime`, `LandingSpeed` and the events `Skidded` and `CornerCorrected`,
     and `CharacterController2D.Solid` decides shape by shape what is solid for a character (a hidden block that only
-    a head from below finds) ([A feel of its own](../manual/physics.md#a-feel-of-its-own)).
+    a head from below finds) ([The feel of a classic platformer](../manual/physics.md#the-feel-of-a-classic-platformer)).
   - `QueryFilter.Where` leaves single shapes out of a move or a query on both backends
     (`PhysicsCapabilities.FilterPredicates`): a ray that skips the body that fires it.
   - Contact detail on Box2D (`PhysicsCapabilities.ContactDetail`): `ContactImpacts` lists the hits of a step with

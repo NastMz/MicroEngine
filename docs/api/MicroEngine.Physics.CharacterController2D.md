@@ -40,7 +40,9 @@ if ((hero.Events & CharacterEvents.Landed) != 0) PlayThud();
 is not moved at all; one that stands on a body that moved since its last step (a platform the game moved) is moved
 with it first, unless the backend already carried it ([MovingSolids](MicroEngine.Physics.PhysicsCapabilities.md)).</p>
 <p>Deterministic: its state is its velocity, its timers and what it touches, all in
-[HashState](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_HashState_MicroEngine_Kernel_StateHasher_); add it to the state hash of whatever owns it.</p>
+[HashState](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_HashState_MicroEngine_Kernel_StateHasher_); add it to the state hash of whatever owns it. [Motion](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Motion) is not part of
+that state and is not hashed: a game that changes the motion while it plays (water, a power-up) hashes what
+chose it (the power-up the character holds, the room it is in).</p>
 
 ## Constructors
 
@@ -213,7 +215,7 @@ public MoveResult LastMove { get; }
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Motion"></a> Motion
 
-How the character moves; replace it to change its feel (a power-up, water).
+How the character moves; replace it to change its feel (a power-up, water). Not in the state hash: hash what chooses it.
 
 ```csharp
 public CharacterMotion Motion { get; set; }
@@ -231,15 +233,26 @@ A value is out of range.
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Position"></a> Position
 
-The body's origin.
+The body's origin. Setting it places the body there without collision and changes nothing else: the character
+keeps its ground, its velocity and its timers (a scripted placement, a state put back). The place is the
+game's to get right: a body ignores what it already overlaps when it moves, so a character placed even a
+hundredth of a unit inside a wall or a floor goes through it. To put a character somewhere near without that
+risk (a camera clamp), use [Shift](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Shift_System_Numerics_Vector2_). [Teleport](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Teleport_System_Numerics_Vector2_) is the jump to another place, which
+leaves the ground, and has the same rule.
 
 ```csharp
-public Vector2 Position { get; }
+public Vector2 Position { get; set; }
 ```
 
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The position is not finite.
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Solid"></a> Solid
 
@@ -296,13 +309,14 @@ public IPhysicsWorld2D World { get; }
 
 ## Methods
 
-### <a id="MicroEngine_Physics_CharacterController2D_Create_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_Scenes_EntityId_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_CharacterMotion_System_UInt64_System_UInt64_"></a> Create\(IPhysicsWorld2D, EntityId, Vector2, Vector2, CharacterMotion?, ulong, ulong\)
+### <a id="MicroEngine_Physics_CharacterController2D_Create_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_Scenes_EntityId_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_CharacterMotion_System_UInt64_System_UInt64_System_Numerics_Vector2_"></a> Create\(IPhysicsWorld2D, EntityId, Vector2, Vector2, CharacterMotion?, ulong, ulong, Vector2\)
 
-Creates a kinematic body with one box of <code class="paramref">size</code> centred at <code class="paramref">position</code> and a
-controller for it, moving through the layers of <code class="paramref">mask</code>.
+Creates a kinematic body with one box of <code class="paramref">size</code> and a controller for it, moving through the
+layers of <code class="paramref">mask</code>. The body's origin is the box's centre unless <code class="paramref">offset</code> says
+otherwise.
 
 ```csharp
-public static CharacterController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, CharacterMotion? motion = null, ulong category = 1, ulong mask = 18446744073709551615)
+public static CharacterController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, CharacterMotion? motion = null, ulong category = 1, ulong mask = 18446744073709551615, Vector2 offset = default)
 ```
 
 #### Parameters
@@ -317,7 +331,7 @@ The entity that owns the body.
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-The centre of the box.
+The body's origin: what [Position](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Position) reads and what a scene's physics writes to the owner's transform.
 
 `size` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -335,6 +349,12 @@ The layers the character is in.
 
 The layers it collides with.
 
+`offset` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+The box's centre relative to the body's origin; zero (the default) centres the box on it. A game that places
+its characters by their feet passes half the height upward (<code>new Vector2(0, -size.Y / 2)</code> where y grows
+downward); one that places them by their top-left corner passes <code>size / 2</code>.
+
 #### Returns
 
  [CharacterController2D](MicroEngine.Physics.CharacterController2D.md)
@@ -351,18 +371,118 @@ public void HashState(StateHasher hash)
 
 `hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
-### <a id="MicroEngine_Physics_CharacterController2D_Launch_System_Numerics_Vector2_"></a> Launch\(Vector2\)
+### <a id="MicroEngine_Physics_CharacterController2D_Launch_System_Numerics_Vector2_System_Boolean_"></a> Launch\(Vector2, bool\)
 
-Throws the character with <code class="paramref">velocity</code> (a spring, a knock-back): it leaves the ground, and the
-rise is not cut short by a released jump button.
+Throws the character with <code class="paramref">velocity</code> (a spring, a knock-back, a bounce off an enemy): it
+leaves the ground.
 
 ```csharp
-public void Launch(Vector2 velocity)
+public void Launch(Vector2 velocity, bool cuttable = false)
 ```
 
 #### Parameters
 
 `velocity` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+The velocity it leaves with.
+
+`cuttable` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the rise is a jump the player shapes: releasing jump cuts it short as it cuts a jump
+([JumpReleaseGravityScale](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_JumpReleaseGravityScale), [JumpReleaseSpeedScale](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_JumpReleaseSpeedScale)),
+so a bounce is higher while jump is held. False (the default): the rise is not cut by a released jump button.
+
+### <a id="MicroEngine_Physics_CharacterController2D_Restore_MicroEngine_Physics_CharacterState__"></a> Restore\(in CharacterState\)
+
+Makes the character what <code class="paramref">state</code> says ([Snapshot](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Snapshot), or one built by the game): the
+body is placed without collision, and the next step goes on from there as it would have. A ground shape that
+no longer exists is no ground.
+
+```csharp
+public void Restore(in CharacterState state)
+```
+
+#### Parameters
+
+`state` [CharacterState](MicroEngine.Physics.CharacterState.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+A position, velocity or time of <code class="paramref">state</code> is not finite, or a time or count is negative.
+
+### <a id="MicroEngine_Physics_CharacterController2D_Shift_System_Numerics_Vector2_"></a> Shift\(Vector2\)
+
+Moves the character by <code class="paramref">delta</code> with collision and changes nothing else: what blocks its
+steps blocks this too, and it keeps its ground, its velocity and its timers. The safe way for a game to put a
+character somewhere near (keeping it inside the camera's view, a conveyor, a gust): setting
+[Position](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Position) to a place inside a wall would leave it in the wall.
+
+```csharp
+public MoveResult Shift(Vector2 delta)
+```
+
+#### Parameters
+
+`delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [MoveResult](MicroEngine.Physics.MoveResult.md)
+
+The move's result: how far it went and what stopped it. [LastMove](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_LastMove) stays the latest step's.
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">delta</code> is not finite.
+
+### <a id="MicroEngine_Physics_CharacterController2D_Snapshot"></a> Snapshot\(\)
+
+The character's whole state: where it is, how it moves, what it stands on, its timers and what its latest
+step reported. [Restore](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Restore_MicroEngine_Physics_CharacterState__) puts it back, on this controller or on another one of the same world: a
+planner tries a jump and takes it back, a checkpoint keeps the character.
+
+```csharp
+public CharacterState Snapshot()
+```
+
+#### Returns
+
+ [CharacterState](MicroEngine.Physics.CharacterState.md)
+
+### <a id="MicroEngine_Physics_CharacterController2D_StandOn_MicroEngine_Physics_ShapeId_System_Numerics_Vector2_"></a> StandOn\(ShapeId, Vector2\)
+
+Puts the character on ground the game decided: at <code class="paramref">position</code>, standing on
+<code class="paramref">ground</code>, with no vertical speed. For ground with a rule of the game's own that the world's
+shapes do not give (a platform that catches a character a little before it touches, the back of a creature):
+call it after [Step](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Step_System_Single_MicroEngine_Physics_CharacterInput__) when the rule holds. From then on the character is grounded as on any other
+ground: it is carried when the body of <code class="paramref">ground</code> moves, it can jump, and it stays until a
+step finds nothing under it, so a rule that still holds calls this again after each step. A character that
+left the ground in the latest step and is put back has not left it (no [LeftGround](MicroEngine.Physics.CharacterEvents.md));
+one that was in the air has landed.
+
+```csharp
+public void StandOn(ShapeId ground, Vector2 position)
+```
+
+#### Parameters
+
+`ground` [ShapeId](MicroEngine.Physics.ShapeId.md)
+
+The shape it stands on; its body need not collide with the character.
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+Where the body's origin goes.
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+<code class="paramref">ground</code> is not a live shape.
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Step_System_Single_MicroEngine_Physics_CharacterInput__"></a> Step\(float, in CharacterInput\)
 
@@ -390,7 +510,9 @@ public MoveResult Step(float dt, in CharacterInput input)
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Teleport_System_Numerics_Vector2_"></a> Teleport\(Vector2\)
 
-Places the character at <code class="paramref">position</code> without collision; it keeps its velocity and is in the air until its next step.
+Places the character at <code class="paramref">position</code> without collision; it keeps its velocity and is in the air
+until its next step. A place that overlaps a solid is not corrected: the character goes through what it
+overlaps.
 
 ```csharp
 public void Teleport(Vector2 position)
