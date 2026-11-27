@@ -76,8 +76,8 @@ public sealed partial class PlayScene : Scene
         hash.Section("play.hero");
         hash.Add(Hero);
         hash.Section("play.actors");
-        HashActors(hash, Actors);
-        HashActors(hash, LeavingActors);
+        HashActors(hash, _room);
+        HashActors(hash, _leaving);
     }
 
     private static void HashRoom(StateHasher hash, Room? room)
@@ -93,10 +93,14 @@ public sealed partial class PlayScene : Scene
                 hash.Add(tiles[x, y]);
     }
 
-    private static void HashActors(StateHasher hash, RoomActors<Actor> actors)
+    /// <summary>How many actors the room has, then each; a room that is not there (none is leaving) has none.</summary>
+    private void HashActors(StateHasher hash, EntityId room)
     {
-        hash.Add(actors.Count);
-        foreach (var actor in actors) hash.Add(actor);
+        bool live = Objects.IsAlive(room);
+        int count = 0;
+        if (live) foreach (var _ in Objects.Children<Actor>(room)) count++;
+        hash.Add(count);
+        if (live) foreach (var actor in Objects.Children<Actor>(room)) hash.Add(actor);
     }
 
     public CourtyardKeyGame G { get; }
@@ -111,7 +115,7 @@ public sealed partial class PlayScene : Scene
     public AreaMap OverworldMap => AreaMap.Overworld;
     public AreaMap DungeonMap => AreaMap.Dungeon;
     /// <summary>The live actors of the current room, in creation order (the hero is in no room).</summary>
-    public RoomActors<Actor> Actors => new(Objects, _room);
+    public ChildAttachments<Actor> Actors => Objects.Children<Actor>(_room);
     /// <summary>
     /// The entity the current room's actors are children of: each room loaded gets one, and destroying it destroys the
     /// room's actors with it (leaving a room, changing area). <see cref="EntityId.None"/> before the first room.
@@ -130,7 +134,15 @@ public sealed partial class PlayScene : Scene
     public ParticleSystem Ambient { get; } = new(256, 13);
     public Camera2D Camera { get; } = new(AreaDef.RoomPixelWidth, AreaDef.RoomPixelHeight + HudHeight) { MaxShake = 4 };
     public LightMap Light { get; private set; } = null!;
-    public Boomerang? ActiveBoomerang => Actors.OfType<Boomerang>().FirstOrDefault();
+    public Boomerang? ActiveBoomerang => First<Boomerang>();
+
+    /// <summary>The first actor of the room that is a <typeparamref name="T"/>, or null.</summary>
+    private T? First<T>() where T : Actor
+    {
+        foreach (var a in Actors)
+            if (a is T found) return found;
+        return null;
+    }
     /// <summary>The Warden while it is in the room (drives the boss health bar).</summary>
     public Warden? Boss { get; private set; }
 
@@ -176,7 +188,8 @@ public sealed partial class PlayScene : Scene
             case PlayMode.Play: UpdatePlay(dt); break;
             case PlayMode.Scroll: UpdateScroll(dt); break;
             case PlayMode.Cutscene:
-                foreach (var e in Actors.OfType<Effect>()) e.Update(dt);
+                foreach (var a in Actors)
+                    if (a is Effect e) e.Update(dt);
                 break;
         }
         _hud.Update(dt);
@@ -299,65 +312,5 @@ public sealed partial class PlayScene : Scene
         Progress.MaxHealth = Hero.Health.Max;
         bool saved = G.Slots.Save(Progress);
         if (toast) _hud.Toast(saved ? "Progress saved" : "Could not save");
-    }
-}
-
-/// <summary>
-/// The live actors of one room that are a <typeparamref name="T"/>, in creation order: the <see cref="Actor"/>
-/// attachments of the children of the room's group entity (<see cref="IWorld.Children"/>); none once the group is
-/// destroyed. <c>foreach</c> allocates nothing.
-/// </summary>
-public readonly struct RoomActors<T>(IWorld objects, EntityId room) : IEnumerable<T> where T : Actor
-{
-    /// <summary>The ones that are also a <typeparamref name="TOther"/>.</summary>
-    public RoomActors<TOther> OfType<TOther>() where TOther : Actor => new(objects, room);
-    /// <summary>How many there are (walks them).</summary>
-    public int Count
-    {
-        get
-        {
-            int n = 0;
-            foreach (var _ in this) n++;
-            return n;
-        }
-    }
-    /// <summary>The first one, or null.</summary>
-    public T? FirstOrDefault()
-    {
-        foreach (var a in this) return a;
-        return null;
-    }
-
-    public Enumerator GetEnumerator() => new(objects, room);
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-
-    public struct Enumerator : IEnumerator<T>
-    {
-        private readonly IWorld _objects;
-        private readonly bool _live;
-        private EntityChildren.Enumerator _children;
-
-        internal Enumerator(IWorld objects, EntityId room)
-        {
-            _objects = objects;
-            _live = objects.IsAlive(room);
-            _children = _live ? objects.Children(room).GetEnumerator() : default;
-            Current = null!;
-        }
-
-        public T Current { get; private set; }
-        readonly object System.Collections.IEnumerator.Current => Current;
-
-        public bool MoveNext()
-        {
-            if (!_live) return false;
-            while (_children.MoveNext())
-                if (_objects.TryGet<Actor>(_children.Current, out var actor) && actor is T a) { Current = a; return true; }
-            return false;
-        }
-
-        public void Reset() { if (_live) _children.Reset(); }
-        public readonly void Dispose() { }
     }
 }

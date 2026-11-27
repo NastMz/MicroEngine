@@ -35,7 +35,8 @@ public sealed partial class PlayScene
         _tiles.Draw(r, Room, Age, _platePressed);
 
         _drawList.Clear();
-        foreach (var a in LeavingActors) _drawList.Add(a);
+        if (_scrollFrom is not null)
+            foreach (var a in LeavingActors) _drawList.Add(a);
         foreach (var a in Actors) _drawList.Add(a);
         _drawList.Add(Hero);
         _drawList.Sort(ByDepth);
