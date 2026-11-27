@@ -23,7 +23,7 @@ public sealed record PromptGlyphStyle(Color Cap, Color CapBorder, Color CapText)
 /// <summary>
 /// Draws text with action prompts as glyphs: <c>"Press {attack} to swing"</c> shows a key cap with Z on a keyboard, a
 /// green A on an Xbox pad, a × button on a PlayStation pad and the touch button's label in a ring on a phone. Text that
-/// does not name an action is drawn as with <see cref="BitmapFont.Draw"/>. Glyphs are as tall as a line of the font.
+/// does not name an action is drawn as with <see cref="BitmapFont.Draw(IRenderer, string, Vector2, Color, float)"/>. Glyphs are as tall as a line of the font.
 /// The overloads taking a <see cref="BitmapFont"/> draw the built-in font's nine-pixel glyphs; those taking any
 /// <see cref="IFont"/> size the glyphs by the font's line height, for scalable and shaped fonts.
 /// </summary>

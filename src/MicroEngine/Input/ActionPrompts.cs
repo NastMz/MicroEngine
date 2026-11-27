@@ -320,6 +320,31 @@ public sealed class ActionPrompts
         return sb.ToString();
     }
 
+    private readonly Dictionary<string, (int Version, string Text)> _cached = new(StringComparer.Ordinal);
+    private const int CachedLimit = 256;
+
+    /// <summary>
+    /// The text <see cref="Format"/> gives for <paramref name="template"/>, built once and kept until
+    /// <see cref="Version"/> moves (another device, another pad family, a label, <see cref="Invalidate"/>): a hint drawn
+    /// every frame costs a lookup and makes no garbage. <c>Cached("{jump}")</c> is the kept form of
+    /// <see cref="Text"/>.
+    /// </summary>
+    /// <remarks>
+    /// Code that changes what an action is bound to while the game runs (a rebinding screen) calls
+    /// <see cref="Invalidate"/> afterwards, as for any text laid out once. At most 256 templates are kept; a game that
+    /// builds templates as it goes gets the oldest ones built again.
+    /// </remarks>
+    public string Cached(string template)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        int version = Version;
+        if (_cached.TryGetValue(template, out var kept) && kept.Version == version) return kept.Text;
+        if (_cached.Count >= CachedLimit) _cached.Clear();
+        string text = Format(template);
+        _cached[template] = (version, text);
+        return text;
+    }
+
     /// <summary>
     /// The pieces of a template: literal text, and actions with their prompts, for drawing prompts as glyphs between
     /// runs of text (see <c>MicroEngine.UI.PromptText</c>).

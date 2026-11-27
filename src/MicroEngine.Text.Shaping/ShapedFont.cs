@@ -177,6 +177,17 @@ public sealed class ShapedFontSize : IFont
     }
 
     /// <summary>
+    /// The glyphs of a line that is not a string: found among the lines already shaped without making a string, so a
+    /// text drawn before costs nothing; a line seen for the first time is kept as a string and shaped.
+    /// </summary>
+    private ShapedGlyph[] Shape(ReadOnlySpan<char> line)
+    {
+        Family.ThrowIfDisposed();
+        if (_lines.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(line, out var glyphs)) return glyphs;
+        return (ShapedGlyph[])Shape(line.ToString());
+    }
+
+    /// <summary>
     /// Whether <paramref name="line"/> reads right to left: its first letter with a direction is Hebrew, Arabic or
     /// another right-to-left script. Align such lines to the right.
     /// </summary>
@@ -190,15 +201,35 @@ public sealed class ShapedFontSize : IFont
     public Vector2 Measure(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        return Measure(text.AsSpan());
+    }
+
+    /// <inheritdoc/>
+    public Vector2 Measure(ReadOnlySpan<char> text)
+    {
         if (text.Length == 0) return Vector2.Zero;
         float width = 0;
         int lines = 0;
         foreach (var line in text.Split('\n'))
         {
             lines++;
-            width = MathF.Max(width, Width(Shape(line)));
+            width = MathF.Max(width, Width(Shape(text[line])));
         }
         return new Vector2(width, lines * LineHeight);
+    }
+
+    /// <inheritdoc/>
+    public Vector2 Measure(InterpolatedText text)
+    {
+        try { return Measure(text.Text); }
+        finally { text.Dispose(); }
+    }
+
+    /// <inheritdoc/>
+    public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, Color color)
+    {
+        try { Draw(renderer, text.Text, position, color); }
+        finally { text.Dispose(); }
     }
 
     private static float Width(IReadOnlyList<ShapedGlyph> glyphs) =>
@@ -207,15 +238,21 @@ public sealed class ShapedFontSize : IFont
     /// <inheritdoc/>
     public void Draw(IRenderer renderer, string text, Vector2 position, Color color)
     {
-        ArgumentNullException.ThrowIfNull(renderer);
         ArgumentNullException.ThrowIfNull(text);
+        Draw(renderer, text.AsSpan(), position, color);
+    }
+
+    /// <inheritdoc/>
+    public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
         if (text.Length == 0) return;
         var pages = Family.GlyphPages;
         bool snap = Family.Options.SnapToPixels;
         float y = position.Y;
-        foreach (var line in text.Split('\n'))
+        foreach (var range in text.Split('\n'))
         {
-            foreach (var g in Shape(line))
+            foreach (var g in Shape(text[range]))
             {
                 var face = Family.FaceList[g.Face];
                 if (pages.Get(face, g.Face, g.Glyph, Size, ScaleOf(g.Face), !Family.Options.Antialiasing) is not { } slot) continue;

@@ -389,6 +389,31 @@ public sealed class SpriteAtlas : IDisposable
     /// <summary>The sprite named <paramref name="name"/>.</summary>
     /// <exception cref="KeyNotFoundException">No sprite has that name; check with <see cref="Contains"/>.</exception>
     public Sprite this[string name] => _sprites.TryGetValue(name, out var s) ? s : throw new KeyNotFoundException($"Sprite '{name}' is not in the atlas.");
+    /// <summary>
+    /// The sprite named by text that is not a string: found without making one, so a name built from numbers costs
+    /// nothing when it is looked up every frame.
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">No sprite has that name.</exception>
+    public Sprite this[ReadOnlySpan<char> name] => TryGet(name, out var s) ? s : throw new KeyNotFoundException($"Sprite '{name}' is not in the atlas.");
+
+    /// <summary>
+    /// The sprite named by an interpolated string (<c>atlas[$"water{mask}_{frame}"]</c>), which is written into a reused
+    /// buffer instead of a string.
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">No sprite has that name.</exception>
+    public Sprite this[InterpolatedText name]
+    {
+        get
+        {
+            try { return this[name.Text]; }
+            finally { name.Dispose(); }
+        }
+    }
+
+    /// <summary>The sprite named <paramref name="name"/>, or false when the atlas has none: no exception, no string.</summary>
+    public bool TryGet(ReadOnlySpan<char> name, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Sprite sprite) =>
+        _sprites.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out sprite);
+
     /// <summary>Whether a sprite named <paramref name="name"/> exists.</summary>
     public bool Contains(string name) => _sprites.ContainsKey(name);
     /// <summary>Names of every sprite in the atlas.</summary>
