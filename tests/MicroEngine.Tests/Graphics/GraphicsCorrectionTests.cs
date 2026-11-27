@@ -26,7 +26,8 @@ public sealed class GraphicsCorrectionTests
     // ---- Effect values -------------------------------------------------------------------------------------------------
 
     [TestMethod]
-    [Timeout(10000)]
+    [Timeout(60000)] // only against a loop without end: the test takes milliseconds alone
+    [DoNotParallelize] // on a busy machine it took over ten seconds beside the other tests
     public void A_strength_or_brightness_without_limit_is_clamped_and_the_effect_ends()
     {
         var (r, graphics) = Headless();

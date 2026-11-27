@@ -477,6 +477,7 @@ public sealed class AudioCorrectionTests
 
     [TestMethod]
     [Timeout(120000)]
+    [DoNotParallelize] // thousands of decodes timed on the wall clock: beside the other tests it starves them and is starved
     public void An_mp3_file_with_a_tag_larger_than_the_file_or_damaged_bytes_allocates_little_and_returns()
     {
         // An ID3v2 tag that claims 256 MB in front of the file.
