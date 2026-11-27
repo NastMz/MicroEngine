@@ -43,7 +43,7 @@ Quoted fragments are the issue's text, verbatim (L1).
 | T1 The controller's rules, the contact's `Stopped`, the shared tests, Meadow Run's differential as a proof | S1-S10, S13, S14 | inline | done | f6cd2dd7 |
 | T2 Views of a grid, the origin of a character, agreement with `TileMotion` measured and pinned | S11, S12, S15 | inline | done | 2671d33b |
 | T3 The playground's classic room | S16 | inline | done | e51a48e1 |
-| T4 Manual, release notes, limits, ADR 0075, evaluation, API reference | S16 | inline | done | (docs commit) |
+| T4 Manual, release notes, limits, ADR 0075, evaluation, API reference | S16 | inline | done | 25f637a3 |
 
 ## Log
 
