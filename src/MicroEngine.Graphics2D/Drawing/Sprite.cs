@@ -13,6 +13,37 @@ public sealed record Sprite(Texture Texture, RectF Source, Vector2 Origin)
     public int Width => (int)Source.Width;
     /// <summary>Height of the sprite in pixels.</summary>
     public int Height => (int)Source.Height;
+
+    /// <summary>The named points of the frame, in its own pixels from its top-left corner; empty when its sheet gives none.</summary>
+    public IReadOnlyList<SpritePoint> Points { get; init; } = [];
+    /// <summary>The named boxes of the frame, in its own pixels from its top-left corner; empty when its sheet gives none.</summary>
+    public IReadOnlyList<SpriteBox> Boxes { get; init; } = [];
+
+    /// <summary>
+    /// The point named <paramref name="name"/>, measured from the sprite's anchor: add it to the position the sprite is
+    /// drawn at and it is where that point of the picture appears (a muzzle, a hand, a shoulder).
+    /// </summary>
+    /// <param name="name">The point's name in the sheet.</param>
+    /// <param name="flipX">Whether the sprite is drawn mirrored: the point is mirrored around the anchor with it.</param>
+    /// <exception cref="KeyNotFoundException">The frame has no such point; ask with <see cref="TryPoint"/>.</exception>
+    public Vector2 Point(string name, bool flipX = false) => SpriteMarks.TryPoint(Points, name, Origin, flipX, out var point) ? point
+        : throw new KeyNotFoundException($"The sprite has no point '{name}' (it has: {SpriteMarks.Names(Points)}).");
+
+    /// <summary>The point named <paramref name="name"/> as <see cref="Point"/> gives it, or false when the frame has none.</summary>
+    public bool TryPoint(string name, out Vector2 point, bool flipX = false) => SpriteMarks.TryPoint(Points, name, Origin, flipX, out point);
+
+    /// <summary>
+    /// The box named <paramref name="name"/>, measured from the sprite's anchor: moved by the position the sprite is
+    /// drawn at, it is the rectangle of the picture the sheet marked (a hit box, a hurt box).
+    /// </summary>
+    /// <param name="name">The box's name in the sheet.</param>
+    /// <param name="flipX">Whether the sprite is drawn mirrored: the box changes side around the anchor with it.</param>
+    /// <exception cref="KeyNotFoundException">The frame has no such box; ask with <see cref="TryBox"/>.</exception>
+    public RectF Box(string name, bool flipX = false) => SpriteMarks.TryBox(Boxes, name, Origin, flipX, out var box) ? box
+        : throw new KeyNotFoundException($"The sprite has no box '{name}' (it has: {SpriteMarks.Names(Boxes)}).");
+
+    /// <summary>The box named <paramref name="name"/> as <see cref="Box"/> gives it, or false when the frame has none.</summary>
+    public bool TryBox(string name, out RectF box, bool flipX = false) => SpriteMarks.TryBox(Boxes, name, Origin, flipX, out box);
 }
 
 /// <summary>
@@ -20,7 +51,7 @@ public sealed record Sprite(Texture Texture, RectF Source, Vector2 Origin)
 /// exposes them by name. Keeps draw calls batched and art code independent of layout.
 /// </summary>
 /// <remarks>
-/// Add images with <see cref="Add"/>, <see cref="AddFrames(string, IEnumerable{PixelImage}, Vector2?)"/> or <see cref="AddGrid"/>, then call <see cref="Build"/> once
+/// Add images with <see cref="Add(string, PixelImage, Vector2?)"/>, <see cref="AddFrames(string, IEnumerable{PixelImage}, Vector2?)"/> or <see cref="AddGrid"/>, then call <see cref="Build"/> once
 /// from <c>Game.Load</c> (it needs the graphics device). Names are case-sensitive.
 /// </remarks>
 /// <example>
@@ -37,7 +68,7 @@ public sealed record Sprite(Texture Texture, RectF Source, Vector2 Origin)
 /// </example>
 public sealed class SpriteAtlasBuilder
 {
-    private readonly List<(string Name, PixelImage Image, Vector2 Origin)> _entries = [];
+    private readonly List<SheetFrame> _entries = [];
     private readonly HashSet<string> _names = new(StringComparer.Ordinal);
     private readonly List<SheetClip> _clips = [];
 
@@ -51,8 +82,19 @@ public sealed class SpriteAtlasBuilder
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(image);
-        if (!_names.Add(name)) throw new ArgumentException($"Duplicate sprite '{name}'.", nameof(name));
-        _entries.Add((name, image, origin ?? Vector2.Zero));
+        return Add(new SheetFrame(name, image, origin ?? Vector2.Zero));
+    }
+
+    /// <summary>Adds a frame with everything a sheet says about it: its name, pixels, anchor, points and boxes.</summary>
+    /// <returns>This builder, for chaining.</returns>
+    /// <exception cref="ArgumentException">The frame's name is empty or already added.</exception>
+    public SpriteAtlasBuilder Add(SheetFrame frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentException.ThrowIfNullOrWhiteSpace(frame.Name, nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame.Image, nameof(frame));
+        if (!_names.Add(frame.Name)) throw new ArgumentException($"Duplicate sprite '{frame.Name}'.", nameof(frame));
+        _entries.Add(frame);
         return this;
     }
 
@@ -116,7 +158,7 @@ public sealed class SpriteAtlasBuilder
     public SpriteAtlasBuilder AddSheet(SpriteSheet sheet)
     {
         ArgumentNullException.ThrowIfNull(sheet);
-        foreach (var frame in sheet.Frames) Add(frame.Name, frame.Image, frame.Origin);
+        foreach (var frame in sheet.Frames) Add(frame);
         foreach (var clip in sheet.Clips) AddClip(clip);
         return this;
     }
@@ -152,7 +194,7 @@ public sealed class SpriteAtlasBuilder
         var packed = Pack(extrude: sampling != TextureFilter.Nearest);
         var texture = device.CreateTexture(packed.Image, sampling);
         var sprites = new Dictionary<string, Sprite>(StringComparer.Ordinal);
-        foreach (var region in packed.Regions) sprites[region.Name] = new Sprite(texture, region.Source, region.Origin);
+        foreach (var region in packed.Regions) sprites[region.Name] = SpriteAtlas.SpriteOf(texture, region);
         try { return new SpriteAtlas(texture, sprites, packed.Clips); }
         catch
         {
@@ -199,16 +241,21 @@ public sealed class SpriteAtlasBuilder
         var regions = new AtlasRegion[_entries.Count];
         for (int i = 0; i < _entries.Count; i++)
         {
-            var (name, image, origin) = _entries[i];
+            var entry = _entries[i];
+            var image = entry.Image;
             sheet.Blit(image, places[i].X, places[i].Y);
             if (border > 0) Extrude(sheet, image, places[i].X, places[i].Y);
-            regions[i] = new AtlasRegion(name, new RectF(places[i].X, places[i].Y, image.Width, image.Height), origin, null);
+            regions[i] = new AtlasRegion(entry.Name, new RectF(places[i].X, places[i].Y, image.Width, image.Height), entry.Origin, null)
+            {
+                Points = entry.Points.Count > 0 ? entry.Points : null,
+                Boxes = entry.Boxes.Count > 0 ? entry.Boxes : null,
+            };
         }
         return new PackedAtlas(sheet, regions, [.. _clips]);
     }
 
     /// <summary>Where the opaque pixels of an entry lie in it, and its whole size (a fully transparent image keeps its first pixel).</summary>
-    private static AtlasTrim TrimOf((string Name, PixelImage Image, Vector2 Origin) entry)
+    private static AtlasTrim TrimOf(SheetFrame entry)
     {
         var (x, y, w, h) = entry.Image.OpaqueBounds() ?? (0, 0, 1, 1);
         return new AtlasTrim(x, y, entry.Image.Width, entry.Image.Height, w, h);
@@ -221,7 +268,12 @@ public sealed class SpriteAtlasBuilder
         foreach (var entry in _entries)
         {
             var t = TrimOf(entry);
-            trimmed.Add(entry.Name, entry.Image.Crop(t.X, t.Y, t.Width, t.Height), entry.Origin - new Vector2(t.X, t.Y));
+            var cut = new Vector2(-t.X, -t.Y);
+            trimmed.Add(new SheetFrame(entry.Name, entry.Image.Crop(t.X, t.Y, t.Width, t.Height), entry.Origin + cut)
+            {
+                Points = SpriteMarks.Moved(entry.Points, cut),
+                Boxes = SpriteMarks.Moved(entry.Boxes, cut),
+            });
         }
         foreach (var clip in _clips) trimmed.AddClip(clip);
         return trimmed;
@@ -279,6 +331,11 @@ public sealed class SpriteAtlas : IDisposable
         }
     }
 
+    /// <summary>The sprite of a region of <paramref name="texture"/>, with the region's points and boxes.</summary>
+    internal static Sprite SpriteOf(Texture texture, in AtlasRegion region) =>
+        region.Points is null && region.Boxes is null ? new Sprite(texture, region.Source, region.Origin)
+            : new Sprite(texture, region.Source, region.Origin) { Points = region.Points ?? [], Boxes = region.Boxes ?? [] };
+
     /// <summary>The indices of <paramref name="count"/> frames in the order <paramref name="direction"/> plays them.</summary>
     private static List<int> PlayOrder(int count, AnimationDirection direction)
     {
@@ -303,7 +360,7 @@ public sealed class SpriteAtlas : IDisposable
                 throw new InvalidDataException($"Frame '{region.Name}' is stored rotated in the atlas image, and a texture cannot be turned: load the atlas with Assets.Atlas or SpriteAtlas.Load, which turn such frames upright, or export without rotation.");
             if (r.X < 0 || r.Y < 0 || r.Right > texture.Width || r.Bottom > texture.Height)
                 throw new InvalidDataException($"Frame '{region.Name}' ({r.X}, {r.Y}, {r.Width}, {r.Height}) lies outside the {texture.Width}x{texture.Height} atlas image.");
-            if (!_sprites.TryAdd(region.Name, sprites[i] = new Sprite(texture, r, region.Origin)))
+            if (!_sprites.TryAdd(region.Name, sprites[i] = SpriteOf(texture, region)))
                 throw new InvalidDataException($"The atlas names two frames '{region.Name}'.");
         }
         foreach (var tag in data.Animations)

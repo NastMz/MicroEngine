@@ -19,7 +19,13 @@ namespace MicroEngine.Graphics;
 /// turned rectangle as it lies in the image, and <paramref name="Origin"/> the anchor of the upright frame.
 /// <see cref="AtlasData.ToSheet"/> turns such frames upright.
 /// </param>
-public readonly record struct AtlasRegion(string Name, RectF Source, Vector2 Origin, float? Duration, bool Rotated = false);
+public readonly record struct AtlasRegion(string Name, RectF Source, Vector2 Origin, float? Duration, bool Rotated = false)
+{
+    /// <summary>The frame's named points, in the rectangle's pixels (of the upright frame); null when the file gives none.</summary>
+    public IReadOnlyList<SpritePoint>? Points { get; init; }
+    /// <summary>The frame's named boxes, in the rectangle's pixels (of the upright frame); null when the file gives none.</summary>
+    public IReadOnlyList<SpriteBox>? Boxes { get; init; }
+}
 
 /// <summary>The order an animation plays its frames in (Aseprite's tag directions).</summary>
 public enum AnimationDirection { Forward, Reverse, PingPong, PingPongReverse }
@@ -50,6 +56,8 @@ public sealed record AtlasOptions(Vector2 Pivot = default, bool KeepExtensions =
 /// Starling/Sparrow XML of TexturePacker, ShoeBox and Kenney's packs. Trimmed frames keep their place in the untrimmed
 /// frame; frames the JSON says are rotated are marked (<see cref="AtlasRegion.Rotated"/>) and turned upright when the
 /// atlas is loaded with its image; rotated frames of the XML format are refused (turn rotation off in the tool).
+/// Aseprite's slices (<c>meta.slices</c>) become data of the frames: each slice a box of its name on the frames it
+/// covers, and its pivot a point of the same name.
 /// </summary>
 public sealed class AtlasData
 {
@@ -109,7 +117,7 @@ public sealed class AtlasData
             var cut = image.Crop((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
             // Stored a quarter turn clockwise: three more quarter turns bring it back.
             if (region.Rotated) cut = cut.Rotate90().Rotate90().Rotate90();
-            frames.Add(new SheetFrame(region.Name, cut, region.Origin));
+            frames.Add(new SheetFrame(region.Name, cut, region.Origin) { Points = region.Points ?? [], Boxes = region.Boxes ?? [] });
         }
         var clips = new List<SheetClip>(Animations.Count);
         foreach (var tag in Animations)
@@ -162,11 +170,20 @@ public sealed class AtlasData
             var root = document.RootElement;
             if (!root.TryGetProperty("frames", out var frames)) throw new InvalidDataException("The JSON has no \"frames\".");
             var regions = new List<AtlasRegion>();
+            // Where each frame's kept pixels lie in its whole picture: slices are drawn on the whole picture.
+            var trims = new List<Vector2>();
             if (frames.ValueKind == JsonValueKind.Array)
                 foreach (var frame in frames.EnumerateArray())
+                {
                     regions.Add(JsonFrame(Str(frame, "filename") ?? throw new InvalidDataException("A frame of the \"frames\" array has no \"filename\"."), frame, options));
+                    trims.Add(TrimOf(frame));
+                }
             else if (frames.ValueKind == JsonValueKind.Object)
-                foreach (var frame in frames.EnumerateObject()) regions.Add(JsonFrame(frame.Name, frame.Value, options));
+                foreach (var frame in frames.EnumerateObject())
+                {
+                    regions.Add(JsonFrame(frame.Name, frame.Value, options));
+                    trims.Add(TrimOf(frame.Value));
+                }
             else throw new InvalidDataException("\"frames\" is neither an array nor an object.");
             string? image = null;
             var animations = new List<AtlasAnimation>();
@@ -192,12 +209,70 @@ public sealed class AtlasData
                         bool loop = !tag.TryGetProperty("repeat", out var repeat) || (repeat.ValueKind == JsonValueKind.String ? repeat.GetString() : repeat.GetRawText()) is "0" or "" or null;
                         animations.Add(new AtlasAnimation(name, from, to, direction, loop));
                     }
+                if (meta.TryGetProperty("slices", out var slices) && slices.ValueKind == JsonValueKind.Array) AddSlices(slices, regions, trims);
             }
             if (regions.Count == 0) throw new InvalidDataException("The atlas has no frames.");
             return new AtlasData(image, regions, animations);
         }
         // A value of the wrong kind where an object or a number is expected ("spriteSourceSize": null).
         catch (InvalidOperationException e) { throw new InvalidDataException($"Unexpected JSON structure: {e.Message}", e); }
+    }
+
+    private static Vector2 TrimOf(JsonElement frame) =>
+        frame.ValueKind == JsonValueKind.Object && frame.TryGetProperty("spriteSourceSize", out var trim) ? new Vector2(Int(trim, "x"), Int(trim, "y")) : Vector2.Zero;
+
+    /// <summary>
+    /// Aseprite's slices as data of the frames: from the frame of each key on, a box named after the slice, and a point
+    /// of the same name where its pivot is. Slices are drawn on the whole picture, so a trimmed frame counts from its
+    /// own corner.
+    /// </summary>
+    private static void AddSlices(JsonElement slices, List<AtlasRegion> regions, List<Vector2> trims)
+    {
+        var points = new List<SpritePoint>?[regions.Count];
+        var boxes = new List<SpriteBox>?[regions.Count];
+        foreach (var slice in slices.EnumerateArray())
+        {
+            if (slice.ValueKind != JsonValueKind.Object || Str(slice, "name") is not { Length: > 0 } name) continue;
+            if (!slice.TryGetProperty("keys", out var keys) || keys.ValueKind != JsonValueKind.Array) continue;
+            var ordered = keys.EnumerateArray().Where(k => k.ValueKind == JsonValueKind.Object && k.TryGetProperty("bounds", out _)).OrderBy(k => Int(k, "frame")).ToList();
+            for (int k = 0; k < ordered.Count; k++)
+            {
+                var key = ordered[k];
+                var bounds = key.GetProperty("bounds");
+                float x = Int(bounds, "x"), y = Int(bounds, "y"), w = Int(bounds, "w"), h = Int(bounds, "h");
+                Vector2? pivot = key.TryGetProperty("pivot", out var p) && p.ValueKind == JsonValueKind.Object ? new Vector2(Int(p, "x"), Int(p, "y")) : null;
+                int from = Math.Max(0, Int(key, "frame")), to = k + 1 < ordered.Count ? Int(ordered[k + 1], "frame") : regions.Count;
+                for (int i = from; i < Math.Min(to, regions.Count); i++)
+                {
+                    if (w > 0 && h > 0) (boxes[i] ??= []).Add(new SpriteBox(name, new RectF(x - trims[i].X, y - trims[i].Y, w, h)));
+                    if (pivot is { } at) (points[i] ??= []).Add(new SpritePoint(name, new Vector2(x, y) + at - trims[i]));
+                }
+            }
+        }
+        for (int i = 0; i < regions.Count; i++)
+        {
+            if (points[i] is null && boxes[i] is null) continue;
+            var region = regions[i];
+            regions[i] = region with
+            {
+                Points = points[i] is { } more ? [.. region.Points ?? [], .. more] : region.Points,
+                Boxes = boxes[i] is { } moreBoxes ? [.. region.Boxes ?? [], .. moreBoxes] : region.Boxes,
+            };
+        }
+    }
+
+    /// <summary>The points and boxes a frame carries in its own entry (as <see cref="PackedAtlas.ToJson"/> writes them), in the whole picture's pixels.</summary>
+    private static (IReadOnlyList<SpritePoint>? Points, IReadOnlyList<SpriteBox>? Boxes) FrameMarks(JsonElement frame, float trimX, float trimY)
+    {
+        List<SpritePoint>? points = null;
+        List<SpriteBox>? boxes = null;
+        if (frame.TryGetProperty("points", out var ps) && ps.ValueKind == JsonValueKind.Object)
+            foreach (var p in ps.EnumerateObject())
+                (points ??= []).Add(new SpritePoint(p.Name, new Vector2((float)Double(p.Value, "x") - trimX, (float)Double(p.Value, "y") - trimY)));
+        if (frame.TryGetProperty("boxes", out var bs) && bs.ValueKind == JsonValueKind.Object)
+            foreach (var b in bs.EnumerateObject())
+                (boxes ??= []).Add(new SpriteBox(b.Name, new RectF((float)Double(b.Value, "x") - trimX, (float)Double(b.Value, "y") - trimY, (float)Double(b.Value, "w"), (float)Double(b.Value, "h"))));
+        return (points, boxes);
     }
 
     private static AtlasRegion JsonFrame(string rawName, JsonElement frame, AtlasOptions options)
@@ -219,7 +294,8 @@ public sealed class AtlasData
         // fraction (27 of 55) comes back as that pixel.
         var origin = hasPivot ? new Vector2((float)(Double(p, "x") * sourceW) - trimX, (float)(Double(p, "y") * sourceH) - trimY)
             : Anchor(options, null, sourceW, sourceH, trimX, trimY);
-        return new AtlasRegion(name, turned ? new RectF(x, y, h, w) : new RectF(x, y, w, h), origin, duration, turned);
+        var (points, boxes) = FrameMarks(frame, trimX, trimY);
+        return new AtlasRegion(name, turned ? new RectF(x, y, h, w) : new RectF(x, y, w, h), origin, duration, turned) { Points = points, Boxes = boxes };
     }
 
     private static string? Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;

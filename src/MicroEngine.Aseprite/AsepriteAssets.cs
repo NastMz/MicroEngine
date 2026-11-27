@@ -12,7 +12,9 @@ namespace MicroEngine.Aseprite;
 /// Aseprite files (<c>.aseprite</c>, <c>.ase</c>) as sprite sheets, read as the artist saved them: no export step. Each
 /// frame is the picture Aseprite shows (visible layers flattened with their blend modes and opacity), named
 /// "<c>file</c> 0", "<c>file</c> 1"... like Aseprite's own sheet export; each frame tag is a clip with every frame's
-/// duration, its direction and whether it repeats; each slice is a sprite of its own, named after it.
+/// duration, its direction and whether it repeats; each slice is a sprite of its own, named after it, and data of the
+/// frames it covers: a box of its name (<see cref="Sprite.Box"/>) and, when it has a pivot, a point of its name
+/// (<see cref="Sprite.Point"/>), each following the slice's keys from frame to frame.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -102,7 +104,22 @@ public static class AsepriteAssets
                 var key = KeyAt(anchor, i);
                 origin = new Vector2(key.Bounds.X + key.Pivot.X, key.Bounds.Y + key.Pivot.Y);
             }
-            frames.Add(new SheetFrame(names[i] = $"{name} {i}", image, origin));
+            // Every slice is also data of the frames it covers, from its first key on: a box of its name, and a point
+            // of the same name where its pivot is (a hit box, a muzzle), which Sprite.Box and Sprite.Point read.
+            List<SpritePoint>? points = null;
+            List<SpriteBox>? boxes = null;
+            foreach (var slice in file.Slices)
+            {
+                if (slice.Keys.Length == 0) continue;
+                int first = slice.Keys[0].FrameIndex;
+                foreach (var k in slice.Keys) first = Math.Min(first, k.FrameIndex);
+                if (first > i) continue;
+                var key = KeyAt(slice, i);
+                var b = key.Bounds;
+                if (b.Width > 0 && b.Height > 0) (boxes ??= []).Add(new SpriteBox(slice.Name, new RectF(b.X, b.Y, b.Width, b.Height)));
+                if (slice.HasPivot) (points ??= []).Add(new SpritePoint(slice.Name, new Vector2(b.X + key.Pivot.X, b.Y + key.Pivot.Y)));
+            }
+            frames.Add(new SheetFrame(names[i] = $"{name} {i}", image, origin) { Points = points ?? [], Boxes = boxes ?? [] });
         }
 
         var taken = new HashSet<string>(names, StringComparer.Ordinal);
