@@ -90,3 +90,19 @@ Quoted fragments are the issue's text, verbatim (L1).
   copying an asymmetry of the helper into the world: declined in ADR 0075, pinned by a test.
 - L10 The playground's tour was run with the new room and its captures looked at: the plank is drawn, the character
   skids, jumps and finds the block as before.
+- L11 (2026-11-27) Correction batch after an independent verification (no blocker; headline and defaults confirmed).
+  (1) `Stopped` on Box2D used a threshold that grew with the coordinate (0.4 units at x 40000): now four float steps
+  at that distance; the shared tests run a 0.05, a 0.3 and a 2 unit move into a wall and the landing reach at
+  (±40000, 0), (0, ±40000) and both diagonals. Red first: six of the seven cases failed on Box2D, none on tiles.
+  (2) `LandingReach` is refused above `MaxLandingReach` (`MaxFallSpeed / 30`). Red: `Validate` accepted 60.
+  (3) `Shift(delta)` moves with collision and keeps the state; `Position` and `Teleport` say that a place inside a
+  solid is a way through it. Red: the shell moved nothing. (4) The differential restores nothing: the stage's two
+  bounces are `Position` and `Launch(velocity, cuttable: pip.Jumping)`; it also compares `IsJumping`, the coyote,
+  buffer and drop timers and the jumped, landed, dropped and skidded events: 0 of 94,285 apart, 62 of 62 rules.
+  (5) The motion is not in the state hash: said in the XML comments and the manual, pinned by a test.
+- L12 The verification said that about 39,600 of the 94,285 steps are distinct, from attempts with equal step
+  counts. Counted exactly, the attempts are not the same runs (93,107 steps are not a repeat of an earlier attempt's
+  by inputs and positions up to them), but most of them compare the same thing: the steps hold 6,475 different
+  situations (a level, Pip's position, velocity, ground and jump state, and the input). On levels 4 and 5 the
+  autopilot waits until the timer runs out. The test now reports and requires the count of situations, and the
+  record and the decision say it beside the total. The 62 rule runs are not in that count.

@@ -164,11 +164,22 @@ What a game does to it between steps:
 | --- | --- |
 | `Launch(velocity)` | A spring, a knock-back: the character leaves the ground with that velocity |
 | `Launch(velocity, cuttable: true)` | A bounce off an enemy that goes higher while jump is held: releasing jump cuts it as it cuts a jump |
-| `Position = ...` | A placement that changes nothing else: keeping the character inside the camera's view, a scripted nudge. It keeps its ground, velocity and timers |
-| `Teleport(position)` | A jump to another place: it is in the air until its next step |
+| `Shift(delta)` | A move with collision that changes nothing else: keeping the character inside the camera's view, a conveyor, a gust. Walls and floors stop it; it keeps its ground, velocity and timers |
+| `Position = ...` | An exact placement without collision that changes nothing else: a scripted position the game knows is free |
+| `Teleport(position)` | A jump to another place, without collision: it is in the air until its next step |
 | `Velocity = ...` | A speed of the game's own (a dash, a hit) |
 | `StandOn(shape, position)` | Ground the game decides: see [below](#ground-the-game-decides) |
 | `Snapshot()`, `Restore(state)` | The whole state, kept and put back: an AI that tries a jump and takes it back, a checkpoint, a replay |
+
+**Placing a character where a solid is.** `Position` and `Teleport` put the body exactly where they are told, and a
+body that moves ignores what it already overlaps (otherwise it could never leave it). A character placed even a
+hundredth of a unit inside a wall or a floor therefore goes through it on its next steps. Use them for places the
+game knows are free; to keep a character inside the camera's view, where a wall may be at the edge, shift it:
+
+```csharp
+float x = Math.Clamp(hero.Position.X, view.Left + 8, view.Right - 8);
+hero.Shift(new Vector2(x - hero.Position.X, 0));   // stops at a wall instead of entering it
+```
 
 A character standing on a body the game moved (a platform moved with `SetPosition` or `Move`) is carried by it. A
 character at rest is not moved at all. On Box2D a capsule character walks up and down slopes; give it a `GroundSnap`
@@ -191,7 +202,10 @@ if (move.StoppedGoing(facing)) Push(facing);   // a wall or a crate stopped this
 `MoveResult.Contacts` lists every surface the box touches where it ends; a contact whose `Stopped` is true is one
 that stopped the move in this step, which is what a push rule asks. `StoppedGoing(direction)` is the short form.
 
-Both controllers are deterministic; `Physics.Track(controller)` adds one to the scene's state hash.
+Both controllers are deterministic; `Physics.Track(controller)` adds one to the scene's state hash. The hash holds
+the character's state (velocity, ground, timers, events), not its `Motion`: a game that replaces the motion while it
+plays (water, a power-up) adds what chose it to its own hash (the power-up the character holds, the room it is in),
+so two runs that differ only in the motion differ in their hashes too.
 
 ### The feel of a classic platformer
 
@@ -260,7 +274,11 @@ motion's top speed: a run-up jumps higher. `AirJumps` is the double jump; `WallS
 **Forgiveness.** These are the rules the player never sees and always feels. `CoyoteTime`: a jump still works a
 moment after walking off a ledge. `JumpBuffer`: a jump pressed a moment before landing happens on landing.
 `LandingReach`: a character that ends a step within that distance of the floor has landed in that step, a step
-earlier than on contact, as in games that test for ground a pixel under the feet. `CornerCorrection`: a head that
+earlier than on contact, as in games that test for ground a pixel under the feet. It is a pixel or two of
+forgiveness: while the character is within the reach it stands, and it sinks to the floor a little each step, so a
+larger value makes it stand in the air over the floor for several steps and walk down a step lower than the reach
+without leaving the ground. Values above what the fastest fall covers in a thirtieth of a second
+(`MaxLandingReach`, 9 units for a `MaxFallSpeed` of 270) are refused. `CornerCorrection`: a head that
 would clip the corner of a ceiling by a few pixels is moved sideways past it. `CeilingReboundSpeed`: a bumped head
 comes down at once instead of hanging. `GroundSnap`: a character that walks down a step or a slope stays on it.
 

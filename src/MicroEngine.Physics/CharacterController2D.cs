@@ -159,9 +159,14 @@ public sealed record CharacterMotion
     /// How near the ground a character that is not rising counts as standing on it, in units; 0 (the default) lands
     /// on contact. With 1, a fall that ends a step within a unit of the floor has landed in that step (it can jump,
     /// its fall speed is gone) and closes the rest of the way in the next steps: landings come a step earlier, as in
-    /// games that test for ground a pixel under the feet.
+    /// games that test for ground a pixel under the feet. It is a pixel or two of forgiveness, not a hover: while
+    /// the character is within the reach it stands, and sinks to the floor one step of fall gravity at a time, so a
+    /// step down lower than the reach is walked down slowly without leaving the ground. At most
+    /// <see cref="MaxLandingReach"/>.
     /// </summary>
     public float LandingReach { get; init; }
+    /// <summary>The largest <see cref="LandingReach"/> this motion takes: what its fastest fall covers in a thirtieth of a second.</summary>
+    public float MaxLandingReach => MaxFallSpeed / 30;
     /// <summary>Whether the ground carries the character before or after its jump or drop is read; <see cref="CharacterStepOrder.CarryThenAct"/> by default.</summary>
     public CharacterStepOrder Order { get; init; }
 
@@ -198,7 +203,7 @@ public sealed record CharacterMotion
     public float RunJumpBonus { get; init; }
 
     /// <summary>Throws when a value is out of range.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, or an undefined order.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, a landing reach above <see cref="MaxLandingReach"/>, or an undefined order.</exception>
     public void Validate()
     {
         Finite(Gravity, nameof(Gravity));
@@ -234,6 +239,7 @@ public sealed record CharacterMotion
         if (AirOverspeedDeceleration is { } bleed) NotNegative(bleed, nameof(AirOverspeedDeceleration));
         if (!(JumpReleaseSpeedScale >= 0 && JumpReleaseSpeedScale <= 1)) throw new ArgumentOutOfRangeException(nameof(JumpReleaseSpeedScale), JumpReleaseSpeedScale, "The share is between 0 and 1.");
         Finite(LandingReach, nameof(LandingReach));
+        if (LandingReach > MaxLandingReach) throw new ArgumentOutOfRangeException(nameof(LandingReach), LandingReach, $"The landing reach is at most what the fastest fall covers in a thirtieth of a second ({MaxLandingReach}): it is a little forgiveness on landing, not a distance to hover at.");
         if (!Enum.IsDefined(Order)) throw new ArgumentOutOfRangeException(nameof(Order), Order, "Not a step order.");
     }
 
@@ -260,7 +266,9 @@ public sealed record CharacterMotion
 /// is not moved at all; one that stands on a body that moved since its last step (a platform the game moved) is moved
 /// with it first, unless the backend already carried it (<see cref="PhysicsCapabilities.MovingSolids"/>).</para>
 /// <para>Deterministic: its state is its velocity, its timers and what it touches, all in
-/// <see cref="HashState"/>; add it to the state hash of whatever owns it.</para>
+/// <see cref="HashState"/>; add it to the state hash of whatever owns it. <see cref="Motion"/> is not part of
+/// that state and is not hashed: a game that changes the motion while it plays (water, a power-up) hashes what
+/// chose it (the power-up the character holds, the room it is in).</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -340,7 +348,7 @@ public sealed class CharacterController2D : IStateHashed
     public IPhysicsWorld2D World { get; }
     /// <summary>The character's body.</summary>
     public BodyId Body { get; }
-    /// <summary>How the character moves; replace it to change its feel (a power-up, water).</summary>
+    /// <summary>How the character moves; replace it to change its feel (a power-up, water). Not in the state hash: hash what chooses it.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A value is out of range.</exception>
     public CharacterMotion Motion
     {
@@ -356,8 +364,11 @@ public sealed class CharacterController2D : IStateHashed
     public QueryFilter Filter { get; set; }
     /// <summary>
     /// The body's origin. Setting it places the body there without collision and changes nothing else: the character
-    /// keeps its ground, its velocity and its timers (keeping it inside the camera's view, a scripted placement).
-    /// <see cref="Teleport"/> is the jump to another place, which leaves the ground.
+    /// keeps its ground, its velocity and its timers (a scripted placement, a state put back). The place is the
+    /// game's to get right: a body ignores what it already overlaps when it moves, so a character placed even a
+    /// hundredth of a unit inside a wall or a floor goes through it. To put a character somewhere near without that
+    /// risk (a camera clamp), use <see cref="Shift"/>. <see cref="Teleport"/> is the jump to another place, which
+    /// leaves the ground, and has the same rule.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The position is not finite.</exception>
     public Vector2 Position
@@ -432,7 +443,11 @@ public sealed class CharacterController2D : IStateHashed
         _coyote = 0;
     }
 
-    /// <summary>Places the character at <paramref name="position"/> without collision; it keeps its velocity and is in the air until its next step.</summary>
+    /// <summary>
+    /// Places the character at <paramref name="position"/> without collision; it keeps its velocity and is in the air
+    /// until its next step. A place that overlaps a solid is not corrected: the character goes through what it
+    /// overlaps.
+    /// </summary>
     public void Teleport(Vector2 position)
     {
         World.SetPosition(Body, position);
@@ -441,6 +456,22 @@ public sealed class CharacterController2D : IStateHashed
         Ground = ShapeId.None;
         _groundBody = BodyId.None;
         _coyote = 0;
+    }
+
+    /// <summary>
+    /// Moves the character by <paramref name="delta"/> with collision and changes nothing else: what blocks its
+    /// steps blocks this too, and it keeps its ground, its velocity and its timers. The safe way for a game to put a
+    /// character somewhere near (keeping it inside the camera's view, a conveyor, a gust): setting
+    /// <see cref="Position"/> to a place inside a wall would leave it in the wall.
+    /// </summary>
+    /// <returns>The move's result: how far it went and what stopped it. <see cref="LastMove"/> stays the latest step's.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="delta"/> is not finite.</exception>
+    public MoveResult Shift(Vector2 delta)
+    {
+        if (!float.IsFinite(delta.X) || !float.IsFinite(delta.Y)) throw new ArgumentOutOfRangeException(nameof(delta), delta, "The movement must be finite.");
+        var result = World.Move(Body, delta, Active(_drop > 0));
+        _restAt = result.Position;
+        return result;
     }
 
     /// <summary>

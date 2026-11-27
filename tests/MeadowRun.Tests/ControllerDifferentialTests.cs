@@ -27,13 +27,17 @@ public sealed class ControllerDifferentialTests
 
     /// <summary>
     /// The autopilot plays each level as the level tests do (five lives, checkpoints), Pip's mover decides what happens,
-    /// and the controller shadows it step by step; whenever it leaves Pip it is put back on him.
+    /// and the controller shadows it step by step, on its own from the start of each attempt to its end. The autopilot
+    /// repeats itself (attempts that die where the one before did, long waits on levels 4 and 5 until the timer runs
+    /// out), so the number of steps overstates what is compared: the test also counts the different situations (a
+    /// level, Pip's position, velocity, ground and jump state, and the input), about 6,500 in the 94,285 steps.
     /// </summary>
     [TestMethod]
     public void TheControllerShadowsPipOverEveryLevel()
     {
         var text = new StringBuilder();
-        int steps = 0, diverged = 0, pristine = 0, attempts = 0, apart = 0;
+        int steps = 0, diverged = 0, pristine = 0, attempts = 0, apart = 0, restores = 0, launches = 0;
+        var situations = new HashSet<(int Level, (System.Numerics.Vector2, System.Numerics.Vector2, bool, bool, PlayerInput) Situation)>();
         // Level 1 under the full rules, then every level with enemy contact ignored, which lets the autopilot cross it.
         foreach (var (index, ignoreEnemies) in new[] { (0, false), (0, true), (1, true), (2, true), (3, true), (4, true) })
         {
@@ -50,6 +54,9 @@ public sealed class ControllerDifferentialTests
                     shadow.Step(bot.Next(stage));
                 }
                 steps += shadow.Steps;
+                foreach (var situation in shadow.Situations) situations.Add((index, situation));
+                restores += shadow.Restores;
+                launches += shadow.Launches;
                 diverged += shadow.Divergences.Count;
                 pristine += shadow.Divergences.Count(d => d.Pristine);
                 attempts++;
@@ -71,9 +78,12 @@ public sealed class ControllerDifferentialTests
                 checkpoint = stage.CheckpointReached;
             }
         }
-        text.AppendLine(CultureInfo.InvariantCulture, $"total: {steps} steps compared in {attempts} attempts, {diverged} steps diverged ({pristine} with the controller on its own for the half second before), {apart} attempts with a divergence");
+        text.AppendLine(CultureInfo.InvariantCulture, $"total: {steps} steps compared in {attempts} attempts ({situations.Count} different situations: a level, Pip's position, velocity, ground and jump state, and the input), {diverged} steps diverged ({pristine} with the controller on its own for the half second before), {apart} attempts with a divergence; the stage threw Pip {launches} times; the controller's state was copied from Pip {restores} times");
         Report("Levels, closed loop", text);
         Assert.IsTrue(steps > 90000, $"only {steps} steps were compared");
+        Assert.IsTrue(situations.Count > 6000, $"only {situations.Count} different situations were compared");
+        Assert.AreEqual(0, restores, "the controller was never given Pip's state: from a level's start to its end it ran on its own");
+        Assert.IsTrue(launches > 0, "the stage's bounces were written as the game writes them");
         Assert.AreEqual(0, diverged, $"steps in which the controller left Pip:{Environment.NewLine}{text}");
     }
 

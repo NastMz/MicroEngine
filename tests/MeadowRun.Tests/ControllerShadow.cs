@@ -24,8 +24,12 @@ namespace MeadowRun.Tests;
 /// before and after he touches it).</para>
 /// <para>Each step the game's mover is also run on a copy of Pip from the state before the step (the "expected"
 /// result), which separates what the mover did from what the stage did afterwards (a stomp's bounce, a spring, a
-/// hit). In the closed loop the shadow is given Pip's state whenever it leaves him, so every divergence is found; in
-/// the open loop it is left alone, so a divergence shows how far it carries.</para>
+/// hit). What the stage does to Pip is done to the controller as the game would write it: a bounce off an enemy or a
+/// spring is a placement and a <see cref="CharacterController2D.Launch"/>. Nothing else is ever given to the
+/// controller: <see cref="Restores"/> counts the times its state had to be copied from Pip, and the tests require
+/// none. In the open loop the stage's changes are not applied either, so a divergence shows how far it carries.</para>
+/// <para>Compared after every step, exactly: position, velocity, whether it is on the ground, whether a jump can still
+/// be cut, the coyote, jump-buffer and drop timers, and the step's events (jumped, landed, dropped, skidded).</para>
 /// </remarks>
 internal sealed class ControllerShadow
 {
@@ -75,6 +79,12 @@ internal sealed class ControllerShadow
     public int Steps { get; private set; }
     /// <summary>Steps in which the stage changed Pip after his mover ran (a stomp, a spring, a hit, the goal).</summary>
     public int Interventions { get; private set; }
+    /// <summary>Steps in which the stage threw Pip (a stomp, a spring, spikes) and the shadow did the same with a placement and a launch.</summary>
+    public int Launches { get; private set; }
+    /// <summary>Times the controller's state was copied from Pip because the two were apart: none in a run the controller follows.</summary>
+    public int Restores { get; private set; }
+    /// <summary>For each step compared, Pip before it and the input: his position, velocity, ground and jump state.</summary>
+    public List<(Vector2 Position, Vector2 Velocity, bool Grounded, bool Jumping, PlayerInput Input)> Situations { get; } = [];
     /// <summary>Closed loop: steps that started with the two together and ended with them apart.</summary>
     public List<Divergence> Divergences { get; } = [];
     /// <summary>Open loop: the first step at which the shadow was not where Pip was; -1 when it never left him.</summary>
@@ -168,6 +178,7 @@ internal sealed class ControllerShadow
         expected.Step(step, input, _mirror, rides);
         bool intervened = !Same(expected.Position, expected.Velocity, expected.Grounded, player);
         if (intervened) Interventions++;
+        Situations.Add((before.Position, before.Velocity, before.Grounded, before.Jumping, input));
 
         if (_closedLoop && !_inSync) Resync(before);
         StepHero(step, input);
@@ -177,14 +188,21 @@ internal sealed class ControllerShadow
 
         if (_closedLoop)
         {
-            if (_inSync && !Same(Hero.Position, Hero.Velocity, Hero.IsGrounded, expected))
-                Divergences.Add(Describe(before, expected, input));
+            bool followed = SameAs(expected);
+            if (_inSync && !followed) Divergences.Add(Describe(before, expected, input));
+            // The stage threw Pip after his mover ran (a stomp's bounce, a spring, spikes): the game's code for it.
+            if (followed && intervened && _stage.Phase == StagePhase.Playing && !player.Grounded)
+            {
+                Hero.Position = player.Position;
+                Hero.Launch(player.Velocity, cuttable: player.Jumping);
+                Launches++;
+            }
             _inSync = Same(Hero.Position, Hero.Velocity, Hero.IsGrounded, player) && Hero.IsJumping == player.Jumping;
             return;
         }
         Apart = Hero.Position - player.Position;
         float distance = Apart.Length();
-        if (distance > 0 || Hero.Velocity != player.Velocity || Hero.IsGrounded != player.Grounded)
+        if (!SameAs(player))
         {
             StepsApart++;
             if (FirstApart < 0)
@@ -231,6 +249,7 @@ internal sealed class ControllerShadow
     private void Resync(Player pip)
     {
         _resyncedAt = Steps;
+        Restores++;
         int ride = pip.Riding is null ? -1 : IndexOfRide(pip.Riding);
         Hero.Restore(Hero.Snapshot() with
         {
@@ -248,6 +267,19 @@ internal sealed class ControllerShadow
         for (int i = 0; i < _stage.Platforms.Count; i++)
             if (ReferenceEquals(_stage.Platforms[i], ride)) return i;
         return -1;
+    }
+
+    /// <summary>Whether the controller is, after its step, what <paramref name="pip"/> is after his: everything the next step depends on, and the step's events.</summary>
+    private bool SameAs(Player pip)
+    {
+        var state = Hero.Snapshot();
+        return Same(state.Position, state.Velocity, state.IsGrounded, pip)
+            && state.IsJumping == pip.Jumping
+            && state.CoyoteTime == pip.CoyoteTimer && state.JumpBuffer == pip.BufferTimer && state.DropThroughTime == pip.DropTimer
+            && ((state.Events & CharacterEvents.Jumped) != 0) == ((pip.Events & PlayerEvents.Jumped) != 0)
+            && ((state.Events & CharacterEvents.Landed) != 0) == ((pip.Events & PlayerEvents.Landed) != 0)
+            && ((state.Events & CharacterEvents.DroppedThrough) != 0) == ((pip.Events & PlayerEvents.DroppedThrough) != 0)
+            && ((state.Events & CharacterEvents.Skidded) != 0) == ((pip.Events & PlayerEvents.Skid) != 0);
     }
 
     private static bool Same(Vector2 position, Vector2 velocity, bool grounded, Player pip) =>
@@ -282,6 +314,12 @@ internal sealed class ControllerShadow
         if (velocity.X != 0) differs.Add("vx");
         if (velocity.Y != 0) differs.Add("vy");
         if (Hero.IsGrounded != expected.Grounded) differs.Add(expected.Grounded ? "grounded (game only)" : "grounded (controller only)");
+        var state = Hero.Snapshot();
+        if (state.IsJumping != expected.Jumping) differs.Add("jumping");
+        if (state.CoyoteTime != expected.CoyoteTimer) differs.Add("coyote");
+        if (state.JumpBuffer != expected.BufferTimer) differs.Add("buffer");
+        if (state.DropThroughTime != expected.DropTimer) differs.Add("drop timer");
+        if (differs.Count == 0) differs.Add($"events (game {expected.Events}, controller {Hero.Events})");
         string detail = string.Create(CultureInfo.InvariantCulture,
             $"before pos=({before.Position.X:R}, {before.Position.Y:R}) vel=({before.Velocity.X:R}, {before.Velocity.Y:R}); game pos=({expected.Position.X:R}, {expected.Position.Y:R}) vel=({expected.Velocity.X:R}, {expected.Velocity.Y:R}); controller pos=({Hero.Position.X:R}, {Hero.Position.Y:R}) vel=({Hero.Velocity.X:R}, {Hero.Velocity.Y:R})");
         return new Divergence(Steps, string.Join(", ", parts), string.Join(" ", differs), position, velocity, Steps - _resyncedAt > Settle, detail);

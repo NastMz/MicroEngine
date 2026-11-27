@@ -11,7 +11,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - **A character's feel is one `CharacterMotion`.** New values: a run (`RunSpeed`, `RunAcceleration`, with
   `CharacterInput.Run`), the air's own acceleration and drag (`AirAcceleration`, `AirDeceleration`), what happens to
   speed above what the player asks for (`OverspeedDeceleration` on the ground, `AirOverspeedDeceleration` in the air:
-  0 keeps a run's momentum for the whole jump), a landing a little early (`LandingReach`), a released jump cut to a
+  0 keeps a run's momentum for the whole jump), a landing a little early (`LandingReach`, a pixel or two; at most
+  `MaxLandingReach`), a released jump cut to a
   share of its speed at once (`JumpReleaseSpeedScale`), a drop that is "down and jump" and takes a buffered jump
   (`DropWithJump`), and whether a jump leaves a moving platform before or after the platform moves the character
   (`Order`). `RunJumpBonus` is measured against the motion's top speed, so the same speed gives the same jump
@@ -20,8 +21,9 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - **`Launch(velocity, cuttable: true)`** is a rise the player shapes like a jump: a bounce off an enemy that goes
   higher while jump is held.
 - **The state of a character can be kept and put back.** `Snapshot()` and `Restore(state)` with a `CharacterState`
-  a game can read and build: an AI that tries a jump and takes it back, a checkpoint. `Position` can be set and
-  changes nothing else (keeping a character inside the camera's view); `Teleport` stays the jump to another place.
+  a game can read and build: an AI that tries a jump and takes it back, a checkpoint. `Shift(delta)` moves a
+  character with collision and changes nothing else (keeping it inside the camera's view); `Position` can be set,
+  an exact placement without collision; `Teleport` stays the jump to another place.
 - **Ground the game decides.** `StandOn(shape, position)` puts a character on ground with a rule of the game's own;
   it is then carried by it and jumps from it as from any other
   ([Ground the game decides](../manual/physics.md#ground-the-game-decides)).

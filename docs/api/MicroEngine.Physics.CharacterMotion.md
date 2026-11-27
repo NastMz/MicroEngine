@@ -307,7 +307,10 @@ public float JumpSpeed { get; init; }
 How near the ground a character that is not rising counts as standing on it, in units; 0 (the default) lands
 on contact. With 1, a fall that ends a step within a unit of the floor has landed in that step (it can jump,
 its fall speed is gone) and closes the rest of the way in the next steps: landings come a step earlier, as in
-games that test for ground a pixel under the feet.
+games that test for ground a pixel under the feet. It is a pixel or two of forgiveness, not a hover: while
+the character is within the reach it stands, and sinks to the floor one step of fall gravity at a time, so a
+step down lower than the reach is walked down slowly without leaving the ground. At most
+[MaxLandingReach](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MaxLandingReach).
 
 ```csharp
 public float LandingReach { get; init; }
@@ -323,6 +326,18 @@ The fastest fall, in units per second.
 
 ```csharp
 public float MaxFallSpeed { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_MaxLandingReach"></a> MaxLandingReach
+
+The largest [LandingReach](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_LandingReach) this motion takes: what its fastest fall covers in a thirtieth of a second.
+
+```csharp
+public float MaxLandingReach { get; }
 ```
 
 #### Property Value
@@ -542,7 +557,7 @@ public void Validate()
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, or an undefined order.
+A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, a landing reach above [MaxLandingReach](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MaxLandingReach), or an undefined order.
 
 ## Operators
 

@@ -20,19 +20,23 @@ do (keep its state, place it without taking it off the ground, decide its ground
 - **The feel is data, in one `CharacterMotion`.** A run (`RunSpeed`, `RunAcceleration`, `CharacterInput.Run`), the
   air's acceleration and drag as their own numbers (`AirAcceleration`, `AirDeceleration`; `AirControl` stays as the
   one-number form), what happens to speed above what the intent asks for (`OverspeedDeceleration` on the ground,
-  `AirOverspeedDeceleration` in the air: 0 is a jump that keeps its momentum), a landing reach (`LandingReach`), a
+  `AirOverspeedDeceleration` in the air: 0 is a jump that keeps its momentum), a landing reach (`LandingReach`, at
+  most what the fastest fall covers in a thirtieth of a second: it is forgiveness, not a hover), a
   released jump cut to a share of its speed (`JumpReleaseSpeedScale`), a drop that needs a jump (`DropWithJump`,
   which also takes the buffered jump) and the order of the ground's carry and the jump (`Order`). `RunJumpBonus` is
   measured against the motion's top speed, so the same speed gives the same jump whether run is held or not. A game
   does not swap records to run or to be in the air.
 - **Every new value defaults to what the controller did before.** With them at their defaults the controller is
-  bit-identical to the previous one on both backends, state hash included.
+  bit-identical to the previous one on both backends, state hash included. The motion itself is not in the state
+  hash, as before: a game that changes it while it plays hashes what chose it.
 - **Three doors for what is the game's own**, instead of a parameter per game:
   - `Launch(velocity, cuttable)`: a rise the player shapes like a jump.
   - `StandOn(shape, position)`: ground the game decides with a rule of its own; the controller then treats it as
     ground (carry, jump, coyote time).
-  - `Snapshot()` / `Restore(state)` with a public `CharacterState`, and a settable `Position` that changes nothing
-    else. `Teleport` keeps meaning "to another place, in the air".
+  - `Snapshot()` / `Restore(state)` with a public `CharacterState`; a settable `Position` that changes nothing
+    else and does not collide; and `Shift(delta)`, the same with collision, which is what a camera clamp uses (a
+    body placed inside a solid goes through it, by `Move`'s rule). `Teleport` keeps meaning "to another place, in
+    the air".
 - **Where the position is, is the game's choice.** `Create` takes the box's centre relative to the body's origin
   (`offset`), for both controllers. A game that places its characters by their feet makes the origin the feet; the
   transform a scene's physics writes is then the feet. No anchor is added to the transform sync.
@@ -57,9 +61,11 @@ do (keep its state, place it without taking it off the ground, decide its ground
 
 ## Consequences
 
-- Meadow Run's differential is now a proof and fails on any step that differs: 94,285 steps over the five levels and
-  62 single-rule runs, none diverge, with one motion, the input passed as it is, and two rules written by the game
-  after the step (a hidden block stops the head; the platform's catch through `StandOn`).
+- Meadow Run's differential is now a proof and fails on any step that differs: 94,285 steps over the five levels
+  (about 6,500 different situations: the autopilot repeats itself and waits) and 62 single-rule runs, none diverge,
+  in position, velocity, ground, jump state, timers and events. One motion, the input passed as it is, two rules
+  written by the game after the step (a hidden block stops the head; the platform's catch through `StandOn`), and
+  the stage's bounces as a placement and a `Launch`. The controller's state is never copied from the game's.
 - `CharacterMotion` has 9 more values and one enum. The manual explains them by what the player feels, and the
   playground's classic room is the example.
 - `CharacterInput`, `Create` and `Launch` have one more optional parameter each: source compatible, not binary

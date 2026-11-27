@@ -107,6 +107,10 @@ keeps deciding geometry; the controller uses `Move` and nothing else, so every r
 - `Order` is a setting a developer has to know exists. It is described by its visible effect (what a jump off a
   moving platform takes with it).
 - A landing through `StandOn` counts the landing step in `AirTime`.
+- `Position` and `Teleport` place without collision, and a body ignores what it overlaps: a place inside a solid is
+  a way through it. `Shift` is the collided form; the manual says which to use for a camera clamp.
+- `Stopped` on Box2D is a threshold of a few float steps at the body's distance from the origin; the shared tests
+  run it at 40,000 units from the origin on both axes and both signs.
 
 ## H. Decision
 
@@ -116,8 +120,12 @@ vocabulary and three doors.
 ## I. Validation
 
 - `tests/MeadowRun.Tests`: the controller beside Pip's mover, same input. Before: 66 of 94,285 steps diverged, 52 of
-  62 rules identical. Now: 0 of 94,285, 62 of 62, and the tests fail on the first difference. The game was not
-  edited.
+  62 rules identical. Now: 0 of 94,285, 62 of 62, and the tests fail on the first difference. Compared exactly after
+  every step: position, velocity, ground, whether a jump can be cut, the coyote, buffer and drop timers, and the
+  step's events. The controller runs on its own from the start of each attempt to its end: the stage's two bounces
+  are a placement and a `Launch`, and its state is never copied from Pip's. The 94,285 steps hold about 6,500
+  different situations (a level, Pip's position, velocity, ground and jump state, and the input): the autopilot
+  repeats attempts and waits out the timer on levels 4 and 5. The game was not edited.
 - `tests/Shared/Physics/CharacterFeelConformance.cs`: each rule on both backends, with the default as the contrast
   in the same test. Neon Rift's hop is written as the game writes it and compared step by step.
 - `tests/MicroEngine.Tests/Physics/TileMotionAgreementTests.cs`: Courtyard Key's measurement repeated (6000 seeded

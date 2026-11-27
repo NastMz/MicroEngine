@@ -48,6 +48,8 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | Calling Box2D's own API (`Box2DPhysicsWorld2D.NativeIds`) works on Windows, Linux, macOS and Android, not in the browser or on iOS; what is changed that way is outside the state hash | [Physics](../manual/physics.md#box2ds-own-api) |
 | Impacts and contact points (`ContactImpacts`, `ContactsOf`) exist only between a dynamic body and something else, so only on the Box2D backend; a query shape is a box, a circle or a standing capsule, never a rotated or polygon shape | [Physics](../manual/physics.md#queries-and-contacts) |
 | A character on the tile backend and `TileMotion.Move` give the same positions bit for bit only when the body's origin is the box's top-left corner, and not in a move toward smaller coordinates that ends less than 0.001 units inside a tile; with another origin they agree to within 0.001 units | [Physics](../manual/physics.md#beyond-the-parameters) |
+| A character placed with `Position` or `Teleport` inside a wall or a floor, however little, goes through it: a body ignores what it already overlaps. `Shift` moves with collision | [Physics](../manual/physics.md#a-character) |
+| A character's `CharacterMotion` is not in its state hash; a game that changes it while it plays hashes what chose it | [Physics](../manual/physics.md#a-character) |
 | A character's ground with a rule of the game's own (`StandOn`) is asked again by the game after every step; the controller does not keep the rule | [Physics](../manual/physics.md#ground-the-game-decides) |
 | Box2D on Android and iOS is experimental | [Physics](../manual/physics.md#what-differs-on-box2d) |
 

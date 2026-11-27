@@ -466,6 +466,12 @@ public abstract partial class CharacterControllerConformance
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { LandingReach = float.PositiveInfinity }.Validate());
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { JumpReleaseSpeedScale = 1.5f }.Validate());
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { Order = (CharacterStepOrder)7 }.Validate());
+        // The reach is a little forgiveness, not a hover: at most what the fastest fall covers in a thirtieth of a second.
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { MaxFallSpeed = 400, LandingReach = 60 }.Validate());
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { MaxFallSpeed = 270, LandingReach = 9.1f }.Validate());
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new CharacterMotion { MaxFallSpeed = 0, LandingReach = 0.5f }.Validate());
+        new CharacterMotion { MaxFallSpeed = 270, LandingReach = 9 }.Validate();
+        Assert.AreEqual(400 / 30f, new CharacterMotion().MaxLandingReach, 1e-4f);
         new CharacterMotion { RunAcceleration = float.PositiveInfinity, AirAcceleration = 0, AirOverspeedDeceleration = 0, JumpReleaseSpeedScale = 0 }.Validate();
     }
 
@@ -523,5 +529,125 @@ public abstract partial class CharacterControllerConformance
         hero.Step(Dt, -world.Up);
         var down = hero.Step(Dt, -world.Up);
         Assert.IsTrue(down.StoppedGoing(-world.Up), down.ToString());
+    }
+
+    /// <summary>A floor whose top is at height <paramref name="oh"/> and a wall 100 units to the right of <paramref name="ox"/>, far from the origin or at it.</summary>
+    private IPhysicsWorld2D LevelAt(float ox, float oh)
+    {
+        var world = CreateWorld();
+        Box(world, BodyDescription.Static(), ox - 300, ox + 300, oh - 16, oh, owner: LevelOwner);
+        Box(world, BodyDescription.Static(), ox + 100, ox + 116, oh, oh + 96, owner: LevelOwner);
+        return world;
+    }
+
+    [TestMethod]
+    [DataRow(0f, 0f)]
+    [DataRow(40000f, 0f)]
+    [DataRow(-40000f, 0f)]
+    [DataRow(0f, 40000f)]
+    [DataRow(0f, -40000f)]
+    [DataRow(40000f, 40000f)]
+    [DataRow(-40000f, -40000f)]
+    public void Far_from_the_origin_a_small_move_into_a_wall_is_still_stopped_and_a_reach_still_lands_early(float ox, float oh)
+    {
+        var size = new Vector2(12, 14) * Scale;
+        foreach (float into in new[] { 0.05f, 0.3f, 2f })
+        {
+            var world = LevelAt(ox, oh);
+            var body = world.CreateBody(HeroOwner, BodyDescription.Kinematic(At(world, ox + 80, oh + 7)));
+            world.AddShape(body, ShapeDescription.Box(size));
+            world.Move(body, By(world, 0, -5));
+            var reached = world.Move(body, By(world, 30, 0));
+            Assert.IsTrue(reached.HitWall && reached.StoppedGoing(new Vector2(1, 0)), $"walking into the wall: {reached}");
+            var pressed = world.Move(body, By(world, into, 0));
+            Assert.IsTrue(pressed.StoppedGoing(new Vector2(1, 0)), $"a move of {into} into the wall it touches is stopped by it: {pressed}");
+            Assert.IsFalse(pressed.StoppedGoing(new Vector2(-1, 0)));
+            var along = world.Move(body, By(world, 0, 3));
+            Assert.IsTrue(along.HitWall && !along.StoppedGoing(new Vector2(1, 0)), $"a move along the wall is not: {along}");
+            var away = world.Move(body, By(world, -into, 0));
+            Assert.IsFalse(away.StoppedGoing(new Vector2(1, 0)) || away.StoppedGoing(new Vector2(-1, 0)), $"nor one away from it: {away}");
+            (world as IDisposable)?.Dispose();
+        }
+
+        int earlier = 0;
+        for (int start = 0; start < 24; start++)
+        {
+            float from = 30 + start * 0.13f;
+            var contactWorld = LevelAt(ox, oh);
+            var reachWorld = LevelAt(ox, oh);
+            var contact = CharacterController2D.Create(contactWorld, HeroOwner, At(contactWorld, ox, oh + from + 7), size, Classic());
+            var reach = CharacterController2D.Create(reachWorld, HeroOwner, At(reachWorld, ox, oh + from + 7), size, Classic() with { LandingReach = 1 * Scale });
+            int landedOnContact = -1, landedInReach = -1;
+            for (int i = 0; i < 120; i++)
+            {
+                contact.Step(Dt, default);
+                reach.Step(Dt, default);
+                if (landedOnContact < 0 && contact.IsGrounded) landedOnContact = i;
+                if (landedInReach < 0 && reach.IsGrounded) landedInReach = i;
+                else if (landedInReach >= 0) Assert.IsTrue(reach.IsGrounded, $"start {from}, step {i}");
+            }
+            Assert.IsTrue(landedOnContact >= 0 && landedInReach >= 0 && landedInReach <= landedOnContact && landedInReach >= landedOnContact - 1, $"start {from}: {landedInReach} against {landedOnContact}");
+            if (landedInReach < landedOnContact)
+            {
+                earlier++;
+                continue;
+            }
+            // Landed in the same step: then the fall ended that step on the floor, not within the reach above it.
+        }
+        // A fall of 4.5 units a step ends within a unit of the floor in about one fall of four, wherever the level is.
+        Assert.IsTrue(earlier is >= 3 and <= 9, $"falls that landed a step early: {earlier} of 24");
+    }
+
+    [TestMethod]
+    public void Shift_places_a_character_with_collision_and_keeps_its_state()
+    {
+        var world = Level();
+        var hero = Standing(world, x: 80, motion: Classic());
+        Steps(hero, 30, new CharacterInput(1));
+        Assert.IsTrue(hero.IsOnWall, "against the wall at x 100");
+        float x = X(hero);
+        var velocity = hero.Velocity;
+
+        // A camera clamp that asks for a place inside the wall: the character stays out of it.
+        var into = hero.Shift(By(world, 5, 0));
+        Assert.AreEqual(x, X(hero), Tolerance(world), "the wall holds it");
+        Assert.IsTrue(into.StoppedGoing(new Vector2(1, 0)));
+        Assert.IsTrue(hero.IsGrounded, "still on the ground");
+        Assert.AreEqual(velocity, hero.Velocity);
+        Steps(hero, 20, new CharacterInput(1));
+        Assert.AreEqual(x, X(hero), Tolerance(world), "and it has not gone through in the steps after");
+
+        // Into the floor: the same.
+        hero.Shift(By(world, 0, -3));
+        Steps(hero, 5);
+        AssertResting(world, Bottom(hero), "not under the floor");
+
+        // Away from the wall it goes the whole way, with no events.
+        hero.Shift(By(world, -10, 0));
+        Assert.AreEqual(x - 10, X(hero), 0.01f + Tolerance(world));
+        hero.Step(Dt, default);
+        Assert.IsTrue(hero.IsGrounded);
+        Assert.AreEqual(CharacterEvents.None, hero.Events & (CharacterEvents.Landed | CharacterEvents.LeftGround));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => hero.Shift(new Vector2(float.NaN, 0)));
+
+        // On a platform that moves, a shift does not undo the carry.
+        var (platform, _) = Box(world, BodyDescription.Kinematic(default), -20, 20, 20, 24, owner: PlatformOwner);
+        var rider = CharacterController2D.Create(world, PlatformOwner, At(world, 0, 33), new Vector2(12, 14) * Scale, Motion());
+        Steps(rider, 30);
+        float before = XOf(rider.Position);
+        rider.Shift(By(world, 1, 0));
+        world.SetPosition(platform, world.PositionOf(platform) + By(world, 2, 0));
+        rider.Step(Dt, default);
+        Assert.AreEqual(before + 3, XOf(rider.Position), 0.01f + Tolerance(world), "shifted by 1, then carried by 2");
+    }
+
+    [TestMethod]
+    public void The_motion_is_not_in_the_state_hash()
+    {
+        var a = Standing(Level(), motion: Classic());
+        var b = Standing(Level(), motion: Classic());
+        Assert.AreEqual(Hash(a), Hash(b));
+        b.Motion = Classic() with { MoveSpeed = 200 * Scale, Gravity = 100 * Scale };
+        Assert.AreEqual(Hash(a), Hash(b), "the hash is the character's state; a game that changes the motion hashes what chose it");
     }
 }

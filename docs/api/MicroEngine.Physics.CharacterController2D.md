@@ -40,7 +40,9 @@ if ((hero.Events & CharacterEvents.Landed) != 0) PlayThud();
 is not moved at all; one that stands on a body that moved since its last step (a platform the game moved) is moved
 with it first, unless the backend already carried it ([MovingSolids](MicroEngine.Physics.PhysicsCapabilities.md)).</p>
 <p>Deterministic: its state is its velocity, its timers and what it touches, all in
-[HashState](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_HashState_MicroEngine_Kernel_StateHasher_); add it to the state hash of whatever owns it.</p>
+[HashState](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_HashState_MicroEngine_Kernel_StateHasher_); add it to the state hash of whatever owns it. [Motion](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Motion) is not part of
+that state and is not hashed: a game that changes the motion while it plays (water, a power-up) hashes what
+chose it (the power-up the character holds, the room it is in).</p>
 
 ## Constructors
 
@@ -213,7 +215,7 @@ public MoveResult LastMove { get; }
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Motion"></a> Motion
 
-How the character moves; replace it to change its feel (a power-up, water).
+How the character moves; replace it to change its feel (a power-up, water). Not in the state hash: hash what chooses it.
 
 ```csharp
 public CharacterMotion Motion { get; set; }
@@ -232,8 +234,11 @@ A value is out of range.
 ### <a id="MicroEngine_Physics_CharacterController2D_Position"></a> Position
 
 The body's origin. Setting it places the body there without collision and changes nothing else: the character
-keeps its ground, its velocity and its timers (keeping it inside the camera's view, a scripted placement).
-[Teleport](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Teleport_System_Numerics_Vector2_) is the jump to another place, which leaves the ground.
+keeps its ground, its velocity and its timers (a scripted placement, a state put back). The place is the
+game's to get right: a body ignores what it already overlaps when it moves, so a character placed even a
+hundredth of a unit inside a wall or a floor goes through it. To put a character somewhere near without that
+risk (a camera clamp), use [Shift](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Shift_System_Numerics_Vector2_). [Teleport](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Teleport_System_Numerics_Vector2_) is the jump to another place, which
+leaves the ground, and has the same rule.
 
 ```csharp
 public Vector2 Position { get; set; }
@@ -407,6 +412,33 @@ public void Restore(in CharacterState state)
 
 A position, velocity or time of <code class="paramref">state</code> is not finite, or a time or count is negative.
 
+### <a id="MicroEngine_Physics_CharacterController2D_Shift_System_Numerics_Vector2_"></a> Shift\(Vector2\)
+
+Moves the character by <code class="paramref">delta</code> with collision and changes nothing else: what blocks its
+steps blocks this too, and it keeps its ground, its velocity and its timers. The safe way for a game to put a
+character somewhere near (keeping it inside the camera's view, a conveyor, a gust): setting
+[Position](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_Position) to a place inside a wall would leave it in the wall.
+
+```csharp
+public MoveResult Shift(Vector2 delta)
+```
+
+#### Parameters
+
+`delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [MoveResult](MicroEngine.Physics.MoveResult.md)
+
+The move's result: how far it went and what stopped it. [LastMove](MicroEngine.Physics.CharacterController2D.md#MicroEngine_Physics_CharacterController2D_LastMove) stays the latest step's.
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">delta</code> is not finite.
+
 ### <a id="MicroEngine_Physics_CharacterController2D_Snapshot"></a> Snapshot\(\)
 
 The character's whole state: where it is, how it moves, what it stands on, its timers and what its latest
@@ -478,7 +510,9 @@ public MoveResult Step(float dt, in CharacterInput input)
 
 ### <a id="MicroEngine_Physics_CharacterController2D_Teleport_System_Numerics_Vector2_"></a> Teleport\(Vector2\)
 
-Places the character at <code class="paramref">position</code> without collision; it keeps its velocity and is in the air until its next step.
+Places the character at <code class="paramref">position</code> without collision; it keeps its velocity and is in the air
+until its next step. A place that overlaps a solid is not corrected: the character goes through what it
+overlaps.
 
 ```csharp
 public void Teleport(Vector2 position)
