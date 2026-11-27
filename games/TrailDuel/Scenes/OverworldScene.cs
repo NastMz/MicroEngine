@@ -311,17 +311,9 @@ internal sealed partial class OverworldScene : Scene
         result(yes);
     }
 
-    private IEnumerator FadeOut(float seconds = 0.25f)
-    {
-        for (float t = 0; t < seconds; t += EngineStep) { _fade = t / seconds; yield return null; }
-        _fade = 1;
-    }
+    private Tween FadeOut(float seconds = 0.25f) => Tweens.Add(seconds, t => _fade = t, Ease.Linear);
 
-    private IEnumerator FadeIn(float seconds = 0.25f)
-    {
-        for (float t = 0; t < seconds; t += EngineStep) { _fade = 1 - t / seconds; yield return null; }
-        _fade = 0;
-    }
+    private Tween FadeIn(float seconds = 0.25f) => Tweens.Add(seconds, t => _fade = 1 - t, Ease.Linear);
 
     private IEnumerator WaitFor(float seconds)
     {
