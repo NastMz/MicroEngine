@@ -6,6 +6,14 @@ it. Newest first.
 
 ## Next release
 
+### `microengine content names`: the strips of a sheet are the ones it declares
+
+The generated file's `Strips` group of a `.sheet` file listed any run of sprite names ending in `0`, `1`... and
+missed a strip whose own name ends in a digit. It now lists the strips the file declares. Run `microengine content
+names` again; a constant for a run that was never a strip (three sprites named `tank-1`, `tank-2`, `tank-3`) is gone:
+name the sprites (`Sprites.Tank1`) or declare the strip in the sheet. Aseprite files and packing tools' atlases are
+listed as before.
+
 ### Saved bindings: later formats are refused, and a screen saves its own actions
 
 `InputBindingSet.FromJson` throws `FormatException` for a set whose `version` is above

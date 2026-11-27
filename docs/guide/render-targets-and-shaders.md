@@ -420,7 +420,7 @@ exists (a render target's texture). Dispose a chain of your own when you are don
 | `Blur` | blurs the picture | `Radius` in pixels (0 to 256) |
 | `Bloom` | adds the blurred bright parts back, so lights glow | `Threshold` (0 to 1), `Strength` (0 to 8), `Radius` (0 to 256) |
 | `Vignette` | darkens towards the corners | `Strength`, `Radius` (0 to 1), `Softness` (0 to 4), `Color` |
-| `Scanlines` | darkens every other line | `Strength` (0 to 1), `Lines` (0 to 4096; 0 is half the picture's height) |
+| `Scanlines` | darkens every other line | `Strength` (0 to 1), `Lines` (0 to 4096; 0 is half the picture's height), `Phase` (0 to 1 of a line: 0 darkens the second row of each line, 0.5 the first) |
 | `Crt` | a tube: curved glass, lines, colour stripes | `Curvature`, `Scanlines`, `Mask` (0 to 1), `Lines` (as above) |
 | `ShaderEffect` | a pass through a material of your own | the material's parameters; `Prepare` for those that depend on the picture's size |
 

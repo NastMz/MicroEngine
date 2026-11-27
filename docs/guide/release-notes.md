@@ -6,6 +6,31 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Sprites and text a game draws every frame
+
+- **Text without garbage.** Every method that draws or measures text takes an interpolated string
+  (`Font.Draw(r, $"{hp}/{max}", ...)`) and a `ReadOnlySpan<char>` beside the `string`: the built-in font, scalable and
+  shaped fonts and `IFont`. The interpolated text is written into a reused buffer, so a score, a clock or a price
+  drawn every frame makes no string. `DrawRight` ends a text at a point. `SpriteAtlas` finds a sprite by a name built
+  from numbers the same way (`atlas[$"water{mask}_{frame}"]`, `TryGet`). `Game.Prompts.Cached(template)` keeps a
+  prompt's text until the prompts change, and `CachedText<TKey>` builds a text again only when its key changes (a
+  localized message with a number). See [Text](../manual/text.md#numbers-and-other-text-that-changes-every-frame).
+- **One-shot effects.** `Scene.Effects.Play(clip, at, delay, flipX, tint, framesPerSecond, layer, depth)` plays a clip
+  once at a point and removes it: impacts, smoke, sparkles. The scene steps and clears them; `SpriteEffects` is the
+  same player for a game that keeps effects outside a scene. See
+  [One-shot effects](../manual/rendering.md#one-shot-effects).
+- **Clips a game drives.** `AnimationClip.FrameAt(time, frameOffset)` and `FrameIndexAt` give each instance of a clip
+  its own start frame, and `SpriteAtlasBuilder.AddFrames(name, frames, framesPerSecond)` makes a strip drawn in code a
+  clip. A negative time no longer fails.
+- **Points and boxes on frames.** A `.sheet` file names points and boxes of its frames (`"points"`, `"boxes"`), the
+  slices of an Aseprite file and of Aseprite's exported JSON become boxes and points, and `Sprite.Point` and
+  `Sprite.Box` give them from the anchor, mirrored with the sprite. Sheets written before read the same. See
+  [Points and boxes on frames](../manual/assets.md#points-and-boxes-on-frames).
+- **`Scanlines.Phase`** says which row of each line is dark: 0.5 darkens the first.
+- **`microengine content names`** lists the strips a `.sheet` file declares: a strip whose name ends in a digit is
+  listed, and sprites that merely end in consecutive numbers are not. Run the command again to refresh the generated
+  file. `SpriteSheet.Strips` holds the declared names.
+
 ### Saves: a scripted run keeps its own
 
 - **A run nobody plays never touches the player's saves.** A run with an input script (`--script`), in

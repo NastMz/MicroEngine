@@ -41,9 +41,74 @@ for (int i = 0; i < lines.Count; i++)
 | `DrawOutlined(r, text, position, color, outline, scale = 1)` | the text over a one-pixel outline in eight directions |
 | `DrawCentered(r, text, center, color, scale = 1, shadow = null)` | text centred on a point, optionally shadowed |
 
+| `DrawRight(r, text, topRight, color, scale = 1, shadow = null)` | text that ends at a point: a score against the right edge, whatever its number of digits |
+
 Positions are virtual pixels, like everything the renderer draws. Inside `PushCamera`/`PopCamera` text is in world
 coordinates (a name over a character); outside, in screen coordinates (a HUD). `scale` multiplies the glyphs' size:
 use whole numbers (2, 3) to keep pixels square. `\n` starts a new line, `LineHeight` pixels lower.
+
+## Numbers and other text that changes every frame
+
+A score, a clock, "12/20" or a price changes all the time, and a string built for it every frame is garbage the
+collector must clear. Write the interpolated string where the text is drawn and no string is made: the values are
+written into a buffer the engine reuses.
+
+<!-- code: samples/Examples/Examples/EffectsExample.cs#draw -->
+```csharp
+public override void Draw(IRenderer r)
+{
+    // One clip, one clock: each torch starts as many frames in as its place in the row.
+    var torch = _art.Clip("torch");
+    for (int i = 0; i < 7; i++) r.Draw(torch.FrameAt(_time, frameOffset: i), new Vector2(40 + i * 40, 150));
+
+    var frame = _caster.Clip("caster").FrameAt(_time);
+    r.DrawPivoted(frame, Feet, scale: new Vector2(Scale), flipX: _facingLeft);
+    Effects.Draw(r);
+
+    // Numbers written where they are drawn: no string is made, whatever the values.
+    Font.DrawRight(r, $"{Score}", new Vector2(312, 30), Color.White, shadow: Color.Black);
+    Font.Draw(r, $"CASTS {Casts}   EFFECTS {Effects.Count}", new Vector2(8, 30), Color.White);
+    Font.DrawCentered(r, $"{(int)_time / 60}:{(int)_time % 60:00}.{(int)(_time * 10) % 10}", new Vector2(160, 34), Gold);
+    // A hint is built once and kept until the player changes device.
+    Font.DrawCentered(r, Game.Prompts.Cached("{confirm}: CAST   {left} {right}: TURN"), new Vector2(160, 168), Color.White);
+    Heading.Draw(r, Font, "EFFECTS", "CLIPS, OFFSETS, POINTS");
+}
+```
+
+Every method that draws or measures text takes three forms of it, on the built-in font, on scalable and shaped fonts
+and on `IFont`:
+
+| Text | What it costs each call |
+| --- | --- |
+| A `string` (`"GAME OVER"`, a text kept in a field) | nothing: the string exists already |
+| An interpolated string (`$"{hp}/{max}"`, `$"{time:0.0} s"`) | nothing: written into a reused buffer |
+| A `ReadOnlySpan<char>` (a buffer of the game's own, a slice of a string) | nothing |
+
+The text is exactly what the interpolated string gives as a `string`: the same formats (`{seconds:00}`), widths
+(`{score,6}`) and number culture. Numbers, characters, strings and spans cost nothing; a value of a type of the game's
+own that only has `ToString` is written through it, which allocates. Keep the interpolated string inside the call:
+`var text = $"..."` makes a string as it always did.
+
+A sprite named with numbers is found the same way: `atlas[$"water{mask}_{frame}"]` looks the name up without building
+it (`atlas.TryGet(name, out sprite)` for a name that may be missing).
+
+Text that cannot be written where it is drawn (a localized sentence with a number in it, a wrapped paragraph) is kept
+in a `CachedText<TKey>`, which builds it again only when its key changes:
+
+```csharp
+private CachedText<(int Coins, int Language)> _coins;
+
+string line = _coins.Get((coins, Text.Version), Text, static (text, key) => text.Format("hud.coins", ("count", key.Coins)));
+Font.Draw(r, line, new Vector2(8, 8), Color.White);
+```
+
+A localized message costs one `Format` each time its number or the language changes and nothing while they stay. A
+message whose number changes every frame costs one `Format` a frame; where the language allows it, draw the label and
+the number as two texts (`Font.Draw(r, Text["hud.score"], ...)` and `Font.DrawRight(r, $"{score}", ...)`), which costs
+nothing.
+
+A prompt ("Z: jump") is kept by the engine: `Game.Prompts.Cached("{jump}: JUMP")` returns the same string until the
+player changes device or the prompts change ([Input](input.md#prompts)).
 
 ## Measuring and wrapping
 
@@ -190,8 +255,11 @@ costs no shaping work.
 
 The font is one small texture created at start-up; each visible glyph is one `IRenderer.Draw` call, like a sprite.
 A few hundred characters per frame cost little. `DrawOutlined` draws the text nine times and `DrawShadowed`
-twice; keep them for short strings. `Wrap` and `Measure` allocate: in a dialogue box, wrap a page once when it opens,
-not every frame.
+twice; keep them for short strings. `Wrap` allocates: in a dialogue box, wrap a page once when it opens, not every
+frame. Drawing and measuring allocate nothing, for a string, an interpolated string or a span
+([Numbers and other text that changes every frame](#numbers-and-other-text-that-changes-every-frame)); a shaped font
+shapes a line the first time it sees it and keeps the last 512 lines, so a number that never repeats is shaped
+each time it changes.
 
 ## On every platform
 
@@ -203,6 +271,8 @@ small font (SDL's 8x8 debug font, raylib's default font).
 
 - The built-in font has one typeface; other typefaces come from [TTF/OTF files](#scalable-fonts-ttf-and-otf) (next
   SDK version). Bitmap font files (AngelCode BMFont) are not read.
+- An interpolated string is formatted with the thread's culture, like any interpolated string: a game that shows
+  decimals the same way everywhere sets the culture once at start-up.
 - No rich text (colour or style changes inside a string) and no colour emoji. Right-to-left and complex scripts need
   the optional shaping package ([Shaped text](#shaped-text-arabic-hebrew-and-indic-scripts)). Its bidirectional layout
   ignores explicit direction marks (the embedding, override and isolate controls) and does not pair brackets across

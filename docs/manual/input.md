@@ -489,6 +489,7 @@ player switches device, so read it when drawing, or lay text out again when `Pro
 | Member | Gives |
 | --- | --- |
 | `Format(template)` | the template with each `{action}` replaced; `{move}` is the movement controls; `{{` and `}}` are braces; unknown names stay as written |
+| `Cached(template)` | the same text, built once and kept until `Version` moves: a hint drawn every frame costs a lookup and no garbage. After binding or unbinding an action while the game runs, call `Invalidate()` |
 | `Text(action)`, `Get(action)` | the first control's text, or the `ActionPrompt` (kind, key, button, pad style, touch control) |
 | `TextAll(action, separator)`, `All(action)` | every control that presses it on the device |
 | `Directions(separator: " / ")` | movement as a group: `↑←↓→ / WASD`, `D-pad`, or the touch d-pad or stick |
