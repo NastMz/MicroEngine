@@ -150,79 +150,137 @@ public override void Update(float dt)
 }
 ```
 
-The controller takes intent (`CharacterInput`: a move axis, jump pressed and held, drop), never input devices, so a
-player and an AI drive it the same way. What it does with it:
-
-| Rule | Parameter of `CharacterMotion` |
-| --- | --- |
-| Gravity with a fall clamp | `Gravity`, `MaxFallSpeed`, `FallGravityScale` |
-| Running, with optional acceleration | `MoveSpeed`, `Acceleration`, `Deceleration`, `AirControl` |
-| Jump; a tap is a short hop | `JumpSpeed`, `JumpReleaseGravityScale` (1: every jump the same height) |
-| Coyote time: a jump just after walking off a ledge | `CoyoteTime` |
-| Jump buffering: a jump pressed just before landing | `JumpBuffer` |
-| Drop through a one-way platform | `CharacterInput.Drop`, `DropThroughTime` |
-| Air jumps | `AirJumps` (1: a double jump) |
-| Wall slide and wall jump | `WallSlideSpeed`, `WallJumpSpeed`, `WallJumpLockTime` (off by default) |
-| Staying on ground that falls away (slopes, steps) | `GroundSnap` |
-| A gravity for the top of a jump: it floats while jump is held | `ApexGravityScale`, `ApexSpeed` |
-| A skid: reversing at speed brakes before it turns | `SkidDeceleration`, `SkidSpeed` |
-| Corner correction: a head that would clip the corner of a ceiling is moved past it | `CornerCorrection` |
-| A ceiling that sends the character down at once | `CeilingReboundSpeed` |
-| A run-up that jumps higher | `RunJumpBonus` |
+The controller takes intent (`CharacterInput`: a move axis, jump pressed and held, drop, run), never input devices,
+so a player and an AI drive it the same way. With no `CharacterMotion` it runs, jumps and falls with plain numbers;
+[the next section](#the-feel-of-a-classic-platformer) gives it a feel.
 
 What a game reads back, without deriving it again: `IsGrounded`, `Ground`, `IsOnWall`, `WallNormal`, `IsJumping`,
 `IsSkidding`, `AirTime`, `LandingSpeed`, `Velocity`, `LastMove`, and `Events` for the step (`Landed`, `LeftGround`,
-`Jumped`, `HitCeiling`, `HitWall`, `DroppedThrough`, `Skidded`, `CornerCorrected`). `Launch(velocity)` throws the character (a spring, a knock-back); `Teleport` places it.
+`Jumped`, `HitCeiling`, `HitWall`, `DroppedThrough`, `Skidded`, `CornerCorrected`).
+
+What a game does to it between steps:
+
+| Call | What it is for |
+| --- | --- |
+| `Launch(velocity)` | A spring, a knock-back: the character leaves the ground with that velocity |
+| `Launch(velocity, cuttable: true)` | A bounce off an enemy that goes higher while jump is held: releasing jump cuts it as it cuts a jump |
+| `Position = ...` | A placement that changes nothing else: keeping the character inside the camera's view, a scripted nudge. It keeps its ground, velocity and timers |
+| `Teleport(position)` | A jump to another place: it is in the air until its next step |
+| `Velocity = ...` | A speed of the game's own (a dash, a hit) |
+| `StandOn(shape, position)` | Ground the game decides: see [below](#ground-the-game-decides) |
+| `Snapshot()`, `Restore(state)` | The whole state, kept and put back: an AI that tries a jump and takes it back, a checkpoint, a replay |
 
 A character standing on a body the game moved (a platform moved with `SetPosition` or `Move`) is carried by it. A
 character at rest is not moved at all. On Box2D a capsule character walks up and down slopes; give it a `GroundSnap`
 of a few units so it stays on the slope going down. The tile backend has no slopes.
+
+**Where the character's position is.** `Create` centres the box on the body's origin unless `offset` (the box's
+centre relative to the origin) says otherwise. A game that draws, sorts and hits its characters by their feet makes
+the origin the feet: `offset: new Vector2(0, -size.Y / 2)` where y grows downward. `Position`, `Teleport` and the
+transform a scene's physics writes are then the feet, with nothing to convert.
 
 `TopDownController2D` is the top-down counterpart: no gravity, a direction as intent, sliding along walls, optional
 acceleration:
 
 ```csharp
 var hero = TopDownController2D.Create(Physics.World, entity, start, new Vector2(12, 12));
-hero.Step(dt, new Vector2(Input.Axis("left", "right"), Input.Axis("up", "down")));
+var move = hero.Step(dt, new Vector2(Input.Axis("left", "right"), Input.Axis("up", "down")));
+if (move.StoppedGoing(facing)) Push(facing);   // a wall or a crate stopped this step's move the way it faces
 ```
+
+`MoveResult.Contacts` lists every surface the box touches where it ends; a contact whose `Stopped` is true is one
+that stopped the move in this step, which is what a push rule asks. `StoppedGoing(direction)` is the short form.
 
 Both controllers are deterministic; `Physics.Track(controller)` adds one to the scene's state hash.
 
-### A feel of its own
+### The feel of a classic platformer
 
-How a character feels is its numbers. A platform game with four gravities (rising, rising with jump released, the
-top of the jump, falling), a skid, corner correction and a run-up bonus is one `CharacterMotion`:
+How a character feels is its numbers, and all of them are in one `CharacterMotion`. This is a character with the
+feel of a 16-bit platform game, read from top to bottom as what the player feels:
 
 <!-- code: samples/PhysicsPlayground/ClassicScene.cs#motion -->
 ```csharp
-// Every number of the character's feel, in pixels and seconds.
-private static readonly CharacterMotion Walk = new()
+// Every number of the character's feel, in pixels and seconds, in one place.
+private static readonly CharacterMotion Feel = new()
 {
-    MoveSpeed = 92, Acceleration = 520, Deceleration = 620, AirControl = 0.8f,
+    // On the ground: it walks, and runs while run is held.
+    MoveSpeed = 92, Acceleration = 520,                  // the walk, and how fast it gets there
+    RunSpeed = 152, RunAcceleration = 600,               // the run
+    Deceleration = 620,                                  // letting go: friction stops it
+    OverspeedDeceleration = 620,                         // run released at full speed: friction takes the extra away
     SkidDeceleration = 1500, SkidSpeed = 30,             // reversing above 30 px/s brakes hard before it turns
-    JumpSpeed = 302, RunJumpBonus = 26,                  // a run-up adds up to 26 px/s to the jump
+
+    // In the air: less steering than on the ground, and a jump keeps the speed it started with.
+    AirAcceleration = 430, AirDeceleration = 140,
+    AirOverspeedDeceleration = 0,                        // a running jump is a long jump, whatever run does in the air
+
+    // The jump: its height is the player's, from a tap to a full press.
+    JumpSpeed = 302, RunJumpBonus = 26,                  // a run-up adds up to 26 px/s
     Gravity = 640,                                       // while it rises with jump held
     JumpReleaseGravityScale = 1900f / 640,               // while it rises with jump released: a tap is a hop
     ApexGravityScale = 380f / 640, ApexSpeed = 48,       // under 48 px/s near the top: the jump floats
-    FallGravityScale = 1050f / 640, MaxFallSpeed = 270,  // falling
-    CoyoteTime = 0.1f, JumpBuffer = 0.12f,
+    FallGravityScale = 1050f / 640, MaxFallSpeed = 270,  // falling is faster than rising, up to a limit
+
+    // Forgiveness: what the player never sees and always feels.
+    CoyoteTime = 0.1f,                                   // a jump still works a moment after walking off a ledge
+    JumpBuffer = 0.12f,                                  // and one pressed a moment before landing
+    LandingReach = 1,                                    // a pixel over the floor is on the floor
     CornerCorrection = 4,                                // up to 4 px sideways past a corner
     CeilingReboundSpeed = 20,                            // a bumped head comes down at once
+
+    // Planks: down and jump drops through.
+    DropWithJump = true,
 };
-// Running is another record: the game swaps them, the controller keeps its state.
-private static readonly CharacterMotion Run = Walk with { MoveSpeed = 152, Acceleration = 600 };
 ```
 
-`Motion` can be replaced at any time (running, water, a power-up): the controller keeps its state. Each step the
-game sends intent and reads what happened, for its own effects:
+**On the ground.** `MoveSpeed` is how fast the character walks and `Acceleration` how long it takes to get there:
+infinite (the default) is the instant, arcade start; a finite one gives it weight. `Deceleration` is what letting go
+feels like: high stops on the spot, low slides. `RunSpeed` and `RunAcceleration` are the second speed, while
+`CharacterInput.Run` is held. `SkidDeceleration` and `SkidSpeed` are the turn: above the skid speed a reversal
+brakes hard before the character turns, and `IsSkidding` says so, for the dust and the sound.
+`OverspeedDeceleration` is what happens when the character goes faster than the player now asks for, pushing the
+same way (run released at full speed): the ground takes the extra speed away at this rate, usually the friction.
+
+**In the air.** `AirAcceleration` is how much the player steers a jump and `AirDeceleration` how much a jump slows
+when the player lets go; both are usually lower than on the ground, the drag much lower. A game that wants one
+number for both sets `AirControl`, a share of the ground's two. `AirOverspeedDeceleration` is the momentum of a
+running jump: with 0 the jump keeps the run's speed whatever the player does with run in the air, which is what
+makes a run-up matter.
+
+**The jump.** `JumpSpeed` and `Gravity` give its height (`JumpSpeed² / (2 × Gravity)`) and its length in time.
+Four gravities shape it: `Gravity` while it rises with jump held; `JumpReleaseGravityScale` while it rises with jump
+released, so a tap is a hop and a full press a full jump; `ApexGravityScale` under `ApexSpeed` near the top, which
+makes the top float while jump is held and gives the player time to aim; `FallGravityScale` on the way down, above
+1 for a fall that is quicker than the rise, up to `MaxFallSpeed`. `JumpReleaseSpeedScale` is the other way to
+shorten a jump: releasing jump cuts the rising speed at once to that share of `JumpSpeed` (0.45 is a sharp hop),
+instead of pulling harder. `RunJumpBonus` adds jump speed in proportion to the sideways speed, against the
+motion's top speed: a run-up jumps higher. `AirJumps` is the double jump; `WallSlideSpeed`, `WallJumpSpeed` and
+`WallJumpLockTime` the wall slide and the wall jump.
+
+**Forgiveness.** These are the rules the player never sees and always feels. `CoyoteTime`: a jump still works a
+moment after walking off a ledge. `JumpBuffer`: a jump pressed a moment before landing happens on landing.
+`LandingReach`: a character that ends a step within that distance of the floor has landed in that step, a step
+earlier than on contact, as in games that test for ground a pixel under the feet. `CornerCorrection`: a head that
+would clip the corner of a ceiling by a few pixels is moved sideways past it. `CeilingReboundSpeed`: a bumped head
+comes down at once instead of hanging. `GroundSnap`: a character that walks down a step or a slope stays on it.
+
+**Platforms.** `CharacterInput.Drop` falls through a one-way platform for `DropThroughTime`. With `DropWithJump`
+the drop is "down and jump": down alone does nothing, and a jump pressed (or still buffered) with down held drops
+instead of jumping. `Order` decides what a jump off a moving platform takes with it: with
+`CharacterStepOrder.CarryThenAct` (the default) the platform's move of that step, with `ActThenCarry` nothing: the
+character has left the platform before the platform moves it, as in games whose player runs before their platforms.
+
+Every value is optional: a motion with only `MoveSpeed`, `JumpSpeed` and `Gravity` is a complete character.
+`Motion` can be replaced at any time (water, a power-up, a low-gravity room): the controller keeps its state. Each
+step the game sends intent and reads what happened, for its own effects:
 
 <!-- code: samples/PhysicsPlayground/ClassicScene.cs#step -->
 ```csharp
-Hero.Motion = Input.Down("cancel") ? Run : Walk;
-Hero.Step(dt, new CharacterInput(Input.Axis("left", "right"), Input.Pressed("confirm"), Input.Down("confirm")));
+Hero.Step(dt, new CharacterInput(Input.Axis("left", "right"), Input.Pressed("confirm"), Input.Down("confirm"),
+    Drop: Input.Down("down"), Run: Input.Down("cancel")));
 
 // What the step did, for the game's effects.
-var feet = Hero.Position + new Vector2(0, Size.Y / 2);
+var feet = Hero.Position;
 if (Hero.IsSkidding) { SkidSteps++; _dust.Add((feet, 0.2f)); }
 if ((Hero.Events & CharacterEvents.CornerCorrected) != 0) Corrections++;
 if ((Hero.Events & CharacterEvents.Landed) != 0)
@@ -244,28 +302,57 @@ that only a head coming from below finds is an ordinary shape and one rule:
 // A hidden block is a shape like any other. What makes it hidden is the character's rule for it: it is solid
 // only for a head that comes up from below, until it has been found.
 _hidden = world.AddShape(_room, ShapeDescription.Box(new Vector2(16, 16), new Vector2(210, 118)));
-Hero = Physics.Track(CharacterController2D.Create(world, default, new Vector2(40, 161), Size, Walk));
+// The character's position is its feet: the box's centre is half its height above the body's origin.
+Hero = Physics.Track(CharacterController2D.Create(world, default, new Vector2(40, 168), Size, Feel, offset: new Vector2(0, -Size.Y / 2)));
 Hero.Solid = (hero, shape) =>
 {
     if (shape != _hidden || Revealed) return true;
-    float head = hero.Position.Y - Size.Y / 2, under = world.BoundsOf(_hidden).Bottom;
+    float head = hero.Position.Y - Size.Y, under = world.BoundsOf(_hidden).Bottom;
     return hero.Velocity.Y < 0 && head >= under - 1;
 };
 ```
 
+A rule of `Solid` sees one shape at a time, so a conditional solid is a shape of its own, not a cell of a tile grid.
+It may read the world (`BoundsOf`, `PositionOf`) but must not query or change it.
+
+### Ground the game decides
+
+Some ground has a rule of the game's own that no shape gives: a platform that catches the character half a pixel
+before it touches, the back of a creature, a raft. The game keeps that rule and tells the controller the result:
+
+```csharp
+hero.Step(dt, input);
+if (hero.Velocity.Y >= 0 && raft.Catches(hero.Position))
+    hero.StandOn(raft.Shape, new Vector2(hero.Position.X, raft.Top));
+```
+
+`StandOn` puts the character on that shape, with no vertical speed: from then on it is grounded as on any other
+ground (it can jump, it has coyote time, it is carried when the shape's body moves) until a step finds nothing under
+it, so a rule that still holds calls `StandOn` again after each step. The shape's body need not collide with the
+character: put it in a layer the character's mask leaves out. A character put back in the step it left reports no
+`LeftGround`; one that was in the air reports `Landed`.
+
+### Beyond the parameters
+
 What the parameters do not cover, the game writes over the controller instead of replacing it:
 
-- **A sideways model of its own** (momentum kept in the air, ice, conveyor belts): set `Acceleration` and
-  `Deceleration` to 0, so the controller never changes the sideways speed, and write `Velocity` before each step.
-  Walls still stop it.
+- **A sideways model of its own** (ice, conveyor belts): set `Acceleration` and `Deceleration` to 0, so the
+  controller never changes the sideways speed, and write `Velocity` before each step. Walls still stop it.
 - **Another gravity for a while** (gliding, water, a low-gravity room): replace `Motion`.
 - **Solids by state** (a character that passes enemies while it flashes, blocks of a colour that is switched off):
   change the mask of `Filter`; layers are cheaper than a rule.
 - **A world for a game that has only a tile grid**: `Physics.World.AddTiles(body, grid, columns, rows)` on the
   scene's world is the whole setup, and moving platforms are kinematic bodies the character is carried by.
+- **Looking ahead** (an AI that plans a jump, a trajectory preview): `Snapshot`, step the character with the inputs
+  to try, read where it got to, `Restore`. Its own body is all the stepping moves.
 
-A rule of `Solid` sees one shape at a time, so a conditional solid is a shape of its own, not a cell of a tile grid.
-It may read the world (`BoundsOf`, `PositionOf`) but must not query or change it.
+**The same numbers as `TileMotion`.** A character on the tile backend and `TileMotion.Move` use the same swept test.
+With the body's origin at the box's top-left corner (`offset: size / 2`) the two give the same positions bit for
+bit, except in one case: a move toward smaller coordinates that ends less than 0.001 units inside a tile, which
+`TileMotion` pushes out and the world leaves as touching. With the origin anywhere else the positions agree to
+within 0.001 units and differ in their last bits, because the box's corner is computed from the origin around each
+move. Both are deterministic; a game that compares its state against a recording made with the other mover
+re-records it.
 
 ## Bodies and forces
 
@@ -543,6 +630,20 @@ On both backends the level is one shape with one surface. The faces between two 
 shape that starts sunk into tiles is not stopped by the next tile. A one-way tile is a platform at the top of its
 cell: moves, rays and cast shapes meet its top edge, and overlaps, point queries and the nearest surface see it a
 quarter of a tile thick (`PhysicsContract.OneWayTileThickness`).
+
+**Tiles that block some movers and not others.** A top-down level whose water stops walkers and not flyers has
+one grid and a view of it for each kind of mover: `grid.Blocking(flags)` is the same grid with the tiles that carry
+any of those flags solid, and no others. Add each view in a layer of its own and give each mover the layer of its
+view in its mask:
+
+```csharp
+world.AddTiles(level, grid.Blocking(TileFlags.Solid | TileFlags.Water), columns, rows, category: WalkerTiles);
+world.AddTiles(level, grid.Blocking(TileFlags.Solid), columns, rows, category: FlyerTiles);
+var knight = TopDownController2D.Create(world, entity, start, size, mask: WalkerTiles | Actors);
+var bat = TopDownController2D.Create(world, other, perch, size, mask: FlyerTiles | Actors);
+```
+
+The views read the grid, so they never differ from it or from each other.
 
 **Slopes need a capsule character.** A character that walks on slope tiles is a capsule
 (`ShapeDescription.Capsule`) with a `GroundSnap` of a few units: it walks up a ramp and over the joint onto flat ground

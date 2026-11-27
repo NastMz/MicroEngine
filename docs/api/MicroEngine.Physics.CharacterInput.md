@@ -19,13 +19,13 @@ public readonly struct CharacterInput : IEquatable<CharacterInput>
 
 ## Constructors
 
-### <a id="MicroEngine_Physics_CharacterInput__ctor_System_Single_System_Boolean_System_Boolean_System_Boolean_"></a> CharacterInput\(float, bool, bool, bool\)
+### <a id="MicroEngine_Physics_CharacterInput__ctor_System_Single_System_Boolean_System_Boolean_System_Boolean_System_Boolean_"></a> CharacterInput\(float, bool, bool, bool, bool\)
 
 What a character wants to do in one step: the game fills it from input, an AI from its plan. The controller never
 reads input devices.
 
 ```csharp
-public CharacterInput(float Move, bool JumpPressed = false, bool JumpHeld = false, bool Drop = false)
+public CharacterInput(float Move, bool JumpPressed = false, bool JumpHeld = false, bool Drop = false, bool Run = false)
 ```
 
 #### Parameters
@@ -44,13 +44,21 @@ Jump is held: a rising jump keeps its full height while it is.
 
 `Drop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid ground).
+Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid
+ground). With [DropWithJump](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_DropWithJump) it is the "down" of "down and jump": the drop happens when
+a jump would.
+
+`Run` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Run is held: the character moves at [RunSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_RunSpeed) when the motion has one.
 
 ## Properties
 
 ### <a id="MicroEngine_Physics_CharacterInput_Drop"></a> Drop
 
-Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid ground).
+Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid
+ground). With [DropWithJump](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_DropWithJump) it is the "down" of "down and jump": the drop happens when
+a jump would.
 
 ```csharp
 public bool Drop { get; init; }
@@ -96,12 +104,24 @@ public float Move { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-## Methods
+### <a id="MicroEngine_Physics_CharacterInput_Run"></a> Run
 
-### <a id="MicroEngine_Physics_CharacterInput_Deconstruct_System_Single__System_Boolean__System_Boolean__System_Boolean__"></a> Deconstruct\(out float, out bool, out bool, out bool\)
+Run is held: the character moves at [RunSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_RunSpeed) when the motion has one.
 
 ```csharp
-public void Deconstruct(out float Move, out bool JumpPressed, out bool JumpHeld, out bool Drop)
+public bool Run { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+## Methods
+
+### <a id="MicroEngine_Physics_CharacterInput_Deconstruct_System_Single__System_Boolean__System_Boolean__System_Boolean__System_Boolean__"></a> Deconstruct\(out float, out bool, out bool, out bool, out bool\)
+
+```csharp
+public void Deconstruct(out float Move, out bool JumpPressed, out bool JumpHeld, out bool Drop, out bool Run)
 ```
 
 #### Parameters
@@ -113,6 +133,8 @@ public void Deconstruct(out float Move, out bool JumpPressed, out bool JumpHeld,
 `JumpHeld` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 `Drop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+`Run` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Physics_CharacterInput_Equals_System_Object_"></a> Equals\(object\)
 

@@ -44,9 +44,24 @@ public float Acceleration { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Physics_CharacterMotion_AirAcceleration"></a> AirAcceleration
+
+How fast the sideways speed grows toward the intent in the air, in units per second squared: how much the
+player steers a jump. Null (the default) is [Acceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Acceleration) times [AirControl](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_AirControl).
+
+```csharp
+public float? AirAcceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
 ### <a id="MicroEngine_Physics_CharacterMotion_AirControl"></a> AirControl
 
-The share of [Acceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Acceleration) and [Deceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Deceleration) that applies in the air, from 0 (no air control) to 1 (the default).
+The share of [Acceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Acceleration) and [Deceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Deceleration) that applies in the air, from 0 (no air
+control) to 1 (the default). [AirAcceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_AirAcceleration) and [AirDeceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_AirDeceleration) replace it with a
+number each.
 
 ```csharp
 public float AirControl { get; init; }
@@ -55,6 +70,20 @@ public float AirControl { get; init; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_AirDeceleration"></a> AirDeceleration
+
+How fast the sideways speed falls to zero in the air with no intent, in units per second squared: a low value
+lets a jump keep travelling when the player lets go. Null (the default) is [Deceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Deceleration) times
+[AirControl](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_AirControl).
+
+```csharp
+public float? AirDeceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
 ### <a id="MicroEngine_Physics_CharacterMotion_AirJumps"></a> AirJumps
 
@@ -67,6 +96,19 @@ public int AirJumps { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Physics_CharacterMotion_AirOverspeedDeceleration"></a> AirOverspeedDeceleration
+
+The same in the air, in units per second squared: 0 keeps a run's momentum for the whole jump, whatever the
+player does with run in the air. Null (the default) uses the air's acceleration.
+
+```csharp
+public float? AirOverspeedDeceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
 ### <a id="MicroEngine_Physics_CharacterMotion_ApexGravityScale"></a> ApexGravityScale
 
@@ -156,6 +198,21 @@ public float DropThroughTime { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Physics_CharacterMotion_DropWithJump"></a> DropWithJump
+
+Whether a drop needs a jump: with it, [Drop](MicroEngine.Physics.CharacterInput.md#MicroEngine_Physics_CharacterInput_Drop) held makes the jump of a character on
+a one-way platform a drop (pressed in that step or still remembered by [JumpBuffer](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_JumpBuffer), which the
+drop uses up), and holding it alone does nothing: "down and jump". False (the default) drops as soon as
+[Drop](MicroEngine.Physics.CharacterInput.md#MicroEngine_Physics_CharacterInput_Drop) is held.
+
+```csharp
+public bool DropWithJump { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Physics_CharacterMotion_FallGravityScale"></a> FallGravityScale
 
 Gravity is multiplied by this while falling; above 1 makes falls faster than rises.
@@ -219,12 +276,41 @@ public float JumpReleaseGravityScale { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Physics_CharacterMotion_JumpReleaseSpeedScale"></a> JumpReleaseSpeedScale
+
+A jump that rises with jump released is slowed at once to this share of [JumpSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_JumpSpeed) (a slower rise
+is kept): 0.45 cuts a released jump to 45 % of its starting speed in the step jump is let go, a sharper hop
+than [JumpReleaseGravityScale](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_JumpReleaseGravityScale) gives. 1 (the default) cuts nothing.
+
+```csharp
+public float JumpReleaseSpeedScale { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Physics_CharacterMotion_JumpSpeed"></a> JumpSpeed
 
 The upward speed a jump starts with, in units per second: the jump rises about <code>JumpSpeed² / (2 × Gravity)</code>.
 
 ```csharp
 public float JumpSpeed { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_LandingReach"></a> LandingReach
+
+How near the ground a character that is not rising counts as standing on it, in units; 0 (the default) lands
+on contact. With 1, a fall that ends a step within a unit of the floor has landed in that step (it can jump,
+its fall speed is gone) and closes the rest of the way in the next steps: landings come a step earlier, as in
+games that test for ground a pixel under the feet.
+
+```csharp
+public float LandingReach { get; init; }
 ```
 
 #### Property Value
@@ -255,12 +341,66 @@ public float MoveSpeed { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Physics_CharacterMotion_Order"></a> Order
+
+Whether the ground carries the character before or after its jump or drop is read; [CarryThenAct](MicroEngine.Physics.CharacterStepOrder.md) by default.
+
+```csharp
+public CharacterStepOrder Order { get; init; }
+```
+
+#### Property Value
+
+ [CharacterStepOrder](MicroEngine.Physics.CharacterStepOrder.md)
+
+### <a id="MicroEngine_Physics_CharacterMotion_OverspeedDeceleration"></a> OverspeedDeceleration
+
+How fast a character on the ground loses the speed it has above what the intent asks for while it keeps
+pushing the way it moves, in units per second squared: what happens when run is released at full speed, or
+after a boost. Null (the default) uses the acceleration, as for any other change of speed; a game usually
+sets its [Deceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Deceleration) here (the ground's friction).
+
+```csharp
+public float? OverspeedDeceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+### <a id="MicroEngine_Physics_CharacterMotion_RunAcceleration"></a> RunAcceleration
+
+How fast the sideways speed grows on the ground while running, in units per second squared; null (the default) is [Acceleration](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_Acceleration).
+
+```csharp
+public float? RunAcceleration { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
 ### <a id="MicroEngine_Physics_CharacterMotion_RunJumpBonus"></a> RunJumpBonus
 
-Extra jump speed at full [MoveSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MoveSpeed), in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher.
+Extra jump speed at the motion's top speed ([RunSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_RunSpeed) when it has one, else [MoveSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MoveSpeed)),
+in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher. The top
+speed is the measure whether run is held or not, so the same speed always gives the same jump.
 
 ```csharp
 public float RunJumpBonus { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Physics_CharacterMotion_RunSpeed"></a> RunSpeed
+
+The sideways speed at full intent while [Run](MicroEngine.Physics.CharacterInput.md#MicroEngine_Physics_CharacterInput_Run) is held, in units per second; 0 (the
+default) has no run: the character always moves at [MoveSpeed](MicroEngine.Physics.CharacterMotion.md#MicroEngine_Physics_CharacterMotion_MoveSpeed).
+
+```csharp
+public float RunSpeed { get; init; }
 ```
 
 #### Property Value
@@ -402,7 +542,7 @@ public void Validate()
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-A negative or not-a-number value, a non-finite speed or time, or an air control outside 0..1.
+A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, or an undefined order.
 
 ## Operators
 
