@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using MeadowRun.Art;
 using MeadowRun.Content;
 using MeadowRun.Gameplay;
 
@@ -8,7 +9,8 @@ namespace MeadowRun.Tests;
 /// <summary>
 /// Proves that the engine's character controller moves Pip as his own mover does: both are driven with the same input
 /// over the game's levels and over one small stage per movement rule, and every step is compared exactly (position,
-/// velocity, ground). The tests fail on the first step that differs. Set MEADOW_DIFFERENTIAL_REPORT to a file path to
+/// velocity, ground, the jump, the timers, the events and the block bumped). On the autopilot's runs, the game's scripts
+/// and the rules the controller is identical; under random input it is not (see the test). Set MEADOW_DIFFERENTIAL_REPORT to a file path to
 /// get the full report.
 /// </summary>
 [TestClass]
@@ -25,19 +27,67 @@ public sealed class ControllerDifferentialTests
             File.AppendAllText(path, $"## {name}{Environment.NewLine}{text}{Environment.NewLine}");
     }
 
+    /// <summary>What the shadows of several attempts compared, added up.</summary>
+    private sealed class Sum
+    {
+        private readonly HashSet<(int Level, (System.Numerics.Vector2, System.Numerics.Vector2, bool, bool, PlayerInput) Situation)> _situations = [];
+        private readonly SortedDictionary<string, int> _kinds = [];
+        private readonly StringBuilder _divergences = new();
+        public int Steps, Attempts, Diverged, Restores, Launches, Placements, Interventions, AirTimeApart, LandImpactApart;
+        public int Situations => _situations.Count;
+        public int Kind(string name) => _kinds.GetValueOrDefault(name);
+
+        public void Add(int level, string what, ControllerShadow shadow)
+        {
+            Steps += shadow.Steps;
+            Attempts++;
+            Diverged += shadow.Divergences.Count;
+            Restores += shadow.Restores;
+            Launches += shadow.Launches;
+            Placements += shadow.Placements;
+            Interventions += shadow.Interventions;
+            AirTimeApart += shadow.AirApart.AirTime;
+            LandImpactApart += shadow.AirApart.LandImpact;
+            foreach (var situation in shadow.Situations) _situations.Add((level, situation));
+            foreach (var (kind, count) in shadow.Kinds) _kinds[kind] = _kinds.GetValueOrDefault(kind) + count;
+            if (shadow.Divergences.Count == 0) return;
+            var first = shadow.Divergences[0];
+            _divergences.AppendLine(CultureInfo.InvariantCulture, $"{what}: {shadow.Divergences.Count} of {shadow.Steps} steps diverged; first at step {first.Step}: {first.Situation}; differs in {first.Differs}; position by ({F(first.Position.X)}, {F(first.Position.Y)}) px, velocity by ({F(first.Velocity.X)}, {F(first.Velocity.Y)}) px/s");
+            foreach (var d in shadow.Divergences)
+            {
+                _divergences.AppendLine(CultureInfo.InvariantCulture, $"  step {d.Step}: {d.Situation}; differs in {d.Differs}; position by ({F(d.Position.X)}, {F(d.Position.Y)}) px, velocity by ({F(d.Velocity.X)}, {F(d.Velocity.Y)}) px/s; {(d.Healed < 0 ? "still apart after " + ControllerShadow.HealLimit : "the same again after " + d.Healed)} steps, at most {F(d.Farthest)} px apart");
+                _divergences.AppendLine(CultureInfo.InvariantCulture, $"    {d.Detail}");
+            }
+        }
+
+        public StringBuilder Text()
+        {
+            var text = new StringBuilder();
+            text.Append(_divergences);
+            text.AppendLine(CultureInfo.InvariantCulture, $"total: {Steps} steps compared in {Attempts} attempts, {Situations} different situations (a level, Pip's position, velocity, ground and jump state, and the input); {Diverged} steps diverged; the stage changed Pip {Interventions} times: thrown {Launches} times, placed {Placements} times; the controller's state was copied from Pip {Restores} times");
+            text.AppendLine(CultureInfo.InvariantCulture, $"the controller's own air time differed from Pip's after {AirTimeApart} steps, and the landing impact computed from it in {LandImpactApart} landings");
+            text.AppendLine("steps by kind: " + string.Join(", ", _kinds.Select(k => $"{k.Key} {k.Value}")));
+            return text;
+        }
+
+        public void AssertFollowed()
+        {
+            Assert.AreEqual(0, Restores, $"the controller was never given Pip's state:{Environment.NewLine}{Text()}");
+            Assert.AreEqual(0, Diverged, $"steps in which the controller left Pip:{Environment.NewLine}{Text()}");
+        }
+    }
+
     /// <summary>
     /// The autopilot plays each level as the level tests do (five lives, checkpoints), Pip's mover decides what happens,
-    /// and the controller shadows it step by step, on its own from the start of each attempt to its end. The autopilot
-    /// repeats itself (attempts that die where the one before did, long waits on levels 4 and 5 until the timer runs
-    /// out), so the number of steps overstates what is compared: the test also counts the different situations (a
-    /// level, Pip's position, velocity, ground and jump state, and the input), about 6,500 in the 94,285 steps.
+    /// and the controller shadows it step by step, on its own from the start of each attempt to its end: while Pip
+    /// plays, on his walk off the goal and in the victory pose. The autopilot repeats itself (attempts that die where
+    /// the one before did, long waits on levels 4 and 5 until the timer runs out), so the number of steps overstates
+    /// what is compared: the test also counts the different situations.
     /// </summary>
     [TestMethod]
     public void TheControllerShadowsPipOverEveryLevel()
     {
-        var text = new StringBuilder();
-        int steps = 0, diverged = 0, pristine = 0, attempts = 0, apart = 0, restores = 0, launches = 0;
-        var situations = new HashSet<(int Level, (System.Numerics.Vector2, System.Numerics.Vector2, bool, bool, PlayerInput) Situation)>();
+        var sum = new Sum();
         // Level 1 under the full rules, then every level with enemy contact ignored, which lets the autopilot cross it.
         foreach (var (index, ignoreEnemies) in new[] { (0, false), (0, true), (1, true), (2, true), (3, true), (4, true) })
         {
@@ -51,40 +101,130 @@ public sealed class ControllerDifferentialTests
                 for (int f = 0; f < 60 * 200 && stage.Phase != StagePhase.Done; f++)
                 {
                     stage.IgnoreEnemiesForTesting = ignoreEnemies;
-                    shadow.Step(bot.Next(stage));
+                    StageHarness.Step(stage, bot.Next(stage));
                 }
-                steps += shadow.Steps;
-                foreach (var situation in shadow.Situations) situations.Add((index, situation));
-                restores += shadow.Restores;
-                launches += shadow.Launches;
-                diverged += shadow.Divergences.Count;
-                pristine += shadow.Divergences.Count(d => d.Pristine);
-                attempts++;
-                if (shadow.Divergences.Count > 0) apart++;
-
-                text.AppendLine(CultureInfo.InvariantCulture, $"level {index + 1}{(ignoreEnemies ? ", enemies ignored" : "")}, attempt {attempt + 1} ({stage.Outcome}): {shadow.Steps} steps compared, {shadow.Divergences.Count} diverged ({shadow.Divergences.Count(d => d.Pristine)} with the controller on its own for the half second before), {shadow.Interventions} changed by the stage");
-                if (shadow.Divergences.Count > 0)
-                {
-                    var first = shadow.Divergences[0];
-                    text.AppendLine(CultureInfo.InvariantCulture, $"  first at step {first.Step}: {first.Situation}; differs in {first.Differs}; position by ({F(first.Position.X)}, {F(first.Position.Y)}) px, velocity by ({F(first.Velocity.X)}, {F(first.Velocity.Y)}) px/s");
-                    text.AppendLine(CultureInfo.InvariantCulture, $"  {first.Detail}");
-                }
-                foreach (var group in shadow.Divergences.Where(d => d.Pristine).GroupBy(d => d.Situation + " -> " + d.Differs).OrderByDescending(g => g.Count()))
-                {
-                    var worst = group.MaxBy(d => d.Position.Length() + d.Velocity.Length() / 60)!;
-                    text.AppendLine(CultureInfo.InvariantCulture, $"  {group.Count(),5} x {group.Key}; largest: position ({F(worst.Position.X)}, {F(worst.Position.Y)}) px, velocity ({F(worst.Velocity.X)}, {F(worst.Velocity.Y)}) px/s at step {worst.Step}");
-                }
+                sum.Add(index, $"level {index + 1}{(ignoreEnemies ? ", enemies ignored" : "")}, attempt {attempt + 1} ({stage.Outcome})", shadow);
                 if (stage.Outcome == StageOutcome.Cleared) break;
                 checkpoint = stage.CheckpointReached;
             }
         }
-        text.AppendLine(CultureInfo.InvariantCulture, $"total: {steps} steps compared in {attempts} attempts ({situations.Count} different situations: a level, Pip's position, velocity, ground and jump state, and the input), {diverged} steps diverged ({pristine} with the controller on its own for the half second before), {apart} attempts with a divergence; the stage threw Pip {launches} times; the controller's state was copied from Pip {restores} times");
-        Report("Levels, closed loop", text);
-        Assert.IsTrue(steps > 90000, $"only {steps} steps were compared");
-        Assert.IsTrue(situations.Count > 6000, $"only {situations.Count} different situations were compared");
-        Assert.AreEqual(0, restores, "the controller was never given Pip's state: from a level's start to its end it ran on its own");
-        Assert.IsTrue(launches > 0, "the stage's bounces were written as the game writes them");
-        Assert.AreEqual(0, diverged, $"steps in which the controller left Pip:{Environment.NewLine}{text}");
+        Report("Levels, autopilot", sum.Text());
+        Assert.IsTrue(sum.Steps > 90000, $"only {sum.Steps} steps were compared");
+        Assert.IsTrue(sum.Situations > 6000, $"only {sum.Situations} different situations were compared");
+        Assert.IsTrue(sum.Launches > 0, "the stage's bounces were written as the game writes them");
+        Assert.IsTrue(sum.Kind("walk off the goal") > 0, "the walk off the goal was compared");
+        sum.AssertFollowed();
+    }
+
+    private static readonly int Seeds = int.TryParse(Environment.GetEnvironmentVariable("MEADOW_DIFFERENTIAL_SEEDS"), out int n) ? n : 6;
+
+    /// <summary>Input nobody planned: each control held and released for random lengths, mostly to the right.</summary>
+    private sealed class Noise(int seed)
+    {
+        private readonly Random _random = new(seed);
+        private int _axis = 1, _move, _jumpFor, _runFor, _downFor;
+        private bool _jump, _run, _down, _jumpWas, _runWas;
+
+        public PlayerInput Next()
+        {
+            if (_move-- <= 0)
+            {
+                double r = _random.NextDouble();
+                _axis = r < 0.62 ? 1 : r < 0.82 ? -1 : 0;
+                _move = _random.Next(2, 70);
+            }
+            if (_jumpFor-- <= 0) { _jump = _random.NextDouble() < 0.45; _jumpFor = _random.Next(1, _jump ? 34 : 40); }
+            if (_runFor-- <= 0) { _run = _random.NextDouble() < 0.6; _runFor = _random.Next(3, 120); }
+            if (_downFor-- <= 0) { _down = _random.NextDouble() < 0.25; _downFor = _random.Next(3, 50); }
+            var input = new PlayerInput(_axis < 0, _axis > 0, _down, _jump && !_jumpWas, _jump, _run, _run && !_runWas);
+            _jumpWas = _jump;
+            _runWas = _run;
+            return input;
+        }
+    }
+
+    /// <summary>
+    /// What the autopilot avoids: every level, from its start and from each checkpoint, under the full rules (enemies
+    /// that are stomped and that hurt, springs, spikes, fire bars, the Mole King) and with enemy contact ignored, as
+    /// each of Pip's forms, with seeded random input, and with the autopilot interrupted by bursts of it (which takes
+    /// Pip far into a level and then does what no plan would: turns back in the air, drops through planks, jumps
+    /// under ceilings, leaves a moving platform half way).
+    /// </summary>
+    [TestMethod]
+    public void TheControllerShadowsPipUnderSeededRandomInput()
+    {
+        var sum = new Sum();
+        for (int index = 0; index < Levels.All.Count; index++)
+        {
+            int checkpoints = new Level(Levels.All[index]).Spawns.Count(s => s.Kind == 'K');
+            for (int checkpoint = 0; checkpoint <= checkpoints; checkpoint++)
+            for (int seed = 0; seed < Seeds; seed++)
+            for (int mode = 0; mode < 3; mode++)
+            {
+                // Mode 0: random input alone. Modes 1 and 2: the autopilot with bursts of it, under the full rules
+                // and with enemy contact ignored.
+                var session = new Session { Form = (PipForm)((seed + mode) % 3) };
+                var stage = StageHarness.New(new Level(Levels.All[index]), session, checkpoint);
+                var shadow = new ControllerShadow(stage, closedLoop: true);
+                var random = new Random(7919 * index + 211 * checkpoint + 17 * seed + mode);
+                var noise = new Noise(index * 1000 + checkpoint * 100 + seed * 10 + mode);
+                var bot = new Autopilot(seed);
+                int burst = 0;
+                for (int f = 0; f < 60 * 75 && stage.Phase != StagePhase.Done; f++)
+                {
+                    stage.IgnoreEnemiesForTesting = mode == 2;
+                    PlayerInput input;
+                    if (mode == 0) input = noise.Next();
+                    else
+                    {
+                        if (burst <= 0 && random.Next(100) == 0) burst = random.Next(8, 70);
+                        var planned = stage.Phase == StagePhase.Playing ? bot.Next(stage) : default;
+                        input = burst-- > 0 ? noise.Next() : planned;
+                    }
+                    StageHarness.Step(stage, input);
+                }
+                sum.Add(index, $"level {index + 1}, checkpoint {checkpoint}, seed {seed}, mode {mode} ({stage.Outcome} {stage.DeathCause})", shadow);
+            }
+        }
+        Report("Levels, seeded random input", sum.Text());
+        Assert.IsTrue(sum.Situations > 60000, $"only {sum.Situations} different situations were compared");
+        foreach (string kind in new[] { "landing on a platform", "riding a platform", "jump off a platform", "head bump", "skid", "rising after a launch", "jump cut", "boss fight", "wall stop" })
+            Assert.IsTrue(sum.Kind(kind) > 0, $"no step of the kind \"{kind}\" was compared:{Environment.NewLine}{sum.Text()}");
+        Assert.IsTrue(sum.Launches > 20, $"the stage threw Pip only {sum.Launches} times");
+        // Not identical: the tile physics world counts a surface within 0.01 px as touched and lets a box 0.001 px
+        // into one, where TileMotion stops a box exactly at a surface it would cross and nowhere else. The record
+        // (odd/tasks/demo-modern-1/meadow-run.md, "Second pass") has the numbers; Pip keeps his mover for that.
+        Assert.IsTrue(sum.Diverged * 10000L <= sum.Steps, $"more than one step in 10,000 diverged:{Environment.NewLine}{sum.Text()}");
+    }
+
+    /// <summary>
+    /// The game's own scripts, run as the game runs them (the title, the map, the level card, the play scene with its
+    /// input bindings and on-screen controls): every stage a play scene creates is shadowed from its first step.
+    /// </summary>
+    [TestMethod]
+    public void TheControllerShadowsPipInEveryScriptOfTheGame()
+    {
+        var sum = new Sum();
+        foreach (object[] scenario in StateTraceTests.Scenarios)
+        {
+            string script = (string)scenario[0], variables = (string)scenario[1];
+            var values = variables.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(pair => pair.Split('=', 2)).ToDictionary(pair => pair[0], pair => pair[1]);
+            var launch = LaunchOptions.From(new MicroEngine.Hosting.HostEnvironment(MicroEngine.Hosting.HostKind.Test) { Variables = name => values.GetValueOrDefault(name) });
+            var shadows = new List<(int Level, ControllerShadow Shadow)>();
+            var game = new MeadowGame(launch);
+            game.StageCreatedForTesting = stage => shadows.Add((stage.Level.Def.Number - 1, new ControllerShadow(stage, closedLoop: true)));
+            MicroEngine.Testing.StateTraceRuns.Run(game, MicroEngine.Testing.StateTraceRuns.Script("games/MeadowRun/scripts/" + script));
+            int steps = 0;
+            foreach (var (level, shadow) in shadows)
+            {
+                sum.Add(level, $"{script}, level {level + 1}", shadow);
+                steps += shadow.Steps;
+            }
+            TestContext.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{script}: {shadows.Count} stages, {steps} steps compared"));
+        }
+        Report("The game's scripts", sum.Text());
+        Assert.IsTrue(sum.Steps > 3500, $"only {sum.Steps} steps were compared");
+        sum.AssertFollowed();
     }
 
     /// <summary>A small stage and an input for each step, given the step's number and the stage as Pip's mover left it.</summary>
@@ -212,7 +352,7 @@ public sealed class ControllerDifferentialTests
         {
             var stage = StageHarness.Stage(rule.Rows);
             var shadow = new ControllerShadow(stage, closedLoop: false);
-            for (int i = 0; i < rule.Steps && stage.Phase == StagePhase.Playing; i++) shadow.Step(rule.Input(i, stage));
+            for (int i = 0; i < rule.Steps && stage.Phase == StagePhase.Playing; i++) StageHarness.Step(stage, rule.Input(i, stage));
             rules++;
             corners = (corners.Game + shadow.Corners.Game, corners.Controller + shadow.Corners.Controller);
             if (rule.Name.Contains("corner", StringComparison.Ordinal))

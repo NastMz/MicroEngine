@@ -48,6 +48,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             MusicSink = game.Music,
             StompSink = () => game.Achievements.AddProgress(MeadowAchievements.Stomper),
         };
+        game.StageCreatedForTesting?.Invoke(_stage);
         _view = new StageView(game.Art, Font, game.Lights);
         _view.Bind(_stage);
         _scoreAtStart = game.Session.Score;

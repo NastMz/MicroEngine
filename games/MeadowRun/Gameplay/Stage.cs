@@ -221,7 +221,7 @@ internal sealed partial class Stage : IStateHashed
         foreach (var p in _platforms) p.Update(dt);
         float previousBottom = Player.Bounds.Bottom;
         float fallSpeed = Player.Velocity.Y;
-        Player.Step(dt, input, Level, _platforms);
+        StepPip(dt, input);
         if (Player.Grounded) _stompChain = 0;
         HandlePlayerEvents(fallSpeed);
 
@@ -238,6 +238,15 @@ internal sealed partial class Stage : IStateHashed
         ResolveHazards();
         UpdateBossArena();
         if (TimeLeft <= 0 && Phase == StagePhase.Playing) Die("time");
+    }
+
+    /// <summary>Test hook: called with the step and the input just before Pip's mover runs.</summary>
+    internal Action<float, PlayerInput>? PipSteppingForTesting { get; set; }
+
+    private void StepPip(float dt, PlayerInput input)
+    {
+        PipSteppingForTesting?.Invoke(dt, input);
+        Player.Step(dt, input, Level, _platforms);
     }
 
     private void HandlePlayerEvents(float fallSpeed)
@@ -340,7 +349,7 @@ internal sealed partial class Stage : IStateHashed
     {
         Player.Controllable = true;
         var auto = _phaseTime > 0.35f ? new PlayerInput(false, true, false, false, false, false, false) : default;
-        Player.Step(dt, auto, Level, _platforms);
+        StepPip(dt, auto);
         if (_phaseTime > 1.9f)
         {
             Phase = StagePhase.Tally;
@@ -368,7 +377,7 @@ internal sealed partial class Stage : IStateHashed
 
     private void UpdateVictory(float dt)
     {
-        Player.Step(dt, default, Level, _platforms);
+        StepPip(dt, default);
         if (_phaseTime > 4.2f) { Phase = StagePhase.Done; Outcome = StageOutcome.Won; }
     }
 
