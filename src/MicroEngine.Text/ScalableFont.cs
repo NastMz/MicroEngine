@@ -214,6 +214,9 @@ public sealed class ScalableFont : IDisposable
     /// <inheritdoc cref="Measure(string, float)"/>
     public Vector2 Measure(ReadOnlySpan<char> text, float size) => At(size).Measure(text);
 
+    /// <summary>Size of an interpolated string (<c>$"{score}"</c>) at <paramref name="size"/>, measured without making a string.</summary>
+    public Vector2 Measure(InterpolatedText text, float size) => At(size).Measure(text);
+
     /// <summary>Distance between the tops of two lines at <paramref name="size"/>.</summary>
     public float LineHeight(float size) => At(size).LineHeight;
 

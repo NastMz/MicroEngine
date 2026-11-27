@@ -63,7 +63,17 @@ public sealed class BitmapFont : IFont, IDisposable
     public int Advance(char c) => (_glyphs.TryGetValue(c, out var g) ? g.Advance : _glyphs['?'].Advance) + Spacing;
 
     /// <summary>Width in pixels of the widest line (unscaled).</summary>
-    public int MeasureWidth(string text) => MeasureWidth(text.AsSpan());
+    public int MeasureWidth(string text) => MeasureWidth(Checked(text).AsSpan());
+
+    /// <summary>Width of an interpolated string (<c>$"{score}"</c>), measured without making a string.</summary>
+    public int MeasureWidth(InterpolatedText text)
+    {
+        try { return MeasureWidth(text.Text); }
+        finally { text.Dispose(); }
+    }
+
+    /// <summary>A string that is not null: a null text is a mistake of the caller, named as such.</summary>
+    private static string Checked(string text) => text ?? throw new ArgumentNullException(nameof(text));
 
     /// <inheritdoc cref="MeasureWidth(string)"/>
     public int MeasureWidth(ReadOnlySpan<char> text)
@@ -78,7 +88,7 @@ public sealed class BitmapFont : IFont, IDisposable
     }
 
     /// <summary>Size of <paramref name="text"/> in pixels at <paramref name="scale"/>: the widest line by the height of its lines (8 pixels for one line at scale 1).</summary>
-    public Vector2 Measure(string text, float scale = 1f) => Measure(text.AsSpan(), scale);
+    public Vector2 Measure(string text, float scale = 1f) => Measure(Checked(text).AsSpan(), scale);
 
     /// <inheritdoc cref="Measure(string, float)"/>
     public Vector2 Measure(ReadOnlySpan<char> text, float scale = 1f)
@@ -135,7 +145,7 @@ public sealed class BitmapFont : IFont, IDisposable
     /// <param name="scale">Size multiplier; whole numbers keep the pixels crisp.</param>
     /// <exception cref="InvalidOperationException">The font was created without a graphics device.</exception>
     public void Draw(IRenderer renderer, string text, Vector2 position, Color color, float scale = 1f)
-        => Draw(renderer, text.AsSpan(), position, color, scale);
+        => Draw(renderer, Checked(text).AsSpan(), position, color, scale);
 
     /// <summary>
     /// Draws an interpolated string (<c>$"{hp}/{max}"</c>) with its top-left at <paramref name="position"/>. The text is
@@ -164,7 +174,7 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws text with a 1px drop shadow, the most legible style over busy pixel art.</summary>
     public void DrawShadowed(IRenderer renderer, string text, Vector2 position, Color color, Color shadow, float scale = 1f)
-        => DrawShadowed(renderer, text.AsSpan(), position, color, shadow, scale);
+        => DrawShadowed(renderer, Checked(text).AsSpan(), position, color, shadow, scale);
 
     /// <summary>Draws an interpolated string (<c>$"{coins}"</c>) with a 1px drop shadow, without making a string.</summary>
     public void DrawShadowed(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color shadow, float scale = 1f)
@@ -182,7 +192,7 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws text with a full 1px outline (8 directions).</summary>
     public void DrawOutlined(IRenderer renderer, string text, Vector2 position, Color color, Color outline, float scale = 1f)
-        => DrawOutlined(renderer, text.AsSpan(), position, color, outline, scale);
+        => DrawOutlined(renderer, Checked(text).AsSpan(), position, color, outline, scale);
 
     /// <summary>Draws an interpolated string (<c>$"{score}"</c>) with a full 1px outline, without making a string.</summary>
     public void DrawOutlined(IRenderer renderer, InterpolatedText text, Vector2 position, Color color, Color outline, float scale = 1f)
@@ -202,7 +212,7 @@ public sealed class BitmapFont : IFont, IDisposable
 
     /// <summary>Draws <paramref name="text"/> centred on <paramref name="center"/>, rounded to whole pixels, with an optional 1px drop shadow.</summary>
     public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
-        => DrawCentered(renderer, text.AsSpan(), center, color, scale, shadow);
+        => DrawCentered(renderer, Checked(text).AsSpan(), center, color, scale, shadow);
 
     /// <summary>Draws an interpolated string (<c>$"{minutes}:{seconds:00}"</c>) centred on <paramref name="center"/>, without making a string.</summary>
     public void DrawCentered(IRenderer renderer, InterpolatedText text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
@@ -225,7 +235,7 @@ public sealed class BitmapFont : IFont, IDisposable
     /// the screen, whatever its number of digits.
     /// </summary>
     public void DrawRight(IRenderer renderer, string text, Vector2 topRight, Color color, float scale = 1f, Color? shadow = null)
-        => DrawRight(renderer, text.AsSpan(), topRight, color, scale, shadow);
+        => DrawRight(renderer, Checked(text).AsSpan(), topRight, color, scale, shadow);
 
     /// <summary>Draws an interpolated string (<c>$"{score}"</c>) so that it ends at <paramref name="topRight"/>, without making a string.</summary>
     public void DrawRight(IRenderer renderer, InterpolatedText text, Vector2 topRight, Color color, float scale = 1f, Color? shadow = null)
@@ -243,9 +253,9 @@ public sealed class BitmapFont : IFont, IDisposable
     }
 
     float IFont.LineHeight => LineHeight;
-    Vector2 IFont.Measure(string text) => Measure(text.AsSpan());
+    Vector2 IFont.Measure(string text) => Measure(Checked(text).AsSpan());
     Vector2 IFont.Measure(ReadOnlySpan<char> text) => Measure(text);
-    void IFont.Draw(IRenderer renderer, string text, Vector2 position, Color color) => Draw(renderer, text.AsSpan(), position, color);
+    void IFont.Draw(IRenderer renderer, string text, Vector2 position, Color color) => Draw(renderer, Checked(text).AsSpan(), position, color);
     void IFont.Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color) => Draw(renderer, text, position, color);
 
     /// <summary>Releases the font's texture. The engine disposes <c>Game.Font</c> itself.</summary>

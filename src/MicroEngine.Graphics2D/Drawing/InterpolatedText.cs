@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace MicroEngine.Graphics;
@@ -11,13 +10,22 @@ namespace MicroEngine.Graphics;
 /// <remarks>
 /// <para>
 /// The text is exactly what the interpolated string gives as a <see cref="string"/>: the same formats
-/// (<c>{time:0.0}</c>), alignment (<c>{score,6}</c>) and culture. Numbers, characters, strings and spans of characters
-/// are written without allocating; a value of another type that is not <see cref="ISpanFormattable"/> is written
-/// through its <c>ToString</c>, which allocates.
+/// (<c>{time:0.0}</c>), alignment (<c>{score,6}</c>) and culture. Written without allocating: whole numbers and
+/// numbers with a fraction of every built-in size (<c>decimal</c> included), <c>int?</c>, <c>long?</c>,
+/// <c>float?</c> and <c>double?</c>, characters, booleans, strings, spans of characters, enums written by name,
+/// <see cref="TimeSpan"/>, <see cref="DateTime"/> and <see cref="Guid"/>. What allocates: an enum the first time each
+/// of its values is shown (its name is kept afterwards) or written with a format (<c>{suit:D}</c>), a few bytes; any
+/// other value type (a struct of the game's own, a nullable of another type), boxed to be formatted; a value held as
+/// <see cref="object"/>; and a type that only has <c>ToString</c>, which is written through it.
 /// </para>
 /// <para>
 /// The compiler makes it: write the interpolated string where the parameter is, and do not keep the value. A method
-/// that receives one reads <see cref="Text"/> and then calls <see cref="Dispose"/> once.
+/// that receives one reads <see cref="Text"/> and then calls <see cref="Dispose"/> once. A text that was already used
+/// refuses to be read again (<see cref="ObjectDisposedException"/>).
+/// </para>
+/// <para>
+/// An interpolated string that holds an <c>await</c> or a <c>dynamic</c> value cannot be written into a buffer on the
+/// stack and does not compile here: put the value in a local first (<c>var n = await Count(); Draw(r, $"{n}", ...)</c>).
 /// </para>
 /// </remarks>
 /// <example>
@@ -30,23 +38,60 @@ namespace MicroEngine.Graphics;
 [InterpolatedStringHandler]
 public ref struct InterpolatedText
 {
+    // The buffers of the texts being written on this thread, one per level of nesting (a value of one text that draws
+    // another), each reused by the next text at its level. A text knows its level and the count of uses its level had
+    // when it took the buffer: a copy that was already used finds the count moved, so it can neither read what a later
+    // text wrote nor give the buffer back a second time.
+    private const int Levels = 4;
+    [ThreadStatic] private static char[]?[]? t_buffers;
+    [ThreadStatic] private static int[]? t_uses;
+    [ThreadStatic] private static int t_depth;
+
     private char[]? _chars;
     private int _length;
+    private readonly int _level;   // -1: a buffer of its own (texts nested deeper than the levels kept)
+    private readonly int _use;
 
     /// <summary>Called by the compiler: <paramref name="literalLength"/> characters of fixed text and <paramref name="formattedCount"/> values.</summary>
     public InterpolatedText(int literalLength, int formattedCount)
     {
-        _chars = ArrayPool<char>.Shared.Rent(Math.Max(64, literalLength + formattedCount * 12));
+        int needed = Math.Max(128, literalLength + formattedCount * 12);
+        var buffers = t_buffers ??= new char[]?[Levels];
+        var uses = t_uses ??= new int[Levels];
         _length = 0;
+        if (t_depth >= Levels)
+        {
+            _level = -1;
+            _use = 0;
+            _chars = new char[needed];
+            return;
+        }
+        _level = t_depth++;
+        _use = ++uses[_level];
+        var chars = buffers[_level];
+        if (chars is null || chars.Length < needed) buffers[_level] = chars = new char[needed];
+        _chars = chars;
     }
 
-    /// <summary>The text written so far. Valid until <see cref="Dispose"/>.</summary>
-    public readonly ReadOnlySpan<char> Text => _chars.AsSpan(0, _length);
+    /// <summary>Whether this text still owns its buffer: false once it, or a copy of it, was used.</summary>
+    private readonly bool Live => _chars is not null && (_level < 0 || t_uses![_level] == _use);
 
-    /// <summary>Gives the buffer back. Called once by the method that received the text; the text must not be read afterwards.</summary>
+    /// <summary>The text written so far. Valid until <see cref="Dispose"/>.</summary>
+    /// <exception cref="ObjectDisposedException">The text was already used.</exception>
+    public readonly ReadOnlySpan<char> Text => Chars.AsSpan(0, _length);
+
+    /// <summary>
+    /// Gives the buffer back. Called once by the method that received the text; the text must not be read afterwards.
+    /// Calling it again, on this value or on a copy, does nothing.
+    /// </summary>
     public void Dispose()
     {
-        if (_chars is { } chars) ArrayPool<char>.Shared.Return(chars);
+        if (Live && _level >= 0)
+        {
+            t_uses![_level]++;
+            // Texts deeper than this one that were never given back (a value that threw) are let go with it.
+            t_depth = _level;
+        }
         _chars = null;
         _length = 0;
     }
@@ -59,14 +104,33 @@ public ref struct InterpolatedText
 
     /// <summary>Called by the compiler for a string value; null writes nothing.</summary>
     public void AppendFormatted(string? value) => Append(value);
+    /// <summary>Called by the compiler for a string with a width (<c>{name,8}</c>).</summary>
+    public void AppendFormatted(string? value, int alignment, string? format = null)
+    {
+        int start = _length;
+        Append(value);
+        Pad(start, alignment);
+    }
+
     /// <summary>Called by the compiler for a span of characters.</summary>
     public void AppendFormatted(ReadOnlySpan<char> value) => Append(value);
+    /// <summary>Called by the compiler for a span of characters with a width (<c>{span,8}</c>) or a format, which a span ignores as a string does.</summary>
+    public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+    {
+        int start = _length;
+        Append(value);
+        Pad(start, alignment);
+    }
+
     /// <summary>Called by the compiler for a character.</summary>
     public void AppendFormatted(char value)
     {
         if (_length == Chars.Length) Grow(1);
         _chars![_length++] = value;
     }
+
+    /// <summary>Called by the compiler for true or false.</summary>
+    public void AppendFormatted(bool value) => Append(value ? bool.TrueString : bool.FalseString);
 
     /// <summary>Called by the compiler for a whole number.</summary>
     public void AppendFormatted(int value) => Number(value, null);
@@ -85,6 +149,23 @@ public ref struct InterpolatedText
     /// <inheritdoc cref="AppendFormatted(float, string?)"/>
     public void AppendFormatted(double value, string? format) => Number(value, format);
 
+    /// <summary>Called by the compiler for a whole number that may be null; null writes nothing.</summary>
+    public void AppendFormatted(int? value) { if (value is { } v) Number(v, null); }
+    /// <summary>Called by the compiler for a whole number that may be null, with a format; null writes nothing.</summary>
+    public void AppendFormatted(int? value, string? format) { if (value is { } v) Number(v, format); }
+    /// <inheritdoc cref="AppendFormatted(int?)"/>
+    public void AppendFormatted(long? value) { if (value is { } v) Number(v, null); }
+    /// <inheritdoc cref="AppendFormatted(int?, string?)"/>
+    public void AppendFormatted(long? value, string? format) { if (value is { } v) Number(v, format); }
+    /// <summary>Called by the compiler for a number with a fraction that may be null; null writes nothing.</summary>
+    public void AppendFormatted(float? value) { if (value is { } v) Number(v, null); }
+    /// <summary>Called by the compiler for a number with a fraction that may be null, with a format; null writes nothing.</summary>
+    public void AppendFormatted(float? value, string? format) { if (value is { } v) Number(v, format); }
+    /// <inheritdoc cref="AppendFormatted(float?)"/>
+    public void AppendFormatted(double? value) { if (value is { } v) Number(v, null); }
+    /// <inheritdoc cref="AppendFormatted(float?, string?)"/>
+    public void AppendFormatted(double? value, string? format) { if (value is { } v) Number(v, format); }
+
     /// <summary>Called by the compiler for a value of any other type.</summary>
     public void AppendFormatted<T>(T value) => AppendFormatted(value, format: null);
 
@@ -101,7 +182,19 @@ public ref struct InterpolatedText
         if (typeof(T) == typeof(short)) { Number(Unsafe.As<T, short>(ref value), format); return; }
         if (typeof(T) == typeof(ushort)) { Number(Unsafe.As<T, ushort>(ref value), format); return; }
         if (typeof(T) == typeof(byte)) { Number(Unsafe.As<T, byte>(ref value), format); return; }
+        if (typeof(T) == typeof(sbyte)) { Number(Unsafe.As<T, sbyte>(ref value), format); return; }
         if (typeof(T) == typeof(char) && format is null) { AppendFormatted(Unsafe.As<T, char>(ref value)); return; }
+        if (typeof(T) == typeof(bool)) { AppendFormatted(Unsafe.As<T, bool>(ref value)); return; }
+        if (typeof(T) == typeof(int?)) { AppendFormatted(Unsafe.As<T, int?>(ref value), format); return; }
+        if (typeof(T) == typeof(float?)) { AppendFormatted(Unsafe.As<T, float?>(ref value), format); return; }
+        if (typeof(T) == typeof(long?)) { AppendFormatted(Unsafe.As<T, long?>(ref value), format); return; }
+        if (typeof(T) == typeof(double?)) { AppendFormatted(Unsafe.As<T, double?>(ref value), format); return; }
+        if (typeof(T) == typeof(TimeSpan)) { Number(Unsafe.As<T, TimeSpan>(ref value), format); return; }
+        if (typeof(T) == typeof(DateTime)) { Number(Unsafe.As<T, DateTime>(ref value), format); return; }
+        if (typeof(T) == typeof(decimal)) { Number(Unsafe.As<T, decimal>(ref value), format); return; }
+        if (typeof(T) == typeof(Guid)) { Number(Unsafe.As<T, Guid>(ref value), format); return; }
+        // An enum by its name: the name of each value is found once and kept.
+        if (typeof(T).IsEnum && format is null) { Append(EnumNames<T>.Of(value)); return; }
         if (value is ISpanFormattable)
         {
             int written;
@@ -120,15 +213,27 @@ public ref struct InterpolatedText
         Pad(start, alignment);
     }
 
-    /// <summary>Called by the compiler for a string with a width.</summary>
-    public void AppendFormatted(string? value, int alignment, string? format = null)
+    /// <summary>The names of an enum's values as its <c>ToString</c> gives them, each found the first time it is shown.</summary>
+#pragma warning disable CS8714 // only enums come here, and an enum is never null
+    private static class EnumNames<T>
     {
-        int start = _length;
-        Append(value);
-        Pad(start, alignment);
-    }
+        private const int Kept = 256;
+        [ThreadStatic] private static Dictionary<T, string>? t_names;
 
-    private readonly char[] Chars => _chars ?? throw new ObjectDisposedException(nameof(InterpolatedText), "The text was already used: write the interpolated string where it is drawn.");
+        public static string Of(T value)
+        {
+            var names = t_names ??= [];
+            if (names.TryGetValue(value, out var name)) return name;
+            name = value!.ToString() ?? "";
+            // An enum used as a set of flags can show many combinations; past a few hundred they are not kept.
+            if (names.Count < Kept) names[value] = name;
+            return name;
+        }
+    }
+#pragma warning restore CS8714
+
+    private readonly char[] Chars => Live ? _chars!
+        : throw new ObjectDisposedException(nameof(InterpolatedText), "The text was already used: write the interpolated string where it is drawn, once.");
 
     private void Number<T>(T value, string? format) where T : ISpanFormattable
     {
@@ -163,9 +268,10 @@ public ref struct InterpolatedText
     private void Grow(int needed)
     {
         var old = Chars;
-        var larger = ArrayPool<char>.Shared.Rent(Math.Max(old.Length * 2, _length + needed));
+        var larger = new char[Math.Max(old.Length * 2, _length + needed)];
         old.AsSpan(0, _length).CopyTo(larger);
-        ArrayPool<char>.Shared.Return(old);
+        // The level keeps the larger buffer: the next text as long as this one does not grow.
+        if (_level >= 0) t_buffers![_level] = larger;
         _chars = larger;
     }
 }

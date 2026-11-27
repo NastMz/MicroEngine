@@ -126,7 +126,10 @@ public static class FontExtensions
     /// right edge of a panel, whatever its number of digits. Rounded to whole pixels.
     /// </summary>
     public static void DrawRight(this IFont font, IRenderer renderer, string text, Vector2 topRight, Color color)
-        => font.DrawRight(renderer, text.AsSpan(), topRight, color);
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        font.DrawRight(renderer, text.AsSpan(), topRight, color);
+    }
 
     /// <inheritdoc cref="DrawRight(IFont, IRenderer, string, Vector2, Color)"/>
     public static void DrawRight(this IFont font, IRenderer renderer, ReadOnlySpan<char> text, Vector2 topRight, Color color)

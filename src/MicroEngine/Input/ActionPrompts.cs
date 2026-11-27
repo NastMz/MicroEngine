@@ -64,7 +64,7 @@ public sealed class ActionPrompts
     private readonly InputMap _input;
     private readonly VirtualControls? _touch;
     private readonly Dictionary<(string Action, InputDevice? Device), string> _labels = [];
-    private (InputDevice Device, GamepadStyle Style) _seen;
+    private (InputDevice Device, GamepadStyle Style, int Bindings, object? Touch) _seen;
     private int _version;
 
     /// <summary>Prompts for the actions of <paramref name="input"/> and the controls of <paramref name="touch"/> (optional).</summary>
@@ -156,15 +156,20 @@ public sealed class ActionPrompts
     public GamepadStyle? PadStyleOverride { get; set; }
 
     /// <summary>
-    /// Changes whenever the text of prompts may have changed (another device, another pad family), so a game that
-    /// lays text out once (wrapping, measuring) knows when to do it again.
+    /// Changes whenever the text of prompts may have changed: another device, another pad family, an action bound or
+    /// unbound (<see cref="InputMap.BindingsVersion"/>, saved bindings included), another touch layout, a label, or
+    /// <see cref="Invalidate"/>. A game that lays text out once (wrapping, measuring) lays it out again when it moves.
     /// </summary>
     public int Version
     {
         get
         {
-            var now = (Device, PadStyle);
-            if (now != _seen) { _seen = now; _version++; }
+            var now = (Device, PadStyle, _input.BindingsVersion, (object?)_touch?.Layout);
+            if (now.Item1 != _seen.Device || now.Item2 != _seen.Style || now.Item3 != _seen.Bindings || !ReferenceEquals(now.Item4, _seen.Touch))
+            {
+                _seen = now;
+                _version++;
+            }
             return _version;
         }
     }
@@ -325,14 +330,16 @@ public sealed class ActionPrompts
 
     /// <summary>
     /// The text <see cref="Format"/> gives for <paramref name="template"/>, built once and kept until
-    /// <see cref="Version"/> moves (another device, another pad family, a label, <see cref="Invalidate"/>): a hint drawn
-    /// every frame costs a lookup and makes no garbage. <c>Cached("{jump}")</c> is the kept form of
-    /// <see cref="Text"/>.
+    /// <see cref="Version"/> moves (another device, another pad family, a rebinding, another touch layout, a label,
+    /// <see cref="Invalidate"/>): a hint drawn every frame costs a lookup and makes no garbage, and shows the new key
+    /// on the frame after the player rebinds it. <c>Cached("{jump}")</c> is the kept form of <see cref="Text"/>.
     /// </summary>
     /// <remarks>
-    /// Code that changes what an action is bound to while the game runs (a rebinding screen) calls
-    /// <see cref="Invalidate"/> afterwards, as for any text laid out once. At most 256 templates are kept; a game that
-    /// builds templates as it goes gets the oldest ones built again.
+    /// One thing does not move <see cref="Version"/>: the player switching keyboard layout while the game runs, which
+    /// changes what <see cref="KeyText"/> gives for a letter key. <see cref="Format"/> reads the layout on every call
+    /// and follows it at once; a kept text follows it at the next change of <see cref="Version"/> (call
+    /// <see cref="Invalidate"/> when the window regains the focus to be exact). At most 256 templates are kept; a game
+    /// that builds templates as it goes gets the oldest ones built again.
     /// </remarks>
     public string Cached(string template)
     {
