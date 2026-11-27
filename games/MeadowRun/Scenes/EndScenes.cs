@@ -130,7 +130,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
         if (scoreY < 190)
         {
             Ui.Centered(r, Font, "FINAL SCORE", 160, scoreY, Pal.Haze);
-            Ui.Centered(r, Font, Ui.N(game.Session.Score, 7), 160, scoreY + 12, Pal.Butter, 2);
+            Ui.Score(r, Font, game.Session.Score, 160, scoreY + 12, Pal.Butter, 2);
         }
     }
 }

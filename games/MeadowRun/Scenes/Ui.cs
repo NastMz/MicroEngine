@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Numerics;
 using MeadowRun.Art;
 using MeadowRun.Gameplay;
@@ -17,10 +16,20 @@ internal static class Ui
 
     public static readonly PanelStyle Card = new(Pal.Night.WithAlpha((byte)0xf0), Pal.Ink, Pal.Slate, Pal.Ink.WithAlpha(0.45f), Pal.Gold.WithAlpha(0.5f));
 
-    public static string N(int value, int digits = 0) => value.ToString(digits > 0 ? new string('0', digits) : "0", CultureInfo.InvariantCulture);
-
     public static void Text(IRenderer r, BitmapFont font, string text, Vector2 at, Color? color = null, float scale = 1)
         => font.DrawOutlined(r, text, Snap(at), color ?? Pal.Cream, Pal.Ink, scale);
+
+    /// <summary>Text that changes every frame, written where it is drawn (<c>$"×{lives:00}"</c>): no string is made.</summary>
+    public static void Text(IRenderer r, BitmapFont font, InterpolatedText text, Vector2 at, Color? color = null, float scale = 1)
+        => font.DrawOutlined(r, text, Snap(at), color ?? Pal.Cream, Pal.Ink, scale);
+
+    /// <summary>A score: seven digits centred on <paramref name="cx"/>.</summary>
+    public static void Score(IRenderer r, BitmapFont font, int score, float cx, float y, Color? color = null, float scale = 1)
+        => Text(r, font, $"{score:0000000}", new Vector2(cx - font.Measure($"{score:0000000}", scale).X / 2, y), color, scale);
+
+    /// <summary>A number that ends at <paramref name="right"/>.</summary>
+    public static void Right(IRenderer r, BitmapFont font, int value, float right, float y, Color? color = null)
+        => Text(r, font, $"{value}", new Vector2(right - font.MeasureWidth($"{value}"), y), color);
 
     public static void Centered(IRenderer r, BitmapFont font, string text, float cx, float y, Color? color = null, float scale = 1)
     {
@@ -50,46 +59,20 @@ internal static class Ui
     }
 
     /// <summary>The in-level HUD: lives, coins, score, power and timer along the top edge.</summary>
-    public static void Hud(IRenderer r, BitmapFont font, Assets art, Session session, Stage stage, float time, HudLabels labels)
+    public static void Hud(IRenderer r, BitmapFont font, Assets art, Session session, Stage stage, float time)
     {
         r.FillGradient(new RectF(0, 0, 320, 16), Pal.Ink.WithAlpha(0.55f), Pal.Ink.WithAlpha(0f), 4);
         r.Draw(art["icon_life"], new Vector2(5, 3));
-        Text(r, font, labels.Lives.For(session.Lives), new Vector2(18, 4));
+        Text(r, font, $"×{session.Lives:00}", new Vector2(18, 4));
         r.Draw(art["icon_coin"], new Vector2(46, 4));
-        Text(r, font, labels.Coins.For(session.Coins), new Vector2(56, 4), Pal.Butter);
-        Centered(r, font, labels.Score.For(session.Score), 160, 4);
+        Text(r, font, $"×{session.Coins:00}", new Vector2(56, 4), Pal.Butter);
+        Score(r, font, session.Score, 160, 4);
         // Power state: a small form badge, drawn at its own size so it keeps the pixel grid.
         r.Draw(art.FormIcon(stage.Player.Form), new Vector2(249, 2));
         int t = (int)MathF.Ceiling(stage.TimeLeft);
         bool hurry = t <= 100 && stage.Phase == StagePhase.Playing;
         r.Draw(art["icon_clock"], new Vector2(266, 3));
         var color = hurry && (int)(time * 4) % 2 == 0 ? Pal.Coral : Pal.Cream;
-        Text(r, font, labels.Time.For(t), new Vector2(278, 4), color);
+        Text(r, font, $"{t:000}", new Vector2(278, 4), color);
     }
-}
-
-/// <summary>A number drawn as text every frame, formatted again only when it changes.</summary>
-internal sealed class NumberLabel(string prefix = "", int digits = 0)
-{
-    private int _value;
-    private string? _text;
-
-    public string For(int value)
-    {
-        if (_text is null || value != _value)
-        {
-            _value = value;
-            _text = prefix + Ui.N(value, digits);
-        }
-        return _text;
-    }
-}
-
-/// <summary>The HUD's numbers, kept by the scene that draws it.</summary>
-internal sealed class HudLabels
-{
-    public NumberLabel Lives { get; } = new("×", 2);
-    public NumberLabel Coins { get; } = new("×", 2);
-    public NumberLabel Score { get; } = new(digits: 7);
-    public NumberLabel Time { get; } = new(digits: 3);
 }
