@@ -148,11 +148,10 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
 
         var pip = Objects.DrawPosition2D(_pip);
         bool walking = _walk < 1;
-        var run = game.Art.Pip(game.Session.Form, "run");
         float hop = walking ? MathF.Abs(MathF.Sin(_walk * MathF.PI * 4)) * 3 : 0;
         bool flip = walking && Nodes[_target].X < Nodes[_node].X;
         r.FillRect(new RectF(MathF.Round(pip.X) - 5, MathF.Round(pip.Y) + 1, 10, 2), Pal.Ink.WithAlpha(0.4f));
-        r.Draw(walking ? run[(int)(Age * 10) % run.Count] : game.Art.PipClip(game.Session.Form, "idle").FrameAt(Age), new Vector2(MathF.Round(pip.X), MathF.Round(pip.Y - hop + 2)), null, flip);
+        r.Draw(game.Art.PipClip(game.Session.Form, walking ? "run" : "idle").FrameAt(Age), new Vector2(MathF.Round(pip.X), MathF.Round(pip.Y - hop + 2)), null, flip);
 
         DrawHeader(r);
         DrawInfo(r);

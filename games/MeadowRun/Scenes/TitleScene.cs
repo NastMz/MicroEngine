@@ -131,11 +131,11 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         // Pip trots along the meadow while the world scrolls.
         var run = game.Art.Pip(PipForm.Sprout, "run");
         r.Draw(run[(int)(t * 11) % run.Count], new Vector2(64, 164 + MathF.Round(MathF.Abs(MathX.Wave(t, 2.75f, 1.2f)) * -1)));
-        var coin = game.Art.Frames("coin");
+        var coin = game.Art.Clip("coin");
         for (int i = 0; i < 4; i++)
         {
             float cx = 330 - ((t * 30 + i * 90) % 380);
-            r.Draw(coin[(int)(t * 8 + i) % coin.Count], new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(t + i, 1, 3))));
+            r.Draw(coin.FrameAt(t, i), new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(t + i, 1, 3))));
         }
 
         if (_controls) { DrawControls(r); return; }
