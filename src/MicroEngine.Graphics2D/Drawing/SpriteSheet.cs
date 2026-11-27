@@ -475,8 +475,13 @@ public sealed class SpriteSheet
         private static string? Text(JsonElement element, string name) =>
             element.TryGetProperty(name, out var v) ? v.ValueKind == JsonValueKind.String ? v.GetString() : throw new InvalidDataException($"\"{name}\" is text.") : null;
 
-        private static float Number(JsonElement value, string where, string key) =>
-            value.ValueKind == JsonValueKind.Number ? value.GetSingle() : throw new InvalidDataException($"\"{key}\" of {where} holds something that is not a number.");
+        private static float Number(JsonElement value, string where, string key)
+        {
+            if (value.ValueKind != JsonValueKind.Number) throw new InvalidDataException($"\"{key}\" of {where} holds something that is not a number.");
+            float number = value.GetSingle();
+            // A number too large for the engine's numbers reads as infinity: a slip of the hand, never a value.
+            return float.IsFinite(number) ? number : throw new InvalidDataException($"\"{key}\" of {where} holds {value.GetRawText()}, a number too large to be meant.");
+        }
 
         private static int Whole(JsonElement value, string where, string key) =>
             value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int n) ? n : throw new InvalidDataException($"\"{key}\" of {where} is a whole number.");

@@ -408,13 +408,51 @@ public abstract class Game : IEngineModule, IStateHashed
     internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null, IStorage? saves = null, bool unattended = false)
     {
         _platform = platform;
-        var builder = new EngineBuilder();
         // A preset the composition states (the headless platform's: deterministic) comes first; the game's Configure and the
         // run's choice win over it.
         platform.TryGetCapability<RunPreset>(out var preset);
         // Nobody plays a run with a script or an end of its own (the loop says so), in deterministic time (as the run or
-        // the platform's preset says, before the game's own Configure) or without a window: it keeps its saves to itself.
-        AttachRun(saves, unattended || preset is { Unattended: true } || (mode ?? preset?.TimeMode) == TimeMode.Deterministic);
+        // the platform's preset says, before the game's own Configure) or without a window: it keeps its saves to itself,
+        // and writes numbers the same on every machine.
+        _unattended = unattended || preset is { Unattended: true } || (mode ?? preset?.TimeMode) == TimeMode.Deterministic;
+        EnterRunCulture();
+        try { Compose(platform, preset, seed, graphics, mode, host, saves); }
+        catch
+        {
+            ExitRunCulture();
+            throw;
+        }
+    }
+
+    private bool _unattended;
+    private System.Globalization.CultureInfo? _playerCulture;
+
+    /// <summary>
+    /// In a run nobody plays, makes the invariant culture the formatting culture of the game's thread, so numbers and
+    /// dates the game formats (<c>$"{seconds:0.0}"</c>) are the same text on every machine; a run somebody plays keeps
+    /// the player's culture. Entered once, before the game loads, and left when the game shuts down
+    /// (<see cref="ExitRunCulture"/>): changing a thread's culture allocates, so it is not done every frame. The
+    /// interface culture is left alone: where a platform names no language, the game's localization reads it.
+    /// </summary>
+    internal void EnterRunCulture()
+    {
+        if (!_unattended || _playerCulture is not null) return;
+        _playerCulture = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+    }
+
+    /// <summary>Gives the thread the culture it had before <see cref="EnterRunCulture"/>; does nothing when it was not entered.</summary>
+    internal void ExitRunCulture()
+    {
+        if (_playerCulture is not { } culture) return;
+        System.Globalization.CultureInfo.CurrentCulture = culture;
+        _playerCulture = null;
+    }
+
+    private void Compose(IPlatform platform, RunPreset? preset, int seed, GraphicsSettings graphics, TimeMode? mode, Action<EngineBuilder>? host, IStorage? saves)
+    {
+        var builder = new EngineBuilder();
+        AttachRun(saves, _unattended);
         builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate, Mode = preset?.TimeMode ?? time.Mode });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
@@ -768,15 +806,20 @@ public abstract class Game : IEngineModule, IStateHashed
 
     internal void Shutdown()
     {
-        Scenes.Clear();
-        _engine?.Lifecycle.RaiseStopping();
-        _achievements?.Flush();
-        Unload();
-        PostProcess.Dispose();
-        ScreenPostProcess.Dispose();
-        if (TryGetCapability(out IScreenEffects? stage)) stage.ScreenEffects = null;
-        Assets.Dispose();
-        Font.Dispose();
+        try
+        {
+            Scenes.Clear();
+            _engine?.Lifecycle.RaiseStopping();
+            _achievements?.Flush();
+            Unload();
+            PostProcess.Dispose();
+            ScreenPostProcess.Dispose();
+            if (TryGetCapability(out IScreenEffects? stage)) stage.ScreenEffects = null;
+            Assets.Dispose();
+            Font.Dispose();
+        }
+        // The run is over: the thread has the culture it had before the game loaded.
+        finally { ExitRunCulture(); }
     }
 
     /// <summary>
@@ -846,6 +889,11 @@ public abstract class Game : IEngineModule, IStateHashed
     /// writes the player's saves. A test that starts the game twice over the same saves hands both the same
     /// <see cref="MemorySaveStorage"/>, or a <see cref="FileSaveStorage"/> on a temporary folder.
     /// </summary>
+    /// <remarks>
+    /// On a platform nobody plays on, the calling thread formats with the invariant culture from this call on, so the
+    /// game's numbers read the same on every machine (a test that needs another culture sets it after this call, or
+    /// passes it where it formats).
+    /// </remarks>
     /// <exception cref="InvalidOperationException">The game already used <see cref="Saves"/> on the platform's default medium, which this run does not keep its saves in.</exception>
     public void InitializeForTest(IPlatform platform, int seed = 1, IStorage? saves = null) => Initialize(platform, seed, Settings.Graphics, saves: saves);
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>

@@ -78,6 +78,31 @@ public static class ContentTool
     private static string Join(string folder, string file) => folder.Length == 0 ? file : folder + "/" + file;
 
     /// <summary>What a description file (a sheet, an Aseprite file, a tool's atlas) holds, or null when the file is not one.</summary>
+    /// <summary>
+    /// The points and boxes of a sheet that lie far from their frame: farther outside it than the frame is large. A
+    /// muzzle ahead of the sprite or a box that reaches out of it is normal; a point four hundred pixels from a
+    /// sixteen-pixel frame is a typing mistake (a coordinate of the whole image, a digit too many).
+    /// </summary>
+    private static IEnumerable<string> StrayMarks(SpriteSheet sheet)
+    {
+        foreach (var frame in sheet.Frames)
+        {
+            float w = frame.Image.Width, h = frame.Image.Height, reach = Math.Max(w, h);
+            foreach (var point in frame.Points)
+            {
+                var p = point.Position;
+                if (p.X < -reach || p.Y < -reach || p.X > w + reach || p.Y > h + reach)
+                    yield return $"the point \"{point.Name}\" of frame '{frame.Name}' is at ({p.X}, {p.Y}), far outside the {w}x{h} frame. Points count pixels from the frame's own top-left corner; check the numbers.";
+            }
+            foreach (var box in frame.Boxes)
+            {
+                var b = box.Bounds;
+                if (b.Right < -reach || b.Bottom < -reach || b.X > w + reach || b.Y > h + reach)
+                    yield return $"the box \"{box.Name}\" of frame '{frame.Name}' is at ({b.X}, {b.Y}, {b.Width}, {b.Height}), far outside the {w}x{h} frame. Boxes count pixels from the frame's own top-left corner; check the numbers.";
+            }
+        }
+    }
+
     private static SpriteSheet? Describe(string contentDir, string path, HashSet<string> files, out string? image)
     {
         image = null;
@@ -190,7 +215,11 @@ public static class ContentTool
                 }
                 else
                 {
-                    try { Describe(contentDir, path, set, out _); }
+                    try
+                    {
+                        if (Describe(contentDir, path, set, out _) is { } sheet)
+                            foreach (string stray in StrayMarks(sheet)) Warn(stray);
+                    }
                     catch (Exception e) when (e is InvalidDataException or FileNotFoundException or NotSupportedException)
                     {
                         Error($"{e.Message} {(ext is ".aseprite" or ".ase" ? "Save it again from Aseprite." : "Fix the description or the image it names.")}");

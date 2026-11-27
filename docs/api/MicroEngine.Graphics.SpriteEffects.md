@@ -194,7 +194,7 @@ Where the frames' anchor goes, in the coordinates the effects are drawn in.
 
 `delay` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-Seconds before it shows; a negative value or one that is not a number is none.
+Seconds before it shows; a negative value, an infinite one or one that is not a number is none.
 
 `flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -249,7 +249,8 @@ False when the effect had already ended.
 ### <a id="MicroEngine_Graphics_SpriteEffects_Update_System_Single_"></a> Update\(float\)
 
 Advances the effects by <code class="paramref">dt</code> seconds: a waiting effect counts its delay down, a playing one
-its time up, and those that reached the end of their clip are removed.
+its time up, and those that reached the end of their clip are removed. A step that is not a time (negative,
+infinite, not a number) is ignored: time does not run backwards and every effect ends.
 
 ```csharp
 public void Update(float dt)

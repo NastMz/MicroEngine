@@ -85,9 +85,21 @@ and on `IFont`:
 | A `ReadOnlySpan<char>` (a buffer of the game's own, a slice of a string) | nothing |
 
 The text is exactly what the interpolated string gives as a `string`: the same formats (`{seconds:00}`), widths
-(`{score,6}`) and number culture. Numbers, characters, strings and spans cost nothing; a value of a type of the game's
-own that only has `ToString` is written through it, which allocates. Keep the interpolated string inside the call:
-`var text = $"..."` makes a string as it always did.
+(`{score,6}`) and number culture.
+
+| A value in the text | Costs |
+| --- | --- |
+| Whole numbers and numbers with a fraction of every built-in size, `decimal`; `int?`, `long?`, `float?`, `double?` | nothing |
+| Characters, `bool`, strings, spans of characters | nothing |
+| An enum (`{suit}`) | nothing once each of its values was shown; its name is found the first time |
+| `TimeSpan`, `DateTime`, `Guid` | nothing |
+| An enum with a format (`{suit:D}`), another struct (one of the game's own, a nullable of another type) | a small box per value |
+| A value held as `object`, a type that only has `ToString` | what its `ToString` allocates |
+
+Keep the interpolated string inside the call: `var text = $"..."` makes a string as it always did. A text is used
+once: one kept in a variable of type `InterpolatedText` and drawn twice is refused the second time. An interpolated
+string that holds an `await` or a `dynamic` value does not compile where a font takes it; put the value in a local
+first (`int n = await Count(); Font.Draw(r, $"{n}", ...)`).
 
 A sprite named with numbers is found the same way: `atlas[$"water{mask}_{frame}"]` looks the name up without building
 it (`atlas.TryGet(name, out sprite)` for a name that may be missing).
@@ -108,7 +120,8 @@ the number as two texts (`Font.Draw(r, Text["hud.score"], ...)` and `Font.DrawRi
 nothing.
 
 A prompt ("Z: jump") is kept by the engine: `Game.Prompts.Cached("{jump}: JUMP")` returns the same string until the
-player changes device or the prompts change ([Input](input.md#showing-controls-to-the-player)).
+player changes device or rebinds the action, and the new one on the next frame
+([Input](input.md#showing-controls-to-the-player)).
 
 ## Measuring and wrapping
 
@@ -271,8 +284,11 @@ small font (SDL's 8x8 debug font, raylib's default font).
 
 - The built-in font has one typeface; other typefaces come from [TTF/OTF files](#scalable-fonts-ttf-and-otf) (next
   SDK version). Bitmap font files (AngelCode BMFont) are not read.
-- An interpolated string is formatted with the thread's culture, like any interpolated string: a game that shows
-  decimals the same way everywhere sets the culture once at start-up.
+- An interpolated string is formatted with the thread's culture, like any interpolated string: a player whose system
+  writes a decimal comma sees `3,5`. A run nobody plays (a script, a capture, a test) uses the invariant culture, so
+  it shows `3.5` on every machine ([Persistence](persistence.md#scripted-runs-and-tests)). A game that shows decimals
+  one way to every player names the culture where it formats (`value.ToString("0.0", CultureInfo.InvariantCulture)`)
+  or sets it once at start-up.
 - No rich text (colour or style changes inside a string) and no colour emoji. Right-to-left and complex scripts need
   the optional shaping package ([Shaped text](#shaped-text-arabic-hebrew-and-indic-scripts)). Its bidirectional layout
   ignores explicit direction marks (the embedding, override and isolate controls) and does not pair brackets across

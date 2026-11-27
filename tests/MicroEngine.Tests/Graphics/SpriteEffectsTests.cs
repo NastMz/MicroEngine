@@ -220,6 +220,43 @@ public sealed class SpriteEffectsTests
     }
 
     [TestMethod]
+    public void A_step_or_a_delay_that_is_not_a_time_changes_nothing()
+    {
+        using var atlas = Atlas();
+        var effects = new SpriteEffects();
+        var r = new Recording();
+        var puff = effects.Play(atlas.Clip("puff"), new Vector2(10, 10));     // 0.4 s
+        effects.Update(0.125f);
+        foreach (float step in new[] { -1f, float.NaN, float.NegativeInfinity, float.PositiveInfinity })
+        {
+            effects.Update(step);
+            r.Draws.Clear();
+            effects.Draw(r);
+            Assert.AreEqual(atlas["puff1"].Source, r.Draws.Single().Source, $"a step of {step} is no step: the effect is where it was");
+        }
+        effects.Update(0.125f);
+        r.Draws.Clear();
+        effects.Draw(r);
+        Assert.AreEqual(atlas["puff2"].Source, r.Draws.Single().Source);
+        effects.Update(0.25f);
+        Assert.IsFalse(effects.IsPlaying(puff), "it ends when its time comes");
+
+        // A delay that never ends would keep a rule waiting on Busy for ever: it is no delay.
+        foreach (float delay in new[] { float.PositiveInfinity, float.NaN, -3f, float.NegativeInfinity })
+        {
+            effects.Play(atlas.Clip("puff"), default, delay: delay);
+            effects.Update(0.0625f);
+            r.Draws.Clear();
+            effects.Draw(r);
+            Assert.AreEqual(1, r.Draws.Count, $"a delay of {delay} shows the effect at once");
+            for (int i = 0; i < 8; i++) effects.Update(0.0625f);
+            Assert.IsFalse(effects.Busy, $"a delay of {delay}: the effect ends");
+        }
+        effects.Play(atlas.Clip("puff"), new Vector2(float.NaN, 0), depth: float.PositiveInfinity);
+        effects.Draw(new SortedRenderer().Begin(r));
+    }
+
+    [TestMethod]
     public void A_clip_with_a_duration_per_frame_plays_each_frame_for_its_time_and_a_looping_clip_plays_one_pass()
     {
         using var atlas = Atlas();

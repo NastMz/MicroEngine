@@ -91,10 +91,15 @@ public sealed class AnimationClip
     /// <param name="time">Seconds since the clip started.</param>
     /// <param name="frameOffset">
     /// How many frames ahead this instance is: 1 shows the second frame at time 0, 0.5 is half a frame ahead, a negative
-    /// value is behind. At a fixed rate the index is <c>(int)(time * FramesPerSecond + frameOffset)</c>, wrapped by a
-    /// looping clip and held at the ends by one that plays once; with a duration per frame, the offset counts frames of
-    /// their own lengths. A value that is not a number is 0.
+    /// value is behind. At a fixed rate the index is <c>time * FramesPerSecond + frameOffset</c> rounded down (for a
+    /// time and an offset of 0 or more, <c>(int)(time * FramesPerSecond + frameOffset)</c>), wrapped by a looping clip
+    /// and held at the ends by one that plays once; with a duration per frame, the offset counts frames of their own
+    /// lengths. A value that is not a number is 0.
     /// </param>
+    /// <remarks>
+    /// A time before the start counts backwards the same way an offset does: half a frame before 0, a looping clip shows
+    /// its last frame, and a clip that plays once its first.
+    /// </remarks>
     public int FrameIndexAt(float time, float frameOffset = 0)
     {
         if (float.IsNaN(frameOffset)) frameOffset = 0;
@@ -109,7 +114,8 @@ public sealed class AnimationClip
             int at = found >= 0 ? found + 1 : ~found;
             return Math.Min(at, count - 1);
         }
-        // Without an offset this is (int)(time * rate), as it always was: adding 0 changes no bit.
+        // Rounded down, so time and offset are one scale across 0. From 0 on that is (int)(time * rate + offset), and
+        // without an offset (int)(time * rate), as it always was: adding 0 changes no bit.
         float position = time * FramesPerSecond + frameOffset;
         if (!(position > int.MinValue) || position >= int.MaxValue) position = position > 0 ? int.MaxValue - 256 : 0;
         int index = (int)MathF.Floor(position);

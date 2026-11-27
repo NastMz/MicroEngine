@@ -106,3 +106,28 @@ names them).
 `NumberTexts`, `CachedText`, `CachedPrompt`, `NumberText`, `NumberLabel` (interpolated draws and `Prompts.Cached`),
 `SpriteKeys` (`atlas[$"..."]`), `SpriteFx` (`Scene.Effects` with `SnapToPixels`), the three frame expressions,
 `Assets.AddRig`'s scan (points in `sprites.sheet`), `Ui.Scanlines` (`Scanlines { Phase = 0.5f }`).
+
+## Corrections after an independent verification (2026-11-27)
+
+The verification confirmed the text against main over nine cultures, the demos' 263 captures and 36 traces byte for
+byte, the effects, the clips, the sheet data and the content tool, and found one blocker and several defects, all
+fixed in one batch:
+
+- Call shapes that compiled on main did not: a span with a width or a format in an interpolation (fixed: an exact
+  overload); an `await` or a `dynamic` value in one (cannot be bound by a handler that is a ref struct: in the
+  migration notes). A file of every call shape now guards them.
+- `bitmapFont.MeasureWidth($"...")` and `family.Measure($"...", size)` bound to the `string` method of the type and
+  allocated: every text method of every font type now has the three forms, and a table test calls each with each.
+- An enum and a nullable number were boxed per value: enums are written from names found once, `int?`, `long?`,
+  `float?` and `double?` directly; so are `decimal`, `TimeSpan`, `DateTime` and `Guid`. Another struct is still boxed,
+  and the manual says so.
+- `SpriteEffects`: a step or a delay that is not a time hung `Busy` or threw; they are ignored.
+- `FrameIndexAt` rounds down across 0 (the comment said truncation): kept, stated, in the migration notes.
+- `content check` let a point at `1e40` or four hundred pixels from its frame pass: an error and a warning.
+- `ActionPrompts.Version` now follows `InputMap.BindingsVersion`, so the limit recorded in section 1 is gone for
+  rebinding; the keyboard layout remains.
+- A kept `InterpolatedText` drawn twice returned its buffer to the shared pool twice: the buffers are the handler's
+  own now and a second use is refused.
+- A run nobody plays formats with the invariant culture: set once per run on the game's thread (a set per frame
+  allocated 480 bytes in sixty frames and failed the loop's allocation test), the interface culture left alone (the
+  localization's fallback reads it, and its test failed when it was changed).

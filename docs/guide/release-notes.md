@@ -26,6 +26,12 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   slices of an Aseprite file and of Aseprite's exported JSON become boxes and points, and `Sprite.Point` and
   `Sprite.Box` give them from the anchor, mirrored with the sprite. Sheets written before read the same. See
   [Points and boxes on frames](../manual/assets.md#points-and-boxes-on-frames).
+- **Prompts follow rebinding.** `InputMap.BindingsVersion` moves when an action is bound or unbound or saved bindings
+  are loaded, and `Game.Prompts.Version` moves with it and with the touch layout: text laid out once on `Version`, and
+  `Prompts.Cached`, show a rebound key by themselves.
+- **A run nobody plays writes numbers the same on every machine.** A scripted run, a capture, a headless run and a
+  stepped game format with the invariant culture (`3.5`, never `3,5`), whatever the machine's settings; a run somebody
+  plays keeps the player's culture. See [Scripted runs and tests](../manual/persistence.md#scripted-runs-and-tests).
 - **`Scanlines.Phase`** says which row of each line is dark: 0.5 darkens the first.
 - **`microengine content names`** lists the strips a `.sheet` file declares: a strip whose name ends in a digit is
   listed, and sprites that merely end in consecutive numbers are not. Run the command again to refresh the generated

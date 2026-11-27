@@ -362,6 +362,24 @@ public Vector2 Measure(ReadOnlySpan<char> text, float size)
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
+### <a id="MicroEngine_Graphics_ScalableFont_Measure_MicroEngine_Graphics_InterpolatedText_System_Single_"></a> Measure\(InterpolatedText, float\)
+
+Size of an interpolated string (<code>$"{score}"</code>) at <code class="paramref">size</code>, measured without making a string.
+
+```csharp
+public Vector2 Measure(InterpolatedText text, float size)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`size` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ### <a id="MicroEngine_Graphics_ScalableFont_Prepare_System_String_System_Single___"></a> Prepare\(string, params float\[\]\)
 
 Rasterizes <code class="paramref">characters</code> at each of <code class="paramref">sizes</code> now, so drawing them later costs no

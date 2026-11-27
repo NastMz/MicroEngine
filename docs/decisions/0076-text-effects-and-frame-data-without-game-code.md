@@ -26,9 +26,20 @@ and `ParticleSystem` has no clips. A `.sheet` frame had an anchor and nothing el
   (formats, alignment, the thread's culture), so code that already wrote interpolated strings stops allocating when
   it is compiled again and draws the same pixels. `DrawRight` is added because right alignment needed the text twice.
 - **Names.** `SpriteAtlas` has an indexer by span and by `InterpolatedText`, and `TryGet`.
-- **Prompts.** `ActionPrompts.Cached(template)` keeps the text of `Format` until `Version` moves. `Format` itself is
-  not cached: `Version` does not move when an action is rebound by code (the input map has no change signal), and
-  `Format` is fresh today.
+- **Prompts.** `ActionPrompts.Cached(template)` keeps the text of `Format` until `Version` moves. `InputMap` has a
+  `BindingsVersion` that every change of a binding moves (saved bindings included), and `Version` includes it and the
+  touch layout, so a kept hint follows a rebinding by itself. `Format` and `PromptText` are not cached: they read the
+  keyboard layout's labels on every call, and a layout the player switches while the game runs has no signal.
+- **The buffer of an interpolated text** is one per thread and per level of nesting, kept by the handler, not rented
+  from a shared pool: a text knows the use count of its level, so a copy used twice is refused
+  (`ObjectDisposedException`) and cannot return a buffer twice.
+- **A run nobody plays formats with the invariant culture** (amends [ADR 0073](0073-saves-of-a-run-nobody-plays.md):
+  the culture joins the saves among what such a run does not take from the machine). The handler keeps the thread's
+  culture, as strings do; an unattended run sets `CultureInfo.CurrentCulture` to the invariant culture once, before
+  the game loads, and gives the thread its own back when the game shuts down (the host does it again however the run
+  ended). Once per run, not per frame: setting a thread's culture allocates, and the loop's frames allocate nothing.
+  `CurrentUICulture` is not touched: where a platform names no language, the localization reads it, and a test holds
+  that. A played run keeps the player's culture.
 - **Text that cannot be interpolated in place.** `CachedText<TKey>` rebuilds a text when its key changes. A localized
   message with a number costs one `Localizer.Format` per change of the number or the language.
 - **One-shot effects.** `SpriteEffects` (2D graphics assembly) plays clips once: position, delay, flip, tint, a rate,
@@ -79,5 +90,10 @@ and `ParticleSystem` has no clips. A `.sheet` frame had an anchor and nothing el
   members.
 - A scene that reads `Effects` gains a system: its type name and its effects enter the scene's state hash.
 - `content names` output changes for sheets (declared strips); generated files are refreshed once.
-- Not done: rotation and scale of an effect; a binding-change signal on the input map (then `Cached` and `Version`
-  follow rebinding by themselves, and `Format` and `PromptText` can be cached); frame data of other kinds.
+- An interpolated string holding an `await` or a `dynamic` value does not compile against the handler; the migration
+  notes give the fix. `tests/MicroEngine.Tests/Text/TextCallShapeTests.cs` holds every call shape games use, so a
+  change to the overloads that breaks one fails the build.
+- A game stepped by a test (`InitializeForTest` on the headless platform) has no end, so the test's thread keeps the
+  invariant formatting culture after it.
+- Not done: rotation and scale of an effect; a signal for a keyboard layout switched while the game runs (then
+  `Format` and `PromptText` can be cached too); frame data of other kinds.

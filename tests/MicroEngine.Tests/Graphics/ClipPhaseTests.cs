@@ -107,6 +107,25 @@ public sealed class ClipPhaseTests
     }
 
     [TestMethod]
+    public void A_time_before_the_start_counts_frames_backwards_like_an_offset()
+    {
+        // The frame position is rounded down, so time and offset are one scale: half a frame before the start of a
+        // looping clip is its last frame, whether the half frame is a time or an offset.
+        using var atlas = Atlas(b => b.AddFrames("walk", Images(4), 8).AddFrames("pop", Images(4), 8, loop: false));
+        var walk = atlas.Clip("walk");
+        Assert.AreEqual(3, walk.FrameIndexAt(-0.0625f), "half a frame before 0");
+        Assert.AreEqual(3, walk.FrameIndexAt(0, -0.5f));
+        Assert.AreEqual(3, walk.FrameIndexAt(-0.125f), "exactly one frame before");
+        Assert.AreEqual(2, walk.FrameIndexAt(-0.1875f));
+        Assert.AreEqual(0, walk.FrameIndexAt(-0.5f), "a whole pass before");
+        Assert.AreSame(walk.Frames[3], walk.FrameAt(-0.0625f));
+        Assert.AreEqual(0, atlas.Clip("pop").FrameIndexAt(-0.0625f), "a clip that plays once holds its first frame");
+        Assert.AreEqual(0, walk.FrameIndexAt(float.NaN), "a time that is not a number is the start");
+        Assert.AreEqual(0, walk.FrameIndexAt(float.NegativeInfinity));
+        Assert.AreEqual(0, atlas.Clip("pop").FrameIndexAt(float.NaN));
+    }
+
+    [TestMethod]
     public void An_offset_counts_frames_in_a_clip_with_a_duration_per_frame()
     {
         var frames = Images(3).Select(i => new Sprite(null!, new RectF(0, 0, i.Width, 4), default)).ToArray();

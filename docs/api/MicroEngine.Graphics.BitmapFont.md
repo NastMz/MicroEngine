@@ -539,6 +539,22 @@ public int MeasureWidth(string text)
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Graphics_BitmapFont_MeasureWidth_MicroEngine_Graphics_InterpolatedText_"></a> MeasureWidth\(InterpolatedText\)
+
+Width of an interpolated string (<code>$"{score}"</code>), measured without making a string.
+
+```csharp
+public int MeasureWidth(InterpolatedText text)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Graphics_BitmapFont_MeasureWidth_System_ReadOnlySpan_System_Char__"></a> MeasureWidth\(ReadOnlySpan<char\>\)
 
 Width in pixels of the widest line (unscaled).

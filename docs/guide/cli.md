@@ -128,7 +128,7 @@ line names the file and says what to do; the command exits with 1 when there are
 | An image, WAV, MP3, font or compiled shader the engine cannot read; a file named `.ogg` that is not an Ogg file | A source file that would ship (`.psd`, `.xcf`, `.kra`, `.tps`, `.hlsl`...) or a file the system left behind |
 | A sheet or atlas whose image is missing, misspelled in letter case, or smaller than its frames | An image above 4096 pixels on a side (an error above `--max-texture N` when given) |
 | A clip that names a frame the sheet does not have; two frames or clips of one name | |
-| A point or a box of a sheet that is not `[x, y]` or `[x, y, width, height]`, has not one entry per frame, or is a box without a size | |
+| A point or a box of a sheet that is not `[x, y]` or `[x, y, width, height]`, has not one entry per frame, is a box without a size, or holds a number too large to be meant | A point or a box farther outside its frame than the frame is large |
 | Two files or folders that differ only in letter case | |
 | An image or sound format the engine does not read (`.webp`, `.tiff`, `.flac`...) | |
 | A string table or a message that cannot be read; a key a language lacks; a value a translation names and the others do not | A value a translation does not use; a plural without the forms its language uses |

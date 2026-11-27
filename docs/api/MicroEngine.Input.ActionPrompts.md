@@ -128,8 +128,9 @@ public GamepadStyle? PadStyleOverride { get; set; }
 
 ### <a id="MicroEngine_Input_ActionPrompts_Version"></a> Version
 
-Changes whenever the text of prompts may have changed (another device, another pad family), so a game that
-lays text out once (wrapping, measuring) knows when to do it again.
+Changes whenever the text of prompts may have changed: another device, another pad family, an action bound or
+unbound ([BindingsVersion](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindingsVersion), saved bindings included), another touch layout, a label, or
+[Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate). A game that lays text out once (wrapping, measuring) lays it out again when it moves.
 
 ```csharp
 public int Version { get; }
@@ -182,9 +183,9 @@ public static string ButtonName(PadButton button, GamepadStyle style = GamepadSt
 ### <a id="MicroEngine_Input_ActionPrompts_Cached_System_String_"></a> Cached\(string\)
 
 The text [Format](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Format_System_String_System_Func_MicroEngine_Input_ActionPrompt_System_String__) gives for <code class="paramref">template</code>, built once and kept until
-[Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) moves (another device, another pad family, a label, [Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate)): a hint drawn
-every frame costs a lookup and makes no garbage. <code>Cached("{jump}")</code> is the kept form of
-[Text](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Text_System_String_System_Nullable_MicroEngine_Input_InputDevice__).
+[Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) moves (another device, another pad family, a rebinding, another touch layout, a label,
+[Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate)): a hint drawn every frame costs a lookup and makes no garbage, and shows the new key
+on the frame after the player rebinds it. <code>Cached("{jump}")</code> is the kept form of [Text](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Text_System_String_System_Nullable_MicroEngine_Input_InputDevice__).
 
 ```csharp
 public string Cached(string template)
@@ -200,9 +201,11 @@ public string Cached(string template)
 
 #### Remarks
 
-Code that changes what an action is bound to while the game runs (a rebinding screen) calls
-[Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate) afterwards, as for any text laid out once. At most 256 templates are kept; a game that
-builds templates as it goes gets the oldest ones built again.
+One thing does not move [Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version): the player switching keyboard layout while the game runs, which
+changes what [KeyText](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyText_MicroEngine_Input_Key_) gives for a letter key. [Format](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Format_System_String_System_Func_MicroEngine_Input_ActionPrompt_System_String__) reads the layout on every call
+and follows it at once; a kept text follows it at the next change of [Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) (call
+[Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate) when the window regains the focus to be exact). At most 256 templates are kept; a game
+that builds templates as it goes gets the oldest ones built again.
 
 ### <a id="MicroEngine_Input_ActionPrompts_Directions_System_String_System_String_System_String_System_String_System_Nullable_MicroEngine_Input_InputDevice__System_String_"></a> Directions\(string?, string?, string?, string?, InputDevice?, string?\)
 

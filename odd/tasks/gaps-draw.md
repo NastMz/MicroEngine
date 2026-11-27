@@ -39,6 +39,7 @@ Quoted fragments are the issue's text, verbatim (L1).
 | T5 Points and boxes on frames (`.sheet`, packed atlas, Aseprite) | S4 | inline | done | 3ea60daa |
 | T6 `SpriteEffects`, `Scene.Effects` | S2 | inline | done | 1d02ab80 |
 | T7 Example, manual, release notes, ADR, evaluation, API pages | S1-S6 | inline | done | the commits after 1d02ab80 |
+| T8 Corrections after verification (L9) | S1-S4 | inline | done | the commits of 2026-11-27 |
 
 ## Log
 
@@ -72,3 +73,27 @@ Quoted fragments are the issue's text, verbatim (L1).
 - L8 Tests observed failing before their code: the text allocation and prompt tests (T1), the clip tests (did not
   compile, T2), the `content names` test (T4), the Aseprite slice test (T5). Written with their code and passing on
   the first run, so not seen failing: the scanline phase test (T3), `SpriteMarkTests` (T5), `SpriteEffectsTests` (T6).
+- L9 2026-11-27, the coordinator's correction batch after an independent verification, its items quoted: "B1
+  (blocker): call shapes that compile on main no longer compile"; "D1: `bitmapFont.MeasureWidth($"{n}")` and
+  `family.Measure($"{n}", size)` bind to the `string` instance overload"; "D2: an enum hole and an `int?` hole box 24
+  bytes a frame"; "M1: `Update(-1f)` then `Draw` throws"; "`delay: float.PositiveInfinity` or `Update(float.NaN)`
+  leaves `Busy` true forever"; "M2: the comment gives `(int)(…)` and the code floors"; "M3: points and boxes far
+  outside the frame, and `1e40` (read as infinity), pass `content check` silently"; "6. `ActionPrompts.Version` does
+  not move on `InputMap.Bind`/`Unbind`"; "7. ... when a run is unattended the host runs the game with
+  `CultureInfo.CurrentCulture` and `CurrentUICulture` set to the invariant culture"; "8. ... a game's own
+  `DrawRight(this BitmapFont, …)` extension is now silently replaced ... drawing a kept `InterpolatedText` twice
+  returns its buffer to the pool twice ... `font.Draw(r, (string)null!, …)` now draws nothing where main threw". The
+  edit surface was widened by `src/MicroEngine.Input/InputMap.cs`, `src/MicroEngine/Core/GameHost.cs` and
+  `src/MicroEngine/Core/Game.cs`.
+- L10 T8. Seen failing first: the call-shape file (CS9244 on the span shapes); then, with only that overload added,
+  the null string, the second use of a kept text, the value table (boxes), the rebinding hint, `ScalableFont.Measure`
+  and `BitmapFont.MeasureWidth` (9,600 bytes per 200 calls each); the effect steps and delays; three culture tests
+  ("3,5" where "3.5" was expected); the `content check` test. The negative-time clip test passed when written: the
+  code already rounded down, and the change was to its comment and the notes. Decisions: a null string is an
+  `ArgumentNullException`; `Format` and `PromptText` stay uncached because of the keyboard layout; L3 is superseded
+  for rebinding.
+- L11 T8, item 7. Two forms were tried and withdrawn after tests failed: setting the culture at the start of every
+  frame and restoring it at its end (`The_loop_allocates_next_to_nothing_per_frame` and the ECS sample's allocation
+  test: setting a thread's culture allocates), and setting `CurrentUICulture` too
+  (`AGameOnTheWallClockStartsInTheRuntimesLanguageWhereThePlatformDoesNotSay`: the localization reads it where the
+  platform names no language). Kept: `CurrentCulture` only, once per run, restored at shutdown and by the host.

@@ -401,8 +401,9 @@ reacts to during a clip (a footstep, the frame a swing lands), are tracks and ti
 Many instances share one clip and one clock, each starting on a frame of its own: `clip.FrameAt(time, frameOffset)`
 is the frame of an instance that started `frameOffset` frames into the clip (the links of a chain, a row of torches,
 coins that spin one frame apart), and `clip.FrameIndexAt(time, frameOffset)` is its index in `Frames`. At a fixed rate
-the index is `(int)(time * FramesPerSecond + frameOffset)`, wrapped by a looping clip and held at the ends by one that
-plays once; the offset may be a fraction or negative.
+the index is `time * FramesPerSecond + frameOffset` rounded down (`(int)(time * FramesPerSecond + frameOffset)` from 0
+on), wrapped by a looping clip and held at the ends by one that plays once; the offset may be a fraction or negative,
+and a time before 0 counts backwards the same way.
 
 <!-- code: samples/Examples/Examples/EffectsExample.cs#setup -->
 ```csharp
@@ -456,6 +457,7 @@ and `depth`.
   something is moved to it each update) and `Effects.Stop(effect)`. `Effects.Busy` says whether any is waiting or
   playing, for a rule that waits for them.
 - `Effects.SnapToPixels = true` draws them on whole pixels.
+- A delay or a step that is not a time (negative, infinite, not a number) is none: every effect ends.
 - Playing, stepping and drawing effects allocates nothing once the pool is as large as the most effects alive at once.
 - A scene's effects are part of its state in a scripted run, because a rule may wait for them.
 - A game whose effects live outside a scene makes a `SpriteEffects` of its own and calls its `Update(dt)`.

@@ -77,7 +77,7 @@ public sealed class SpriteEffects : IStateHashed
     /// <summary>Plays <paramref name="clip"/> once with its anchor at <paramref name="at"/>, then removes it.</summary>
     /// <param name="clip">The frames and their timing (<see cref="SpriteAtlas.Clip(string, bool?)"/>).</param>
     /// <param name="at">Where the frames' anchor goes, in the coordinates the effects are drawn in.</param>
-    /// <param name="delay">Seconds before it shows; a negative value or one that is not a number is none.</param>
+    /// <param name="delay">Seconds before it shows; a negative value, an infinite one or one that is not a number is none.</param>
     /// <param name="flipX">Mirrors it around its anchor.</param>
     /// <param name="tint">Colour multiplier; null for white (unchanged).</param>
     /// <param name="framesPerSecond">Plays it at this rate instead of the clip's own timing.</param>
@@ -93,9 +93,10 @@ public sealed class SpriteEffects : IStateHashed
         long id = _nextId++;
         _playing[_count++] = new Playing
         {
-            Id = id, Clip = clip, At = at, Delay = delay > 0 ? delay : 0, FlipX = flipX, Tint = tint ?? Color.White,
+            // A delay that never ends would keep whoever waits on Busy waiting for ever.
+            Id = id, Clip = clip, At = at, Delay = delay > 0 && float.IsFinite(delay) ? delay : 0, FlipX = flipX, Tint = tint ?? Color.White,
             // A clip with a fixed rate is counted in frames, exactly as (int)(time * rate).
-            Rate = framesPerSecond ?? (clip.HasFrameDurations ? 0 : clip.FramesPerSecond), Layer = layer, Depth = float.IsNaN(depth) ? 0 : depth,
+            Rate = framesPerSecond ?? (clip.HasFrameDurations ? 0 : clip.FramesPerSecond), Layer = layer, Depth = float.IsFinite(depth) ? depth : 0,
         };
         return new SpriteEffect(id);
     }
@@ -133,10 +134,12 @@ public sealed class SpriteEffects : IStateHashed
 
     /// <summary>
     /// Advances the effects by <paramref name="dt"/> seconds: a waiting effect counts its delay down, a playing one
-    /// its time up, and those that reached the end of their clip are removed.
+    /// its time up, and those that reached the end of their clip are removed. A step that is not a time (negative,
+    /// infinite, not a number) is ignored: time does not run backwards and every effect ends.
     /// </summary>
     public void Update(float dt)
     {
+        if (!(dt > 0) || float.IsInfinity(dt)) return;
         int kept = 0;
         for (int i = 0; i < _count; i++)
         {
@@ -167,7 +170,7 @@ public sealed class SpriteEffects : IStateHashed
             ref var p = ref _playing[i];
             if (p.Delay > 0) continue;
             var frames = p.Clip.Frames;
-            int index = p.Rate > 0 ? Math.Min(frames.Count - 1, (int)(p.Time * p.Rate)) : Math.Min(frames.Count - 1, p.Clip.FrameIndexOnce(p.Time));
+            int index = p.Rate > 0 ? Math.Clamp((int)(p.Time * p.Rate), 0, frames.Count - 1) : p.Clip.FrameIndexOnce(p.Time);
             var frame = frames[index];
             var at = SnapToPixels ? new Vector2(MathF.Round(p.At.X), MathF.Round(p.At.Y)) : p.At;
             sorted?.At(p.Layer, p.Depth);

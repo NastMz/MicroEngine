@@ -272,6 +272,10 @@ A point is a position, not a pixel: `[13, 7]` is the top-left corner of that pix
 mirrored corner; write `[13.5, 7.5]` for the pixel's centre. Points and boxes stay with the frame when an atlas is
 trimmed, packed to a file by `microengine content pack` and loaded again. `Sprite.Points` and `Sprite.Boxes` list them.
 
+`microengine content check` reports a number too large to be meant as an error, and warns about a point or a box
+that lies farther outside its frame than the frame is large (a coordinate of the whole image typed where the frame's
+own was meant).
+
 A file written for an earlier SDK reads the same: the sheet format has no version number and grows by optional
 properties. A file that uses a property an SDK does not know is refused by that SDK with the property's name.
 

@@ -198,6 +198,18 @@ player's saves unless one of the rows above also holds. `LaunchRequest.IsUnatten
 and `host.SaveStore(gameId)`, for a game that takes its store as a constructor argument, follows it and `--saves`
 exactly as `Game.Saves` does: in one launch both are the same saves.
 
+What such a run leaves alone, so that two machines show and record the same:
+
+| From the machine | A run somebody plays | A run nobody plays |
+| --- | --- | --- |
+| The player's saves, settings, achievements and key bindings | read and written | a store of the run's own, in memory |
+| How numbers and dates are written (the system's culture: `3,5` or `3.5`) | the player's | the invariant culture: `$"{3.5f}"` is `3.5` everywhere |
+| Where a crash report goes | the player's folder | beside what the run writes |
+
+The culture is the game thread's formatting culture from the moment the game loads until it shuts down; the thread
+has its own again after the run (a game stepped by a test has no end, so the test's thread keeps it). It decides how
+values are formatted, not the language of the game's texts, which the game's localization chooses.
+
 A run nobody plays that fails writes its crash report beside what it writes, not in the player's folder: in the
 captures' folder when it has a script, else in the folder it was started from. The path is printed on standard
 error either way.

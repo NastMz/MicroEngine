@@ -88,6 +88,28 @@ public sealed class ContentTests
     }
 
     [TestMethod]
+    public void Points_and_boxes_that_cannot_be_meant_are_reported_with_their_file_and_name()
+    {
+        using var content = Good()
+            .Text("enemies/far.sheet", """
+                { "sheets": [ { "image": "drone.png", "name": "far", "cell": [8, 8],
+                    "points": { "muzzle": [11, 3], "typo": [[4, 4], [400, 4], null, [4, -90]] },
+                    "boxes": { "reach": [6, 0, 10, 8], "lost": [300, 300, 4, 4] } } ] }
+                """)
+            .Text("enemies/endless.sheet", """{ "sheets": [ { "image": "drone.png", "name": "endless", "cell": [8, 8], "points": { "p": [1e40, 2] } } ] }""")
+            .Text("enemies/wide.sheet", """{ "sheets": [ { "image": "drone.png", "name": "wide", "cell": [8, 8], "boxes": { "b": [0, 0, 1e40, 2] } } ] }""");
+        var report = ContentTool.Check(content.Root);
+        string all = string.Join("\n", report.Issues);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"typo\"", StringComparison.Ordinal) && w.Message.Contains("far1", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"typo\"", StringComparison.Ordinal) && w.Message.Contains("far3", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Warnings.Any(w => w.Path == "enemies/far.sheet" && w.Message.Contains("\"lost\"", StringComparison.Ordinal)), all);
+        Assert.IsFalse(report.Issues.Any(i => i.Message.Contains("\"muzzle\"", StringComparison.Ordinal) || i.Message.Contains("\"reach\"", StringComparison.Ordinal)),
+            "a muzzle ahead of the sprite and a box that reaches out of it are what points and boxes are for:\n" + all);
+        Assert.IsTrue(report.Errors.Any(e => e.Path == "enemies/endless.sheet" && e.Message.Contains("\"p\"", StringComparison.Ordinal)), all);
+        Assert.IsTrue(report.Errors.Any(e => e.Path == "enemies/wide.sheet" && e.Message.Contains("\"b\"", StringComparison.Ordinal)), all);
+    }
+
+    [TestMethod]
     public void Every_problem_names_its_file_and_says_what_to_do()
     {
         using var content = Good()

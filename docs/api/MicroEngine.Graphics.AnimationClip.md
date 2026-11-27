@@ -205,12 +205,18 @@ Seconds since the clip started.
 `frameOffset` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 How many frames ahead this instance is: 1 shows the second frame at time 0, 0.5 is half a frame ahead, a negative
-value is behind. At a fixed rate the index is <code>(int)(time * FramesPerSecond + frameOffset)</code>, wrapped by a
-looping clip and held at the ends by one that plays once; with a duration per frame, the offset counts frames of
-their own lengths. A value that is not a number is 0.
+value is behind. At a fixed rate the index is <code>time * FramesPerSecond + frameOffset</code> rounded down (for a
+time and an offset of 0 or more, <code>(int)(time * FramesPerSecond + frameOffset)</code>), wrapped by a looping clip
+and held at the ends by one that plays once; with a duration per frame, the offset counts frames of their own
+lengths. A value that is not a number is 0.
 
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Remarks
+
+A time before the start counts backwards the same way an offset does: half a frame before 0, a looping clip shows
+its last frame, and a clip that plays once its first.
 
 </div>

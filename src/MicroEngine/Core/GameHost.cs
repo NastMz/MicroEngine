@@ -304,7 +304,13 @@ public sealed class GameHost
             return loop.Finish();
         }
         // A run that failed before its engine existed still shows what the platform reported.
-        finally { game.StartupLog.Attach(new Kernel.ConsoleLog(_environment.Error)); }
+        finally
+        {
+            // A run nobody plays formats in the invariant culture from its start to its shutdown
+            // (Game.EnterRunCulture); however it ended, the host's thread has its own culture again.
+            game.ExitRunCulture();
+            game.StartupLog.Attach(new Kernel.ConsoleLog(_environment.Error));
+        }
     }
 
     /// <summary>
