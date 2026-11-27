@@ -98,3 +98,109 @@ Knight against agent, Trial of Wind, 900 steps: 0 identical positions; the agent
 6. A coroutine cannot wait for a tween. A cutscene that fades and then goes on writes the fade as its own loop.
 7. Not a gap, a property to know: a game whose timers are `t += dt` in a `float` cannot move to `StateMachine` and
    keep its step counts. The machine's are the regular ones (`After(0.6f)` is 36 steps at 60 Hz).
+
+## Second pass (after DEMO-GAPS-1, issue #218)
+
+Branch `feat/demo2-courtyard`. Every row above that was kept or reported as a gap was decided again against the
+engine as it is now. Rule of the pass: captures byte-identical; a state trace may change where state moves into an
+engine piece, with proof that the game does the same things on the same updates.
+
+### Decisions
+
+| Row | Decision now |
+| --- | --- |
+| `RoomActors<T>` (gap 1) | **Replaced** with `Objects.Children<Actor>(room)`. 55 lines gone. A test pins the order of the walk (written against the old code first). Actors are attached as `Actor`, so a kind is picked with `is`; a room that is not there (none is leaving) needs a guard, see gap C |
+| `CachedPrompt`, `NumberText` (gap 5) | **Replaced** with `font.Draw(r, $"…")` and `Prompts.Cached`; `UI/TextCache.cs` deleted, and the hand-kept status texts of the pause screen and the ending with it |
+| Draw order | **Replaced** with `SortedRenderer` (shadows in a layer under the actors, actors at the Y of their feet). Actors at the same depth are now drawn in a stable order: the leaving room, the room, the hero, each in the order of the walk. No picture changed: 71 captures, 1,730 taken every seven updates and 2,955 taken on every update of five scripts are byte-identical |
+| Screen fades (gap 6) | **Replaced** with tweens the cutscenes yield. The opening fade is started from a one-line coroutine: a tween added in `Enter` runs one update earlier than the old coroutine did (65 of 1,730 captures differed) |
+| Hero's states | **Replaced** with `StateMachine<HeroState>`: `After(SwingTime)`, `After(ThrowTime)`, the walk and the knockback as state updates. Its thresholds agree with the engine's rule at 60 updates a second (table below), so seconds stay seconds |
+| Warden's states | **Kept.** Six of its thresholds are `t > seconds` on a float sum and fall one update after the engine's rule at 60 Hz (table below), so only `AfterSteps` with counts measured at 60 Hz lands on the same updates, and then its phases are counts of updates: the game's times hold in seconds at any update rate (its tests run at 30, 60 and 120). Its ways out also choose their target (the attack rotation) or do something on the way (the volley), which a declared way out does not; and the leap moves by `time / LeapTime`, whose bits differ between the machine's time and the float sum |
+| Slime, bat, spitter, knight | **Kept**: none has states; each is one or two countdowns of a random length drawn from the room's generator when it starts, read by the draw for the telegraph |
+| Movement over `TileMotion` | **Kept, and no longer because of a difference.** The differential is zero: 13,513 moves of two whole playthroughs repeated on `TilePhysicsWorld2D` (origin at the box's top-left corner) end on the same bits, and `StoppedGoing` names the same sides (`MoverDifferentialTests`, committed). Not replaced because it would add code: `TileMotion.Move(box, delta, grid, solids)` is the engine's own function and takes the solid actors as a list gathered per move; on the world each solid actor (a door while closed, a pot until it breaks, a block that slides) needs a body kept in step with a solidity the game computes. Gap A |
+| Chase | **Kept** (the game's rule), as instructed |
+| Heartbeat and ambience timers | **Kept.** The heartbeat counts only while the hero has one heart or less and keeps what it counted; a timer has no pause, and its first beat is at once. The ambience changes its period with the room while it runs. Their periods at 60 Hz: 0.9 s is 55 updates (rule 54), 0.2 is 13 (12), 0.25 is 16 (15), 1 is 61 (60); 0.18, 0.22, 0.35 agree |
+| HUD toast, banner, room tag, flash | **Kept**: envelopes read every frame; the room tag's time stops while an achievement banner shows, and a tween has no pause |
+| `PlayMode` | **Kept.** `Go` from one of a machine's own handlers waits until the handler returns; the play update sets the mode and reads it again in the same update (`if (Mode == PlayMode.Play) CheckExits()`) |
+| Menus over `DemoKit.OptionList` | **Replaced** with `MenuCursor` and the rows drawn by the game (`UiStyle.Menu`, 12 lines). Not widgets: the shop's sold-out row keeps the cursor on it, which a `MenuCursor` does and the widgets' focus does not |
+| `DialogueBox` over `DemoKit.Typewriter` | **Replaced** the typewriter with `TextReveal`. The box itself stays drawn by the game (panel, name tag, arrow at its own offsets): as widgets it would be the same drawing inside three skins. Not built as widgets to compare |
+| Strings, sounds, frame choice, `Effect`, the scene's own hash of hero and actors | Not tried in this pass (`Scene.Effects` for the puffs would take them out of the room's actors and of the draw order) |
+
+### Lines of code
+
+| Area | First pass | Now |
+| --- | --- | --- |
+| `games/CourtyardKey` (C#) | 8528 | 8440 |
+| `Scenes/PlayScene.cs` | 363 | 322 |
+| `UI/TextCache.cs` | 48 | deleted |
+| `Scenes/MenuScenes.cs` + `TitleScene.cs` | 564 | 544 |
+| `Entities/Hero.cs` | 273 | 264 |
+| `Scenes/PlayScene.Draw.cs` | 90 | 105 (the lights walk the actors themselves) |
+| `UI/UiStyle.cs` | 43 | 59 (the menu rows the shared list drew) |
+| `tests/CourtyardKey.Tests` (C#) | 1682 | 1832 (order of the walk, hero timeline, mover differential) |
+
+### Measurements
+
+The game's float timers at 60 updates a second against the engine's rule (`ceil(seconds x 60)`), computed in single
+precision as the game adds them:
+
+| Timer | Game | Rule | | Timer | Game | Rule |
+| --- | --- | --- | --- | --- | --- | --- |
+| `t > 1.6` (Warden) | 97 | 96 | | `t >= 0.26` (hero swing) | 16 | 16 |
+| `t > 1.4` | 85 | 84 | | `t >= 0.18` (hero throw) | 11 | 11 |
+| `t > 0.9` | 55 | 54 | | `t < 0.08`, `0.02 .. 0.19` (hero) | same | same |
+| `t > 0.7` | 43 | 42 | | `t > 0.5`, `0.45`, `0.6`, `0.05` (Warden) | 30, 27, 36, 3 | same |
+| `t > 2.4` | 145 | 144 | | daze from 0.9 to 1.8 / 2.4 | 55 / 91 | `SetSteps(54)` of 109 / 145 |
+| `t > 1.8` | 109 | 108 | | | | |
+
+Hero timeline pinned by `HeroTimingTests` (old code first, unchanged after): swing on update 5, blade from 7 to 17,
+walking again at 21; throw 60 to 71; hit 120 to 135; fall at 200, game over at 309.
+
+### State traces
+
+Baseline: 17 runs of `main` (the twelve scripts and five fixture saves continued from the title), twice, identical.
+
+- Fades as tweens: 15 runs differ, only in the engine's `scene[0]:PlayScene` section and only during the 30 updates
+  of the opening fade.
+- Hero on a machine: the same 15 runs differ, in `scene[0]:PlayScene` and `play.hero`, on every update the hero
+  exists.
+- In both, `play.progress`, `play.room`, `play.actors`, `engine.input`, `engine.audio` and `engine.random` are
+  identical on every update, the 17 sound captures are byte-identical, and the five saves are written back identical.
+- `ending` and `look` never reach a play scene and are identical throughout.
+
+### What of `games/Shared` the game still uses
+
+`AchievementBanners` (the game's banner over the HUD) and `AchievementList` (the title's achievements screen). Both
+draw the achievements module; the SDK has no widget for either. `OptionList` and `Typewriter` are no longer used.
+
+### Log
+
+- L5: `cmp.sh` first compared against a relative path and reported every file as different; fixed before any decision
+  was taken on it.
+- L6: A background capture run was in progress while a later step was built; every comparison quoted above was run
+  again on the final commit.
+- L7: The save runs: each of the five fixture saves is copied to a folder, continued from the title by a script
+  (walk, swing, throw, pause, change rooms) with `--saves`, on `main` and on this branch: 35 captures and the five
+  saves written back are byte-identical.
+- L8: Two commit messages (draw order, hero) say 1,755 captures every seven updates: that count is 1,730 captures
+  plus the 25 traces and saves of the same runs.
+
+### Engine gaps that remain
+
+A. A developer making a top-down adventure whose obstacles are plain objects with a box of their own (a door while it
+   is closed, a pot until it breaks, a block that slides) has to keep a static body per object in step by hand
+   (create it, move it, switch it off, destroy it) to move on the physics world, because `IPhysicsWorld2D.Move` takes
+   no solids for one move and a shape cannot follow an entity's own box and predicate. `TileMotion.Move` takes them as
+   a list, which is why the game stays on it with the differential at zero.
+B. A developer moving a hand-kept `t += dt; if (t > seconds)` timer to a `StateMachine` or `Timers` and keeping
+   recorded runs has to measure each count at one update rate and write `AfterSteps(97)`, because `After(seconds)`
+   has one rule and there is no form that counts as the float sum did at whatever rate the game runs. For a new game
+   nothing is missing.
+C. `Objects.Children<T>(EntityId.None)` and of a destroyed entity throws, so a group that may not exist (the room
+   scrolling away) needs `IsAlive` before every walk; the enumerable has no count and no first, so a hash writes
+   the count with a loop. An empty walk for no parent would remove the guards.
+D. A tween added in `Scene.Enter` advances one update before a coroutine started there does, so a scene that opens
+   with a fade and must keep its frames starts the tween from a coroutine. A `delay` in updates would say it.
+E. A timer cannot be paused (the heartbeat that counts only while a condition holds), and a tween neither (the room
+   tag that waits for an achievement banner).
+F. A machine's `Go` from its own handler is deferred, so a mode that is set and read again in the same update
+   cannot be a machine without reordering the game's update.
