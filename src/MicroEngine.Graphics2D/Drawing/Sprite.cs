@@ -20,7 +20,7 @@ public sealed record Sprite(Texture Texture, RectF Source, Vector2 Origin)
 /// exposes them by name. Keeps draw calls batched and art code independent of layout.
 /// </summary>
 /// <remarks>
-/// Add images with <see cref="Add"/>, <see cref="AddFrames"/> or <see cref="AddGrid"/>, then call <see cref="Build"/> once
+/// Add images with <see cref="Add"/>, <see cref="AddFrames(string, IEnumerable{PixelImage}, Vector2?)"/> or <see cref="AddGrid"/>, then call <see cref="Build"/> once
 /// from <c>Game.Load</c> (it needs the graphics device). Names are case-sensitive.
 /// </remarks>
 /// <example>
@@ -62,6 +62,31 @@ public sealed class SpriteAtlasBuilder
         int i = 0;
         foreach (var frame in frames) Add(name + i++, frame, origin);
         return this;
+    }
+
+    /// <summary>
+    /// Adds each frame as "name0", "name1", ... and the clip <paramref name="name"/> that plays them at
+    /// <paramref name="framesPerSecond"/>: a strip drawn in code is an animation without its frame names being listed
+    /// (<see cref="SpriteAtlas.Clip(string, bool?)"/>).
+    /// </summary>
+    /// <param name="name">The strip's and the clip's name.</param>
+    /// <param name="frames">The frames, in playing order.</param>
+    /// <param name="framesPerSecond">The clip's rate; positive.</param>
+    /// <param name="origin">The anchor every frame shares; null for the top-left corner.</param>
+    /// <param name="loop">Whether the clip starts over after its last frame.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="framesPerSecond"/> is not a positive number.</exception>
+    public SpriteAtlasBuilder AddFrames(string name, IEnumerable<PixelImage> frames, float framesPerSecond, Vector2? origin = null, bool loop = true)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        if (!(framesPerSecond > 0) || float.IsInfinity(framesPerSecond)) throw new ArgumentOutOfRangeException(nameof(framesPerSecond), framesPerSecond, "A clip's rate is positive.");
+        var names = new List<string>();
+        foreach (var frame in frames)
+        {
+            names.Add(name + names.Count);
+            Add(names[^1], frame, origin);
+        }
+        if (names.Count == 0) throw new ArgumentException("A clip needs at least one frame.", nameof(frames));
+        return AddClip(new SheetClip(name, names, null, framesPerSecond, AnimationDirection.Forward, loop));
     }
 
     /// <summary>
@@ -420,7 +445,7 @@ public sealed class SpriteAtlas : IDisposable
     public IReadOnlyCollection<string> Names => _sprites.Keys;
 
     /// <summary>
-    /// The "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames"/>, in order; a numbering that
+    /// The "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames(string, IEnumerable{PixelImage}, Vector2?)"/>, in order; a numbering that
     /// starts at 1 ("walk1", "walk2"... as in many packs) works too. Collected once per name and shared, read-only: it can
     /// be called every frame.
     /// </summary>

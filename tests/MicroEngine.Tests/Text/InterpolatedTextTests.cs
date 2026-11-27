@@ -5,7 +5,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Testing;
 
-namespace MicroEngine.Tests.Text;
+namespace MicroEngine.Tests;
 
 /// <summary>
 /// Text drawn every frame without garbage: an interpolated string a font takes is written into a reused buffer, the

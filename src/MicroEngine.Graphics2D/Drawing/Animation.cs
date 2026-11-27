@@ -62,18 +62,61 @@ public sealed class AnimationClip
     public float Duration => _ends is { } ends ? ends[^1] : Frames.Count / FramesPerSecond;
 
     /// <summary>The frame shown <paramref name="time"/> seconds after the clip started (0 or more).</summary>
-    public Sprite FrameAt(float time)
+    public Sprite FrameAt(float time) => Frames[FrameIndexAt(time)];
+
+    /// <summary>
+    /// The frame shown at <paramref name="time"/> by an instance that started <paramref name="frameOffset"/> frames
+    /// into the clip: the links of a chain, a row of torches or of coins share one clock and one clip, each a frame
+    /// (or a fraction of one) apart.
+    /// </summary>
+    /// <param name="time">Seconds on the clock the instances share.</param>
+    /// <param name="frameOffset">How many frames ahead this instance is; see <see cref="FrameIndexAt"/>.</param>
+    public Sprite FrameAt(float time, float frameOffset) => Frames[FrameIndexAt(time, frameOffset)];
+
+    /// <summary>
+    /// The index in <see cref="Frames"/> of the frame shown at <paramref name="time"/>, for an instance that started
+    /// <paramref name="frameOffset"/> frames into the clip.
+    /// </summary>
+    /// <param name="time">Seconds since the clip started.</param>
+    /// <param name="frameOffset">
+    /// How many frames ahead this instance is: 1 shows the second frame at time 0, 0.5 is half a frame ahead, a negative
+    /// value is behind. At a fixed rate the index is <c>(int)(time * FramesPerSecond + frameOffset)</c>, wrapped by a
+    /// looping clip and held at the ends by one that plays once; with a duration per frame, the offset counts frames of
+    /// their own lengths. A value that is not a number is 0.
+    /// </param>
+    public int FrameIndexAt(float time, float frameOffset = 0)
     {
+        if (float.IsNaN(frameOffset)) frameOffset = 0;
+        int count = Frames.Count;
         if (_ends is { } ends)
         {
+            if (frameOffset != 0) time += OffsetSeconds(ends, frameOffset);
             float t = Loop ? time % ends[^1] : time;
+            if (t < 0) t = Loop ? t + ends[^1] : 0;
             int found = Array.BinarySearch(ends, t);
             // An exact end time belongs to the next frame; otherwise BinarySearch gives the first end after t.
             int at = found >= 0 ? found + 1 : ~found;
-            return Frames[Math.Min(at, Frames.Count - 1)];
+            return Math.Min(at, count - 1);
         }
-        int index = (int)(time * FramesPerSecond);
-        return Frames[Loop ? index % Frames.Count : Math.Min(index, Frames.Count - 1)];
+        // Without an offset this is (int)(time * rate), as it always was: adding 0 changes no bit.
+        float position = time * FramesPerSecond + frameOffset;
+        if (!(position > int.MinValue) || position >= int.MaxValue) position = position > 0 ? int.MaxValue - 256 : 0;
+        int index = (int)MathF.Floor(position);
+        if (!Loop) return Math.Clamp(index, 0, count - 1);
+        index %= count;
+        return index < 0 ? index + count : index;
+    }
+
+    /// <summary>The time, from the start of a pass, at which the frame <paramref name="frameOffset"/> frames in begins (a fraction lies inside that frame).</summary>
+    private float OffsetSeconds(float[] ends, float frameOffset)
+    {
+        int count = ends.Length;
+        float whole = MathF.Floor(frameOffset), fraction = frameOffset - whole;
+        // Whole passes shift a looping clip by nothing; one that plays once counts them as time.
+        float passes = MathF.Floor(whole / count);
+        int frame = (int)(whole - passes * count);
+        float start = frame == 0 ? 0 : ends[frame - 1];
+        return (Loop ? 0 : passes * ends[^1]) + start + fraction * (ends[frame] - start);
     }
 }
 
