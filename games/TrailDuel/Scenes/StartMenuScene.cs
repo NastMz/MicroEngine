@@ -15,13 +15,13 @@ namespace TrailDuel.Scenes;
 internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 {
     private static readonly string[] Options = ["CREATURES", "BAG", "TRAIL LOG", "SAVE", "CONTROLS", "CLOSE"];
-    private DemoKit.OptionList _list = null!;
+    private MenuCursor _list = null!;
     private string? _message;
     private float _messageTime, _open;
 
     public override bool IsOverlay => true;
 
-    public override void Enter() => _list = UiKit.List(Audio, Options);
+    public override void Enter() => _list = UiKit.Menu(Audio, Options.Length);
 
     public override void Update(float dt)
     {
@@ -53,7 +53,7 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
     /// <summary>What the menu says after saving.</summary>
     internal static string SaveMessage(bool saved) => saved ? "Progress saved! Rest easy." : "The trail could not be saved.";
 
-    /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide and the play-time text cache.</summary>
+    /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide.</summary>
     public override void HashState(StateHasher hash)
     {
         hash.Add(_list.Index);
@@ -158,16 +158,12 @@ internal sealed class ControlsScene : Scene
 /// <summary>The Trail Log: every species, marked seen or caught.</summary>
 internal sealed class TrailLogScene(TrailDuelGame game) : Scene
 {
-    private static readonly string?[] DexNumbers = new string?[1000];
-
-    /// <summary>The dex number as three digits, built once per number.</summary>
-    private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
     /// <summary>One row per species; confirm picks nothing here, the list only browses.</summary>
-    private DemoKit.OptionList _list = null!;
+    private MenuCursor _list = null!;
 
-    public override void Enter() => _list = UiKit.List(Audio, [.. SpeciesDex.All.Select(s => s.Id)]);
+    public override void Enter() => _list = UiKit.Menu(Audio, SpeciesDex.All.Count);
 
-    /// <summary>State hash: the cursor. Left out: the seen/caught text cache.</summary>
+    /// <summary>State hash: the cursor.</summary>
     public override void HashState(StateHasher hash) => hash.Add(_list.Index);
 
     public override void Update(float dt)
@@ -188,7 +184,7 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
             var sp = SpeciesDex.All[i];
             float y = list.Y + 8 + (i - start) * 14;
             bool seen = s.Seen.Contains(sp.Id), caught = s.Caught.Contains(sp.Id);
-            UiKit.Text(r, Font, DexNumber(i + 1), list.X + 16, y, UiKit.Muted);
+            UiKit.Text(r, Font, $"{i + 1:000}", list.X + 16, y, UiKit.Muted);
             UiKit.Text(r, Font, seen ? sp.Name : "-----", list.X + 40, y);
             if (caught) r.Draw(game.Sprite("orbsmall"), new Vector2(list.Right - 12, y + 3));
             if (i == _list.Index) UiKit.Cursor(r, Font, list.X + 5, y, Age);

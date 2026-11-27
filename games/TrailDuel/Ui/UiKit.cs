@@ -67,14 +67,14 @@ internal static class UiKit
     }
 
     /// <summary>
-    /// The engine's list navigation (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens draw
-    /// their lists themselves, with <see cref="Cursor"/> beside the highlighted row.
+    /// The engine's cursor for a list (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens
+    /// draw their rows themselves, with <see cref="Cursor"/> beside the highlighted one.
     /// </summary>
-    public static DemoKit.OptionList List(AudioMixer audio, params string[] options)
+    public static MenuCursor Menu(AudioMixer audio, int count, int columns = 1)
     {
-        var list = new DemoKit.OptionList(options);
-        list.Moved += () => audio.Play("move", 0.6f);
-        return list;
+        var menu = new MenuCursor(count, columns);
+        menu.Moved += () => audio.Play("move", 0.6f);
+        return menu;
     }
 
     public static void Cursor(IRenderer r, BitmapFont font, float x, float y, float time)

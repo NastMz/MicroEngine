@@ -16,7 +16,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
     private static readonly string ClerkKey = CharacterArt.Key("clerk", Direction.Down, 0);
     public static readonly IReadOnlyList<ItemData> Stock = ItemDex.All;
 
-    private DemoKit.OptionList _list = null!;
+    private MenuCursor _list = null!;
     private int _quantity = 1;
     private bool _choosingQuantity;
     private string? _message;
@@ -33,7 +33,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
         return true;
     }
 
-    public override void Enter() => _list = UiKit.List(Audio, [.. Stock.Select(item => item.Name)]);
+    public override void Enter() => _list = UiKit.Menu(Audio, Stock.Count);
 
     public override void Update(float dt)
     {
@@ -72,7 +72,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
 
     private void Say(string text) { _message = text; _messageTime = 2.4f; }
 
-    /// <summary>State hash: cursor, quantity and whether it is being chosen, the message with its timer. Left out: the coin pop animation and the quantity text cache.</summary>
+    /// <summary>State hash: cursor, quantity and whether it is being chosen, the message with its timer. Left out: the coin pop animation.</summary>
     public override void HashState(StateHasher hash)
     {
         hash.Add(_list.Index);

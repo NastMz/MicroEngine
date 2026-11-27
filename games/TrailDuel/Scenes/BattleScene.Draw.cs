@@ -215,7 +215,7 @@ internal sealed partial class BattleScene
             {
                 float x = box.X + 16 + i % 2 * 60, y = box.Y + 9 + i / 2 * 14;
                 UiKit.Text(r, Font, ActionLabels[i], x, y, i == 3 && _battle.IsTrainer ? UiKit.Muted : null);
-                if (i == _actionIndex) UiKit.Cursor(r, Font, x - 10, y, _menuTime);
+                if (i == _actions.Index) UiKit.Cursor(r, Font, x - 10, y, _menuTime);
             }
             return;
         }
@@ -251,13 +251,13 @@ internal sealed partial class BattleScene
             float x = box.X + 16 + i % 2 * 98, y = box.Y + 9 + i / 2 * 14;
             string label = i < moves.Count ? moves[i].Data.Name : "-";
             UiKit.Text(r, Font, label, x, y, i < moves.Count && moves[i].Pp == 0 ? UiKit.Muted : null);
-            if (i == _moveIndex) UiKit.Cursor(r, Font, x - 10, y, _menuTime);
+            if (i == _moves.Index) UiKit.Cursor(r, Font, x - 10, y, _menuTime);
         }
         var info = new RectF(216, 134, 100, 42);
         UiKit.Box(r, info);
-        if (_moveIndex < moves.Count)
+        if (_moves.Index < moves.Count)
         {
-            var m = moves[_moveIndex];
+            var m = moves[_moves.Index];
             UiKit.Text(r, Font, "PP", info.X + 8, info.Y + 5, UiKit.Muted);
             var ppColor = m.Pp == 0 ? Color.Hex("e8504a") : m.Pp <= m.Data.Pp / 4 ? Color.Hex("d89a20") : (Color?)null;
             UiKit.TextRight(r, Font, $"{m.Pp}/{m.Data.Pp}", info.Right - 8, info.Y + 5, ppColor);

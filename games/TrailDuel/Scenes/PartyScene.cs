@@ -23,9 +23,9 @@ internal sealed class PartyScene : Scene
     private readonly Action<int>? _picked;
     private readonly int _activeIndex;
     private readonly string _prompt;
-    /// <summary>One row per creature (null while the party is empty: a list needs at least one row).</summary>
-    private DemoKit.OptionList? _list;
-    private int Index => _list?.Index ?? 0;
+    /// <summary>The cursor over the party's rows.</summary>
+    private MenuCursor _list = null!;
+    private int Index => _list.Index;
     private int _swapFrom = -1;
     private ChoiceMenu? _menu;
     private string? _message;
@@ -49,6 +49,8 @@ internal sealed class PartyScene : Scene
 
     private List<Creature> Party => _game.State.Party;
 
+    public override void Enter() => _list = UiKit.Menu(Audio, Party.Count);
+
     public override void Update(float dt)
     {
         _messageTime -= dt;
@@ -60,7 +62,6 @@ internal sealed class PartyScene : Scene
             return;
         }
         if (Party.Count == 0) { Close(-1); return; }
-        _list ??= UiKit.List(Audio, [.. Party.Select(c => c.Name)]);
         int? chosen = _list.Update(Input);
         if (Input.Pressed("cancel"))
         {
@@ -75,7 +76,6 @@ internal sealed class PartyScene : Scene
         if (_swapFrom >= 0)
         {
             (Party[_swapFrom], Party[Index]) = (Party[Index], Party[_swapFrom]);
-            _list.SetOptions(Party.Select(c => c.Name));
             _swapFrom = -1;
             Audio.Play("sendout", 0.5f);
             return;

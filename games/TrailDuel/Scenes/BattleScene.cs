@@ -4,6 +4,7 @@ using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.World;
@@ -29,7 +30,8 @@ internal sealed partial class BattleScene : Scene
     private readonly Action<BattleOutcome> _onEnd;
     private TextPanel _text = null!;
     private Mode _mode = Mode.Busy;
-    private int _actionIndex, _moveIndex;
+    /// <summary>The cursors of the two-by-two action and move menus: a direction stops at the edge of the grid.</summary>
+    private MenuCursor _actions = null!, _moves = null!;
     /// <summary>Whether the full move card is open over the field (toggled with the action button in the move menu).</summary>
     private bool _moveInfo;
     /// <summary>While choosing a move to forget: the moves on offer (the last one is the new move, for "Keep all").</summary>
@@ -51,7 +53,7 @@ internal sealed partial class BattleScene : Scene
     /// <summary>On touch screens: while the battle narrates, only A and B; menus get every control.</summary>
     public override IReadOnlyCollection<string>? TouchActions => _mode == Mode.Busy && _choice is not { Menu: not null } ? OverworldScene.TextActions : null;
     internal bool InMoveMenu => _mode == Mode.Moves;
-    internal int MoveCursor => _moveIndex;
+    internal int MoveCursor => _moves.Index;
     internal bool MoveInfoOpen => _moveInfo;
 
     /// <summary>
@@ -69,8 +71,8 @@ internal sealed partial class BattleScene : Scene
         hash.Add(_battle);
         hash.Section("battle.screen");
         hash.Add((int)_mode);
-        hash.Add(_actionIndex);
-        hash.Add(_moveIndex);
+        hash.Add(_actions.Index);
+        hash.Add(_moves.Index);
         hash.Add(_moveInfo);
         hash.Add(_pending?.GetType().Name);
         hash.Add(_forgetOptions?.Length ?? -1);
@@ -100,6 +102,9 @@ internal sealed partial class BattleScene : Scene
     {
         _text = new TextPanel(Font, Audio) { Area = new RectF(4, 134, 312, 42), AutoAdvance = 1.6f };
         _choice = new ChoicePrompt(Font, Audio);
+        _actions = UiKit.Menu(Audio, ActionLabels.Length, columns: 2);
+        _moves = UiKit.Menu(Audio, 4, columns: 2);
+        _actions.Wrap = _moves.Wrap = false;
         Audio.PlayMusic(_setup.Music, 0f);
         _enemy = new Display { Creature = _battle.Enemy, Hp = _battle.Enemy.Hp, Visible = _setup.Trainer is null };
         _player = new Display { Creature = _battle.Player, Hp = _battle.Player.Hp, Xp = _battle.Player.XpFraction };
@@ -196,32 +201,16 @@ internal sealed partial class BattleScene : Scene
         else UpdateMoves();
     }
 
-    /// <summary>
-    /// The action and move menus are two-by-two grids (left and right change column), which the engine's vertical
-    /// <c>DemoKit.OptionList</c> does not cover, so their cursor stays here.
-    /// </summary>
-    private int GridMove(int index, int count)
-    {
-        int col = index % 2, row = index / 2;
-        if (Input.Pressed("left") && col == 1) col = 0;
-        else if (Input.Pressed("right") && col == 0 && row * 2 + 1 < count) col = 1;
-        else if (Input.Pressed("up") && row == 1) row = 0;
-        else if (Input.Pressed("down") && row == 0 && 2 + col < count) row = 1;
-        int next = row * 2 + col;
-        if (next != index) Audio.Play("move", 0.6f);
-        return next;
-    }
-
     private void UpdateActions()
     {
-        _actionIndex = GridMove(_actionIndex, 4);
+        _actions.Move(Input);
         if (!Input.Pressed("confirm")) return;
         Audio.Play("confirm", 0.7f);
-        switch (_actionIndex)
+        switch (_actions.Index)
         {
             case 0:
                 _mode = Mode.Moves;
-                _moveIndex = Math.Min(_moveIndex, _battle.Player.Moves.Count - 1);
+                _moves.Count = _battle.Player.Moves.Count;
                 if (_battle.Player.Moves.All(m => m.Pp <= 0)) _pending = new PlayerAction.Fight(-1);
                 break;
             case 1:
@@ -250,11 +239,11 @@ internal sealed partial class BattleScene : Scene
     {
         if (Input.Pressed("cancel")) { Audio.Play("cancel", 0.7f); _mode = Mode.Actions; return; }
         if (Input.Pressed("action")) { _moveInfo = !_moveInfo; Audio.Play("move", 0.6f); }
-        _moveIndex = GridMove(_moveIndex, _battle.Player.Moves.Count);
+        _moves.Move(Input);
         if (Input.Pressed("confirm"))
         {
             Audio.Play("confirm", 0.7f);
-            _pending = new PlayerAction.Fight(_moveIndex);
+            _pending = new PlayerAction.Fight(_moves.Index);
         }
     }
 

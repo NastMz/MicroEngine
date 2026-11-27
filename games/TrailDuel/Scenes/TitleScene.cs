@@ -15,7 +15,8 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
 {
     private CachedText<int> _pressText;
     /// <summary>The title menu, built on entering (Continue only with a save).</summary>
-    private DemoKit.OptionList _list = null!;
+    private string[] _options = [];
+    private MenuCursor _list = null!;
     private bool _menu;
     private bool _confirmOverwrite;
     private ChoiceMenu? _confirm;
@@ -26,22 +27,23 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         string[] options = ["NEW GAME", "CONTROLS", "ACHIEVEMENTS", "QUIT"];
         // Asked once, here: a save from a newer release, or one that cannot be read, is not an adventure to continue.
         _canContinue = game.CanContinue;
-        _list = UiKit.List(Audio, _canContinue ? ["CONTINUE", .. options] : options);
+        _options = _canContinue ? ["CONTINUE", .. options] : options;
+        _list = UiKit.Menu(Audio, _options.Length);
     }
 
     private bool _canContinue;
 
     /// <summary>The title's options, top to bottom.</summary>
-    internal IReadOnlyList<string> Options => _list.Options;
+    internal IReadOnlyList<string> Options => _options;
 
     public override void Resume() => Audio.PlayMusic("title");
 
-    /// <summary>State hash: whether the menu is open, its options and cursor, and the overwrite question. Left out: the prompt text cache.</summary>
+    /// <summary>State hash: whether the menu is open, its options and cursor, and the overwrite question. Left out: the prompt text, kept until the prompts change.</summary>
     public override void HashState(StateHasher hash)
     {
         hash.Add(_menu);
-        hash.Add(_list.Options.Count);
-        foreach (var option in _list.Options) hash.Add(option);
+        hash.Add(_options.Length);
+        foreach (var option in _options) hash.Add(option);
         hash.Add(_list.Index);
         hash.Add(_confirmOverwrite);
         hash.Add(_confirm);
@@ -69,7 +71,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         if (Input.Pressed("cancel")) { _menu = false; Audio.Play("cancel", 0.6f); return; }
         if (chosen is not { } index) return;
         Audio.Play("confirm");
-        switch (_list.Options[index])
+        switch (_options[index])
         {
             case "CONTINUE": game.ContinueGame(); break;
             case "NEW GAME":
@@ -120,10 +122,10 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         }
         else
         {
-            var options = _list.Options;
-            var box = new RectF(112, 66, 96, options.Count * 12 + 10);
+            var options = _options;
+            var box = new RectF(112, 66, 96, options.Length * 12 + 10);
             UiKit.Box(r, box);
-            for (int i = 0; i < options.Count; i++)
+            for (int i = 0; i < options.Length; i++)
             {
                 float y = box.Y + 6 + i * 12;
                 UiKit.Text(r, Font, options[i], box.X + 18, y);
