@@ -252,21 +252,13 @@ public sealed class SceneSystems
     }
 }
 
-/// <summary>A timer of a scene's <see cref="SceneTimers"/>; <see cref="None"/> names no timer.</summary>
-/// <param name="Id">The timer's number within its scene; 0 for <see cref="None"/>.</param>
-public readonly record struct TimerHandle(int Id)
-{
-    /// <summary>No timer.</summary>
-    public static TimerHandle None => default;
-    /// <summary>Whether this is <see cref="None"/>.</summary>
-    public bool IsNone => Id == 0;
-}
-
 /// <summary>
-/// Calls actions after a time or at intervals, on the scene's time (<see cref="Scene.Timers"/>). Timers advance before
-/// the scene's <see cref="Scene.Update"/> by the step it receives, so they slow down and freeze with the world's clock;
-/// an unscaled timer advances by <see cref="Scene.EngineStep"/> instead. They stop with the scene, and their state is
-/// part of its state hash. For a sequence of steps over time use a coroutine (<see cref="Scene.Coroutines"/>).
+/// Calls actions after a time or at intervals, on the scene's time (<see cref="Scene.Timers"/>): the scene's own
+/// <see cref="Timers"/>, stepped for it. Timers advance before the scene's <see cref="Scene.Update"/> by the step it
+/// receives, so they slow down and freeze with the world's clock; an unscaled timer advances by
+/// <see cref="Scene.EngineStep"/> instead. They stop with the scene, and their state is part of its state hash. For a
+/// sequence of steps over time use a coroutine (<see cref="Scene.Coroutines"/>); for the rules of a game kept outside
+/// a scene, create a <see cref="Timers"/> and step it yourself.
 /// </summary>
 /// <example>
 /// <code>
@@ -278,44 +270,17 @@ public readonly record struct TimerHandle(int Id)
 /// </example>
 public sealed class SceneTimers : SceneSystem
 {
-    private const float Epsilon = 1e-5f;
-
-    private sealed class Timer
-    {
-        public int Id;
-        public float Remaining;
-        public float Interval;
-        public int Left; // calls left; -1 repeats until cancelled
-        public bool Unscaled;
-        public bool Dead;
-        public required Action Action;
-    }
-
-    private readonly List<Timer> _timers = [];
-    private int _nextId = 1;
+    private readonly Timers _timers = new();
 
     /// <summary>How many timers are waiting.</summary>
-    public int Count
-    {
-        get
-        {
-            int count = 0;
-            foreach (var timer in _timers) if (!timer.Dead) count++;
-            return count;
-        }
-    }
+    public int Count => _timers.Count;
 
-    /// <summary>Calls <paramref name="action"/> once, <paramref name="seconds"/> from now.</summary>
+    /// <summary>Calls <paramref name="action"/> once, <paramref name="seconds"/> from now, on the update on which the time reaches them (<see cref="Timers"/> gives the rule).</summary>
     /// <param name="seconds">The delay; 0 calls it in the scene's next step.</param>
     /// <param name="action">What to call.</param>
     /// <param name="unscaled">True to count the engine's step, so the timer runs through slow motion and a frozen world.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="seconds"/> is negative or not a number.</exception>
-    public TimerHandle After(float seconds, Action action, bool unscaled = false)
-    {
-        ArgumentNullException.ThrowIfNull(action);
-        if (!(seconds >= 0) || float.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "A delay is zero or more seconds.");
-        return Add(seconds, 0, 1, action, unscaled);
-    }
+    public TimerHandle After(float seconds, Action action, bool unscaled = false) => _timers.After(seconds, action, unscaled);
 
     /// <summary>Calls <paramref name="action"/> every <paramref name="seconds"/>, the first time one interval from now.</summary>
     /// <param name="seconds">The interval, above zero. A step longer than the interval calls the action once per interval that passed.</param>
@@ -323,83 +288,40 @@ public sealed class SceneTimers : SceneSystem
     /// <param name="times">How many calls before the timer ends; 0 (the default) repeats until it is cancelled.</param>
     /// <param name="unscaled">True to count the engine's step, so the timer runs through slow motion and a frozen world.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="seconds"/> is not above zero, or <paramref name="times"/> is negative.</exception>
-    public TimerHandle Every(float seconds, Action action, int times = 0, bool unscaled = false)
-    {
-        ArgumentNullException.ThrowIfNull(action);
-        if (!(seconds > 0) || float.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "An interval is above zero seconds.");
-        ArgumentOutOfRangeException.ThrowIfNegative(times);
-        return Add(seconds, seconds, times == 0 ? -1 : times, action, unscaled);
-    }
+    public TimerHandle Every(float seconds, Action action, int times = 0, bool unscaled = false) => _timers.Every(seconds, action, times, unscaled);
 
-    private TimerHandle Add(float delay, float interval, int left, Action action, bool unscaled)
-    {
-        var timer = new Timer { Id = _nextId++, Remaining = delay, Interval = interval, Left = left, Unscaled = unscaled, Action = action };
-        _timers.Add(timer);
-        return new TimerHandle(timer.Id);
-    }
+    /// <summary>Calls <paramref name="action"/> once, on the <paramref name="steps"/>-th step of the scene from now; a step of zero seconds (the world frozen) is not counted.</summary>
+    /// <param name="steps">The delay in steps; 0 and 1 both call it in the scene's next step.</param>
+    /// <param name="action">What to call.</param>
+    /// <param name="unscaled">True to count every step of the engine, so the timer runs through a frozen world.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is negative.</exception>
+    public TimerHandle AfterSteps(int steps, Action action, bool unscaled = false) => _timers.AfterSteps(steps, action, unscaled);
+
+    /// <summary>Calls <paramref name="action"/> every <paramref name="steps"/> steps of the scene, the first time that many steps from now.</summary>
+    /// <param name="steps">The interval in steps, above zero.</param>
+    /// <param name="action">What to call.</param>
+    /// <param name="times">How many calls before the timer ends; 0 (the default) repeats until it is cancelled.</param>
+    /// <param name="unscaled">True to count every step of the engine, so the timer runs through a frozen world.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is not above zero, or <paramref name="times"/> is negative.</exception>
+    public TimerHandle EverySteps(int steps, Action action, int times = 0, bool unscaled = false) => _timers.EverySteps(steps, action, times, unscaled);
 
     /// <summary>Cancels a timer; false when it already ended or was cancelled. A timer may cancel itself from its action.</summary>
-    public bool Cancel(TimerHandle handle)
-    {
-        foreach (var timer in _timers)
-        {
-            if (timer.Id != handle.Id || timer.Dead) continue;
-            timer.Dead = true;
-            return true;
-        }
-        return false;
-    }
+    public bool Cancel(TimerHandle handle) => _timers.Cancel(handle);
 
     /// <summary>Whether <paramref name="handle"/> names a timer that is still waiting.</summary>
-    public bool IsActive(TimerHandle handle)
-    {
-        foreach (var timer in _timers)
-            if (timer.Id == handle.Id) return !timer.Dead;
-        return false;
-    }
+    public bool IsActive(TimerHandle handle) => _timers.IsActive(handle);
+
+    /// <summary>What is left before the next call of a timer, in seconds or in steps as it was added; 0 when it ended or was cancelled.</summary>
+    public float Remaining(TimerHandle handle) => _timers.Remaining(handle);
 
     /// <summary>Cancels every timer.</summary>
-    public void Clear()
-    {
-        foreach (var timer in _timers) timer.Dead = true;
-    }
+    public void Clear() => _timers.Clear();
 
     /// <inheritdoc/>
-    protected override void Update(float dt)
-    {
-        float engineStep = Scene.EngineStep;
-        // Timers added by an action wait for the next step.
-        int count = _timers.Count;
-        for (int i = 0; i < count; i++)
-        {
-            var timer = _timers[i];
-            if (timer.Dead) continue;
-            timer.Remaining -= timer.Unscaled ? engineStep : dt;
-            while (!timer.Dead && timer.Remaining <= Epsilon)
-            {
-                if (timer.Left > 0) timer.Left--;
-                if (timer.Left == 0) timer.Dead = true;
-                else timer.Remaining += timer.Interval;
-                timer.Action();
-            }
-        }
-        _timers.RemoveAll(static timer => timer.Dead);
-    }
+    protected override void Update(float dt) => _timers.Update(dt, Scene.EngineStep);
 
     /// <inheritdoc/>
-    public override void HashState(StateHasher hash)
-    {
-        hash.Add(Count);
-        foreach (var timer in _timers)
-        {
-            if (timer.Dead) continue;
-            hash.Add(timer.Id);
-            hash.Add(timer.Remaining);
-            hash.Add(timer.Interval);
-            hash.Add(timer.Left);
-            hash.Add(timer.Unscaled);
-        }
-    }
+    public override void HashState(StateHasher hash) => _timers.HashState(hash);
 
     /// <inheritdoc/>
     protected override void Stop() => _timers.Clear();

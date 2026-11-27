@@ -159,6 +159,9 @@ public sealed class SceneWorld : IWorld, IStateHashed
     /// <inheritdoc/>
     public EntityChildren Children(EntityId parent) => new(this, Resolve(parent));
 
+    /// <inheritdoc/>
+    public ChildAttachments<T> Children<T>(EntityId parent) where T : class => new(this, Resolve(parent), ExistingStore<T>());
+
     private void Link(int slot, int parentSlot)
     {
         _parent[slot] = parentSlot;

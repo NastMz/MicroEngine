@@ -252,10 +252,19 @@
 5136 press pause
 5150 press down
 5160 press confirm
-5200 press left
-5230 press confirm
-5244 capture 43-effects.png
-5250 press pause
-5264 quit
+5200 press confirm
+5260 capture 43-pixel-menu.png
+5266 press pause
+5280 press down
+5290 press confirm
+5360 capture 44-cutscene.png
+5366 press pause
+5380 press down
+5390 press confirm
+5430 press left
+5460 press confirm
+5474 capture 45-effects.png
+5480 press pause
+5494 quit
 
 

@@ -102,7 +102,7 @@ public virtual bool BlocksUpdateBelow { get; }
 
 ### <a id="MicroEngine_Scenes_Scene_Coroutines"></a> Coroutines
 
-Coroutines owned by this scene. They advance before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) while the scene is updated and stop when it leaves the stack.
+Coroutines owned by this scene. They advance before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_), after the tweens, while the scene is updated and stop when it leaves the stack.
 
 ```csharp
 public CoroutineRunner Coroutines { get; }
@@ -213,7 +213,7 @@ public StateMachines Machines { get; }
 ### <a id="MicroEngine_Scenes_Scene_Objects"></a> Objects
 
 The scene's objects ([IWorld](MicroEngine.Scenes.IWorld.md)), created the first time it is read. While the scene is updated the
-engine steps it with the scene: each step starts before the scene's coroutines, tweens and [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_)
+engine steps it with the scene: each step starts before the scene's tweens, coroutines and [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_)
 (which then receives the step on the world's [Clock](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Clock)) and ends after them, releasing what was
 destroyed. Before [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) the engine sets its [Blend](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Blend): the frame's blend when the
 scene was updated in the latest step, 1 when it was not (frozen under an overlay, in a transition), so drawing
@@ -346,7 +346,9 @@ public virtual IReadOnlyCollection<string>? TouchActions { get; }
 
 ### <a id="MicroEngine_Scenes_Scene_Tweens"></a> Tweens
 
-Tweens owned by this scene. They advance before [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) while the scene is updated and are cleared when it leaves the stack.
+Tweens owned by this scene. They advance first in each update, before the coroutines and [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_),
+while the scene is updated, by the engine's step (a tween added with <code>scaled: true</code>, by the step of the
+world's clock), and are cancelled when it leaves the stack.
 
 ```csharp
 public Tweener Tweens { get; }

@@ -39,9 +39,13 @@ public abstract class Scene : IStateHashed
     public BitmapFont Font => Game.Font;
     /// <summary>The game's content files (<see cref="Core.Game.Assets"/>).</summary>
     public Core.AssetCache Assets => Game.Assets;
-    /// <summary>Coroutines owned by this scene. They advance before <see cref="Update"/> while the scene is updated and stop when it leaves the stack.</summary>
+    /// <summary>Coroutines owned by this scene. They advance before <see cref="Update"/>, after the tweens, while the scene is updated and stop when it leaves the stack.</summary>
     public CoroutineRunner Coroutines { get; } = new();
-    /// <summary>Tweens owned by this scene. They advance before <see cref="Update"/> while the scene is updated and are cleared when it leaves the stack.</summary>
+    /// <summary>
+    /// Tweens owned by this scene. They advance first in each update, before the coroutines and <see cref="Update"/>,
+    /// while the scene is updated, by the engine's step (a tween added with <c>scaled: true</c>, by the step of the
+    /// world's clock), and are cancelled when it leaves the stack.
+    /// </summary>
     public Tweener Tweens { get; } = new();
     /// <summary>Seconds this scene has been updated.</summary>
     public float Age { get; private set; }
@@ -64,7 +68,7 @@ public abstract class Scene : IStateHashed
     private SceneWorld? _world;
     /// <summary>
     /// The scene's objects (<see cref="IWorld"/>), created the first time it is read. While the scene is updated the
-    /// engine steps it with the scene: each step starts before the scene's coroutines, tweens and <see cref="Update"/>
+    /// engine steps it with the scene: each step starts before the scene's tweens, coroutines and <see cref="Update"/>
     /// (which then receives the step on the world's <see cref="IWorld.Clock"/>) and ends after them, releasing what was
     /// destroyed. Before <see cref="Draw"/> the engine sets its <see cref="IWorld.Blend"/>: the frame's blend when the
     /// scene was updated in the latest step, 1 when it was not (frozen under an overlay, in a transition), so drawing
@@ -272,8 +276,9 @@ public abstract class Scene : IStateHashed
         var world = _world;
         float step = world is null ? dt : world.BeginStep(Game.UpdateCount, dt);
         Age += dt;
+        // Tweens first: a coroutine that waits for one goes on in the update the tween applies its final value.
+        Tweens.Update(dt, step);
         Coroutines.Update(dt);
-        Tweens.Update(dt);
         TickUi(dt);
         _systems?.Update(step);
         Update(step);
@@ -521,8 +526,10 @@ public sealed class SceneManager
             var post = scene.PostProcessOrNull;
             bool processed = post is not null && post.Begin(renderer, _game.Graphics);
             if (scene.WorldCamera is { } camera) renderer.PushCamera(camera);
+            scene.UiOrNull?.BeginScenePass();
             scene.Draw(renderer);
             if (scene.WorldCamera is not null) renderer.PopCamera();
+            scene.UiOrNull?.EndScenePass(renderer);   // widgets on the canvas the scene did not draw itself
             if (processed) post!.End(renderer);
         }
         _transition?.DrawAt(renderer, _game.FrameBlend);

@@ -6,7 +6,7 @@ Namespace: [MicroEngine](MicroEngine.md)
 Assembly: MicroEngine.Kernel.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-A machine's state and the seconds it has been in it, to save and restore (`Restore`).
+A machine's state and how long it has been in it, to save and restore (`Restore`).
 
 ```csharp
 public readonly struct MachineSnapshot<TState> : IEquatable<MachineSnapshot<TState>>
@@ -22,12 +22,12 @@ public readonly struct MachineSnapshot<TState> : IEquatable<MachineSnapshot<TSta
 
 ## Constructors
 
-### <a id="MicroEngine_MachineSnapshot_1__ctor__0_System_Single_"></a> MachineSnapshot\(TState, float\)
+### <a id="MicroEngine_MachineSnapshot_1__ctor__0_System_Single_System_Int32_"></a> MachineSnapshot\(TState, float, int\)
 
-A machine's state and the seconds it has been in it, to save and restore (`Restore`).
+A machine's state and how long it has been in it, to save and restore (`Restore`).
 
 ```csharp
-public MachineSnapshot(TState State, float Time)
+public MachineSnapshot(TState State, float Time, int Steps = 0)
 ```
 
 #### Parameters
@@ -39,6 +39,10 @@ The state.
 `Time` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 Seconds in that state.
+
+`Steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Updates in that state (`Steps`).
 
 ## Properties
 
@@ -54,6 +58,18 @@ public TState State { get; init; }
 
  TState
 
+### <a id="MicroEngine_MachineSnapshot_1_Steps"></a> Steps
+
+Updates in that state (`Steps`).
+
+```csharp
+public int Steps { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_MachineSnapshot_1_Time"></a> Time
 
 Seconds in that state.
@@ -68,10 +84,10 @@ public float Time { get; init; }
 
 ## Methods
 
-### <a id="MicroEngine_MachineSnapshot_1_Deconstruct__0__System_Single__"></a> Deconstruct\(out TState, out float\)
+### <a id="MicroEngine_MachineSnapshot_1_Deconstruct__0__System_Single__System_Int32__"></a> Deconstruct\(out TState, out float, out int\)
 
 ```csharp
-public void Deconstruct(out TState State, out float Time)
+public void Deconstruct(out TState State, out float Time, out int Steps)
 ```
 
 #### Parameters
@@ -79,6 +95,8 @@ public void Deconstruct(out TState State, out float Time)
 `State` TState
 
 `Time` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`Steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ### <a id="MicroEngine_MachineSnapshot_1_Equals_System_Object_"></a> Equals\(object\)
 

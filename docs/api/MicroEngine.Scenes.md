@@ -15,7 +15,8 @@ Controls a coroutine started with [Start](MicroEngine.Scenes.CoroutineRunner.md#
  [CoroutineRunner](MicroEngine.Scenes.CoroutineRunner.md)
 
 Runs iterator-based sequences one step per update. A coroutine may yield null (next update),
-[Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_), [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__) or another IEnumerator (awaited as a sub-routine).
+[Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_), [Steps](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Steps_System_Int32_), [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__), a [Tween](MicroEngine.Scenes.Tween.md) (until it
+ends) or another IEnumerator (awaited as a sub-routine).
 Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 
  [Scene<TResult\>](MicroEngine.Scenes.Scene\-1.md)
@@ -64,10 +65,12 @@ The systems of one scene ([Systems](MicroEngine.Scenes.Scene.md#MicroEngine_Scen
 
  [SceneTimers](MicroEngine.Scenes.SceneTimers.md)
 
-Calls actions after a time or at intervals, on the scene's time ([Timers](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Timers)). Timers advance before
-the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) by the step it receives, so they slow down and freeze with the world's clock;
-an unscaled timer advances by [EngineStep](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_EngineStep) instead. They stop with the scene, and their state is
-part of its state hash. For a sequence of steps over time use a coroutine ([Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines)).
+Calls actions after a time or at intervals, on the scene's time ([Timers](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Timers)): the scene's own
+[Timers](MicroEngine.Timers.md), stepped for it. Timers advance before the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) by the step it
+receives, so they slow down and freeze with the world's clock; an unscaled timer advances by
+[EngineStep](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_EngineStep) instead. They stop with the scene, and their state is part of its state hash. For a
+sequence of steps over time use a coroutine ([Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines)); for the rules of a game kept outside
+a scene, create a [Timers](MicroEngine.Timers.md) and step it yourself.
 
  [SceneWorld](MicroEngine.Scenes.SceneWorld.md)
 
@@ -115,13 +118,23 @@ of movements with the moments the game reacts to (a footstep, the frame a swing 
 A full-screen effect that covers the old scene (progress 0..0.5), swaps scenes at 0.5 and
 reveals the new one (0.5..1). Subclasses draw a cover amount between 0 (clear) and 1 (covered).
 
+ [Tween](MicroEngine.Scenes.Tween.md)
+
+A tween added to a [Tweener](MicroEngine.Scenes.Tweener.md): what a coroutine yields to wait for it, and the way to end it early.
+
  [Tweener](MicroEngine.Scenes.Tweener.md)
 
-Simple value tweens driven by update time.
+Value tweens driven by update time: each calls an action with an eased progress from 0 to 1 over a length in
+seconds or in updates. A scene has one ([Tweens](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Tweens)) and steps it; one you create is stepped with
+[Update](MicroEngine.Scenes.Tweener.md#MicroEngine_Scenes_Tweener_Update_System_Single_).
 
  [WaitSeconds](MicroEngine.Scenes.WaitSeconds.md)
 
 Yield instruction that pauses a coroutine for a number of seconds; create it with [Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_).
+
+ [WaitSteps](MicroEngine.Scenes.WaitSteps.md)
+
+Yield instruction that pauses a coroutine for a number of updates; create it with [Steps](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Steps_System_Int32_).
 
  [WaitUntil](MicroEngine.Scenes.WaitUntil.md)
 
@@ -147,6 +160,15 @@ Walks the attachments; allocates nothing.
 
 The attachments of type <code class="typeparamref">T</code> of live entities, in attach order ([All``1](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_All__1)).
 
+ [ChildAttachments<T\>.Enumerator](MicroEngine.Scenes.ChildAttachments\-1.Enumerator.md)
+
+Walks the attachments; allocates nothing.
+
+ [ChildAttachments<T\>](MicroEngine.Scenes.ChildAttachments\-1.md)
+
+The attachments of type <code class="typeparamref">T</code> of an entity's live direct children, in parenting order
+([Children``1](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Children__1_MicroEngine_Scenes_EntityId_)).
+
  [EntityChildren.Enumerator](MicroEngine.Scenes.EntityChildren.Enumerator.md)
 
 Walks the children; allocates nothing.
@@ -166,10 +188,6 @@ was made. A destroyed entity's slot is reused with a new generation, so an old i
 An item of a [SpatialIndex2D`1](MicroEngine.Scenes.md): a slot index and the generation of the item that held the slot when
 the handle was made. A removed item's slot is reused with a new generation, so an old handle never reaches the new
 item. <code>default</code> is [None](MicroEngine.Scenes.SpatialHandle.md#MicroEngine_Scenes_SpatialHandle_None) (generation 0 is never issued).
-
- [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
-
-A timer of a scene's [SceneTimers](MicroEngine.Scenes.SceneTimers.md); [None](MicroEngine.Scenes.TimerHandle.md#MicroEngine_Scenes_TimerHandle_None) names no timer.
 
  [Transform](MicroEngine.Scenes.Transform.md)
 
