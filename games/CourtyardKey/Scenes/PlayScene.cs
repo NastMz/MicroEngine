@@ -25,7 +25,6 @@ public sealed partial class PlayScene : Scene
     public static readonly RectF WorldView = new(0, HudHeight, AreaDef.RoomPixelWidth, AreaDef.RoomPixelHeight);
 
     private readonly List<RectF> _solids = [];
-    private readonly List<Actor> _drawList = [];
     private readonly EntityId _camera;
     private EntityId _room, _leaving;
     private RoomRenderer _tiles = null!;

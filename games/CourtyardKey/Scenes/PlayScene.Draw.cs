@@ -10,7 +10,7 @@ namespace CourtyardKey.Scenes;
 /// <summary>Rendering: tiles, Y-sorted actors, particles, darkness, HUD and fades.</summary>
 public sealed partial class PlayScene
 {
-    private static readonly Comparison<Actor> ByDepth = (a, b) => a.Depth.CompareTo(b.Depth);
+    private readonly SortedRenderer _sorted = new();
     private Func<int, int, bool>? _platePressed;
     private static readonly Func<int, int, bool> NoPlates = (_, _) => false;
 
@@ -34,14 +34,14 @@ public sealed partial class PlayScene
         if (_scrollFrom is not null) _tiles.Draw(r, _scrollFrom, Age, NoPlates);
         _tiles.Draw(r, Room, Age, _platePressed);
 
-        _drawList.Clear();
+        // Shadows under everything that stands, then each actor at the Y of its feet; actors at the same depth are
+        // drawn in the order of the walk (the room leaving, the room, the hero).
+        var sorted = _sorted.Begin(r);
         if (_scrollFrom is not null)
-            foreach (var a in LeavingActors) _drawList.Add(a);
-        foreach (var a in Actors) _drawList.Add(a);
-        _drawList.Add(Hero);
-        _drawList.Sort(ByDepth);
-        foreach (var a in _drawList) a.DrawShadow(r);
-        foreach (var a in _drawList) a.Draw(r);
+            foreach (var a in LeavingActors) DrawSorted(sorted, a);
+        foreach (var a in Actors) DrawSorted(sorted, a);
+        DrawSorted(sorted, Hero);
+        _sorted.End();
         // Every particle system is drawn at the world's blend, like the actors, so all of them move evenly between steps.
         Particles.Draw(r, Objects.Blend);
         Ambient.Draw(r, Objects.Blend);
@@ -52,7 +52,12 @@ public sealed partial class PlayScene
         if (_scrollFrom is not null) darkness = MathX.Lerp(_scrollFrom.Def.Darkness, darkness, Math.Clamp(_scrollTime / ScrollTime, 0, 1));
         Light.Darkness = darkness;
         if (darkness > 0.01f)
-            foreach (var a in _drawList) a.EmitLight(Light);
+        {
+            if (_scrollFrom is not null)
+                foreach (var a in LeavingActors) a.EmitLight(Light);
+            foreach (var a in Actors) a.EmitLight(Light);
+            Hero.EmitLight(Light);
+        }
         // Halos fade with the darkness so torches read as light, not as stickers, in lit rooms.
         Light.GlowIntensity = 0.3f * darkness + 0.06f;
         if (darkness > 0.01f) Light.Draw(r, -Camera.RenderOffset, WorldView);
@@ -64,6 +69,15 @@ public sealed partial class PlayScene
 
         _hud.Draw(r);
         if (_fade > 0) r.FillRect(new RectF(0, 0, r.Width, r.Height), _fadeColor.WithAlpha(_fade));
+    }
+
+    private static void DrawSorted(SortedRenderer sorted, Actor actor)
+    {
+        float depth = actor.Depth;
+        sorted.At(layer: -1, depth);
+        actor.DrawShadow(sorted);
+        sorted.At(layer: 0, depth);
+        actor.Draw(sorted);
     }
 
     private void DrawPresentedItem(IRenderer r)
