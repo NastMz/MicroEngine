@@ -15,6 +15,18 @@ public sealed record UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Col
         new PanelStyle(Color.Hex("1c1b2e"), Color.Hex("f4f1de"), Color.Hex("3a3a5c"), Color.Hex("00000080")),
         Color.Hex("f4f1de"), Color.Hex("0a0a14"), Color.Hex("f2cc60"), Color.Hex("8a8aa8"));
 
+    /// <summary>
+    /// Draws every <see cref="Button"/> of a root with this theme that has no skin of its own (<see cref="Button.Skin"/>);
+    /// null (the default) draws the built-in button: the theme's panel around the label.
+    /// </summary>
+    public ControlSkin? ButtonSkin { get; init; }
+
+    /// <summary>
+    /// Draws the box of every <see cref="UI.Panel"/> of a root with this theme that has neither a style nor a skin of its own
+    /// (<see cref="UI.Panel.Style"/>, <see cref="UI.Panel.Skin"/>); null (the default) draws <see cref="Panel"/>, the panel style.
+    /// </summary>
+    public ControlSkin? PanelSkin { get; init; }
+
     /// <summary>The widgets' layout unit for <paramref name="font"/>: 1 for the built-in pixel font (10-pixel lines), proportionally more for larger fonts, never less than 1.</summary>
     internal static float Unit(IFont font) => MathF.Max(1, MathF.Round(font.LineHeight / 10f));
 }

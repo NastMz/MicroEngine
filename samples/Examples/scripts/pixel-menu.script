@@ -1,0 +1,31 @@
+# The pixel menu example with the keyboard's actions, a gamepad and the mouse (a finger taps as the mouse clicks;
+# the example's test sends one).
+# From the list, up wraps to the last example.
+20 press up
+30 press confirm
+# The menu: the cursor on TALK.
+90 capture pixel-1-menu.png
+# The gamepad: down skips TRADE and lands on LEAVE; up comes back.
+100 pad 1 add xbox
+102 pad 1 DPadDown down
+104 pad 1 DPadDown up
+120 capture pixel-2-pad.png
+130 pad 1 DPadUp down
+132 pad 1 DPadUp up
+# The gamepad's A (confirm) opens the dialogue, which reveals its text.
+150 pad 1 A down
+152 pad 1 A up
+170 capture pixel-3-reveal.png
+# The mouse: a click on the arrow shows the rest of the page.
+180 click 275,167
+200 capture pixel-4-page.png
+# A second click turns the page.
+210 click 275,167
+230 capture pixel-5-next.png
+# The keyboard closes the last page.
+310 press confirm
+330 capture pixel-6-closed.png
+# The mouse over LEAVE moves the cursor there.
+340 mouse 160,78
+360 capture pixel-7-hover.png
+370 quit

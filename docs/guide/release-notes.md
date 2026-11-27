@@ -6,6 +6,30 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Interface: widgets on the canvas, skins, text that reveals itself and a list cursor
+
+- **Widgets on the game's canvas.** `Widgets.Space = UiSpace.Canvas` puts a scene's widgets on the canvas: laid out
+  in canvas pixels on whole pixels, given the mouse and touch in canvas pixels, and drawn by the engine in the canvas
+  after the scene's `Draw` (or by the scene, where it calls `Widgets.Draw(renderer)`) as part of its picture. A pixel-art game's menus and boxes have the canvas's
+  pixel size at any window size ([Widgets on the canvas](../manual/ui.md#widgets-on-the-canvas)).
+- **Skins.** A `ControlSkin` draws a button or a panel from its state (`ControlState`: bounds, text, enabled,
+  focused, hovered, pressed, the time it has had the focus), on one control (`Button.Skin`, `Panel.Skin`) or for a
+  whole root (`UiTheme.ButtonSkin`, `UiTheme.PanelSkin`). `Button.Padding` sets the room around the label. A menu
+  row that is a bar and a bobbing cursor, or a box with a border of the game's own, needs no widget type
+  ([Skins](../manual/ui.md#skins)). `UiRoot.FocusTime` and `Widget.FocusTime` give the time with the focus.
+- **Text that reveals itself.** `TextReveal` shows a text a character at a time: characters per second, a call per
+  revealed character for a sound, an optional pause after a character, the rest at once; advancing it allocates
+  nothing. It counts characters as a reader does, so accents, vowel marks and emoji are never cut, and a right-to-left
+  line grows from its right edge. `Label.Reveal` reveals a label's text with one and starts again when the text
+  changes ([Text that wraps and reveals](../manual/ui.md#text-that-wraps-and-reveals)).
+- **A cursor for lists a scene draws.** `MenuCursor` keeps the highlighted option of a list drawn by hand: one
+  column or a grid, wrapping or not, options that cannot be chosen, the first row of a scrolling window, confirm
+  consumed when it chooses ([A list the scene draws](../manual/ui.md#a-list-the-scene-draws)).
+- A label's `VisibleLines` is made again only when what shows changes, so a label that reveals nothing new is drawn
+  without allocating.
+- New example: a pixel menu and a dialogue box on the canvas
+  ([Pixel menu and dialogue](../examples/focused.md#pixel-menu-and-dialogue)).
+
 ### Saves: a scripted run keeps its own
 
 - **A run nobody plays never touches the player's saves.** A run with an input script (`--script`), in
