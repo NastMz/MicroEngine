@@ -108,7 +108,7 @@ the number as two texts (`Font.Draw(r, Text["hud.score"], ...)` and `Font.DrawRi
 nothing.
 
 A prompt ("Z: jump") is kept by the engine: `Game.Prompts.Cached("{jump}: JUMP")` returns the same string until the
-player changes device or the prompts change ([Input](input.md#prompts)).
+player changes device or the prompts change ([Input](input.md#showing-controls-to-the-player)).
 
 ## Measuring and wrapping
 
