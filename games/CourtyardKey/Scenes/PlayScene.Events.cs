@@ -162,6 +162,6 @@ public sealed partial class PlayScene
         Hero.Controllable = true;
         PlaceAtCheckpoint(Progress.Entrance);
         SaveGame(toast: false);
-        Coroutines.Start(FadeIn(0.6f));
+        Coroutines.Start(Uncover(0.6f));
     }
 }

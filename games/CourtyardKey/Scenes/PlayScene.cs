@@ -153,7 +153,7 @@ public sealed partial class PlayScene : Scene
         _hud = new Hud(this);
         Hero = new Hero(this, new Health(Progress.MaxHealth, Math.Max(2, Progress.Health)));
         PlaceAtCheckpoint(Progress.Entrance);
-        Coroutines.Start(FadeIn(0.5f));
+        Coroutines.Start(Uncover(0.5f));
     }
 
     public override void Exit()
@@ -283,25 +283,28 @@ public sealed partial class PlayScene : Scene
     }
 
     // ------------------------------------------------------------------ fades
-    // Coroutines advance by the engine's step, so fades count it too: they last the same seconds at any update rate
-    // and keep running through a hitstop.
+    // Tweens advance by the engine's step: fades last the same seconds at any update rate and keep running through a
+    // hitstop. A cutscene waits for one by yielding it.
 
     /// <summary>How far the screen is covered by the current fade (0 to 1).</summary>
     internal float FadeAmount => _fade;
 
-    private IEnumerator<object?> FadeIn(float seconds, Color? color = null)
+    private Tween FadeIn(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
-        _fade = 1;
-        for (float t = 0; t < seconds; t += EngineStep) { _fade = 1 - t / seconds; yield return null; }
-        _fade = 0;
+        return Tweens.Add(seconds, t => _fade = 1 - t, Ease.Linear);
     }
 
-    private IEnumerator<object?> FadeOut(float seconds, Color? color = null)
+    /// <summary>Fades in from a coroutine, so the fade starts on the scene's next update, as a cutscene's does.</summary>
+    private System.Collections.IEnumerator Uncover(float seconds)
+    {
+        yield return FadeIn(seconds);
+    }
+
+    private Tween FadeOut(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
-        for (float t = 0; t < seconds; t += EngineStep) { _fade = t / seconds; yield return null; }
-        _fade = 1;
+        return Tweens.Add(seconds, t => _fade = t, Ease.Linear);
     }
 
     /// <summary>Copies live hero health into the progress and writes the save slot.</summary>
