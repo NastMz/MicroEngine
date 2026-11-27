@@ -204,6 +204,58 @@ step it receives, so a hitstop or slow motion on the world's clock holds them to
 must keep running (a pause menu's blink). They end with the scene and are part of its state hash. Use a timer for a
 single delayed or repeated call and a coroutine for a sequence of steps.
 
+### When a timer is called
+
+A timer in seconds is called on the update on which the time since it was added reaches its delay. Time is counted in
+double precision, so at a fixed update rate the update can be worked out before running anything, and it is the same
+wherever in a run the timer is added:
+
+> `seconds` at R updates a second is exactly `seconds x R` updates when that product is a whole number (0.5 s at 60:
+> 30; 1.9 s at 60: 114; 4 s at 144: 576), and the next whole number when it is not (0.1 s at 144: 15).
+
+A repeating timer keeps what is left over, so its n-th call follows the same rule for `n x seconds`:
+`Every(0.1f, ...)` at 60 updates a second is called every 6 updates for as long as it runs, and `Every(0.04f, ...)`
+(2.4 updates) on updates 3, 5, 8, 10, 12, 15. A state machine's `After` follows the same rule
+([Time in a state](../guide/state-machines.md#time-in-a-state)), so a timer and a state of the same length end on the
+same update.
+
+`Timers.AfterSteps(steps, action)` and `Timers.EverySteps(steps, action, times)` count updates instead of seconds, for
+a game that thinks in frames and for a delay kept by hand (`t -= dt; if (t <= 0)`) that moves onto a timer without
+changing the update it fires on. Steps count updates, not time: slow motion does not stretch them, their length in
+seconds changes with the update rate, and an update of zero seconds (the world frozen) is not counted.
+`Timers.Remaining(handle)` gives what is left of a timer, in the unit it was added with.
+
+### Timers outside a scene
+
+`Scene.Timers` is a `Timers` the scene steps. The rules of a game kept in a plain class (a stage, a board, a match
+that tests step without a scene) create their own and step it:
+
+```csharp
+public sealed class Stage
+{
+    private readonly Timers _timers = new();
+
+    public void BossDefeated()
+    {
+        _timers.After(2.6f, BigExplosion);
+        _timers.After(3.4f, Fanfare);
+    }
+
+    public void Update(float dt)
+    {
+        _timers.Update(dt);                 // the due ones are called here, in the order they were added
+        // the rules
+    }
+
+    public void HashState(StateHasher hash) => hash.Add(_timers);
+}
+```
+
+`Update(dt, unscaledDt)` steps two clocks, the second for timers added with `unscaled: true`. A
+[state machine](../guide/state-machines.md) needs no scene either: its owner calls `Update`. A save cannot hold a
+timer's action; an object that is saved with timers waiting writes `Remaining` for each and adds them again when it is
+loaded.
+
 ## Scene systems
 
 A scene system is a part of a scene that the engine runs for it. Derive from `SceneSystem`, add it with
