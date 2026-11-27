@@ -59,6 +59,12 @@ public sealed class SpriteSheet
     public IReadOnlyList<SheetFrame> Frames { get; }
     /// <summary>The clips, in the description's order.</summary>
     public IReadOnlyList<SheetClip> Clips { get; }
+    /// <summary>
+    /// The names of the strips the description declares, in its order: runs of frames "name0", "name1"... that
+    /// <see cref="SpriteAtlas.Frames"/> takes. Empty for a sheet whose source declares none (an Aseprite file, a
+    /// packing tool's atlas, a sheet made in code).
+    /// </summary>
+    public IReadOnlyList<string> Strips { get; init; } = [];
 
     /// <summary>A sheet of <paramref name="frames"/> and <paramref name="clips"/> (a reader of another format makes one).</summary>
     /// <exception cref="InvalidDataException">Two frames or two clips share a name, a clip names a frame that is missing, or its timing does not fit its frames.</exception>
@@ -147,7 +153,7 @@ public sealed class SpriteSheet
                 if (clips.ValueKind != JsonValueKind.Object) throw new InvalidDataException("\"clips\" is an object of named clips.");
                 foreach (var clip in clips.EnumerateObject()) ReadClip(clip.Name, clip.Value);
             }
-            return new SpriteSheet(_frames, _clips);
+            return new SpriteSheet(_frames, _clips) { Strips = [.. _strips.Keys] };
         }
 
         private void ReadSheet(JsonElement sheet, Anchor inherited)

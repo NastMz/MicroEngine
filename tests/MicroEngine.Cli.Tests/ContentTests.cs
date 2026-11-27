@@ -188,6 +188,37 @@ public sealed class ContentTests
     }
 
     [TestMethod]
+    public void The_strips_of_a_sheet_are_the_ones_it_declares()
+    {
+        // Neon Rift's sprites.sheet: three props named "prop_tank-1".."prop_tank-3", each an image of its own, were
+        // listed as a strip "prop_tank-", and the strips "hit1".."hit5" (frames "hit10", "hit11"...) were not listed.
+        using var content = new Folder()
+            .Bytes("tank-1.png", Png(Solid(2, 2, 1))).Bytes("tank-2.png", Png(Solid(2, 2, 2))).Bytes("tank-3.png", Png(Solid(2, 2, 3)))
+            .Bytes("hit1.png", Png(Solid(4, 2, 4))).Bytes("hit2.png", Png(Solid(4, 2, 5))).Bytes("tiles.png", Png(Solid(8, 2, 6)))
+            .Text("sprites.sheet", """
+                { "sheets": [
+                    { "image": "tank-1.png", "name": "prop_tank-1" },
+                    { "image": "tank-2.png", "name": "prop_tank-2" },
+                    { "image": "tank-3.png", "name": "prop_tank-3" },
+                    { "image": "hit1.png", "name": "hit1", "cell": [2, 2], "fps": 28, "loop": false },
+                    { "image": "hit2.png", "name": "hit2", "cell": [2, 2] },
+                    { "image": "tiles.png", "cell": [2, 2], "strips": { "lava": { "from": 1, "count": 2 } }, "sprites": { "rock1": [0, 0], "rock2": [3, 0] } }
+                ] }
+                """);
+        string code = ContentTool.Names(content.Root, "MyGame", "GameContent");
+        int strips = code.IndexOf("public static class Strips", StringComparison.Ordinal);
+        Assert.IsTrue(strips > 0, code);
+        string listed = code[strips..code.IndexOf('}', strips)];
+        StringAssert.Contains(listed, "public const string Hit1 = \"hit1\";", "a strip with a rate");
+        StringAssert.Contains(listed, "public const string Hit2 = \"hit2\";", "a strip without a rate");
+        StringAssert.Contains(listed, "public const string Lava = \"lava\";", "a strip of a sheet's \"strips\"");
+        Assert.IsFalse(listed.Contains("prop_tank-", StringComparison.Ordinal), "three sprites of their own are not a strip:\n" + listed);
+        Assert.IsFalse(listed.Contains("\"rock\"", StringComparison.Ordinal), "nor are two named sprites that end in a number:\n" + listed);
+        StringAssert.Contains(code, "public const string PropTank1 = \"prop_tank-1\";", "the sprites are still named");
+        CollectionAssert.AreEqual(new[] { "hit1", "hit2", "lava" }, MicroEngine.Graphics.SpriteSheet.Load(content.Path("sprites.sheet")).Strips.ToArray());
+    }
+
+    [TestMethod]
     public void Names_are_written_as_constants_for_files_frames_and_clips()
     {
         using var content = Good().Bytes("items/gem.jpg", Png(Solid(2, 2, 1))).Bytes("2d/class.png", Png(Solid(2, 2, 1)));

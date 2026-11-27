@@ -414,9 +414,11 @@ public static class ContentTool
             code.Append(indent).Append("    public const string Path = ").Append(Literal(path)).Append(";\n");
             var names = sheet.Frames.Select(f => f.Name).ToList();
             var all = new HashSet<string>(names, StringComparer.Ordinal);
-            // "name0", "name1"... (or from 1) is the strip "name", which atlas.Frames(name) takes.
-            var strips = new List<string>();
-            foreach (var name in names)
+            // A .sheet file says which runs of frames are strips. Other sources (an Aseprite file, a packing tool's
+            // atlas) declare none, so there "name0", "name1"... (or from 1) is taken as the strip "name".
+            bool declares = path.EndsWith(".sheet", StringComparison.OrdinalIgnoreCase);
+            var strips = declares ? sheet.Strips.ToList() : [];
+            foreach (var name in declares ? [] : names)
             {
                 int digits = name.Length;
                 while (digits > 0 && char.IsAsciiDigit(name[digits - 1])) digits--;
