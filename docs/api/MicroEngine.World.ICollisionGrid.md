@@ -13,6 +13,10 @@ A grid of square tiles with collision flags: what tile geometry is made of
 public interface ICollisionGrid
 ```
 
+#### Extension Methods
+
+[CollisionGridViews.Blocking\(ICollisionGrid, TileFlags\)](MicroEngine.World.CollisionGridViews.md\#MicroEngine\_World\_CollisionGridViews\_Blocking\_MicroEngine\_World\_ICollisionGrid\_MicroEngine\_World\_TileFlags\_)
+
 ## Properties
 
 ### <a id="MicroEngine_World_ICollisionGrid_TileSize"></a> TileSize

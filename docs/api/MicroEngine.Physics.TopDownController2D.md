@@ -117,15 +117,21 @@ A value is out of range.
 
 ### <a id="MicroEngine_Physics_TopDownController2D_Position"></a> Position
 
-The body's origin.
+The body's origin. Setting it places the body there without collision; the velocity is kept.
 
 ```csharp
-public Vector2 Position { get; }
+public Vector2 Position { get; set; }
 ```
 
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The position is not finite.
 
 ### <a id="MicroEngine_Physics_TopDownController2D_Velocity"></a> Velocity
 
@@ -153,12 +159,14 @@ public IPhysicsWorld2D World { get; }
 
 ## Methods
 
-### <a id="MicroEngine_Physics_TopDownController2D_Create_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_Scenes_EntityId_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_TopDownMotion_System_UInt64_System_UInt64_"></a> Create\(IPhysicsWorld2D, EntityId, Vector2, Vector2, TopDownMotion?, ulong, ulong\)
+### <a id="MicroEngine_Physics_TopDownController2D_Create_MicroEngine_Physics_IPhysicsWorld2D_MicroEngine_Scenes_EntityId_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Physics_TopDownMotion_System_UInt64_System_UInt64_System_Numerics_Vector2_"></a> Create\(IPhysicsWorld2D, EntityId, Vector2, Vector2, TopDownMotion?, ulong, ulong, Vector2\)
 
-Creates a kinematic body with one box of <code class="paramref">size</code> centred at <code class="paramref">position</code> and a controller for it.
+Creates a kinematic body with one box of <code class="paramref">size</code> and a controller for it. The body's origin,
+<code class="paramref">position</code>, is the box's centre unless <code class="paramref">offset</code> (the box's centre relative
+to the origin) says otherwise: a game that places its characters by their feet passes half the height upward.
 
 ```csharp
-public static TopDownController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, TopDownMotion? motion = null, ulong category = 1, ulong mask = 18446744073709551615)
+public static TopDownController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, TopDownMotion? motion = null, ulong category = 1, ulong mask = 18446744073709551615, Vector2 offset = default)
 ```
 
 #### Parameters
@@ -176,6 +184,8 @@ public static TopDownController2D Create(IPhysicsWorld2D world, EntityId owner, 
 `category` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
 
 `mask` [ulong](https://learn.microsoft.com/dotnet/api/system.uint64)
+
+`offset` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 #### Returns
 

@@ -182,6 +182,25 @@ public int TotalContacts { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Physics_MoveResult_StoppedGoing_System_Numerics_Vector2_"></a> StoppedGoing\(Vector2\)
+
+Whether a surface whose normal faces against <code class="paramref">direction</code> stopped the move
+([Stopped](MicroEngine.Physics.MoveContact.md#MicroEngine_Physics_MoveContact_Stopped)): <code>StoppedGoing(new Vector2(1, 0))</code> is "movement to the right was
+stopped in this move". A surface counts when its normal is within about 45 degrees of the opposite of
+<code class="paramref">direction</code>; only the contacts kept in [Contacts](MicroEngine.Physics.MoveResult.md#MicroEngine_Physics_MoveResult_Contacts) are looked at.
+
+```csharp
+public bool StoppedGoing(Vector2 direction)
+```
+
+#### Parameters
+
+`direction` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Physics_MoveResult_ToString"></a> ToString\(\)
 
 ```csharp

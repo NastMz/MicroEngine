@@ -12,6 +12,10 @@ Guide: [Tile maps and collision](../manual/world.md)
 
 Helpers for picking tile sprites from their neighbours.
 
+ [CollisionGridViews](MicroEngine.World.CollisionGridViews.md)
+
+Views of a tile grid for movers that are blocked by different tiles.
+
  [TileGrid](MicroEngine.World.TileGrid.md)
 
 A collision grid backed by a [TileLayer](MicroEngine.World.TileLayer.md) and a per-id flag table.

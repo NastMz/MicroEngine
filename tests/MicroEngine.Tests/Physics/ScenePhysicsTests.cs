@@ -129,6 +129,29 @@ public sealed class ScenePhysicsTests
     }
 
     [TestMethod]
+    public void A_character_placed_by_its_feet_gets_its_feet_in_its_transform()
+    {
+        TopDownController2D? actor = null;
+        EntityId owner = default;
+        var scene = new Level
+        {
+            OnEnter = s =>
+            {
+                var floor = s.Physics.World.CreateBody(default, BodyDescription.Static(new Vector2(50, 108)));
+                s.Physics.World.AddShape(floor, ShapeDescription.Box(new Vector2(200, 16)));
+                owner = s.Objects.Create();
+                // A 12 x 14 box whose centre is 7 above the body's origin: the origin is the feet.
+                actor = TopDownController2D.Create(s.Physics.World, owner, new Vector2(50, 60), new Vector2(12, 14), offset: new Vector2(0, -7));
+            },
+            OnUpdate = _ => actor!.Step(1 / 60f, new Vector2(0, 1)),
+        };
+        var game = Start(scene);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+        Assert.AreEqual(new Vector2(50, 100), actor!.Position, "the feet stand on the floor's top");
+        Assert.AreEqual(new Vector2(50, 100), scene.Objects.Local(owner).Position2D, "and the transform is where the feet are");
+    }
+
+    [TestMethod]
     public void Body_poses_are_written_to_their_owners_transforms()
     {
         BodyId body = default;

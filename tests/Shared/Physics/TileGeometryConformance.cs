@@ -52,6 +52,34 @@ public abstract class TileGeometryConformance : CapabilityConformance
     }
 
     [TestMethod]
+    public void Two_views_of_the_same_tiles_block_different_movers()
+    {
+        // Water (~) stops a walker and not a flyer; a wall (#) stops both. One grid, a view for each kind of mover.
+        const ulong WalkerTiles = 1UL << 4, FlyerTiles = 1UL << 5;
+        var world = CreateWorld();
+        var grid = new TileGrid(TileLayer.Parse(["........", "...~...#", "........"], new Dictionary<char, int> { ['#'] = 1, ['~'] = 2 }), 16,
+            new Dictionary<int, TileFlags> { [1] = TileFlags.Solid, [2] = TileFlags.Water }) { OutsideFlags = TileFlags.None };
+        var level = world.CreateBody(default, BodyDescription.Static());
+        world.AddTiles(level, grid.Blocking(TileFlags.Solid | TileFlags.Water), 8, 3, WalkerTiles);
+        world.AddTiles(level, grid.Blocking(TileFlags.Solid), 8, 3, FlyerTiles);
+        Assert.AreEqual(TileFlags.Water | TileFlags.Solid, grid.Blocking(TileFlags.Water).FlagsAt(3, 1), "the view keeps the tile's own flags");
+        Assert.AreEqual(TileFlags.None, grid.Blocking(TileFlags.Water).FlagsAt(7, 1), "and a wall is no wall for a mover it does not block");
+
+        BodyId Mover(ulong tiles)
+        {
+            var body = world.CreateBody(default, BodyDescription.Kinematic(new Vector2(8, 24)));
+            world.AddShape(body, ShapeDescription.Box(new Vector2(12, 12)).InLayers(CollisionLayers.Default, tiles));
+            return body;
+        }
+        var walker = Mover(WalkerTiles);
+        var flyer = Mover(FlyerTiles);
+        var walked = world.Move(walker, new Vector2(200, 0), new QueryFilter(CollisionLayers.Default, WalkerTiles));
+        Assert.AreEqual(48 - 6, world.PositionOf(walker).X, Tolerance(world), $"the walker stops at the water: {walked}");
+        var flown = world.Move(flyer, new Vector2(200, 0), new QueryFilter(CollisionLayers.Default, FlyerTiles));
+        Assert.AreEqual(112 - 6, world.PositionOf(flyer).X, Tolerance(world), $"the flyer crosses it and stops at the wall: {flown}");
+    }
+
+    [TestMethod]
     public void A_fast_box_does_not_skip_a_row_of_tiles()
     {
         var (world, _, _) = Map(".", ".", ".", ".", ".", "#");

@@ -35,8 +35,31 @@ public enum CharacterEvents
 /// <param name="Move">The sideways intent, from -1 (left) to 1 (right); values beyond are clamped.</param>
 /// <param name="JumpPressed">Jump was pressed in this step.</param>
 /// <param name="JumpHeld">Jump is held: a rising jump keeps its full height while it is.</param>
-/// <param name="Drop">Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid ground).</param>
-public readonly record struct CharacterInput(float Move, bool JumpPressed = false, bool JumpHeld = false, bool Drop = false);
+/// <param name="Drop">
+/// Fall through the one-way platform the character stands on (it wins over a jump there, and does nothing on solid
+/// ground). With <see cref="CharacterMotion.DropWithJump"/> it is the "down" of "down and jump": the drop happens when
+/// a jump would.
+/// </param>
+/// <param name="Run">Run is held: the character moves at <see cref="CharacterMotion.RunSpeed"/> when the motion has one.</param>
+public readonly record struct CharacterInput(float Move, bool JumpPressed = false, bool JumpHeld = false, bool Drop = false, bool Run = false);
+
+/// <summary>The order of the things a <see cref="CharacterController2D"/> does in one step (<see cref="CharacterMotion.Order"/>).</summary>
+public enum CharacterStepOrder
+{
+    /// <summary>
+    /// The ground carries the character first (a platform that moved since its last step), then the jump or the drop
+    /// is read: a jump off a moving platform starts from where the platform took the character in this step.
+    /// </summary>
+    CarryThenAct,
+    /// <summary>
+    /// The jump or the drop is read first: a character that jumps or drops has left the ground before the ground
+    /// moves it, so it is not carried in that step (a jump off a moving platform starts from where the character
+    /// stood), and a drop's first step is a step in the air (its gravity is the air's, the floaty top of
+    /// <see cref="CharacterMotion.ApexGravityScale"/> included). A solid that pushes
+    /// (<see cref="BodyDescription.PushesBodies"/>) has carried its riders before the character steps, whatever the order.
+    /// </summary>
+    ActThenCarry,
+}
 
 /// <summary>
 /// How a <see cref="CharacterController2D"/> moves, in the physics world's units and seconds. The defaults suit a
@@ -54,8 +77,42 @@ public sealed record CharacterMotion
     public float Acceleration { get; init; } = float.PositiveInfinity;
     /// <summary>How fast the sideways speed falls to zero with no intent, in units per second squared; infinite (the default) stops at once.</summary>
     public float Deceleration { get; init; } = float.PositiveInfinity;
-    /// <summary>The share of <see cref="Acceleration"/> and <see cref="Deceleration"/> that applies in the air, from 0 (no air control) to 1 (the default).</summary>
+    /// <summary>
+    /// The share of <see cref="Acceleration"/> and <see cref="Deceleration"/> that applies in the air, from 0 (no air
+    /// control) to 1 (the default). <see cref="AirAcceleration"/> and <see cref="AirDeceleration"/> replace it with a
+    /// number each.
+    /// </summary>
     public float AirControl { get; init; } = 1;
+    /// <summary>
+    /// How fast the sideways speed grows toward the intent in the air, in units per second squared: how much the
+    /// player steers a jump. Null (the default) is <see cref="Acceleration"/> times <see cref="AirControl"/>.
+    /// </summary>
+    public float? AirAcceleration { get; init; }
+    /// <summary>
+    /// How fast the sideways speed falls to zero in the air with no intent, in units per second squared: a low value
+    /// lets a jump keep travelling when the player lets go. Null (the default) is <see cref="Deceleration"/> times
+    /// <see cref="AirControl"/>.
+    /// </summary>
+    public float? AirDeceleration { get; init; }
+    /// <summary>
+    /// The sideways speed at full intent while <see cref="CharacterInput.Run"/> is held, in units per second; 0 (the
+    /// default) has no run: the character always moves at <see cref="MoveSpeed"/>.
+    /// </summary>
+    public float RunSpeed { get; init; }
+    /// <summary>How fast the sideways speed grows on the ground while running, in units per second squared; null (the default) is <see cref="Acceleration"/>.</summary>
+    public float? RunAcceleration { get; init; }
+    /// <summary>
+    /// How fast a character on the ground loses the speed it has above what the intent asks for while it keeps
+    /// pushing the way it moves, in units per second squared: what happens when run is released at full speed, or
+    /// after a boost. Null (the default) uses the acceleration, as for any other change of speed; a game usually
+    /// sets its <see cref="Deceleration"/> here (the ground's friction).
+    /// </summary>
+    public float? OverspeedDeceleration { get; init; }
+    /// <summary>
+    /// The same in the air, in units per second squared: 0 keeps a run's momentum for the whole jump, whatever the
+    /// player does with run in the air. Null (the default) uses the air's acceleration.
+    /// </summary>
+    public float? AirOverspeedDeceleration { get; init; }
     /// <summary>The upward speed a jump starts with, in units per second: the jump rises about <c>JumpSpeed² / (2 × Gravity)</c>.</summary>
     public float JumpSpeed { get; init; } = 300;
     /// <summary>
@@ -63,6 +120,12 @@ public sealed record CharacterMotion
     /// jump height); 1 gives every jump the same height.
     /// </summary>
     public float JumpReleaseGravityScale { get; init; } = 2.5f;
+    /// <summary>
+    /// A jump that rises with jump released is slowed at once to this share of <see cref="JumpSpeed"/> (a slower rise
+    /// is kept): 0.45 cuts a released jump to 45 % of its starting speed in the step jump is let go, a sharper hop
+    /// than <see cref="JumpReleaseGravityScale"/> gives. 1 (the default) cuts nothing.
+    /// </summary>
+    public float JumpReleaseSpeedScale { get; init; } = 1;
     /// <summary>Gravity is multiplied by this while falling; above 1 makes falls faster than rises.</summary>
     public float FallGravityScale { get; init; } = 1;
     /// <summary>How long after leaving a ledge a jump is still allowed, in seconds.</summary>
@@ -71,6 +134,13 @@ public sealed record CharacterMotion
     public float JumpBuffer { get; init; } = 0.1f;
     /// <summary>How long one-way platforms are passed through after a drop, in seconds.</summary>
     public float DropThroughTime { get; init; } = 0.2f;
+    /// <summary>
+    /// Whether a drop needs a jump: with it, <see cref="CharacterInput.Drop"/> held makes the jump of a character on
+    /// a one-way platform a drop (pressed in that step or still remembered by <see cref="JumpBuffer"/>, which the
+    /// drop uses up), and holding it alone does nothing: "down and jump". False (the default) drops as soon as
+    /// <see cref="CharacterInput.Drop"/> is held.
+    /// </summary>
+    public bool DropWithJump { get; init; }
     /// <summary>Jumps allowed in the air before landing again (1 is a double jump); 0 by default.</summary>
     public int AirJumps { get; init; }
     /// <summary>The fastest fall while pushing against a wall, in units per second; 0 (the default) turns wall sliding off.</summary>
@@ -85,6 +155,20 @@ public sealed record CharacterMotion
     /// leaves the ground.
     /// </summary>
     public float GroundSnap { get; init; }
+    /// <summary>
+    /// How near the ground a character that is not rising counts as standing on it, in units; 0 (the default) lands
+    /// on contact. With 1, a fall that ends a step within a unit of the floor has landed in that step (it can jump,
+    /// its fall speed is gone) and closes the rest of the way in the next steps: landings come a step earlier, as in
+    /// games that test for ground a pixel under the feet. It is a pixel or two of forgiveness, not a hover: while
+    /// the character is within the reach it stands, and sinks to the floor one step of fall gravity at a time, so a
+    /// step down lower than the reach is walked down slowly without leaving the ground. At most
+    /// <see cref="MaxLandingReach"/>.
+    /// </summary>
+    public float LandingReach { get; init; }
+    /// <summary>The largest <see cref="LandingReach"/> this motion takes: what its fastest fall covers in a thirtieth of a second.</summary>
+    public float MaxLandingReach => MaxFallSpeed / 30;
+    /// <summary>Whether the ground carries the character before or after its jump or drop is read; <see cref="CharacterStepOrder.CarryThenAct"/> by default.</summary>
+    public CharacterStepOrder Order { get; init; }
 
     /// <summary>
     /// Gravity is multiplied by this near the top of a jump, while the vertical speed is under
@@ -111,11 +195,15 @@ public sealed record CharacterMotion
     public float CornerCorrection { get; init; }
     /// <summary>The downward speed a character leaves a ceiling with, in units per second; 0 (the default) leaves it to gravity.</summary>
     public float CeilingReboundSpeed { get; init; }
-    /// <summary>Extra jump speed at full <see cref="MoveSpeed"/>, in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher.</summary>
+    /// <summary>
+    /// Extra jump speed at the motion's top speed (<see cref="RunSpeed"/> when it has one, else <see cref="MoveSpeed"/>),
+    /// in proportion to the sideways speed when the jump starts, in units per second: a run-up jumps higher. The top
+    /// speed is the measure whether run is held or not, so the same speed always gives the same jump.
+    /// </summary>
     public float RunJumpBonus { get; init; }
 
     /// <summary>Throws when a value is out of range.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">A negative or not-a-number value, a non-finite speed or time, or an air control outside 0..1.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A negative or not-a-number value, a non-finite speed or time, an air control or a release share outside 0..1, a landing reach above <see cref="MaxLandingReach"/>, or an undefined order.</exception>
     public void Validate()
     {
         Finite(Gravity, nameof(Gravity));
@@ -143,6 +231,16 @@ public sealed record CharacterMotion
         Finite(CornerCorrection, nameof(CornerCorrection));
         Finite(CeilingReboundSpeed, nameof(CeilingReboundSpeed));
         Finite(RunJumpBonus, nameof(RunJumpBonus));
+        Finite(RunSpeed, nameof(RunSpeed));
+        if (RunAcceleration is { } run) NotNegative(run, nameof(RunAcceleration));
+        if (AirAcceleration is { } air) NotNegative(air, nameof(AirAcceleration));
+        if (AirDeceleration is { } drag) NotNegative(drag, nameof(AirDeceleration));
+        if (OverspeedDeceleration is { } brake) NotNegative(brake, nameof(OverspeedDeceleration));
+        if (AirOverspeedDeceleration is { } bleed) NotNegative(bleed, nameof(AirOverspeedDeceleration));
+        if (!(JumpReleaseSpeedScale >= 0 && JumpReleaseSpeedScale <= 1)) throw new ArgumentOutOfRangeException(nameof(JumpReleaseSpeedScale), JumpReleaseSpeedScale, "The share is between 0 and 1.");
+        Finite(LandingReach, nameof(LandingReach));
+        if (LandingReach > MaxLandingReach) throw new ArgumentOutOfRangeException(nameof(LandingReach), LandingReach, $"The landing reach is at most what the fastest fall covers in a thirtieth of a second ({MaxLandingReach}): it is a little forgiveness on landing, not a distance to hover at.");
+        if (!Enum.IsDefined(Order)) throw new ArgumentOutOfRangeException(nameof(Order), Order, "Not a step order.");
     }
 
     internal static void NotNegative(float value, string name)
@@ -168,7 +266,9 @@ public sealed record CharacterMotion
 /// is not moved at all; one that stands on a body that moved since its last step (a platform the game moved) is moved
 /// with it first, unless the backend already carried it (<see cref="PhysicsCapabilities.MovingSolids"/>).</para>
 /// <para>Deterministic: its state is its velocity, its timers and what it touches, all in
-/// <see cref="HashState"/>; add it to the state hash of whatever owns it.</para>
+/// <see cref="HashState"/>; add it to the state hash of whatever owns it. <see cref="Motion"/> is not part of
+/// that state and is not hashed: a game that changes the motion while it plays (water, a power-up) hashes what
+/// chose it (the power-up the character holds, the room it is in).</para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -209,21 +309,27 @@ public sealed class CharacterController2D : IStateHashed
     }
 
     /// <summary>
-    /// Creates a kinematic body with one box of <paramref name="size"/> centred at <paramref name="position"/> and a
-    /// controller for it, moving through the layers of <paramref name="mask"/>.
+    /// Creates a kinematic body with one box of <paramref name="size"/> and a controller for it, moving through the
+    /// layers of <paramref name="mask"/>. The body's origin is the box's centre unless <paramref name="offset"/> says
+    /// otherwise.
     /// </summary>
     /// <param name="world">The physics world.</param>
     /// <param name="owner">The entity that owns the body.</param>
-    /// <param name="position">The centre of the box.</param>
+    /// <param name="position">The body's origin: what <see cref="Position"/> reads and what a scene's physics writes to the owner's transform.</param>
     /// <param name="size">The box's width and height.</param>
     /// <param name="motion">How it moves; the defaults when null.</param>
     /// <param name="category">The layers the character is in.</param>
     /// <param name="mask">The layers it collides with.</param>
+    /// <param name="offset">
+    /// The box's centre relative to the body's origin; zero (the default) centres the box on it. A game that places
+    /// its characters by their feet passes half the height upward (<c>new Vector2(0, -size.Y / 2)</c> where y grows
+    /// downward); one that places them by their top-left corner passes <c>size / 2</c>.
+    /// </param>
     public static CharacterController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, CharacterMotion? motion = null,
-        ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
+        ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All, Vector2 offset = default)
     {
         ArgumentNullException.ThrowIfNull(world);
-        var shape = ShapeDescription.Box(size).InLayers(category, mask);
+        var shape = ShapeDescription.Box(size, offset).InLayers(category, mask);
         shape.Validate();
         (motion ?? new CharacterMotion()).Validate();
         var body = world.CreateBody(owner, BodyDescription.Kinematic(position));
@@ -242,7 +348,7 @@ public sealed class CharacterController2D : IStateHashed
     public IPhysicsWorld2D World { get; }
     /// <summary>The character's body.</summary>
     public BodyId Body { get; }
-    /// <summary>How the character moves; replace it to change its feel (a power-up, water).</summary>
+    /// <summary>How the character moves; replace it to change its feel (a power-up, water). Not in the state hash: hash what chooses it.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A value is out of range.</exception>
     public CharacterMotion Motion
     {
@@ -256,8 +362,24 @@ public sealed class CharacterController2D : IStateHashed
     }
     /// <summary>The shapes that block the character (<see cref="IPhysicsWorld2D.Move"/>'s filter); the default filter unless set.</summary>
     public QueryFilter Filter { get; set; }
-    /// <summary>The body's origin.</summary>
-    public Vector2 Position => World.PositionOf(Body);
+    /// <summary>
+    /// The body's origin. Setting it places the body there without collision and changes nothing else: the character
+    /// keeps its ground, its velocity and its timers (a scripted placement, a state put back). The place is the
+    /// game's to get right: a body ignores what it already overlaps when it moves, so a character placed even a
+    /// hundredth of a unit inside a wall or a floor goes through it. To put a character somewhere near without that
+    /// risk (a camera clamp), use <see cref="Shift"/>. <see cref="Teleport"/> is the jump to another place, which
+    /// leaves the ground, and has the same rule.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is not finite.</exception>
+    public Vector2 Position
+    {
+        get => World.PositionOf(Body);
+        set
+        {
+            World.SetPosition(Body, value);
+            _restAt = value;
+        }
+    }
     /// <summary>The character's velocity, in units per second.</summary>
     public Vector2 Velocity
     {
@@ -302,20 +424,30 @@ public sealed class CharacterController2D : IStateHashed
     public MoveResult LastMove { get; private set; }
 
     /// <summary>
-    /// Throws the character with <paramref name="velocity"/> (a spring, a knock-back): it leaves the ground, and the
-    /// rise is not cut short by a released jump button.
+    /// Throws the character with <paramref name="velocity"/> (a spring, a knock-back, a bounce off an enemy): it
+    /// leaves the ground.
     /// </summary>
-    public void Launch(Vector2 velocity)
+    /// <param name="velocity">The velocity it leaves with.</param>
+    /// <param name="cuttable">
+    /// Whether the rise is a jump the player shapes: releasing jump cuts it short as it cuts a jump
+    /// (<see cref="CharacterMotion.JumpReleaseGravityScale"/>, <see cref="CharacterMotion.JumpReleaseSpeedScale"/>),
+    /// so a bounce is higher while jump is held. False (the default): the rise is not cut by a released jump button.
+    /// </param>
+    public void Launch(Vector2 velocity, bool cuttable = false)
     {
         Velocity = velocity;
-        IsJumping = false;
+        IsJumping = cuttable && _rise > 0;
         IsGrounded = false;
         Ground = ShapeId.None;
         _groundBody = BodyId.None;
         _coyote = 0;
     }
 
-    /// <summary>Places the character at <paramref name="position"/> without collision; it keeps its velocity and is in the air until its next step.</summary>
+    /// <summary>
+    /// Places the character at <paramref name="position"/> without collision; it keeps its velocity and is in the air
+    /// until its next step. A place that overlaps a solid is not corrected: the character goes through what it
+    /// overlaps.
+    /// </summary>
     public void Teleport(Vector2 position)
     {
         World.SetPosition(Body, position);
@@ -324,6 +456,128 @@ public sealed class CharacterController2D : IStateHashed
         Ground = ShapeId.None;
         _groundBody = BodyId.None;
         _coyote = 0;
+    }
+
+    /// <summary>
+    /// Moves the character by <paramref name="delta"/> with collision and changes nothing else: what blocks its
+    /// steps blocks this too, and it keeps its ground, its velocity and its timers. The safe way for a game to put a
+    /// character somewhere near (keeping it inside the camera's view, a conveyor, a gust): setting
+    /// <see cref="Position"/> to a place inside a wall would leave it in the wall.
+    /// </summary>
+    /// <returns>The move's result: how far it went and what stopped it. <see cref="LastMove"/> stays the latest step's.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="delta"/> is not finite.</exception>
+    public MoveResult Shift(Vector2 delta)
+    {
+        if (!float.IsFinite(delta.X) || !float.IsFinite(delta.Y)) throw new ArgumentOutOfRangeException(nameof(delta), delta, "The movement must be finite.");
+        var result = World.Move(Body, delta, Active(_drop > 0));
+        _restAt = result.Position;
+        return result;
+    }
+
+    /// <summary>
+    /// Puts the character on ground the game decided: at <paramref name="position"/>, standing on
+    /// <paramref name="ground"/>, with no vertical speed. For ground with a rule of the game's own that the world's
+    /// shapes do not give (a platform that catches a character a little before it touches, the back of a creature):
+    /// call it after <see cref="Step"/> when the rule holds. From then on the character is grounded as on any other
+    /// ground: it is carried when the body of <paramref name="ground"/> moves, it can jump, and it stays until a
+    /// step finds nothing under it, so a rule that still holds calls this again after each step. A character that
+    /// left the ground in the latest step and is put back has not left it (no <see cref="CharacterEvents.LeftGround"/>);
+    /// one that was in the air has landed.
+    /// </summary>
+    /// <param name="ground">The shape it stands on; its body need not collide with the character.</param>
+    /// <param name="position">Where the body's origin goes.</param>
+    /// <exception cref="InvalidOperationException"><paramref name="ground"/> is not a live shape.</exception>
+    public void StandOn(ShapeId ground, Vector2 position)
+    {
+        if (!World.IsAlive(ground)) throw new InvalidOperationException($"{ground} is not a live shape of this world.");
+        World.SetPosition(Body, position);
+        _restAt = position;
+        if (!IsGrounded)
+        {
+            if ((Events & CharacterEvents.LeftGround) != 0)
+            {
+                // It left the ground in the latest step and is back on it: it never left.
+                Events &= ~CharacterEvents.LeftGround;
+                _air = 0;
+            }
+            else
+            {
+                Events |= CharacterEvents.Landed;
+                LandingSpeed = MathF.Max(0, -_rise);
+            }
+        }
+        _rise = 0;
+        _airJumps = 0;
+        IsJumping = false;
+        IsGrounded = true;
+        Ground = ground;
+        _groundBody = World.BodyOf(ground);
+        _groundAt = World.PositionOf(_groundBody);
+    }
+
+    /// <summary>
+    /// The character's whole state: where it is, how it moves, what it stands on, its timers and what its latest
+    /// step reported. <see cref="Restore"/> puts it back, on this controller or on another one of the same world: a
+    /// planner tries a jump and takes it back, a checkpoint keeps the character.
+    /// </summary>
+    public CharacterState Snapshot()
+    {
+        var position = World.PositionOf(Body);
+        return new CharacterState
+        {
+            Position = position, Velocity = Velocity,
+            IsGrounded = IsGrounded, Ground = Ground, GroundPosition = _groundAt,
+            IsOnWall = IsOnWall, WallNormal = WallNormal, IsJumping = IsJumping, IsSkidding = IsSkidding,
+            CoyoteTime = _coyote, JumpBuffer = _buffer, DropThroughTime = _drop, WallJumpLockTime = _lock,
+            AirJumpsUsed = _airJumps, AirTime = _air, LandingSpeed = LandingSpeed, Events = Events, LastMove = LastMove,
+            Rest = position == _restAt ? null : _restAt,
+        };
+    }
+
+    /// <summary>
+    /// Makes the character what <paramref name="state"/> says (<see cref="Snapshot"/>, or one built by the game): the
+    /// body is placed without collision, and the next step goes on from there as it would have. A ground shape that
+    /// no longer exists is no ground.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A position, velocity or time of <paramref name="state"/> is not finite, or a time or count is negative.</exception>
+    public void Restore(in CharacterState state)
+    {
+        StateVector(state.Velocity, nameof(CharacterState.Velocity));
+        StateVector(state.GroundPosition, nameof(CharacterState.GroundPosition));
+        StateVector(state.WallNormal, nameof(CharacterState.WallNormal));
+        CharacterMotion.Finite(state.CoyoteTime, nameof(CharacterState.CoyoteTime));
+        CharacterMotion.Finite(state.JumpBuffer, nameof(CharacterState.JumpBuffer));
+        CharacterMotion.Finite(state.DropThroughTime, nameof(CharacterState.DropThroughTime));
+        CharacterMotion.Finite(state.WallJumpLockTime, nameof(CharacterState.WallJumpLockTime));
+        CharacterMotion.Finite(state.AirTime, nameof(CharacterState.AirTime));
+        CharacterMotion.Finite(state.LandingSpeed, nameof(CharacterState.LandingSpeed));
+        ArgumentOutOfRangeException.ThrowIfNegative(state.AirJumpsUsed, nameof(CharacterState.AirJumpsUsed));
+        World.SetPosition(Body, state.Position);
+        Velocity = state.Velocity;
+        bool ground = state.IsGrounded && World.IsAlive(state.Ground);
+        IsGrounded = state.IsGrounded;
+        Ground = ground ? state.Ground : ShapeId.None;
+        _groundBody = ground ? World.BodyOf(state.Ground) : BodyId.None;
+        _groundAt = state.GroundPosition;
+        _restAt = state.Rest ?? state.Position;
+        IsOnWall = state.IsOnWall;
+        WallNormal = state.WallNormal;
+        IsJumping = state.IsJumping;
+        IsSkidding = state.IsSkidding;
+        _coyote = state.CoyoteTime;
+        _buffer = state.JumpBuffer;
+        _drop = state.DropThroughTime;
+        _lock = state.WallJumpLockTime;
+        _airJumps = state.AirJumpsUsed;
+        _air = state.AirTime;
+        LandingSpeed = state.LandingSpeed;
+        Events = state.Events;
+        LastMove = state.LastMove;
+    }
+
+    private static void StateVector(Vector2 value, string name)
+    {
+        if (!float.IsFinite(value.X) || !float.IsFinite(value.Y)) throw new ArgumentOutOfRangeException(name, value, "The value must be finite.");
     }
 
     /// <summary>Advances the character by <paramref name="dt"/> seconds with <paramref name="input"/> and returns the move's result (also <see cref="LastMove"/>).</summary>
@@ -335,14 +589,14 @@ public sealed class CharacterController2D : IStateHashed
         if (dt == 0) return LastMove;
         var m = _motion;
         bool wasGrounded = IsGrounded, wasOnWall = IsOnWall;
-        bool carried = Carry();
+        bool actFirst = m.Order == CharacterStepOrder.ActThenCarry;
+        bool carried = !actFirst && Carry();
 
         // Sideways speed toward the intent.
         float axis = float.IsNaN(input.Move) ? 0 : Math.Clamp(input.Move, -1, 1);
-        float control = wasGrounded ? 1 : m.AirControl;
         _lock = MathF.Max(0, _lock - dt);
         IsSkidding = false;
-        if (control > 0 && _lock <= 0)
+        if (_lock <= 0)
         {
             if (wasGrounded && m.SkidDeceleration > 0 && axis * _run < 0 && MathF.Abs(_run) > m.SkidSpeed)
             {
@@ -351,27 +605,47 @@ public sealed class CharacterController2D : IStateHashed
                 IsSkidding = true;
                 Events |= CharacterEvents.Skidded;
             }
-            else _run = MathX.Approach(_run, axis * m.MoveSpeed, (axis != 0 ? m.Acceleration : m.Deceleration) * control * dt);
+            else
+            {
+                bool running = input.Run && m.RunSpeed > 0;
+                float target = axis * (running ? m.RunSpeed : m.MoveSpeed);
+                // Faster than the intent asks for, and pushing the way it moves.
+                bool over = axis * _run > 0 && MathF.Abs(_run) > MathF.Abs(target);
+                if (wasGrounded)
+                {
+                    float rate = axis == 0 ? m.Deceleration
+                        : over && m.OverspeedDeceleration is { } brake ? brake
+                        : running && m.RunAcceleration is { } quick ? quick
+                        : m.Acceleration;
+                    _run = MathX.Approach(_run, target, rate * dt);
+                }
+                else if ((axis == 0 ? m.AirDeceleration : over && m.AirOverspeedDeceleration is { } bleed ? bleed : m.AirAcceleration) is { } air)
+                    _run = MathX.Approach(_run, target, air * dt);
+                else if (m.AirControl > 0)
+                    _run = MathX.Approach(_run, target, (axis != 0 ? m.Acceleration : m.Deceleration) * m.AirControl * dt);
+            }
         }
 
         // Timers: the drop window, coyote time and the jump buffer.
         _drop = MathF.Max(0, _drop - dt);
         _coyote = wasGrounded ? m.CoyoteTime : MathF.Max(0, _coyote - dt);
         _buffer = input.JumpPressed ? m.JumpBuffer : MathF.Max(0, _buffer - dt);
-        bool acted = false;
-        if (input.Drop && wasGrounded && !World.Move(Body, Vector2.Zero, Active(passOneWay: true)).OnGround)
+        bool acted = false, dropped = false;
+        bool wantsJump = input.JumpPressed || _buffer > 0;
+        if (input.Drop && wasGrounded && (!m.DropWithJump || wantsJump) && !Supported(m, passOneWay: true))
         {
             // Only one-way platforms hold it up: fall through them.
             _drop = m.DropThroughTime;
             _buffer = 0;
             _coyote = 0;
             IsGrounded = false;
-            acted = true;
+            acted = dropped = true;
             Events |= CharacterEvents.DroppedThrough;
         }
-        else if (input.JumpPressed || _buffer > 0)
+        else if (wantsJump)
         {
-            if (wasGrounded || _coyote > 0) acted = Jump(m.JumpSpeed + (m.MoveSpeed > 0 ? m.RunJumpBonus * MathF.Min(1, MathF.Abs(_run) / m.MoveSpeed) : 0));
+            float top = m.RunSpeed > 0 ? m.RunSpeed : m.MoveSpeed;
+            if (wasGrounded || _coyote > 0) acted = Jump(m.JumpSpeed + (top > 0 ? m.RunJumpBonus * MathF.Min(1, MathF.Abs(_run) / top) : 0));
             else if (input.JumpPressed && wasOnWall && m.WallJumpSpeed != Vector2.Zero)
             {
                 _run = MathF.Sign(Vector2.Dot(WallNormal, _right)) * m.WallJumpSpeed.X;
@@ -385,7 +659,13 @@ public sealed class CharacterController2D : IStateHashed
             }
         }
 
+        // A character that jumped or dropped has left the ground: the ground no longer carries it.
+        if (actFirst && !acted) carried = Carry();
+        // A released jump is cut to a share of its starting speed at once.
+        if (m.JumpReleaseSpeedScale < 1 && IsJumping && !input.JumpHeld && _rise > m.JumpSpeed * m.JumpReleaseSpeedScale) _rise = m.JumpSpeed * m.JumpReleaseSpeedScale;
+
         var filter = Active(_drop > 0);
+        bool inAir = !wasGrounded || (actFirst && dropped);
         MoveResult result;
         // A character at rest is probed, not moved: it neither sinks nor creeps down a slope.
         if (!(wasGrounded && !acted && !carried && _run == 0 && _rise <= 0 && (result = World.Move(Body, Vector2.Zero, filter)).OnGround))
@@ -393,7 +673,7 @@ public sealed class CharacterController2D : IStateHashed
             // Gravity by phase: rising, rising with jump released, near the top, falling.
             float scale = _rise > 0
                 ? (IsJumping && !input.JumpHeld ? m.JumpReleaseGravityScale : _rise < m.ApexSpeed ? m.ApexGravityScale : 1)
-                : (input.JumpHeld && !wasGrounded && -_rise < m.ApexSpeed ? m.ApexGravityScale : m.FallGravityScale);
+                : (input.JumpHeld && inAir && -_rise < m.ApexSpeed ? m.ApexGravityScale : m.FallGravityScale);
             _rise = MathF.Max(_rise - m.Gravity * scale * dt, -m.MaxFallSpeed);
             if (m.WallSlideSpeed > 0 && wasOnWall && !wasGrounded && _rise < 0 && axis * Vector2.Dot(WallNormal, _right) < 0)
                 _rise = MathF.Max(_rise, -m.WallSlideSpeed);
@@ -428,6 +708,9 @@ public sealed class CharacterController2D : IStateHashed
         }
 
         bool grounded = result.OnGround && _rise <= 0;
+        var ground = result.Ground;
+        // Ground within reach under a character that is not rising: it has landed, where it is.
+        if (!grounded && _rise <= 0 && m.LandingReach > 0 && Reaches(filter, m.LandingReach, out ground)) grounded = true;
         if (!grounded && wasGrounded && !acted && _rise <= 0 && m.GroundSnap > 0)
         {
             // The ground fell away under a walking character: follow it down when it is within reach.
@@ -436,6 +719,7 @@ public sealed class CharacterController2D : IStateHashed
             if (snap.OnGround)
             {
                 result = snap;
+                ground = snap.Ground;
                 grounded = true;
             }
             else World.SetPosition(Body, before);
@@ -459,7 +743,7 @@ public sealed class CharacterController2D : IStateHashed
         }
 
         IsGrounded = grounded;
-        Ground = grounded ? result.Ground : ShapeId.None;
+        Ground = grounded ? ground : ShapeId.None;
         LastMove = result;
         _restAt = World.PositionOf(Body);
         if (grounded && World.IsAlive(Ground))
@@ -492,6 +776,32 @@ public sealed class CharacterController2D : IStateHashed
         if (World.PositionOf(Body) != _restAt) return true;
         World.Move(Body, delta, Active(passOneWay: false));
         return true;
+    }
+
+    /// <summary>
+    /// Whether a surface within <paramref name="reach"/> under the character would stop it: the body is moved down
+    /// by the reach and put back. A surface exactly at the reach, which the move only comes to touch, is not within it.
+    /// </summary>
+    private bool Reaches(in QueryFilter filter, float reach, out ShapeId ground)
+    {
+        var at = World.PositionOf(Body);
+        var probe = World.Move(Body, _up * -reach, filter);
+        World.SetPosition(Body, at);
+        foreach (ref readonly var contact in probe.Contacts)
+        {
+            if (!contact.Stopped || Vector2.Dot(contact.Normal, _up) < MoveResult.GroundThreshold) continue;
+            ground = contact.Shape;
+            return true;
+        }
+        ground = ShapeId.None;
+        return false;
+    }
+
+    /// <summary>Whether ground holds the character up where it is: ground it touches, or ground within the landing reach.</summary>
+    private bool Supported(CharacterMotion m, bool passOneWay)
+    {
+        var filter = Active(passOneWay);
+        return World.Move(Body, Vector2.Zero, filter).OnGround || (m.LandingReach > 0 && Reaches(filter, m.LandingReach, out _));
     }
 
     /// <summary>The filter of this step's moves: the character's, with what <see cref="Solid"/> leaves out.</summary>
@@ -554,6 +864,53 @@ public sealed class CharacterController2D : IStateHashed
     }
 }
 
+/// <summary>
+/// The whole state of a <see cref="CharacterController2D"/> (<see cref="CharacterController2D.Snapshot"/>,
+/// <see cref="CharacterController2D.Restore"/>). Every value can be read and, with <c>with</c>, changed: a game that
+/// keeps the character's state elsewhere (a save, a replay, another simulation) builds one.
+/// </summary>
+public readonly struct CharacterState
+{
+    /// <summary>The body's origin.</summary>
+    public Vector2 Position { get; init; }
+    /// <summary>The velocity, in units per second.</summary>
+    public Vector2 Velocity { get; init; }
+    /// <summary>Whether it stands on ground.</summary>
+    public bool IsGrounded { get; init; }
+    /// <summary>The shape it stands on, which carries it when its body moves; <see cref="ShapeId.None"/> for none.</summary>
+    public ShapeId Ground { get; init; }
+    /// <summary>Where the body of <see cref="Ground"/> was when the character last stepped: it is carried by how far that body has moved since.</summary>
+    public Vector2 GroundPosition { get; init; }
+    /// <summary>Whether it touches a wall.</summary>
+    public bool IsOnWall { get; init; }
+    /// <summary>The normal of that wall.</summary>
+    public Vector2 WallNormal { get; init; }
+    /// <summary>Whether a jump is rising and can still be cut short.</summary>
+    public bool IsJumping { get; init; }
+    /// <summary>Whether it skids.</summary>
+    public bool IsSkidding { get; init; }
+    /// <summary>The coyote time left, in seconds.</summary>
+    public float CoyoteTime { get; init; }
+    /// <summary>How much longer a pressed jump is remembered, in seconds.</summary>
+    public float JumpBuffer { get; init; }
+    /// <summary>How much longer one-way platforms are passed through, in seconds.</summary>
+    public float DropThroughTime { get; init; }
+    /// <summary>How much longer the sideways intent is ignored after a wall jump, in seconds.</summary>
+    public float WallJumpLockTime { get; init; }
+    /// <summary>Air jumps used since it last stood on ground.</summary>
+    public int AirJumpsUsed { get; init; }
+    /// <summary>How long it has been in the air, in seconds.</summary>
+    public float AirTime { get; init; }
+    /// <summary>The downward speed of its last landing.</summary>
+    public float LandingSpeed { get; init; }
+    /// <summary>What its latest step reported.</summary>
+    public CharacterEvents Events { get; init; }
+    /// <summary>The result of its latest step's move.</summary>
+    public MoveResult LastMove { get; init; }
+    /// <summary>Where the body was after the character's latest step, when something has moved it since (a pushing solid); null when it is where the step left it.</summary>
+    internal Vector2? Rest { get; init; }
+}
+
 /// <summary>How a <see cref="TopDownController2D"/> moves, in the physics world's units and seconds.</summary>
 public sealed record TopDownMotion
 {
@@ -603,12 +960,16 @@ public sealed class TopDownController2D : IStateHashed
         Body = body;
     }
 
-    /// <summary>Creates a kinematic body with one box of <paramref name="size"/> centred at <paramref name="position"/> and a controller for it.</summary>
+    /// <summary>
+    /// Creates a kinematic body with one box of <paramref name="size"/> and a controller for it. The body's origin,
+    /// <paramref name="position"/>, is the box's centre unless <paramref name="offset"/> (the box's centre relative
+    /// to the origin) says otherwise: a game that places its characters by their feet passes half the height upward.
+    /// </summary>
     public static TopDownController2D Create(IPhysicsWorld2D world, EntityId owner, Vector2 position, Vector2 size, TopDownMotion? motion = null,
-        ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All)
+        ulong category = CollisionLayers.Default, ulong mask = CollisionLayers.All, Vector2 offset = default)
     {
         ArgumentNullException.ThrowIfNull(world);
-        var shape = ShapeDescription.Box(size).InLayers(category, mask);
+        var shape = ShapeDescription.Box(size, offset).InLayers(category, mask);
         shape.Validate();
         (motion ?? new TopDownMotion()).Validate();
         var body = world.CreateBody(owner, BodyDescription.Kinematic(position));
@@ -634,8 +995,13 @@ public sealed class TopDownController2D : IStateHashed
     }
     /// <summary>The shapes that block the character; the default filter unless set.</summary>
     public QueryFilter Filter { get; set; }
-    /// <summary>The body's origin.</summary>
-    public Vector2 Position => World.PositionOf(Body);
+    /// <summary>The body's origin. Setting it places the body there without collision; the velocity is kept.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is not finite.</exception>
+    public Vector2 Position
+    {
+        get => World.PositionOf(Body);
+        set => World.SetPosition(Body, value);
+    }
     /// <summary>The character's velocity, in units per second.</summary>
     public Vector2 Velocity { get; set; }
     /// <summary>The result of the latest step's move: every surface the character touches.</summary>

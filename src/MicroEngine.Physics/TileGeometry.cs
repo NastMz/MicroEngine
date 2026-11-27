@@ -51,3 +51,34 @@ public interface ICollisionGrid
     /// <summary>The flags of the tile at (<paramref name="tileX"/>, <paramref name="tileY"/>), in tiles; any coordinate, inside the map or not.</summary>
     TileFlags FlagsAt(int tileX, int tileY);
 }
+
+/// <summary>Views of a tile grid for movers that are blocked by different tiles.</summary>
+public static class CollisionGridViews
+{
+    /// <summary>
+    /// The same tiles as a mover that is blocked by <paramref name="flags"/> sees them: a tile with any of those
+    /// flags is <see cref="TileFlags.Solid"/>, and no other tile is. A level whose walkers are stopped by water and
+    /// whose flyers are not adds two views of its one grid, each in a layer of its own:
+    /// <c>AddTiles(level, grid.Blocking(TileFlags.Solid | TileFlags.Water), ..., category: WalkerTiles)</c> and
+    /// <c>AddTiles(level, grid.Blocking(TileFlags.Solid), ..., category: FlyerTiles)</c>. The view reads the grid at
+    /// every call, so the two never differ; every other flag (one-way, hazard, slopes, the custom ones) is kept.
+    /// </summary>
+    /// <param name="grid">The tiles.</param>
+    /// <param name="flags">The flags that block this kind of mover.</param>
+    public static ICollisionGrid Blocking(this ICollisionGrid grid, TileFlags flags)
+    {
+        ArgumentNullException.ThrowIfNull(grid);
+        return new BlockingView(grid, flags);
+    }
+
+    private sealed class BlockingView(ICollisionGrid grid, TileFlags flags) : ICollisionGrid
+    {
+        public int TileSize => grid.TileSize;
+
+        public TileFlags FlagsAt(int tileX, int tileY)
+        {
+            var tile = grid.FlagsAt(tileX, tileY);
+            return (tile & flags) != 0 ? tile | TileFlags.Solid : tile & ~TileFlags.Solid;
+        }
+    }
+}

@@ -17,16 +17,21 @@ Console.WriteLine("box2d browser tests: ready");
 /// </summary>
 public static partial class Runner
 {
-    private static readonly List<(Type Type, MethodInfo Method)> s_tests = Discover();
+    private static readonly List<(Type Type, MethodInfo Method, object?[]? Row)> s_tests = Discover();
 
-    private static List<(Type, MethodInfo)> Discover() =>
+    // A test with [DataRow]s is one test per row, in the order written; one without rows is called with no argument.
+    private static List<(Type, MethodInfo, object?[]?)> Discover() =>
         typeof(Runner).Assembly.GetTypes()
             .Where(t => !t.IsAbstract && t.GetCustomAttribute<TestClassAttribute>() is not null)
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(m => m.GetCustomAttribute<TestMethodAttribute>() is not null)
                 .OrderBy(m => m.Name, StringComparer.Ordinal)
-                .Select(m => (t, m)))
+                .SelectMany(m =>
+                {
+                    var rows = m.GetCustomAttributes<DataRowAttribute>().Select(r => r.Data).ToList();
+                    return rows.Count == 0 ? [(t, m, (object?[]?)null)] : rows.Select(row => (t, m, row));
+                }))
             .ToList();
 
     [JSExport]
@@ -40,15 +45,15 @@ public static partial class Runner
     [JSExport]
     public static string Run(int index)
     {
-        var (type, method) = s_tests[index];
-        string name = $"{type.Name}.{method.Name}";
+        var (type, method, row) = s_tests[index];
+        string name = row is null ? $"{type.Name}.{method.Name}" : $"{type.Name}.{method.Name}({string.Join(", ", row.Select(v => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture)))})";
         object instance = Activator.CreateInstance(type)!;
         var chain = new List<Type>();
         for (var t = type; t is not null; t = t.BaseType) chain.Insert(0, t);
         try
         {
             foreach (var t in chain) Invoke<TestInitializeAttribute>(t, instance);
-            method.Invoke(instance, null);
+            method.Invoke(instance, row);
             return $"PASS {name}";
         }
         catch (TargetInvocationException e) when (e.InnerException is AssertInconclusiveException)
