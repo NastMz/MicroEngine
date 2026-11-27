@@ -169,6 +169,7 @@ public sealed class Tween
     internal bool Scaled;
     internal bool Started;
     internal bool Ended;
+    internal bool Reached;   // the final value was applied
     internal bool Removed;
     internal IWorld? World;
     internal EntityId Entity;
@@ -179,7 +180,7 @@ public sealed class Tween
     public bool IsFinished => Ended;
 
     /// <summary>How far along the tween is, from 0 to 1, before easing; 0 while it waits for its delay.</summary>
-    public float Progress => Time / Duration;
+    public float Progress => Duration > 0 ? Time / Duration : Reached ? 1 : 0;
 
     /// <summary>Stops the tween where it is: no further value is applied and <c>done</c> is not called. Safe to call more than once.</summary>
     public void Cancel() => Ended = true;
@@ -193,7 +194,7 @@ public sealed class Tween
         if (Ended) return;
         if (LostEntity()) { Ended = true; return; }
         Time = Duration;
-        Ended = true;
+        Ended = Reached = true;
         Apply(Ease(1f));
         Done?.Invoke();
     }
@@ -224,7 +225,12 @@ public sealed class Tween
 /// A tween applies its starting value (<c>ease(0)</c>) the moment it is added, so what it moves is in place before
 /// anything is drawn, and advances once per update from the next one. With a delay, it leaves its target alone until
 /// the update the delay ends on, which applies the starting value. Its last update applies <c>ease(1)</c> and then
-/// calls <c>done</c>.
+/// calls <c>done</c>. A tween of zero seconds or zero updates applies its final value on the next update.
+/// </para>
+/// <para>
+/// An update whose step is zero, negative, infinite or not a number advances nothing: no value is applied and no tween
+/// ends. A callback (<c>apply</c> or <c>done</c>) may add tweens, cancel or complete any tween, its own included, and
+/// clear them all.
 /// </para>
 /// <para>
 /// A tween in seconds adds each update's step to its time in single precision, exactly as the loop
@@ -237,6 +243,7 @@ public sealed class Tween
 public sealed class Tweener : IStateHashed
 {
     private readonly List<Tween> _tweens = [];
+    private bool _updating;
 
     /// <summary>Number of tweens playing or waiting for their delay.</summary>
     public int Count
@@ -253,7 +260,7 @@ public sealed class Tweener : IStateHashed
     /// Calls <paramref name="apply"/> with eased progress 0..1 every update for <paramref name="duration"/> seconds, then
     /// <paramref name="done"/>. The starting value is applied at once (after <paramref name="delay"/>, when given).
     /// </summary>
-    /// <param name="duration">The length in seconds.</param>
+    /// <param name="duration">The length in seconds, zero or more; zero applies the final value on the next update.</param>
     /// <param name="apply">Receives the eased progress: 0 at the start, 1 at the end.</param>
     /// <param name="ease">The curve; <see cref="MicroEngine.Ease.OutQuad"/> when null.</param>
     /// <param name="done">Called once, after the final value is applied; not when the tween is cancelled.</param>
@@ -264,10 +271,13 @@ public sealed class Tweener : IStateHashed
     /// default) keeps the engine's time, which interface and cutscene tweens want.
     /// </param>
     /// <returns>The tween: yield it from a coroutine to wait for it, or keep it to cancel or complete it.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="duration"/> or <paramref name="delay"/> is negative, infinite or not a number.</exception>
     public Tween Add(float duration, Action<float> apply, Func<float, float>? ease = null, Action? done = null, float delay = 0, bool scaled = false)
     {
         ArgumentNullException.ThrowIfNull(apply);
-        return Start(new Tween { Duration = Math.Max(duration, 1e-4f), Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delay, Scaled = scaled });
+        if (!(duration >= 0) || float.IsInfinity(duration)) throw new ArgumentOutOfRangeException(nameof(duration), duration, "A length is zero or more seconds.");
+        if (!(delay >= 0) || float.IsInfinity(delay)) throw new ArgumentOutOfRangeException(nameof(delay), delay, "A delay is zero or more seconds.");
+        return Start(new Tween { Duration = duration, Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delay, Scaled = scaled });
     }
 
     /// <summary>
@@ -275,17 +285,17 @@ public sealed class Tweener : IStateHashed
     /// on the updates after the one it is added on, and 1 on the last. It counts updates, not time: slow motion does not
     /// stretch it, and an update of zero seconds (a frozen world, for a scaled tween) is not counted.
     /// </summary>
-    /// <param name="steps">The length in updates, above zero.</param>
+    /// <param name="steps">The length in updates; 0 and 1 both apply the final value on the next update.</param>
     /// <param name="apply">Receives the eased progress.</param>
     /// <param name="ease">The curve; <see cref="MicroEngine.Ease.OutQuad"/> when null.</param>
     /// <param name="done">Called once, after the final value is applied.</param>
     /// <param name="delaySteps">Updates before the tween starts.</param>
     /// <param name="scaled">True to count the updates of the second clock of <see cref="Update(float, float)"/>.</param>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is not above zero, or <paramref name="delaySteps"/> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> or <paramref name="delaySteps"/> is negative.</exception>
     public Tween AddSteps(int steps, Action<float> apply, Func<float, float>? ease = null, Action? done = null, int delaySteps = 0, bool scaled = false)
     {
         ArgumentNullException.ThrowIfNull(apply);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(steps);
+        ArgumentOutOfRangeException.ThrowIfNegative(steps);
         ArgumentOutOfRangeException.ThrowIfNegative(delaySteps);
         return Start(new Tween { Duration = steps, Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delaySteps, Scaled = scaled, InSteps = true });
     }
@@ -306,43 +316,57 @@ public sealed class Tweener : IStateHashed
 
     /// <summary>
     /// Advances the tweens on two clocks: <paramref name="dt"/> for the ordinary ones and <paramref name="scaledDt"/> for
-    /// those added with <c>scaled: true</c>. A scene gives the engine's step and its world's.
+    /// those added with <c>scaled: true</c>. A scene gives the engine's step and its world's. A clock whose step is no
+    /// time (zero, negative, infinite, not a number) stands still: its tweens apply nothing and do not end.
     /// </summary>
     public void Update(float dt, float scaledDt)
     {
-        // A tween added by a callback already holds its starting value: it advances from the next update.
-        int count = _tweens.Count;
-        for (int i = 0; i < count; i++)
+        bool moved = dt > 0 && !float.IsPositiveInfinity(dt), scaledMoved = scaledDt > 0 && !float.IsPositiveInfinity(scaledDt);
+        bool outer = _updating;
+        _updating = true;
+        try
         {
-            var t = _tweens[i];
-            if (t.Ended) continue;
-            if (t.LostEntity()) { t.Ended = true; continue; }
-            float step = t.Scaled ? scaledDt : dt;
-            if (t.InSteps) step = step > 0 ? 1 : 0;
-            if (!t.Started)
+            // A tween added by a callback already holds its starting value: it advances from the next update. The
+            // list only grows while this runs: a callback that clears or ends tweens marks them, and the sweep below
+            // removes them.
+            int count = _tweens.Count;
+            for (int i = 0; i < count; i++)
             {
-                t.Delay -= step;
-                if (t.Delay > 0) continue;
-                t.Started = true;
-                t.Apply(t.Ease(0f));
-                continue;
-            }
-            t.Time = MathF.Min(t.Time + step, t.Duration);
-            t.Apply(t.Ease(t.Time / t.Duration));
-            if (t.Time >= t.Duration && !t.Ended)
-            {
-                t.Ended = true;
-                t.Done?.Invoke();
+                var t = _tweens[i];
+                if (t.Ended || !(t.Scaled ? scaledMoved : moved)) continue;
+                if (t.LostEntity()) { t.Ended = true; continue; }
+                float step = t.InSteps ? 1 : t.Scaled ? scaledDt : dt;
+                if (!t.Started)
+                {
+                    t.Delay -= step;
+                    if (t.Delay > 0) continue;
+                    t.Started = true;
+                    t.Apply(t.Ease(0f));
+                    continue;
+                }
+                t.Time = MathF.Min(t.Time + step, t.Duration);
+                bool last = t.Time >= t.Duration;
+                if (last) t.Reached = true;
+                t.Apply(t.Ease(last ? 1f : t.Time / t.Duration));
+                if (last && !t.Ended)
+                {
+                    t.Ended = true;
+                    t.Done?.Invoke();
+                }
             }
         }
-        _tweens.RemoveAll(static t => t.Ended);
+        finally { _updating = outer; }
+        if (!_updating) _tweens.RemoveAll(static t => t.Ended);
     }
 
-    /// <summary>Cancels every tween: no final value is applied and no <c>done</c> callback is called.</summary>
+    /// <summary>
+    /// Cancels every tween: no final value is applied and no <c>done</c> callback is called. A coroutine waiting for one
+    /// goes on. Safe from a callback of one of the tweens.
+    /// </summary>
     public void Clear()
     {
         foreach (var tween in _tweens) tween.Ended = true;
-        _tweens.Clear();
+        if (!_updating) _tweens.Clear();
     }
 
     /// <summary>Adds the tweens' state to the per-step state hash: for each tween, its length, time played, delay left, and how it counts.</summary>

@@ -167,7 +167,7 @@ public sealed class TweenTests
             CollectionAssert.AreEqual(new[] { -1f, 0f, 0.25f, 0.5f, 0.75f, 1f, 1f }, values, $"step {dt}");
             Assert.IsTrue(tween.IsFinished);
         }
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new Tweener().AddSteps(0, _ => { }));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new Tweener().AddSteps(-1, _ => { }));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new Tweener().AddSteps(3, _ => { }, delaySteps: -1));
     }
 

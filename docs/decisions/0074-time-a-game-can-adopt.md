@@ -36,10 +36,19 @@ Measured for this decision (60 updates a second unless said):
 - **`Timers` is a kernel class** (namespace `MicroEngine`) with a public `Update`, hashed through `IStateHashed`;
   `SceneTimers` is a scene system that owns one and steps it with the world's step and the engine's. State machines
   already needed no scene; the documentation now says so.
-- **Seconds follow one rule on timers and machines**: counted in double precision, reached within
-  `max(1e-5, 5e-7 x time)`; a repeating timer counts the time since it was added against `n x interval`. The rule
-  ("`seconds x R` updates, rounded up") is stated in the manual and tested at 30, 50, 60, 120 and 144 updates a
-  second from 0.02 s to an hour.
+- **Seconds follow one rule on timers and machines.** A step that is exactly the `float` of `1 / R` for a whole R is
+  counted as `1 / R`, and the clock is a count of updates times that step while the step stays the same (`StepClock`);
+  a time is taken as written to seven digits; the n-th call of a repeating timer is due at `n x interval` from its
+  start. A time is reached within `min(1e-5 s, a hundredth of the step)` plus the rounding of the arithmetic. A first
+  version used a tolerance of `max(1e-5, 5e-7 x time)` over a running sum: it reached a whole update at about
+  `2e6 / R` seconds (one update early at 3600 s and 1000 updates a second, at 43200 s and 60), which an independent
+  verification measured; the tolerance may never grow with the time. The rule ("`seconds x R` updates, rounded up")
+  is stated in the manual and tested from 0.02 s to an hour at eight rates from 30 to 1000, and from half an hour to
+  24 hours at 60, 144, 240, 360 and 1000 updates a second.
+- **One rule for zero and for steps that are no time**, on timers, machines and tweens: an update of zero seconds
+  makes nothing happen by time; a negative, infinite or not-a-number step is zero; a zero length happens on the next
+  update that has time. A repeating timer is called at most 1000 times in one update and drops the rest. A timer
+  handle carries its owner.
 - **Every time can be given in updates**: `StateMachine.AfterSteps` (with `Steps`, `StepsIn`, `SetSteps`),
   `Timers.AfterSteps` and `EverySteps`, `Wait.Steps`, `Tweener.AddSteps`. An update of zero seconds is not counted. It
   is the way a game that thinks in frames writes its rules and the way a game with recorded runs moves its float

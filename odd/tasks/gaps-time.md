@@ -67,3 +67,18 @@ Route: inline, in this worktree. Status: `[x]` done with its evidence.
   `MicroEngine.Tests`, `GraphicsCorrectionTests.A_strength_or_brightness_without_limit_is_clamped_and_the_effect_ends`,
   which hit its 10 s limit while other builds ran and passes alone in 68 ms; it touches nothing of this work. The four
   demos' tests passed unchanged (79, 73, 73, 134).
+- L7 (2026-11-27) Correction batch after an independent verification, one commit, each test seen failing first
+  (`TimeCorrectionTests`). D1: a tween callback that cleared the tweens threw; `Clear` now marks, the update sweeps.
+  D2: the tolerance `5e-7 x time` reached a whole update on long times at high rates; timers and machines now count
+  updates of a step taken as `1 / R` (`StepClock`), within `min(1e-5 s, step / 100)`. Measured after the fix: 0 updates
+  off for 1800, 3600, 7200, 10800, 21600, 43200 and 86400 s at 60, 144, 240, 360 and 1000 updates a second on timers
+  (60, 144 and 1000 on machines), and `Every(1f)` on every R-th update for 24 h at 60, 144 and 1000. D3 and D5: a step
+  that is not a positive finite number advances nothing; a tween refuses a length that is not a finite number of zero
+  or more; a repeating timer is called at most 1000 times in one update. D4: one rule for zero (nothing happens by
+  time on an update of zero seconds; a zero length is the next update with time). D6: a timer handle carries its
+  owner.
+- L8 Counting the step as `1 / R` first changed `StateMachine.Time` too (420 updates at 60 gave exactly 7), and Trail
+  Duel's credits, which leave their card on `_part.Time > 7f`, left one update later (`CreditsFlowTests`, 420 against
+  421). `Time` is again the plain sum of the steps as given, what it always reported; only the ways out by time
+  (`After`) are measured on the counted clock. A machine restored from a snapshot takes the saved time as the saved
+  number of updates when the two agree to a float's precision.

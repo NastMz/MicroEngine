@@ -225,7 +225,8 @@ The `Tween` is also the way to end one early: `Cancel()` stops it where it is (n
 called), `Complete()` jumps to its final value and calls `done` (skipping a cutscene, closing a menu in the middle of
 its slide), `IsFinished` says whether it is over either way and `Progress` how far along it is. A coroutine that waits
 for a tween goes on when the tween is cancelled or completed too. `Tweens.Clear()` cancels all of them, and popping
-the scene does as well.
+the scene does as well. A tween's `apply` or `done` may add tweens, cancel or complete any tween (its own included)
+and clear them all; a tween added there advances from the next update.
 
 ### When a tween applies its values
 
@@ -293,11 +294,40 @@ A repeating timer keeps what is left over, so its n-th call follows the same rul
 ([Time in a state](../guide/state-machines.md#time-in-a-state)), so a timer and a state of the same length end on the
 same update.
 
+The rule holds because a step that is `1 / R` for a whole rate R (what the engine gives, also at half or a quarter
+speed) is counted as exactly `1 / R`, and the time is a number of updates times it, never a running sum of `float`s.
+It holds at any rate up to 1000 updates a second for delays of a day, and a timer every second is called on every
+R-th update for a day (both checked to 24 hours). A delay is taken as it is written, to the seven digits a `float`
+holds, and counts as reached within a hundred-thousandth of a second, never within more than a hundredth of an update:
+enough for a delay worked out in single precision (`3 * 0.3f`), too little to call anything an update early. With
+steps that are not `1 / R` (a varying step, a clock scale such as 0.3) the steps are summed, and the timer is called
+on the first update on which the sum reaches the delay.
+
 `Timers.AfterSteps(steps, action)` and `Timers.EverySteps(steps, action, times)` count updates instead of seconds, for
 a game that thinks in frames and for a delay kept by hand (`t -= dt; if (t <= 0)`) that moves onto a timer without
 changing the update it fires on. Steps count updates, not time: slow motion does not stretch them, their length in
 seconds changes with the update rate, and an update of zero seconds (the world frozen) is not counted.
-`Timers.Remaining(handle)` gives what is left of a timer, in the unit it was added with.
+`Timers.Remaining(handle)` gives what is left of a timer, in the unit it was added with. A handle belongs to the
+`Timers` that gave it: on another one it cancels nothing and names no timer.
+
+A repeating timer whose interval is shorter than the step is called once for every interval that passed, up to
+`Timers.MaxCallsPerUpdate` (1000) calls in one update; what was due beyond that is dropped, and its next call is one
+interval later.
+
+### Zero, and steps that are no time
+
+One rule for timers, state machines and tweens:
+
+- **An update of zero seconds advances nothing and makes nothing happen by time.** No timer is called, no way out by
+  seconds or by steps is taken, no tween applies a value or ends; a machine still runs its state's `OnUpdate` and
+  checks its `When` conditions. That is what a frozen world gives the timers and machines of its scene.
+- **A step that is negative, infinite or not a number is taken as zero.** It cannot stop a timer for good, end a tween
+  or run a repeating timer without end.
+- **A length of zero happens on the next update that has time**: `After(0, ...)` and `AfterSteps(0, ...)` on a timer or
+  a machine, and a tween of zero seconds or zero updates (it applies its starting value when it is added and its
+  final value on that update). Zero and one update are the same length.
+- **A negative, infinite or not-a-number length is refused** (`ArgumentOutOfRangeException`) by timers, machines and
+  tweens.
 
 ### Timers outside a scene
 

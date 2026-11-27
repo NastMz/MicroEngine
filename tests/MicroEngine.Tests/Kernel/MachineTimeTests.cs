@@ -14,7 +14,7 @@ public sealed class MachineTimeTests
     private enum S { Wait, Done, Other }
 
     /// <summary>Update rates a game runs at.</summary>
-    internal static readonly int[] Rates = [30, 50, 60, 120, 144];
+    internal static readonly int[] Rates = [30, 50, 60, 120, 144, 240, 360, 1000];
 
     /// <summary>Durations a game uses, from a blink to an hour.</summary>
     internal static readonly string[] Durations =

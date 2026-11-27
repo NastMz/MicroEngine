@@ -53,12 +53,19 @@ public sealed class Stage
 A timer in seconds is called on the update on which the time since it was added reaches its delay. At a fixed rate
 of R updates a second that is after exactly <code>seconds x R</code> updates when the product is a whole number
 (0.5 seconds at 60: 30) and after the next whole number otherwise; a repeating timer keeps what is left over, so
-its n-th call follows the same rule for <code>n x seconds</code>. A timer in updates counts the updates of more than zero
-seconds.
+its n-th call follows the same rule for <code>n x seconds</code>. The rule holds for a step that is <code>1 / R</code> for a
+whole R, which is counted as exactly that; any other step is summed as given. A time counts as reached within a
+hundred-thousandth of a second of it, and never within more than a hundredth of an update. A timer in updates counts the updates that have time.
+</p>
+<p>
+An update whose step is zero, negative, infinite or not a number advances nothing and calls nothing, so a delay of
+zero seconds or zero updates is called on the next update that has time. A repeating timer whose interval is
+shorter than the step is called once per interval that passed, at most [MaxCallsPerUpdate](MicroEngine.Timers.md#MicroEngine_Timers_MaxCallsPerUpdate) times in
+one update; what is left beyond that is dropped and its next call is one interval later.
 </p>
 <p>
 Timers are called in the order they were added. A timer added by an action waits for the next update; an action may
-cancel any timer, its own included.
+cancel any timer, its own included. A [TimerHandle](MicroEngine.TimerHandle.md) belongs to the [Timers](MicroEngine.Timers.md) that gave it.
 </p>
 
 ## Constructors
@@ -68,6 +75,20 @@ cancel any timer, its own included.
 ```csharp
 public Timers()
 ```
+
+## Fields
+
+### <a id="MicroEngine_Timers_MaxCallsPerUpdate"></a> MaxCallsPerUpdate
+
+The most calls one repeating timer gets in one update; what is due beyond them is dropped.
+
+```csharp
+public const int MaxCallsPerUpdate = 1000
+```
+
+#### Field Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Properties
 
@@ -97,7 +118,7 @@ public TimerHandle After(float seconds, Action action, bool unscaled = false)
 
 `seconds` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The delay; 0 calls it in the next update.
+The delay; 0 calls it in the next update that has time.
 
 `action` [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
@@ -131,7 +152,7 @@ public TimerHandle AfterSteps(int steps, Action action, bool unscaled = false)
 
 `steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-The delay in updates; 0 and 1 both call it in the next update.
+The delay in updates; 0 and 1 both call it in the next update that has time.
 
 `action` [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
@@ -187,7 +208,7 @@ public TimerHandle Every(float seconds, Action action, int times = 0, bool unsca
 
 `seconds` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The interval, above zero. A step longer than the interval calls the action once per interval that passed.
+The interval, above zero. A step longer than the interval calls the action once per interval that passed, up to [MaxCallsPerUpdate](MicroEngine.Timers.md#MicroEngine_Timers_MaxCallsPerUpdate).
 
 `action` [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
@@ -305,13 +326,14 @@ public void Update(float dt)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The step in seconds; 0 advances nothing.
+The step in seconds. Zero, a negative number, infinity and not-a-number are no time: nothing advances and nothing is called.
 
 ### <a id="MicroEngine_Timers_Update_System_Single_System_Single_"></a> Update\(float, float\)
 
 Advances the timers on two clocks: <code class="paramref">dt</code> for the ordinary ones and <code class="paramref">unscaledDt</code>
 for those added with <code>unscaled: true</code>. A scene gives its world's step and the engine's, so an unscaled timer
-runs while the world is slowed or frozen.
+runs while the world is slowed or frozen. A clock whose step is no time (zero, negative, infinite, not a number)
+stands still, and its timers are not called.
 
 ```csharp
 public void Update(float dt, float unscaledDt)

@@ -175,7 +175,9 @@ public bool ThrowOnUnhandled { get; set; }
 
 ### <a id="MicroEngine_StateMachine_2_Time"></a> Time
 
-Seconds spent in the current state: 0 when it is entered, then the sum of the steps since.
+Seconds spent in the current state: 0 when it is entered, then the sum of the steps since, as they were given. It
+is a number to read, draw and save; leave a state after a time with <code>After</code>, which counts exactly, and not
+by comparing this sum with the time.
 
 ```csharp
 public float Time { get; }
@@ -395,7 +397,8 @@ public void Update(float dt)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The step in seconds; 0 runs the updates and the conditions without moving the time.
+The step in seconds. Zero runs the updates and the conditions without moving the time or the steps, and takes no
+way out by time or by steps; a negative, infinite or not-a-number step is taken as zero.
 
 #### Exceptions
 

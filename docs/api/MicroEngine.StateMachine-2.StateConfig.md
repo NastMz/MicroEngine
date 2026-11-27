@@ -24,8 +24,9 @@ public sealed class StateMachine<TState, TEvent>.StateConfig
 A way out by time: once the state lasted <code class="paramref">seconds</code> (and <code class="paramref">condition</code> is true,
 when given) the machine changes to <code class="paramref">target</code>, on the update on which the time reaches them.
 At a fixed rate of R updates a second that is after exactly <code class="paramref">seconds</code> x R updates when the
-product is a whole number (1.9 seconds at 60: 114) and after the next whole number otherwise. Declared on a
-parent, the time is the parent's; declared on `Any`, the current state's.
+product is a whole number (1.9 seconds at 60: 114) and after the next whole number otherwise; zero seconds is
+the first update in the state that has time. Declared on a parent, the time is the parent's; declared on
+`Any`, the current state's.
 
 ```csharp
 public StateMachine<TState, TEvent>.StateConfig After(float seconds, TState target, Func<bool>? condition = null)

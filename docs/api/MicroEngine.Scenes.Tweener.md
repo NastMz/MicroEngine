@@ -29,7 +29,12 @@ public sealed class Tweener : IStateHashed
 A tween applies its starting value (<code>ease(0)</code>) the moment it is added, so what it moves is in place before
 anything is drawn, and advances once per update from the next one. With a delay, it leaves its target alone until
 the update the delay ends on, which applies the starting value. Its last update applies <code>ease(1)</code> and then
-calls <code>done</code>.
+calls <code>done</code>. A tween of zero seconds or zero updates applies its final value on the next update.
+</p>
+<p>
+An update whose step is zero, negative, infinite or not a number advances nothing: no value is applied and no tween
+ends. A callback (<code>apply</code> or <code>done</code>) may add tweens, cancel or complete any tween, its own included, and
+clear them all.
 </p>
 <p>
 A tween in seconds adds each update's step to its time in single precision, exactly as the loop
@@ -76,7 +81,7 @@ public Tween Add(float duration, Action<float> apply, Func<float, float>? ease =
 
 `duration` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The length in seconds.
+The length in seconds, zero or more; zero applies the final value on the next update.
 
 `apply` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
 
@@ -106,6 +111,12 @@ default) keeps the engine's time, which interface and cutscene tweens want.
 
 The tween: yield it from a coroutine to wait for it, or keep it to cancel or complete it.
 
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">duration</code> or <code class="paramref">delay</code> is negative, infinite or not a number.
+
 ### <a id="MicroEngine_Scenes_Tweener_AddSteps_System_Int32_System_Action_System_Single__System_Func_System_Single_System_Single__System_Action_System_Int32_System_Boolean_"></a> AddSteps\(int, Action<float\>, Func<float, float\>?, Action?, int, bool\)
 
 A tween whose length is a number of updates: <code class="paramref">apply</code> receives the eased value of 1/steps, 2/steps...
@@ -120,7 +131,7 @@ public Tween AddSteps(int steps, Action<float> apply, Func<float, float>? ease =
 
 `steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-The length in updates, above zero.
+The length in updates; 0 and 1 both apply the final value on the next update.
 
 `apply` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
 
@@ -150,11 +161,12 @@ True to count the updates of the second clock of [Update](MicroEngine.Scenes.Twe
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-<code class="paramref">steps</code> is not above zero, or <code class="paramref">delaySteps</code> is negative.
+<code class="paramref">steps</code> or <code class="paramref">delaySteps</code> is negative.
 
 ### <a id="MicroEngine_Scenes_Tweener_Clear"></a> Clear\(\)
 
-Cancels every tween: no final value is applied and no <code>done</code> callback is called.
+Cancels every tween: no final value is applied and no <code>done</code> callback is called. A coroutine waiting for one
+goes on. Safe from a callback of one of the tweens.
 
 ```csharp
 public void Clear()
@@ -187,7 +199,8 @@ public void Update(float dt)
 ### <a id="MicroEngine_Scenes_Tweener_Update_System_Single_System_Single_"></a> Update\(float, float\)
 
 Advances the tweens on two clocks: <code class="paramref">dt</code> for the ordinary ones and <code class="paramref">scaledDt</code> for
-those added with <code>scaled: true</code>. A scene gives the engine's step and its world's.
+those added with <code>scaled: true</code>. A scene gives the engine's step and its world's. A clock whose step is no
+time (zero, negative, infinite, not a number) stands still: its tweens apply nothing and do not end.
 
 ```csharp
 public void Update(float dt, float scaledDt)

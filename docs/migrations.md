@@ -25,13 +25,18 @@ value. `Tweener.Add` returns a `Tween` instead of `void`, and `Tweener.Count` no
 imports only `MicroEngine.Scenes` adds `using MicroEngine;`. Timers now count in double precision: a delay that the
 old single-precision countdown reached one update late (4 s at 144 updates a second, 10 s at 120, 60 s at 60, and
 many delays over a minute) is now called on the update the rule gives. A repeating timer no longer drifts.
+An update of zero seconds calls no timer: `After(0, ...)` is called on the next update that has time. A repeating
+timer is called at most `Timers.MaxCallsPerUpdate` (1000) times in one update. `Tweens.Add` throws
+`ArgumentOutOfRangeException` for a negative length or delay (a negative length was taken as a very short one), and a
+tween of zero seconds ends on the next update instead of lasting a ten-thousandth of a second.
 
 ### State machines: steps in the state hash, and a tolerance that grows with the time
 
 A machine adds the updates spent in each state to the state hash, so the hash of a scene with a machine changes; no
 behaviour does. `MachineSnapshot<TState>` has a third value, `Steps` (0 when a save written before does not have it).
 A way out by a time of several minutes that was taken one update late at some update rates (300 s at 50
-updates a second) is now taken on the regular update. The coroutine runner adds two values per coroutine to the state
+updates a second) is now taken on the regular update. A machine updated with a step of zero no longer takes a way
+out by time (`After(0, ...)` was taken on `Update(0)`); its conditions are still checked. The coroutine runner adds two values per coroutine to the state
 hash (updates left to wait, whether it waits for a tween).
 
 ### Saved bindings: later formats are refused, and a screen saves its own actions

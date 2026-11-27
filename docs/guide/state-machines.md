@@ -124,7 +124,16 @@ fixed update rate it can be worked out before running anything:
 | 600 s | 18,000 | 30,000 | 36,000 | 72,000 | 86,400 |
 
 The update a state is entered on is not one of them: a state entered on update 100 with `After(0.5f, next)` at 60
-updates a second is left on update 130. The rule holds for times up to several hours.
+updates a second is left on update 130.
+
+The rule holds because the machine does not add up the steps as they arrive: a step that is `1 / R` for a whole rate R
+(what the engine gives, also at half or a quarter speed) is counted as exactly that, and the time is a number of
+updates times it. It holds at any rate up to 1000 updates a second for times of a day (checked to 24 hours), and the
+time is taken as it is written, to the seven digits a `float` holds. A time counts as reached within a
+hundred-thousandth of a second of it, and never within more than a hundredth of an update, so no state is left an
+update early. With steps that are not `1 / R` (a varying step, a scale such as 0.3) the steps are summed and the state
+is left on the first update on which the sum reaches the time. An update of zero seconds takes no way out by time
+([Zero, and steps that are no time](../manual/scenes.md#zero-and-steps-that-are-no-time)).
 
 A timer kept by hand usually does not follow that rule. `t += dt` in a `float` does not add up to the exact product
 (sixty steps of 1/60 are a little under or over 1), and a comparison with `>` instead of `>=` waits one update more

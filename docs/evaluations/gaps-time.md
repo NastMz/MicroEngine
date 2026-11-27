@@ -35,7 +35,8 @@ Updates until a duration is reached, at five rates, for 47 durations from 0.02 s
 | `float` countdown, `<= 1e-5` | `SceneTimers` before this work | regular up to a few seconds; late for 4 s at 144, 10 s at 120, 60 s at 60, 83 s at 50 |
 | `float` countdown, `> 0` | `Wait.Seconds` | as the float sum (1 s: 61; 0.1 s: 7) |
 | `double` clock, `>= seconds - 1e-5` | `StateMachine` before this work | regular except long times: 300 s at 50 (15,001), 600 s and 3600 s at 50 |
-| `double` clock, `>= seconds - max(1e-5, 5e-7 x seconds)` | timers and machines now | `ceil(seconds x R)` in all 235 cases |
+| `double` clock, `>= seconds - max(1e-5, 5e-7 x seconds)` | timers and machines, first version | `ceil(seconds x R)` in all 235 cases, but early on long times at high rates: 3600 s at 1000 updates a second, 43200 s at 60 |
+| updates counted, step taken as `1 / R`, within `min(1e-5, step / 100)` | timers and machines now | `ceil(seconds x R)` from 0.02 s to an hour at eight rates (30 to 1000), and from 1800 s to 24 h at 60, 144, 240, 360 and 1000; `Every(1f)` on every R-th update for 24 h at 60, 144 and 1000 |
 
 So "the engine's arithmetic is the exact one" was true of machines for short times only, and not of timers. The
 recorded numbers of the three demos (25 thresholds) are reproduced by the first row exactly.
