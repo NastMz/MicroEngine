@@ -20,9 +20,10 @@ public sealed class Trooper : Enemy
         Position = feet;
         _dir = dir;
         _shotTimer = firstShot;
-        Hitbox = new RectF(-8, -44, 16, 44);
         Points = 100;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.TrooperIdle0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the shot timer, the firing pause, the walking direction and footing.</summary>
     public override void HashState(StateHasher hash)
@@ -117,10 +118,11 @@ public sealed class Gunner : Enemy
     public Gunner(Vector2 feet)
     {
         Position = feet;
-        Hitbox = new RectF(-8, -44, 16, 44);
         Health = 3;
         Points = 300;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.TrooperIdle0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the fire timer, the burst count and the facing.</summary>
     public override void HashState(StateHasher hash)
@@ -176,10 +178,11 @@ public sealed class Drone : Enemy
         Position = at;
         _baseY = at.Y;
         _phase = phase;
-        Hitbox = new RectF(-12, -10, 24, 20);
         Health = 2;
         Points = 200;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Drone0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the dive (whether, and its velocity) and whether it fired; the bobbing phase and height are fixed at spawn.</summary>
     public override void HashState(StateHasher hash)
@@ -228,10 +231,11 @@ public sealed class Turret : Enemy
     public Turret(Vector2 feet)
     {
         Position = feet;
-        Hitbox = new RectF(-11, -21, 22, 21);
         Health = 6;
         Points = 400;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Turret0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the fire timer; the recoil animation time is left out (drawing only).</summary>
     public override void HashState(StateHasher hash)
@@ -287,11 +291,12 @@ public sealed class EggPod : Enemy
     public EggPod(Vector2 feet)
     {
         Position = feet;
-        Hitbox = new RectF(-16, -56, 32, 56);
         Health = 12;
         Points = 800;
         Armored = true;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.EggIdle0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the open/close cycle time.</summary>
     public override void HashState(StateHasher hash)
@@ -343,9 +348,10 @@ public sealed class Skiff : Enemy
         _baseY = at.Y;
         _phase = phase;
         _timer = 1.2f + phase;
-        Hitbox = new RectF(-11, -8, 22, 16);
         Points = 150;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Skiff0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the fire timer; the bobbing phase and height are fixed at spawn.</summary>
     public override void HashState(StateHasher hash)
@@ -382,10 +388,11 @@ public sealed class Carrier : Enemy
         Position = at;
         _baseY = at.Y;
         _letter = letter;
-        Hitbox = new RectF(-14, -10, 28, 20);
         Health = 2;
         Points = 500;
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Skiff0].Box("hit_carrier");
 
     public override bool Contact => false;
     public char Letter => _letter;

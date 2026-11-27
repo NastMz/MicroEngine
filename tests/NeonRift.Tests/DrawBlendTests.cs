@@ -86,22 +86,10 @@ public sealed class DrawBlendTests
     public void An_effect_plays_its_clip_once_whether_or_not_it_is_drawn()
     {
         var stage = Settled();
-        stage.Strips = name => name == "shot_hit" ? new Strip(4, 25) : new Strip(1, 16);
-        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200)));   // 4 frames at 25 a second: 0.16 s, 9.6 updates
-        Run(stage, 9, PlayerInput.None);
-        Assert.IsTrue(spark.Alive, "still playing its fourth frame after 9 updates");
+        var blast = stage.Spawn(new Effect("explosion", new Vector2(200, 200)));   // the sheet: 8 frames at 18 a second, 0.44 s, 26.7 updates
+        Run(stage, 26, PlayerInput.None);
+        Assert.IsTrue(blast.Alive, "still playing its eighth frame after 26 updates");
         Run(stage, 1, PlayerInput.None);
-        Assert.IsFalse(spark.Alive, "gone once its four frames have played");
-    }
-
-    [TestMethod]
-    public void Without_art_an_effect_lasts_one_frame()
-    {
-        var stage = Settled();
-        var spark = stage.Spawn(new Effect("shot_hit", new Vector2(200, 200)));   // one frame at 16 a second: 0.0625 s, 3.75 updates
-        Run(stage, 3, PlayerInput.None);
-        Assert.IsTrue(spark.Alive);
-        Run(stage, 1, PlayerInput.None);
-        Assert.IsFalse(spark.Alive);
+        Assert.IsFalse(blast.Alive, "gone once its eight frames have played");
     }
 }

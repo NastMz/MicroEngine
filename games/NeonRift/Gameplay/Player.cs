@@ -53,7 +53,15 @@ public sealed class Player : Actor
     private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<Player>(id, this);
 
     /// <summary>The body that enemy shots and contact test against; it shrinks when kneeling or tucked.</summary>
-    public RectF Hurtbox => (Crouching ? new RectF(-9, -28, 18, 28) : Somersault ? new RectF(-8, -36, 16, 22) : new RectF(-6, -40, 12, 38)).Offset(Position);
+    public RectF Hurtbox => (Crouching ? _kneeling : Somersault ? _tucked : _standing).Offset(Position);
+    private RectF _standing, _kneeling, _tucked;
+
+    protected override void Joined()
+    {
+        _standing = Stage.Art[Names.SpriteNames.HeroIdle0].Box("hurt");
+        _kneeling = Stage.Art[Names.SpriteNames.HeroCrouch0].Box("hurt");
+        _tucked = Stage.Art[Names.SpriteNames.HeroBackJump2].Box("hurt");
+    }
 
     public Player(Vector2 feet, WeaponKind weapon)
     {
@@ -184,21 +192,15 @@ public sealed class Player : Actor
     {
         if (Somersault || !_body.Grounded && _aim.Y > 0.5f) return Position + new Vector2(0, -26) + _aim * 16;
         if (Crouching) return Position + new Vector2(22 * Facing, -24);
-        var rig = Stage.Rigs?.Invoke(_body.Grounded && Velocity.X != 0 ? "run-shoot" + RunFrame : "shoot0");
-        if (rig is null) return Position + new Vector2(0, -38) + _aim * 22;
-        var shoulder = Position + new Vector2(rig.Shoulder.X * Facing, rig.Shoulder.Y);
-        return shoulder + _aim * rig.Length;
+        var pose = GunPose;
+        return Position + pose.Point("shoulder", flipX: Facing < 0) + _aim * (pose.Point("tip").X - pose.Point("shoulder").X);
     }
 
-    /// <summary>The frame of the run cycle (the sheet gives its length and rate): it chooses the arm rig, so it places the muzzle.</summary>
-    public int RunFrame
-    {
-        get
-        {
-            var run = Stage.Strip(Names.Clips.HeroRunShoot);
-            return (int)(_runTime * run.Fps) % run.Frames;
-        }
-    }
+    /// <summary>The frame of the sheet Vela's gun pose is drawn from: the standing shot, or the frame of the run she is in. Its points place the muzzle.</summary>
+    private Sprite GunPose => _body.Grounded && Velocity.X != 0 ? Stage.Art.Clip(Names.Clips.HeroRunShoot).Frames[RunFrame] : Stage.Art[Names.SpriteNames.HeroShoot0];
+
+    /// <summary>The frame of the run cycle (the sheet gives its length and rate).</summary>
+    public int RunFrame => Stage.Art.Clip(Names.Clips.HeroRunShoot).FrameIndexAt(_runTime);
 
     /// <summary>Applies one hit from a shot or an enemy. Returns false if the player was protected.</summary>
     public bool Hurt()
@@ -293,9 +295,9 @@ public sealed class Player : Actor
             else r.Draw(art.Clip(Names.Clips.HeroIdle).FrameAt(Age), feet, flipX: flip);
             return;
         }
-        var rig = art.Rig(running ? "run-shoot" + RunFrame : "shoot0");
+        var rig = art.Rig(running ? Names.Strips.HeroRunShoot + RunFrame : Names.SpriteNames.HeroShoot0);
         float angle = MathF.Atan2(_aim.Y, MathF.Abs(_aim.X) < 0.01f ? 0.0001f : MathF.Abs(_aim.X));
-        var shoulder = feet + new Vector2(rig.Shoulder.X * Facing, rig.Shoulder.Y);
+        var shoulder = feet + rig.Body.Point("shoulder", flip);
         r.Draw(rig.Body, feet, flipX: flip);
         r.DrawPivoted(rig.Arm, shoulder, flip ? -angle : angle, flipX: flip);
     }

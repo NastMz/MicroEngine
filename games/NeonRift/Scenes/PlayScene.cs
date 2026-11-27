@@ -41,13 +41,12 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     public override void Enter()
     {
         var def = Stages.All[stageIndex];
-        _stage = new Stage(def, game.Session, Objects, checkpoint, seed: 11 + stageIndex)
+        _stage = new Stage(def, game.Session, Objects, game.Art.Atlas, checkpoint, seed: 11 + stageIndex)
         {
             Final = stageIndex == Stages.Count - 1,
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
-            Rigs = name => game.Art.Rig(name),
-            Strips = name => game.Art.Strip(name),
+
             DefeatSink = _ =>
             {
                 game.Achievements.Unlock(RiftAchievements.FirstScrap);

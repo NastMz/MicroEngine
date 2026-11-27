@@ -91,9 +91,13 @@ public abstract class Actor : IDestroyedCallback
         var id = world.Create();
         world.Local(id).Position2D = _position;
         (Stage, _world, Id) = (stage, world, id);
+        Joined();
         AttachTo(world, id);
         if (_dead) world.Destroy(id);
     }
+
+    /// <summary>Called once the actor has its stage: a kind reads its hit box from the sheet here (<see cref="Stage.Art"/>).</summary>
+    protected virtual void Joined() { }
 
     /// <summary>Attaches the actor to its entity under the type the stage walks it by (<see cref="Stage.Enemies"/> and the like).</summary>
     private protected abstract void AttachTo(IWorld world, EntityId id);
@@ -187,14 +191,12 @@ public abstract class Enemy : Actor
 
 /// <summary>Short-lived visual effect (explosion, muzzle spark) that plays a clip of <c>Content/sprites.sheet</c> once.</summary>
 /// <remarks>
-/// Nothing in play reads effects. Their lifetime is the clip's length, which the stage reads from the art when the
-/// effect first updates (<see cref="Stage.Strip"/>), never from drawing, so how often frames are drawn changes
-/// nothing; the stage's own sections leave them out, the world hashes their entities like any other.
+/// Nothing in play reads effects. Their lifetime is the clip's length (<see cref="Stage.Art"/>), never read from
+/// drawing, so how often frames are drawn changes nothing; the stage's own sections leave them out, the world hashes
+/// their entities like any other.
 /// </remarks>
 public sealed class Effect : Actor
 {
-    private Strip _strip;
-
     public Effect(string clip, Vector2 at)
     {
         Clip = clip;
@@ -210,9 +212,9 @@ public sealed class Effect : Actor
     public override void Update(float dt)
     {
         base.Update(dt);
-        if (_strip.Frames == 0) _strip = Stage.Strip(Clip);
+        var clip = Stage.Art.Clip(Clip);
         Position += Velocity * dt;
-        if (Age * _strip.Fps >= _strip.Frames) Destroy();
+        if (Age * clip.FramesPerSecond >= clip.Frames.Count) Destroy();
     }
 
     internal override void Render(IRenderer r, Assets art)

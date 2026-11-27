@@ -1,25 +1,34 @@
 // Every sprite of Neon Rift that comes straight from a file: which image, how it is cut, where its anchor is and at
-// what rate its strip plays (an effect that plays once does not loop). Assets.cs adds the poses it derives from these
-// in code.
+// what rate its strip plays (an effect that plays once does not loop). Boxes say where a frame can be hit ("hit" for
+// an enemy, "hurt" for the hero's poses) and points where the gun arm of a pose starts and ends; Assets.cs cuts the
+// arm of those poses out so it can turn.
 {
   "sheets": [
     // Hero (Warped City): every strip shares the 71x67 canvas and the feet anchor.
-    { "image": "hero/idle.png", "name": "hero_idle", "cell": [71, 67], "origin": [31, 66], "fps": 6 },
+    { "image": "hero/idle.png", "name": "hero_idle", "cell": [71, 67], "origin": [31, 66], "fps": 6,
+      "boxes": { "hurt": [25, 26, 12, 38] } },
     { "image": "hero/run.png", "name": "hero_run", "cell": [71, 67], "origin": [31, 66], "fps": 12 },
-    { "image": "hero/run-shoot.png", "name": "hero_run-shoot", "cell": [71, 67], "origin": [31, 66], "fps": 12 },
+    { "image": "hero/run-shoot.png", "name": "hero_run-shoot", "cell": [71, 67], "origin": [31, 66], "fps": 12,
+      "points": { "shoulder": [[50, 26], [50, 27], [50, 29], [49, 29], [48, 28], [48, 28], [48, 29], [50, 29]],
+                  "tip": [[60, 26], [61, 27], [62, 29], [62, 29], [62, 28], [62, 28], [63, 29], [62, 29]] } },
     { "image": "hero/jump.png", "name": "hero_jump", "cell": [71, 67], "origin": [31, 66] },
-    { "image": "hero/back-jump.png", "name": "hero_back-jump", "cell": [71, 67], "origin": [31, 66] },
-    { "image": "hero/crouch.png", "name": "hero_crouch", "cell": [71, 67], "origin": [31, 66] },
-    { "image": "hero/shoot.png", "name": "hero_shoot", "cell": [71, 67], "origin": [31, 66] },
+    { "image": "hero/back-jump.png", "name": "hero_back-jump", "cell": [71, 67], "origin": [31, 66],
+      "boxes": { "hurt": [23, 30, 16, 22] } },
+    { "image": "hero/crouch.png", "name": "hero_crouch", "cell": [71, 67], "origin": [31, 66],
+      "boxes": { "hurt": [22, 38, 18, 28] } },
+    { "image": "hero/shoot.png", "name": "hero_shoot", "cell": [71, 67], "origin": [31, 66],
+      "points": { "shoulder": [36, 24], "tip": [54, 24] } },
     { "image": "hero/hurt.png", "name": "hero_hurt", "cell": [71, 67], "origin": [31, 66] },
     // Enemies, shots and effects.
-    { "image": "enemies/drone.png", "name": "drone", "cell": [55, 52], "origin": [27, 26], "fps": 12 },
-    { "image": "enemies/turret.png", "name": "turret", "cell": [25, 23], "origin": [12, 22] },
-    { "image": "enemies/trooper-idle.png", "name": "trooper_idle", "cell": [61, 64], "origin": [30, 63], "fps": 5 },
+    { "image": "enemies/drone.png", "name": "drone", "cell": [55, 52], "origin": [27, 26], "fps": 12, "boxes": { "hit": [15, 16, 24, 20] } },
+    { "image": "enemies/turret.png", "name": "turret", "cell": [25, 23], "origin": [12, 22], "boxes": { "hit": [1, 1, 22, 21] } },
+    { "image": "enemies/trooper-idle.png", "name": "trooper_idle", "cell": [61, 64], "origin": [30, 63], "fps": 5, "boxes": { "hit": [22, 19, 16, 44] } },
     { "image": "enemies/trooper-run.png", "name": "trooper_run", "cell": [61, 64], "origin": [30, 63], "fps": 14 },
-    { "image": "enemies/egg-idle.png", "name": "egg_idle", "cell": [44, 62], "origin": [22, 61], "fps": 3 },
+    { "image": "enemies/egg-idle.png", "name": "egg_idle", "cell": [44, 62], "origin": [22, 61], "fps": 3, "boxes": { "hit": [6, 5, 32, 56] } },
     { "image": "enemies/egg-shoot.png", "name": "egg_shoot", "cell": [44, 62], "origin": [22, 61] },
-    { "image": "enemies/skiff.png", "name": "skiff", "cell": [29, 29], "origin": [14, 14], "fps": 10 },
+    // The supply ship is the skiff with a capsule slung under it: a larger box.
+    { "image": "enemies/skiff.png", "name": "skiff", "cell": [29, 29], "origin": [14, 14], "fps": 10,
+      "boxes": { "hit": [3, 6, 22, 16], "hit_carrier": [0, 4, 28, 20] } },
     { "image": "fx/enemy-bullet.png", "name": "enemy_bullet", "cell": [12, 12], "origin": [6, 6], "fps": 12 },
     { "image": "fx/explosion.png", "name": "explosion", "cell": [48, 48], "origin": [24, 24], "fps": 18, "loop": false },
     { "image": "fx/explosion-big.png", "name": "explosion_big", "cell": [55, 52], "origin": [27, 26], "fps": 14, "loop": false },
@@ -35,11 +44,11 @@
     { "image": "fx/hit4.png", "name": "hit4", "cell": [32, 32], "origin": [16, 16], "fps": 24, "loop": false },
     { "image": "fx/hit5.png", "name": "hit5", "cell": [32, 32], "origin": [16, 16] },
     // Bosses.
-    { "image": "bosses/gunship.png", "name": "gunship", "cell": [176, 96], "origin": [88, 48], "fps": 10 },
+    { "image": "bosses/gunship.png", "name": "gunship", "cell": [176, 96], "origin": [88, 48], "fps": 10, "boxes": { "hit": [18, 18, 140, 60] } },
     { "image": "bosses/gunship-thrust.png", "name": "gunship_thrust", "cell": [48, 48], "origin": [24, 24], "fps": 14 },
-    { "image": "bosses/interceptor.png", "name": "interceptor", "cell": [176, 125], "origin": [88, 62], "fps": 10 },
+    { "image": "bosses/interceptor.png", "name": "interceptor", "cell": [176, 125], "origin": [88, 62], "fps": 10, "boxes": { "hit": [28, 22, 120, 75] } },
     { "image": "bosses/interceptor-thrust.png", "name": "interceptor_thrust", "cell": [81, 58], "origin": [40, 29], "fps": 14 },
-    { "image": "bosses/dreadnought.png", "name": "dreadnought", "cell": [329, 160], "origin": [164, 80], "fps": 8 },
+    { "image": "bosses/dreadnought.png", "name": "dreadnought", "cell": [329, 160], "origin": [164, 80], "fps": 8, "boxes": { "hit": [104, 40, 170, 100] } },
     { "image": "bosses/dreadnought-thrust-back.png", "name": "dread_thrust_back", "cell": [32, 47], "origin": [16, 23], "fps": 14 },
     // Stage props stand on their bottom edge.
     { "image": "stages/grotto/palm.png", "name": "prop_palm", "pivot": [0.5, 1] },
