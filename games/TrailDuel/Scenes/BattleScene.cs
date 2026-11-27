@@ -41,7 +41,6 @@ internal sealed partial class BattleScene : Scene
     public BattleScene(TrailDuelGame game, Battle battle, BattleSetup setup, Action<BattleOutcome> onEnd)
     {
         _game = game;
-        _sprites = new SpriteFx(game.Atlas);
         _battle = battle;
         _setup = setup;
         _onEnd = onEnd;
@@ -60,9 +59,9 @@ internal sealed partial class BattleScene : Scene
     /// phase, outcome) and <c>battle.screen</c> (menu mode and cursors, the move card toggle, the pending action, the
     /// moves offered to forget, the low-HP beep timer, whether it ended, the text box, the open choice and what each
     /// side shows: creature, level, displayed HP and XP, status and visibility, which lag behind the rules while
-    /// animating). Left out: particles, sprite effects, shakes, flashes, slides, lunges, tints, the orb's flight
-    /// (presentation the flow coroutine drives; the coroutine is hashed by the engine, and the slid positions are in the
-    /// scene's objects, which the engine hashes too) and the label caches drawing fills.
+    /// animating). Left out: particles, shakes, flashes, slides, lunges, tints, the orb's flight (presentation the flow
+    /// coroutine drives; the coroutine, its tweens and the one-shot effects are hashed by the engine, and the slid
+    /// positions are in the scene's objects, which the engine hashes too).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -104,6 +103,7 @@ internal sealed partial class BattleScene : Scene
         Audio.PlayMusic(_setup.Music, 0f);
         _enemy = new Display { Creature = _battle.Enemy, Hp = _battle.Enemy.Hp, Visible = _setup.Trainer is null };
         _player = new Display { Creature = _battle.Player, Hp = _battle.Player.Hp, Xp = _battle.Player.XpFraction };
+        Effects.SnapToPixels = true;
         CreateObjects();
         Coroutines.Start(Flow());
     }

@@ -117,7 +117,7 @@ internal sealed partial class BattleScene
             var orb = _game.Sprite(_orbOpen ? "orbopen" : _orbSprite);
             r.Draw(orb.Texture, orb.Source, Drawn(_orb) - orb.Origin, Color.White, new DrawOptions(Rotation: _orbAngle, Origin: orb.Origin));
         }
-        _sprites.Draw(r);
+        Effects.Draw(r);
         _fx.Draw(r);
         _glow.Draw(r);
 
