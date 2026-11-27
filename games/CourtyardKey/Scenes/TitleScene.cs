@@ -42,10 +42,12 @@ public static class Backdrop
 public sealed class TitleScene : Scene
 {
     private readonly CourtyardKeyGame _game;
-    private readonly DemoKit.OptionList _menu;
+    private readonly MenuCursor _menu;
     private readonly bool _canContinue;
     private readonly ParticleSystem _motes = new(200, 21) { Additive = true };
-    internal DemoKit.OptionList Menu => _menu;
+    internal MenuCursor Menu => _menu;
+    /// <summary>The menu's entries, top to bottom.</summary>
+    internal string[] Options { get; }
     private bool _showControls;
     private float _spawn;
     private (string Key, string What)[]? _controlRows;
@@ -63,7 +65,8 @@ public sealed class TitleScene : Scene
             MicroEngine.Core.SaveLoadStatus.MigrationFailed or MicroEngine.Core.SaveLoadStatus.Unreadable => "Unreadable",
             _ => "Continue",
         };
-        _menu = new DemoKit.OptionList("New Game", second, "Controls", "Achievements", "Quit");
+        Options = ["New Game", second, "Controls", "Achievements", "Quit"];
+        _menu = new MenuCursor(Options.Length);
         _menu.Moved += () => Audio.Play("menu_move");
     }
 
@@ -139,7 +142,7 @@ public sealed class TitleScene : Scene
         if (_showControls) { DrawControls(r); return; }
         var panel = new RectF(110, 113, 92, 64);
         UiStyle.Frame(r, panel);
-        _menu.Draw(r, Font, new Vector2(panel.X + 8, panel.Y + 6), UiStyle.Theme, Age, 11);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(panel.X + 8, panel.Y + 6), Age, 11);
         const string footer = "made with MicroEngine";
         Font.DrawShadowed(r, footer, new Vector2(r.Width - 4 - Font.MeasureWidth(footer), 170), Pal.Leaf[4], Pal.Ink);
     }

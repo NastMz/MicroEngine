@@ -14,7 +14,8 @@ namespace CourtyardKey.Scenes;
 public sealed class PauseScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Resume", "Save & Quit");
+    private static readonly string[] Options = ["Resume", "Save & Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private static readonly (string Sprite, string Label)[] Items =
     [
         ("sword", "Oswin's Sword"),
@@ -97,7 +98,7 @@ public sealed class PauseScene : Scene
         // Menu
         var menu = new RectF(154, 136, 156, 36);
         UiStyle.Frame(r, menu);
-        _menu.Draw(r, Font, new Vector2(menu.X + 8, menu.Y + 7), UiStyle.Theme, Age, 12);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(menu.X + 8, menu.Y + 7), Age, 12);
         Font.DrawRight(r, Game.Prompts.Cached("{cancel}: back"), new Vector2(menu.Right - 6, menu.Y + 7), Pal.Stone[3]);
     }
 }
@@ -138,7 +139,8 @@ public sealed class ShopScene : Scene
     public const int TonicPrice = 10, PiePrice = 60;
     public const string PieFlag = "shop:pie";
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Heart Tonic", "Hearty Pie", "Leave");
+    private static readonly string[] Options = ["Heart Tonic", "Hearty Pie", "Leave"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private string _message = "What'll it be, dear?";
     private static readonly string[] Icons = ["tonic", "pie", ""];
     private static readonly string[] Notes = ["Full heal", "+1 max heart", ""];
@@ -220,7 +222,7 @@ public sealed class ShopScene : Scene
                 Font.Draw(r, Notes[i], new Vector2(panel.X + 100, y), Pal.Stone[4]);
             }
         }
-        _menu.Draw(r, Font, new Vector2(panel.X + 22, panel.Y + 26), UiStyle.Theme, Age, 18);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(panel.X + 22, panel.Y + 26), Age, 18);
         r.FillRect(new RectF(panel.X + 8, panel.Bottom - 22, panel.Width - 16, 1), Pal.Gold[0]);
         Font.DrawShadowed(r, _message, new Vector2(panel.X + 10, panel.Bottom - 16), Pal.Cream, Pal.Ink);
         r.DrawPivoted(art["gem_green"], new Vector2(panel.Right - 40, panel.Y + 12));
@@ -232,7 +234,8 @@ public sealed class ShopScene : Scene
 public sealed class GameOverScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Continue", "Save & Quit");
+    private static readonly string[] Options = ["Continue", "Save & Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
 
     public GameOverScene(PlayScene play)
     {
@@ -270,6 +273,6 @@ public sealed class GameOverScene : Scene
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Color.Hex("2a0812").WithAlpha(a * 0.82f));
         Font.DrawCentered(r, "YOU FELL", new Vector2(160, 62), Pal.Heart[2].WithAlpha(a), 3, Pal.Ink);
         Font.DrawCentered(r, "The courtyard keeps its secrets... for now.", new Vector2(160, 88), Pal.Cream.WithAlpha(a), 1, Pal.Ink);
-        if (Age >= 0.8f) _menu.Draw(r, Font, new Vector2(128, 112), UiStyle.Theme, Age, 13);
+        if (Age >= 0.8f) UiStyle.Menu(r, Font, Options, _menu, new Vector2(128, 112), Age, 13);
     }
 }

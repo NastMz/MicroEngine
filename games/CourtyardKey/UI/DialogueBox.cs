@@ -8,8 +8,8 @@ using MicroEngine.UI;
 namespace CourtyardKey.UI;
 
 /// <summary>
-/// The game's own copy of the dialogue box the engine used to ship: a queue of dialogue pages shown in a panel with a
-/// typewriter and a speaker name tag. A page longer than
+/// The game's dialogue box: a queue of dialogue pages shown in a panel, revealed a character at a time
+/// (<see cref="TextReveal"/>), with a speaker name tag. A page longer than
 /// <see cref="Lines"/> wrapped lines continues on the next confirm, so no text is ever cut. With <see cref="Prompts"/>
 /// set, <c>{action}</c> in a page names the control that presses it on the player's device, and follows a device change
 /// while the page is showing. Games call <see cref="Update"/> and <see cref="Draw"/> from their own scene.
@@ -17,7 +17,7 @@ namespace CourtyardKey.UI;
 public sealed class DialogueBox
 {
     private readonly Queue<(string? Speaker, string Text)> _pages = new();
-    private readonly DemoKit.Typewriter _typewriter = new();
+    private readonly TextReveal _reveal = new();
     private float _time;
     private string _page = "";
     private IReadOnlyList<string>? _wrapped;
@@ -37,11 +37,11 @@ public sealed class DialogueBox
     /// <summary>The text of the current page as shown (prompts resolved), or empty when closed.</summary>
     public string Text => Active ? Display() : "";
     /// <summary>The wrapped lines in the box now, in full even while they are being revealed (known once the page has been drawn).</summary>
-    public IReadOnlyList<string> VisibleLines => Active ? _typewriter.Text.Split('\n') : [];
+    public IReadOnlyList<string> VisibleLines => Active ? _reveal.Lines : [];
     /// <summary>Whether the current page has more wrapped lines after the ones showing (known once it has been drawn).</summary>
     public bool HasMore => _wrapped is { } w && _first + Math.Max(1, Lines) < w.Count;
     /// <summary>Raised for each revealed non-space character, for a typing sound.</summary>
-    public event Action<char>? Blip { add => _typewriter.Revealed += value; remove => _typewriter.Revealed -= value; }
+    public event Action<System.Text.Rune>? Blip { add => _reveal.CharacterRevealed += value; remove => _reveal.CharacterRevealed -= value; }
     /// <summary>Raised when the last page is dismissed.</summary>
     public event Action? Closed;
 
@@ -67,7 +67,7 @@ public sealed class DialogueBox
         _wrapped = null;
         _first = 0;
         _promptVersion = Prompts?.Version ?? 0;
-        _typewriter.Start(Display());
+        _reveal.Start(Display());
         Active = true;
     }
 
@@ -81,13 +81,13 @@ public sealed class DialogueBox
         _wrapped = font.Wrap(Display(), width);
         (_wrapFont, _wrapWidth, _promptVersion) = (font, width, version);
         _first = Math.Min(_first, Math.Max(0, _wrapped.Count - 1));
-        ShowChunk(_typewriter.VisibleCount);
+        ShowChunk(_reveal.Revealed);
     }
 
     private void ShowChunk(int revealed)
     {
         if (_wrapped is null) return;
-        _typewriter.Start(string.Join('\n', _wrapped.Skip(_first).Take(Math.Max(1, Lines))), revealed);
+        _reveal.Start(string.Join('\n', _wrapped.Skip(_first).Take(Math.Max(1, Lines))), revealed);
     }
 
     /// <summary>
@@ -101,11 +101,11 @@ public sealed class DialogueBox
         ArgumentNullException.ThrowIfNull(input);
         confirm ??= input.Names.Confirm;
         _time += dt;
-        _typewriter.Update(dt);
+        _reveal.Update(dt);
         if (input.Pressed(confirm))
         {
             input.Consume(confirm);
-            if (!_typewriter.Complete) _typewriter.Finish();
+            if (!_reveal.Complete) _reveal.Finish();
             else if (HasMore)
             {
                 _first += Math.Max(1, Lines);
@@ -128,14 +128,11 @@ public sealed class DialogueBox
         float u = MathF.Max(1, MathF.Round(font.LineHeight / 10f));
         r.Panel(area, Theme.Panel);
         Layout(font, area.Width - 16 * u);
-        int shown = _typewriter.VisibleCount;
         float y = area.Y + 7 * u;
         var shadow = new Vector2(u);
-        foreach (var line in _typewriter.Text.Split('\n'))
+        foreach (var line in _reveal.VisibleLines)
         {
-            var visible = line[..Math.Min(line.Length, Math.Max(0, shown))];
-            shown -= line.Length + 1;
-            font.DrawShadowed(r, visible, new Vector2(area.X + 8 * u, y), Theme.Text, Theme.TextShadow, shadow);
+            font.DrawShadowed(r, line, new Vector2(area.X + 8 * u, y), Theme.Text, Theme.TextShadow, shadow);
             y += font.LineHeight + u;
         }
         if (Speaker is { Length: > 0 } name)
@@ -145,7 +142,7 @@ public sealed class DialogueBox
             r.Panel(tag, Theme.Panel with { Fill = Theme.Accent, Highlight = default });
             font.Draw(r, name, new Vector2(tag.X + 5 * u, tag.Y + 2 * u), Theme.Panel.Fill);
         }
-        if (_typewriter.Complete && (int)(_time * 3) % 2 == 0)
+        if (_reveal.Complete && (int)(_time * 3) % 2 == 0)
             font.Draw(r, "▼", new Vector2(area.Right - 12 * u, area.Bottom - 10 * u), Theme.Accent);
     }
 
