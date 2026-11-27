@@ -220,9 +220,13 @@ public sealed partial class PlayScene : Scene
             foreach (var a in Actors)
                 if (a.IsSolid && a != actor) _solids.Add(a.SolidBox);
         var result = TileMotion.Move(actor.Bounds, delta, GridFor(flying), _solids);
+        MoveObserved?.Invoke(actor, delta, GridFor(flying), _solids, result);
         actor.Position += result.Position - actor.Bounds.Position;
         return result;
     }
+
+    /// <summary>Test hook: every move, before the actor takes it (its bounds are still where the move starts).</summary>
+    [ThreadStatic] internal static Action<Actor, Vector2, ICollisionGrid, IReadOnlyList<RectF>, TileMoveResult>? MoveObserved;
 
     private RoomGrid? _walkGrid, _flyGrid;
     private Func<int, int, Room?>? _neighbour;
