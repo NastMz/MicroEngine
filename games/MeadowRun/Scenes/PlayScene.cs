@@ -201,7 +201,8 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
 /// <summary>Pause overlay: resume, restart the level or quit to the map.</summary>
 internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("Resume", "Restart level", "Quit to map");
+    private static readonly string[] Options = ["Resume", "Restart level", "Quit to map"];
+    private readonly MenuCursor _menu = new(Options.Length);
     public override bool IsOverlay => true;
 
     /// <summary>Hashes the menu cursor.</summary>
@@ -237,6 +238,6 @@ internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
         var box = new RectF(100, 56, 120, 72);
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "PAUSED", 160, 63, Pal.Butter);
-        Ui.Menu(r, Font, _menu, 160, 82, Age, 13, 104);
+        Ui.Menu(r, Font, _menu, Options, 160, 82, Age, 13, 104);
     }
 }

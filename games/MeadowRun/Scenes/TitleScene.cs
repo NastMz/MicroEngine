@@ -44,7 +44,8 @@ internal static class Diorama
 /// <summary>Title screen: animated logo, living diorama and the main menu.</summary>
 internal sealed class TitleScene(MeadowGame game) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
+    private static readonly string[] Options = ["Start", "Continue", "Controls", "Achievements", "Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private bool _controls, _leaving;
     private float _logoDrop;
     private readonly List<(string Key, string What)> _controlRows = [];
@@ -140,7 +141,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
 
         if (_controls) { DrawControls(r); return; }
         r.Panel(new RectF(112, 92, 96, 70), Ui.Card);
-        Ui.Menu(r, Font, _menu, 160, 98, Age, 12, 88);
+        Ui.Menu(r, Font, _menu, Options, 160, 98, Age, 12, 88);
         Ui.Centered(r, Font, "(c) 2026 · an original game built on MicroEngine", 160, 171, Pal.Cream.WithAlpha(0.8f));
     }
 

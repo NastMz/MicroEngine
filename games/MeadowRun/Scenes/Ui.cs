@@ -39,12 +39,12 @@ internal static class Ui
 
     public static Vector2 Snap(Vector2 v) => new(MathF.Round(v.X), MathF.Round(v.Y));
 
-    /// <summary>A vertical menu with a bobbing cursor and a highlight bar behind the selected item.</summary>
-    public static void Menu(IRenderer r, BitmapFont font, DemoKit.OptionList list, float cx, float y, float time, int lineHeight = 13, int width = 96)
+    /// <summary>A vertical menu with a bobbing cursor and a highlight bar behind the option <paramref name="cursor"/> is on.</summary>
+    public static void Menu(IRenderer r, BitmapFont font, MenuCursor cursor, string[] options, float cx, float y, float time, int lineHeight = 13, int width = 96)
     {
-        for (int i = 0; i < list.Options.Count; i++)
+        for (int i = 0; i < options.Length; i++)
         {
-            bool selected = i == list.Index;
+            bool selected = i == cursor.Index;
             float ly = y + i * lineHeight;
             if (selected)
             {
@@ -53,8 +53,8 @@ internal static class Ui
                 float bob = MathF.Round(MathX.Wave(time, 2f, 1.5f));
                 Text(r, font, "▶", new Vector2(cx - width / 2f + 4 + bob, ly), Pal.Gold);
             }
-            var color = !list.IsEnabled(i) ? Pal.Dusk : selected ? Pal.Butter : Pal.Cream;
-            Centered(r, font, list.Options[i], cx, ly, color);
+            var color = !cursor.IsEnabled(i) ? Pal.Dusk : selected ? Pal.Butter : Pal.Cream;
+            Centered(r, font, options[i], cx, ly, color);
         }
     }
 
