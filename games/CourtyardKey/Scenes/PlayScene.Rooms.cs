@@ -65,7 +65,7 @@ public sealed partial class PlayScene
         Progress.MarkVisited(Area.Id, x, y);
         G.Achievements.SetProgress(CourtyardAchievements.Cartographer, CourtyardAchievements.VisitedDungeonRooms(Progress));
         Spawner.Populate(this, Room);
-        Boss = Actors.OfType<Warden>().FirstOrDefault();
+        Boss = First<Warden>();
         Light.Darkness = Room.Def.Darkness;
         Light.Shade = Area.Def.IsDungeon ? Visuals.Pal.DungeonDark : Visuals.Pal.ForestDark;
     }
@@ -109,7 +109,8 @@ public sealed partial class PlayScene
         // The room's actors become the leaving room's (LeavingActors): their group stays while another becomes current.
         _scrollFrom = Room;
         _leaving = _room;
-        foreach (var b in LeavingActors.OfType<Boomerang>()) b.Destroy();
+        foreach (var a in LeavingActors)
+            if (a is Boomerang) a.Destroy();
         LoadRoom(Room.X + dx, Room.Y + dy);
         _scrollHeroFrom = Hero.Position;
         var nb = Room.Bounds;
@@ -149,8 +150,8 @@ public sealed partial class PlayScene
 
     /// <summary>The room being scrolled away from (null when not scrolling).</summary>
     public Room? ScrollingFrom => _scrollFrom;
-    /// <summary>The live actors of the room being scrolled away from (none when not scrolling).</summary>
-    public RoomActors<Actor> LeavingActors => new(Objects, _leaving);
+    /// <summary>The live actors of the room being scrolled away from; there is one only while scrolling.</summary>
+    public ChildAttachments<Actor> LeavingActors => Objects.Children<Actor>(_leaving);
 
     private System.Collections.IEnumerator ChangeArea(Checkpoint target, bool viaStairs)
     {
@@ -186,7 +187,12 @@ public sealed partial class PlayScene
 
     // ------------------------------------------------------------------ room rules
 
-    public RoomActors<Door> Doors => Actors.OfType<Door>();
+    /// <summary>Opens or closes every shutter of the room.</summary>
+    private void SetShutters(bool open)
+    {
+        foreach (var a in Actors)
+            if (a is Door { Kind: DoorKind.Shutter } d) d.SetOpen(open);
+    }
 
     private void UpdateRoomRules(float dt)
     {
@@ -198,7 +204,7 @@ public sealed partial class PlayScene
             if (clear)
             {
                 _closeShuttersPending = false;
-                foreach (var d in Doors) if (d.Kind == DoorKind.Shutter) d.SetOpen(false);
+                SetShutters(false);
                 Audio.Play("door_slam");
                 ShakeCamera(0.25f);
                 if (Room.Def.Rule == RoomRule.Boss) Coroutines.Start(BossIntro());
@@ -219,7 +225,7 @@ public sealed partial class PlayScene
     public void Solve()
     {
         if (!Progress.Set(SolvedFlag)) return;
-        foreach (var d in Doors) if (d.Kind == DoorKind.Shutter) d.SetOpen(true);
+        SetShutters(true);
         Spawner.RevealHiddenChests(this, Room);
         Audio.Play("secret");
         Audio.Play("shutter", 0.6f);
@@ -250,9 +256,7 @@ public sealed partial class PlayScene
         if (tile is not (Tile.Floor or Tile.Plate or Tile.Cracked or Tile.Carpet)) return false;
         var rect = Room.TileRect(x, y).Inflate(-1);
         foreach (var a in Actors)
-            if (a != self && a.IsSolid && a.SolidBox.Intersects(rect)) return false;
-        foreach (var e in Actors.OfType<Enemy>())
-            if (e.Bounds.Intersects(rect)) return false;
+            if (a != self && a.IsSolid && a.SolidBox.Intersects(rect) || a is Enemy && a.Bounds.Intersects(rect)) return false;
         return true;
     }
 

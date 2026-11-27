@@ -29,6 +29,22 @@ public static class UiStyle
         r.FillRect(new RectF(x + 1, y + 1, 1, 1), Pal.Gold[3]);
     }
 
+    /// <summary>
+    /// The rows of a menu from <paramref name="position"/> down: the one under the cursor gilded behind an arrow that
+    /// bobs, one that cannot be chosen muted.
+    /// </summary>
+    public static void Menu(IRenderer r, BitmapFont font, ReadOnlySpan<string> options, MenuCursor cursor, Vector2 position, float time, float lineHeight)
+    {
+        for (int i = 0; i < options.Length; i++)
+        {
+            bool selected = i == cursor.Index;
+            var color = !cursor.IsEnabled(i) ? Theme.Muted : selected ? Theme.Accent : Theme.Text;
+            var at = position + new Vector2(selected ? 10 : 8, i * lineHeight);
+            if (selected) font.Draw(r, "▶", new Vector2(position.X + MathF.Round(MathX.Wave(time, 2f, 1f)), at.Y), Theme.Accent);
+            font.DrawShadowed(r, options[i], at, color, Theme.TextShadow);
+        }
+    }
+
     /// <summary>A small key-cap label like "Z" for control hints.</summary>
     public static void KeyCap(IRenderer r, BitmapFont font, string key, Vector2 at)
     {

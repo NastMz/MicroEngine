@@ -42,10 +42,12 @@ public static class Backdrop
 public sealed class TitleScene : Scene
 {
     private readonly CourtyardKeyGame _game;
-    private readonly DemoKit.OptionList _menu;
+    private readonly MenuCursor _menu;
     private readonly bool _canContinue;
     private readonly ParticleSystem _motes = new(200, 21) { Additive = true };
-    internal DemoKit.OptionList Menu => _menu;
+    internal MenuCursor Menu => _menu;
+    /// <summary>The menu's entries, top to bottom.</summary>
+    internal string[] Options { get; }
     private bool _showControls;
     private float _spawn;
     private (string Key, string What)[]? _controlRows;
@@ -63,7 +65,8 @@ public sealed class TitleScene : Scene
             MicroEngine.Core.SaveLoadStatus.MigrationFailed or MicroEngine.Core.SaveLoadStatus.Unreadable => "Unreadable",
             _ => "Continue",
         };
-        _menu = new DemoKit.OptionList("New Game", second, "Controls", "Achievements", "Quit");
+        Options = ["New Game", second, "Controls", "Achievements", "Quit"];
+        _menu = new MenuCursor(Options.Length);
         _menu.Moved += () => Audio.Play("menu_move");
     }
 
@@ -139,7 +142,7 @@ public sealed class TitleScene : Scene
         if (_showControls) { DrawControls(r); return; }
         var panel = new RectF(110, 113, 92, 64);
         UiStyle.Frame(r, panel);
-        _menu.Draw(r, Font, new Vector2(panel.X + 8, panel.Y + 6), UiStyle.Theme, Age, 11);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(panel.X + 8, panel.Y + 6), Age, 11);
         const string footer = "made with MicroEngine";
         Font.DrawShadowed(r, footer, new Vector2(r.Width - 4 - Font.MeasureWidth(footer), 170), Pal.Leaf[4], Pal.Ink);
     }
@@ -207,10 +210,6 @@ public sealed class EndingScene : Scene
         "Thank you for playing!",
     ];
 
-    private string? _stats;
-    private (double, int, int) _statsOf;
-    private CachedPrompt? _theEnd;
-
     public EndingScene(CourtyardKeyGame game, Progress progress)
     {
         _game = game;
@@ -259,16 +258,9 @@ public sealed class EndingScene : Scene
         if (t > 9)
         {
             float a = MathF.Min(1, (t - 9) / 1.5f);
-            var shown = (_progress.PlaySeconds, _progress.Gems, _progress.Deaths);
-            if (_stats is null || shown != _statsOf)
-            {
-                var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
-                _stats = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}";
-                _statsOf = shown;
-            }
-            Font.DrawCentered(r, _stats, new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
-            _theEnd ??= new CachedPrompt(Game.Prompts, "THE END  ·  press {confirm}");
-            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, _theEnd.Text, new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+            var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
+            Font.DrawCentered(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}", new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
+            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, Game.Prompts.Cached("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
         }
     }
 }

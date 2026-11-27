@@ -148,7 +148,8 @@ public sealed partial class PlayScene
         Audio.StopMusic(0.3f);
         Progress.Set(BossFlag);
         G.Achievements.Unlock(CourtyardAchievements.Warden);
-        foreach (var p in Actors.OfType<Projectile>()) p.Destroy();
+        foreach (var a in Actors)
+            if (a is Projectile) a.Destroy();
         for (int i = 0; i < 12; i++)
         {
             var at = warden.Center + new Vector2(((float)Rng.NextDouble() - 0.5f) * 32, ((float)Rng.NextDouble() - 0.7f) * 32);
@@ -165,9 +166,10 @@ public sealed partial class PlayScene
         new Pickup(this, warden.Position, PickupKind.HeartContainer);
         yield return Wait.Seconds(1.0f);
         Audio.Play("victory");
-        foreach (var d in Doors) if (d.Kind == DoorKind.Shutter) d.SetOpen(true);
+        SetShutters(true);
         Progress.Set(SolvedFlag);
-        foreach (var p in Actors.OfType<Pedestal>()) p.Reveal(instantly: false);
+        foreach (var a in Actors)
+            if (a is Pedestal p) p.Reveal(instantly: false);
         Audio.Play("shutter", 0.6f);
         yield return Wait.Seconds(2.5f);
         Audio.PlayMusic("dungeon", 1f);

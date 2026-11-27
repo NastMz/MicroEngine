@@ -59,7 +59,7 @@ public sealed class DungeonRunTests
         h.WalkIntoNextRoom(Key.Left);
         Assert.AreEqual("dungeon:0,1", play.Room.Key);
         h.Step(30);
-        Assert.IsTrue(play.Doors.All(d => !d.IsOpen), "The ambush shutters slam behind the hero.");
+        Assert.IsTrue(play.Actors.OfType<Door>().All(d => !d.IsOpen), "The ambush shutters slam behind the hero.");
         h.ClearRoom();
         h.Step(10);
         Assert.IsTrue(play.RoomSolved);
@@ -91,11 +91,11 @@ public sealed class DungeonRunTests
         Assert.AreEqual(0, play.Progress.SmallKeys);
         h.WalkIntoNextRoom(Key.Right);
         Assert.AreEqual("dungeon:2,1", play.Room.Key);
-        Assert.IsFalse(play.Doors.Single(d => d.Side == Dir.Up).IsOpen, "The gallery shutter is closed.");
+        Assert.IsFalse(play.Actors.OfType<Door>().Single(d => d.Side == Dir.Up).IsOpen, "The gallery shutter is closed.");
         h.GoToTile(15, 6);
         h.ThrowBoomerang(Dir.Up);
         Assert.IsTrue(play.RoomSolved, "The boomerang struck the crystal.");
-        Assert.IsTrue(play.Doors.Single(d => d.Side == Dir.Up).IsOpen);
+        Assert.IsTrue(play.Actors.OfType<Door>().Single(d => d.Side == Dir.Up).IsOpen);
 
         // The Warden's Vault: knights guard the boss key.
         h.GoToTile(9, 1);

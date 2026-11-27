@@ -22,7 +22,8 @@ public sealed class Hero : Actor
     public const float ThrowTime = 0.18f;
     public const float PushDelay = 0.32f;
 
-    private float _stateTime, _animTime, _knockTime, _dustTimer;
+    private readonly StateMachine<HeroState> _state = new(HeroState.Walk);
+    private float _animTime, _knockTime, _dustTimer;
     private Vector2 _knock;
     private readonly HashSet<object> _struck = [];
 
@@ -30,12 +31,20 @@ public sealed class Hero : Actor
     {
         Health = health;
         Hitbox = new RectF(-5, -8, 10, 8);
+        _state.State(HeroState.Walk).OnUpdate(UpdateWalk);
+        // A small lunge sells the swing's weight.
+        _state.State(HeroState.Swing).OnEnter(_struck.Clear)
+            .OnUpdate(dt => { if (StateTime < 0.08f) Move(Facing.ToVector() * 40 * dt); })
+            .After(SwingTime, HeroState.Walk);
+        _state.State(HeroState.Throw).After(ThrowTime, HeroState.Walk);
+        _state.State(HeroState.Hurt).OnUpdate(UpdateHurt);
     }
 
     public Health Health { get; }
     public Dir Facing { get; set; } = Dir.Down;
-    public HeroState State { get; private set; }
-    public float StateTime => _stateTime;
+    public HeroState State => _state.Current;
+    /// <summary>Seconds in the current state.</summary>
+    public float StateTime => _state.Time;
     /// <summary>When false the hero ignores input (cutscenes, transitions).</summary>
     public bool Controllable { get; set; } = true;
     public bool IsMoving { get; private set; }
@@ -52,7 +61,7 @@ public sealed class Hero : Actor
     {
         get
         {
-            if (State != HeroState.Swing || _stateTime < 0.02f || _stateTime > 0.19f) return null;
+            if (State != HeroState.Swing || StateTime < 0.02f || StateTime > 0.19f) return null;
             var p = Position;
             return Facing switch
             {
@@ -75,15 +84,14 @@ public sealed class Hero : Actor
     }
 
     /// <summary>
-    /// State hash: health, facing, state and its timers, knockback, control, walking and push state, and how many
+    /// State hash: health, facing, the state machine and the timers, knockback, control, walking and push state, and how many
     /// targets the current swing struck (the targets themselves are object identities, the same set in the same run).
     /// </summary>
     protected override void HashOwnState(StateHasher hash)
     {
         hash.Add(Health);
         hash.Add((int)Facing);
-        hash.Add((int)State);
-        hash.Add(_stateTime);
+        hash.Add(_state);
         hash.Add(_animTime);
         hash.Add(_knockTime);
         hash.Add(_dustTimer);
@@ -98,39 +106,22 @@ public sealed class Hero : Actor
     /// <summary>Returns true the first time a swing touches <paramref name="target"/> (one hit per swing).</summary>
     public bool MarkStruck(object target) => _struck.Add(target);
 
-    public void SetState(HeroState state)
-    {
-        State = state;
-        _stateTime = 0;
-        if (state == HeroState.Swing) _struck.Clear();
-    }
+    /// <summary>Enters a state from its beginning (also the one the hero is in).</summary>
+    public void SetState(HeroState state) => _state.Go(state);
 
     public override void Update(float dt)
     {
         Health.Update(dt);
-        _stateTime += dt;
         IsMoving = false;
         InputDirection = Vector2.Zero;
-        switch (State)
-        {
-            case HeroState.Walk: UpdateWalk(dt); break;
-            case HeroState.Swing:
-                // A small lunge sells the swing's weight.
-                if (_stateTime < 0.08f) Move(Facing.ToVector() * 40 * dt);
-                if (_stateTime >= SwingTime) SetState(HeroState.Walk);
-                break;
-            case HeroState.Throw:
-                if (_stateTime >= ThrowTime) SetState(HeroState.Walk);
-                break;
-            case HeroState.Hurt:
-                if (_knockTime > 0)
-                {
-                    _knockTime -= dt;
-                    Move(_knock * dt);
-                }
-                else SetState(HeroState.Walk);
-                break;
-        }
+        _state.Update(dt);
+    }
+
+    private void UpdateHurt(float dt)
+    {
+        if (_knockTime <= 0) { SetState(HeroState.Walk); return; }
+        _knockTime -= dt;
+        Move(_knock * dt);
     }
 
     private void UpdateWalk(float dt)
@@ -224,7 +215,7 @@ public sealed class Hero : Actor
 
     private Vector2 LungeOffset() => State switch
     {
-        HeroState.Swing when _stateTime < 0.16f => Facing.ToVector() * 2,
+        HeroState.Swing when StateTime < 0.16f => Facing.ToVector() * 2,
         HeroState.Throw => Facing.ToVector() * 1,
         _ => Vector2.Zero,
     };
@@ -235,8 +226,8 @@ public sealed class Hero : Actor
         if (State == HeroState.Pose) return Art["hero_get"];
         if (State == HeroState.Dead)
         {
-            if (_stateTime > 1.1f) return Art["hero_lie"];
-            var spin = (Dir)((int)(_stateTime * 12) % 4);
+            if (StateTime > 1.1f) return Art["hero_lie"];
+            var spin = (Dir)((int)(StateTime * 12) % 4);
             flip = spin == Dir.Left;
             return Art[spin switch { Dir.Up => "hero_up0", Dir.Down => "hero_down0", _ => "hero_side0" }];
         }
@@ -255,15 +246,15 @@ public sealed class Hero : Actor
     private void DrawSword(IRenderer r, bool behind)
     {
         if (behind != (Facing == Dir.Up)) return;
-        float t = Math.Clamp(_stateTime / 0.16f, 0, 1);
+        float time = StateTime, t = Math.Clamp(time / 0.16f, 0, 1);
         float eased = 1 - (1 - t) * (1 - t);
         float baseAngle = Facing.Angle();
         float angle = baseAngle - 1.25f + eased * 2.3f;
         var pivot = DrawPosition + new Vector2(0, -7) + Facing.ToVector() * 3;
-        if (_stateTime < 0.2f)
+        if (time < 0.2f)
         {
             var swoosh = Art["swoosh"];
-            float alpha = 1 - _stateTime / 0.2f;
+            float alpha = 1 - time / 0.2f;
             r.DrawPivoted(swoosh, pivot, angle - 0.6f, new Vector2(1f), Color.White.WithAlpha(alpha * 0.9f));
         }
         r.DrawPivoted(Art["blade"], pivot, angle);

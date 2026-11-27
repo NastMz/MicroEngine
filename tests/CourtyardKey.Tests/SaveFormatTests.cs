@@ -167,7 +167,7 @@ public sealed class SaveFormatTests
         var game = Launched();
 
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
-        Assert.AreEqual("Newer save", title.Menu.Options[1], "the entry says why it cannot be chosen");
+        Assert.AreEqual("Newer save", title.Options[1], "the entry says why it cannot be chosen");
         Assert.IsFalse(title.Menu.IsEnabled(1));
         Assert.AreEqual(0, title.Menu.Index, "the cursor starts on New Game");
     }
@@ -179,7 +179,7 @@ public sealed class SaveFormatTests
         var game = Launched();
 
         var title = Assert.IsInstanceOfType<Scenes.TitleScene>(game.Scenes.Current);
-        Assert.AreEqual("Continue", title.Menu.Options[1]);
+        Assert.AreEqual("Continue", title.Options[1]);
         Assert.IsTrue(title.Menu.IsEnabled(1));
         Assert.AreEqual(1, title.Menu.Index);
     }

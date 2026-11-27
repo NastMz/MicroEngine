@@ -25,14 +25,54 @@ public sealed class PlayTests
         h.WaitUntil(() => h.Play.Mode == PlayMode.Scroll, 400, "scroll start");
         Assert.IsNotNull(h.Play.ScrollingFrom, "The old room stays drawn while scrolling.");
         Assert.AreEqual("overworld:0,1", h.Play.Room.Key, "The new room loads at the start of the scroll.");
+        var leaving = h.Play.LeavingActors.ToArray();
+        Assert.IsTrue(leaving.Length > 0 && leaving.All(a => a.Alive), "The old room's actors stay while it scrolls away.");
         h.WaitUntil(() => h.Play.Mode == PlayMode.Play, 120, "scroll end");
         h.Platform.Keys.Set(Key.Left, false);
         Assert.AreEqual(1, entered);
         Assert.IsNull(h.Play.ScrollingFrom);
-        Assert.AreEqual(0, h.Play.LeavingActors.Count, "The previous room's actors are released.");
+        Assert.IsFalse(leaving.Any(a => a.Alive), "The previous room's actors are released.");
         Assert.IsTrue(h.Play.Progress.WasVisited("overworld", 0, 1));
         Assert.IsTrue(h.Play.Room.Bounds.Contains(h.Play.Hero.Position), "The hero ends inside the new room.");
         Assert.IsTrue(h.Play.Hero.Position.X > h.Play.Room.Bounds.Right - 32, "Entering from the east edge.");
+    }
+
+    /// <summary>
+    /// The actors of a room are walked in the order they joined it (the order of the room entity's children), also
+    /// after some were destroyed and others created; gameplay (who moves first, who blocks whom) and the hash read
+    /// that order. While a room scrolls away its actors keep theirs.
+    /// </summary>
+    [TestMethod]
+    public void ARoomsActorsAreWalkedInTheOrderTheyJoinedIt()
+    {
+        using var h = new Harness("channel");
+        h.Step(40);
+        var counts = new HashSet<int>();
+        for (int i = 0; i < 300; i++)
+        {
+            h.Platform.Keys.Set(Key.C, i % 20 < 2);
+            h.Platform.Keys.Set(Key.Left, i % 60 < 40);
+            h.Step();
+            var world = h.Play.Objects;
+            var expected = world.Children(h.Play.RoomGroup).ToArray().Select(world.Get<Actor>).ToArray();
+            CollectionAssert.AreEqual(expected, h.Play.Actors.ToArray(), $"step {i}");
+            counts.Add(expected.Length);
+        }
+        Assert.IsTrue(counts.Count > 1, "Actors were created or destroyed during the walk.");
+
+        using var road = new Harness("road");
+        road.Step(40);
+        road.WalkToTile(10, 4.8f);
+        road.Platform.Keys.Set(Key.Left, true);
+        Actor[] before = [];
+        for (int i = 0; i < 400 && road.Play.Mode != PlayMode.Scroll; i++)
+        {
+            before = road.Play.Actors.ToArray();
+            road.Step();
+        }
+        Assert.AreEqual(PlayMode.Scroll, road.Play.Mode);
+        Assert.IsTrue(before.Length > 0);
+        CollectionAssert.AreEqual(before.Where(a => a.Alive).ToArray(), road.Play.LeavingActors.ToArray());
     }
 
     [TestMethod]
@@ -72,7 +112,7 @@ public sealed class PlayTests
         h.WalkToTile(10, 2);
         h.WalkIntoNextRoom(Key.Up);
         Assert.AreEqual("dungeon:1,2", h.Play.Room.Key);
-        var door = h.Play.Doors.Single(d => d.Side == Dir.Up);
+        var door = h.Play.Actors.OfType<Door>().Single(d => d.Side == Dir.Up);
         Assert.AreEqual(DoorKind.Locked, door.Kind);
         Assert.IsFalse(door.IsOpen);
         h.WalkToTile(10, 2.6f);
@@ -85,7 +125,7 @@ public sealed class PlayTests
         Assert.IsTrue(h.Play.Progress.Has("door:dungeon:1,2:v"));
         h.WalkIntoNextRoom(Key.Up);
         Assert.AreEqual("dungeon:1,1", h.Play.Room.Key);
-        var otherSide = h.Play.Doors.Single(d => d.Side == Dir.Down);
+        var otherSide = h.Play.Actors.OfType<Door>().Single(d => d.Side == Dir.Down);
         Assert.IsTrue(otherSide.IsOpen, "The same door is open from the other side.");
     }
 

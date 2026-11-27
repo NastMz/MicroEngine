@@ -14,7 +14,8 @@ namespace CourtyardKey.Scenes;
 public sealed class PauseScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Resume", "Save & Quit");
+    private static readonly string[] Options = ["Resume", "Save & Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private static readonly (string Sprite, string Label)[] Items =
     [
         ("sword", "Oswin's Sword"),
@@ -22,14 +23,7 @@ public sealed class PauseScene : Scene
         ("key_boss", "Warden's Key"),
         ("courtyard_key", "Courtyard Key"),
     ];
-    // Texts are rebuilt only when what they show changes, not every frame.
-    private readonly NumberText _gems = new(n => $"{n} gems");
-    private readonly NumberText _keys = new(n => $"×{n}");
-    private string? _status, _areaTitle;
-    private double _statusSeconds;
-    private int _statusDeaths;
-    private string? _areaName;
-    private CachedPrompt? _back;
+    private string? _areaTitle, _areaName;
 
     public PauseScene(PlayScene play)
     {
@@ -39,7 +33,7 @@ public sealed class PauseScene : Scene
 
     public override bool IsOverlay => true;
 
-    /// <summary>State hash: the menu cursor. The status and area texts are built while drawing and stay out.</summary>
+    /// <summary>State hash: the menu cursor. The area's title is built while drawing and stays out.</summary>
     public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Update(float dt)
@@ -87,16 +81,11 @@ public sealed class PauseScene : Scene
         }
         float y = inv.Y + 108;
         r.DrawPivoted(art["gem_green"], new Vector2(inv.X + 16, y + 4));
-        Font.DrawShadowed(r, _gems.For(p.Gems), new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
+        Font.DrawShadowed(r, $"{p.Gems} gems", new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
         r.DrawPivoted(art["key_small"], new Vector2(inv.X + 84, y + 4));
-        Font.DrawShadowed(r, _keys.For(p.SmallKeys), new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
-        if (_status is null || _statusSeconds != p.PlaySeconds || _statusDeaths != p.Deaths)
-        {
-            var time = TimeSpan.FromSeconds(p.PlaySeconds);
-            _status = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}";
-            (_statusSeconds, _statusDeaths) = (p.PlaySeconds, p.Deaths);
-        }
-        Font.Draw(r, _status, new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
+        Font.DrawShadowed(r, $"×{p.SmallKeys}", new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
+        var time = TimeSpan.FromSeconds(p.PlaySeconds);
+        Font.Draw(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}", new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
 
         // Map panel
         var map = new RectF(154, 26, 156, 104);
@@ -109,10 +98,8 @@ public sealed class PauseScene : Scene
         // Menu
         var menu = new RectF(154, 136, 156, 36);
         UiStyle.Frame(r, menu);
-        _menu.Draw(r, Font, new Vector2(menu.X + 8, menu.Y + 7), UiStyle.Theme, Age, 12);
-        _back ??= new CachedPrompt(Game.Prompts, "{cancel}: back");
-        string back = _back.Text;
-        Font.Draw(r, back, new Vector2(menu.Right - 6 - Font.MeasureWidth(back), menu.Y + 7), Pal.Stone[3]);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(menu.X + 8, menu.Y + 7), Age, 12);
+        Font.DrawRight(r, Game.Prompts.Cached("{cancel}: back"), new Vector2(menu.Right - 6, menu.Y + 7), Pal.Stone[3]);
     }
 }
 
@@ -152,12 +139,12 @@ public sealed class ShopScene : Scene
     public const int TonicPrice = 10, PiePrice = 60;
     public const string PieFlag = "shop:pie";
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Heart Tonic", "Hearty Pie", "Leave");
+    private static readonly string[] Options = ["Heart Tonic", "Hearty Pie", "Leave"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private string _message = "What'll it be, dear?";
     private static readonly string[] Icons = ["tonic", "pie", ""];
     private static readonly string[] Notes = ["Full heal", "+1 max heart", ""];
     private static readonly string TonicPriceText = $"{TonicPrice}", PiePriceText = $"{PiePrice}";
-    private readonly NumberText _gems = new(n => $"{n}");
 
     public ShopScene(PlayScene play)
     {
@@ -235,11 +222,11 @@ public sealed class ShopScene : Scene
                 Font.Draw(r, Notes[i], new Vector2(panel.X + 100, y), Pal.Stone[4]);
             }
         }
-        _menu.Draw(r, Font, new Vector2(panel.X + 22, panel.Y + 26), UiStyle.Theme, Age, 18);
+        UiStyle.Menu(r, Font, Options, _menu, new Vector2(panel.X + 22, panel.Y + 26), Age, 18);
         r.FillRect(new RectF(panel.X + 8, panel.Bottom - 22, panel.Width - 16, 1), Pal.Gold[0]);
         Font.DrawShadowed(r, _message, new Vector2(panel.X + 10, panel.Bottom - 16), Pal.Cream, Pal.Ink);
         r.DrawPivoted(art["gem_green"], new Vector2(panel.Right - 40, panel.Y + 12));
-        Font.DrawShadowed(r, _gems.For(_play.Progress.Gems), new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
+        Font.DrawShadowed(r, $"{_play.Progress.Gems}", new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
     }
 }
 
@@ -247,7 +234,8 @@ public sealed class ShopScene : Scene
 public sealed class GameOverScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly DemoKit.OptionList _menu = new("Continue", "Save & Quit");
+    private static readonly string[] Options = ["Continue", "Save & Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
 
     public GameOverScene(PlayScene play)
     {
@@ -285,6 +273,6 @@ public sealed class GameOverScene : Scene
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Color.Hex("2a0812").WithAlpha(a * 0.82f));
         Font.DrawCentered(r, "YOU FELL", new Vector2(160, 62), Pal.Heart[2].WithAlpha(a), 3, Pal.Ink);
         Font.DrawCentered(r, "The courtyard keeps its secrets... for now.", new Vector2(160, 88), Pal.Cream.WithAlpha(a), 1, Pal.Ink);
-        if (Age >= 0.8f) _menu.Draw(r, Font, new Vector2(128, 112), UiStyle.Theme, Age, 13);
+        if (Age >= 0.8f) UiStyle.Menu(r, Font, Options, _menu, new Vector2(128, 112), Age, 13);
     }
 }
