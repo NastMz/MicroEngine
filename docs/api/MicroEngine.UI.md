@@ -32,6 +32,16 @@ block), or at a point (a speech bubble over a character, a damage number, a mark
 world). Children keep the size they measure; later children draw over earlier ones. Where no child is, the pointer
 passes through to gameplay. Use it as a root's [Content](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Content).
 
+ [MenuCursor](MicroEngine.UI.MenuCursor.md)
+
+The cursor of a list a scene draws itself: a title menu, a bag, a shop, a two-by-two battle menu. It keeps which
+option is highlighted, moves it with the direction actions (wrapping or stopping at the ends, in one column or a
+grid), chooses with confirm, lets the cursor rest on an option that cannot be chosen, and gives the first row to
+show of a list longer than its box. It holds no labels and draws nothing: the scene draws its rows in its own look
+and reads [Index](MicroEngine.UI.MenuCursor.md#MicroEngine_UI_MenuCursor_Index). For a menu with layout, the mouse and touch built in, use widgets instead
+([Button](MicroEngine.UI.Button.md) in a [Stack](MicroEngine.UI.Stack.md), with a [ControlSkin](MicroEngine.UI.ControlSkin.md) for the look); with a cursor, the
+scene maps its own pointer through [MoveTo](MicroEngine.UI.MenuCursor.md#MicroEngine_UI_MenuCursor_MoveTo_System_Int32_).
+
  [Panel](MicroEngine.UI.Panel.md)
 
 A box behind one child, with padding around it: the frame of a menu, a dialog or a HUD block.
@@ -70,6 +80,16 @@ focus. Shift with the arrows, Home or End selects, as does dragging the pointer 
 macOS) with A selects everything, and with C, X and V copies, cuts and pastes through the root's
 [Clipboard](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Clipboard). A gamepad edits nothing but moves the caret with left and right and submits with confirm.
 
+ [TextReveal](MicroEngine.UI.TextReveal.md)
+
+Text shown a character at a time: the typewriter of a dialogue box, a caption or a sign. It counts characters as a
+reader does (a letter with its accents and marks, an emoji made of several code points or a line break is one), so
+text in any script is never cut in the middle of one, and it reveals them in reading order, which a right-to-left
+line shows growing from its right edge. It holds no look: a [Label](MicroEngine.UI.Label.md) reveals its text with one
+([Reveal](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Reveal)), and a box a game draws itself reads [Visible](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_Visible) or
+[VisibleLines](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_VisibleLines). Advance it with the clock of whatever shows it (a scene's <code>dt</code>); it allocates
+nothing while it runs.
+
  [UiActions](MicroEngine.UI.UiActions.md)
 
 The actions engine widgets answer to. A member left null (the default) is the input map's own name for it
@@ -101,6 +121,10 @@ focus, act on the engine's actions while they have it and on the pointer. Derive
 
 ### Structs
 
+ [ControlState](MicroEngine.UI.ControlState.md)
+
+The state a control is in when it is drawn, as its skin receives it ([ControlSkin](MicroEngine.UI.ControlSkin.md)).
+
  [FocusChange](MicroEngine.UI.FocusChange.md)
 
 A move of the focus, as [FocusChanged](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_FocusChanged) reports it.
@@ -130,5 +154,20 @@ The direction a [Stack](MicroEngine.UI.Stack.md) places its children in.
  [UiAction](MicroEngine.UI.UiAction.md)
 
 What a widget is asked to do by the engine's actions ([UiActions](MicroEngine.UI.UiActions.md)): move, confirm or cancel.
+
+ [UiSpace](MicroEngine.UI.UiSpace.md)
+
+The view a [UiRoot](MicroEngine.UI.UiRoot.md) lives in: where its widgets are laid out and drawn, and in which units.
+
+### Delegates
+
+ [ControlSkin](MicroEngine.UI.ControlSkin.md)
+
+Draws a control in the game's own look: everything the control would draw itself (a button's box and label, a
+panel's box), from its <code class="paramref">state</code>. Set on one control ([Skin](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Skin),
+[Skin](MicroEngine.UI.Panel.md#MicroEngine_UI_Panel_Skin)) or on a theme for every control of a root ([ButtonSkin](MicroEngine.UI.UiTheme.md#MicroEngine_UI_UiTheme_ButtonSkin),
+[PanelSkin](MicroEngine.UI.UiTheme.md#MicroEngine_UI_UiTheme_PanelSkin)). The control keeps its behaviour, its size and its place in the layout; the theme in
+<code class="paramref">context</code> is already faded by the opacity around the control, and a colour of the skin's own goes
+through [Fade](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Fade_MicroEngine_Color_).
 
 </div>

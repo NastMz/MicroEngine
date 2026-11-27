@@ -250,6 +250,15 @@
 5040 hold right 60
 5130 capture 42-spatial-sound.png
 5136 press pause
-5150 quit
+5150 press down
+5160 press confirm
+5200 press confirm
+5260 capture 43-pixel-menu.png
+5266 press pause
+5280 press down
+5290 press confirm
+5360 capture 44-cutscene.png
+5366 press pause
+5380 quit
 
 

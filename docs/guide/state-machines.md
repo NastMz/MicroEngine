@@ -10,15 +10,18 @@ over flags, timers and a `switch`.
 | Say what a state does when it starts, every step and when it ends | `State(s).OnEnter`, `OnUpdate`, `OnExit` |
 | Leave a state when something becomes true | `When(condition, next)` |
 | Leave a state after a time | `After(seconds, next)` |
+| Leave a state after a number of updates | `AfterSteps(steps, next)` |
 | Leave a state when the game says so (a hit, a button, a message) | `On(event, next)` and `Fire(event)` |
 | React to an event without leaving | `Do(event, action)` |
 | Interrupt from any state | `Any.On(...)`, `Any.When(...)` |
 | Share ways out among several states | `SubstateOf(parent)` |
-| Know how long the state has lasted | `Time`, `TimeIn(state)` |
+| Know how long the state has lasted | `Time`, `TimeIn(state)`, `Steps`, `StepsIn(state)` |
+| Start a state part of the way in, or hold it | `SetTime(seconds)`, `SetSteps(steps)` |
 | Save and load it | `Snapshot()`, `Restore(snapshot)` |
 
 It is part of the engine's core package and has no dependency. Stepping a machine and firing an event allocate
-nothing, so a machine per enemy is fine.
+nothing, so a machine per enemy is fine. A machine needs no scene: whatever owns it calls `Update`, so the rules of a
+level kept in a plain class that tests step by themselves use the same machine a scene does.
 
 ## Declaring a machine
 
@@ -103,6 +106,87 @@ so a machine can be declared after it is created.
 Because the machine runs on the step it is given, it follows the scene's clock: slow motion slows its timed states and
 a hitstop holds them, with no code of yours.
 
+## Time in a state
+
+`After(seconds, next)` leaves on the update on which the time in the state reaches `seconds`. The machine adds the
+steps it is given in double precision, so the length of a state is the same wherever it starts in a run, and at a
+fixed update rate it can be worked out before running anything:
+
+> `seconds` at R updates a second is exactly `seconds x R` updates when that product is a whole number, and the next
+> whole number when it is not.
+
+| `After` | 30 updates a second | 50 | 60 | 120 | 144 |
+| --- | --- | --- | --- | --- | --- |
+| 0.1 s | 3 | 5 | 6 | 12 | 15 (14.4) |
+| 0.5 s | 15 | 25 | 30 | 60 | 72 |
+| 1.9 s | 57 | 95 | 114 | 228 | 274 (273.6) |
+| 4.2 s | 126 | 210 | 252 | 504 | 605 (604.8) |
+| 600 s | 18,000 | 30,000 | 36,000 | 72,000 | 86,400 |
+
+The update a state is entered on is not one of them: a state entered on update 100 with `After(0.5f, next)` at 60
+updates a second is left on update 130.
+
+The rule holds because the machine does not add up the steps as they arrive: a step that is `1 / R` for a whole rate R
+(what the engine gives, also at half or a quarter speed) is counted as exactly that, and the time is a number of
+updates times it. It holds at any rate up to 1000 updates a second for times of a day (checked to 24 hours), and the
+time is taken as it is written, to the seven digits a `float` holds. A time counts as reached within a
+hundred-thousandth of a second of it, and never within more than a hundredth of an update, so no state is left an
+update early. With steps that are not `1 / R` (a varying step, a scale such as 0.3) the steps are summed and the state
+is left on the first update on which the sum reaches the time. An update of zero seconds takes no way out by time
+([Zero, and steps that are no time](../manual/scenes.md#zero-and-steps-that-are-no-time)).
+
+A timer kept by hand usually does not follow that rule. `t += dt` in a `float` does not add up to the exact product
+(sixty steps of 1/60 are a little under or over 1), and a comparison with `>` instead of `>=` waits one update more
+when the sum lands on the value: at 60 updates a second such a timer leaves a state of 1.9, 2.0, 2.4 or 4.2 seconds
+after 115, 121, 145 and 253 updates, and one of 0.3, 0.5 or 0.6 seconds after 18, 30 and 36. The machine's 114, 120,
+144, 252, 18, 30 and 36 are the regular ones. For the same reason, compare with `After` and not with
+`machine.Time > seconds` in an `OnUpdate`: `Time` is a `float` to read and draw, and a test against it brings the
+last-digit question back.
+
+### Counting updates
+
+`AfterSteps(steps, next)` leaves after that many updates in the state, whatever the step: for a game that thinks in
+frames (an attack with 4 frames of start-up and 12 of recovery), and for moving a hand-kept timer onto a machine
+without changing the update anything happens on.
+
+```csharp
+attack.State(Move.Windup).AfterSteps(4, Move.Hit);
+attack.State(Move.Hit).AfterSteps(3, Move.Recover);
+attack.State(Move.Recover).AfterSteps(12, Move.Idle);
+```
+
+`Steps` is the number of updates spent in the state (`StepsIn(state)` for a parent). Steps count updates, not time: at
+another update rate the state lasts another length in seconds, slow motion does not stretch it, and an update of zero
+seconds (the world frozen by a hitstop) is not counted, so a freeze holds a state counted in steps as it holds one
+counted in seconds.
+
+To move a game with recorded runs onto a machine, measure each of its timers once and keep the number:
+
+```csharp
+// The update a hand-kept timer of `seconds` leaves on (t += dt, then t > seconds).
+static int UpdatesOf(float seconds, float dt)
+{
+    float t = 0;
+    for (int update = 1; ; update++) { t += dt; if (t > seconds) return update; }
+}
+// UpdatesOf(1.9f, 1f / 60f) is 115: State(Phase.Fall).AfterSteps(115, Phase.Done)
+```
+
+### Setting the time
+
+`SetTime(seconds)` and `SetSteps(steps)` set what the current state has already spent, as if it had been entered that
+long ago; its ways out count from the new value and nothing runs. Use them for a state entered with a head start
+(`Go(state)` then `SetTime`), and for a state held at a moment while something else finishes:
+
+```csharp
+// The score tally: the state waits at half a second while points are counted, then runs to its end.
+flow.State(Phase.Tally)
+    .OnUpdate(_ => { if (flow.Time >= 0.5f && CountSomePoints()) flow.SetTime(0.5f); })
+    .After(2f, Phase.Done);
+```
+
+The state's parents keep their own time and steps.
+
 ## Events
 
 `Fire(event)` asks the current state, then its parents, then `Any`, and the first that takes the event changes the
@@ -151,20 +235,68 @@ flow.State(Phase.Playing).When(() => _player.Dead, Phase.GameOver);
 ```
 
 A machine that belongs to an object is better stepped by that object, as in the example: its place among the object's
-other rules stays explicit.
+other rules stays explicit. The same goes for rules kept outside any scene, here with timers of their own
+([Timers outside a scene](../manual/scenes.md#timers-outside-a-scene)):
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#rules -->
+```csharp
+/// <summary>
+/// The rules of the show as a plain class: it owns its timers and its machine, and whatever steps it calls Update (the
+/// scene below, or a test with no scene and no game).
+/// </summary>
+public sealed class Show : IStateHashed
+{
+    public enum Act { Waiting, Dance, Bow, Over }
+
+    private readonly Timers _timers = new();
+    private readonly StateMachine<Act> _act = new(Act.Waiting);
+
+    public Show()
+    {
+        _act.State(Act.Dance)
+            .OnEnter(() => _timers.EverySteps(20, () => Sparks++, times: 3))   // on the beat: every 20 updates
+            .After(1.5f, Act.Bow);                                             // 90 updates at 60 a second, exactly
+        _act.State(Act.Bow)
+            .AfterSteps(45, Act.Over);                                         // a length in updates
+    }
+
+    public Act Current => _act.Current;
+    public int Sparks { get; private set; }
+
+    public void Begin() => _act.Go(Act.Dance);
+
+    public void Update(float dt)
+    {
+        _timers.Update(dt);
+        _act.Update(dt);
+    }
+
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_timers);
+        hash.Add(_act);
+        hash.Add(Sparks);
+    }
+}
+```
 
 ## Determinism and saves
 
-A machine is `IStateHashed`: `hash.Add(machine)` puts its state and its time in the state hash. `Snapshot()` returns
-the state and the seconds in it, two values to write in a save; `Restore` puts a machine back there without running
-any entry or exit, so loading a game does not replay a sound or a spawn.
+A machine is `IStateHashed`: `hash.Add(machine)` puts its state, its time and its steps in the state hash, whether a
+scene or a class of yours owns it. `Snapshot()` returns the state, the seconds and the updates in it, three values to
+write in a save; `Restore` puts a machine back there without running any entry or exit, so loading a game does not
+replay a sound or a spawn, and a machine restored in the middle of a state leaves it on the update the saved one
+would have.
 
 ## Limits
 
 - One way out per `Update`. A state entered in a step runs its `OnUpdate` from the next one.
 - A machine is in one state at a time. Two things that vary independently (movement and weapon) are two machines.
 - States are declared in code. There is no file format and no visual editor.
-- `Restore` gives the state's parents the same time as the state.
+- `Restore` gives the state's parents the same time and steps as the state.
+- A way out by seconds follows the rule above at a fixed update rate; with steps of varying length it is taken on the
+  first update on which the time reaches it.
+- A way out by steps does not follow slow motion, and its length in seconds changes with the update rate.
 
 ## Another library
 

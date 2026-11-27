@@ -1,5 +1,6 @@
 using System.Numerics;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Localization;
 
 namespace MicroEngine.UI;
@@ -54,26 +55,78 @@ public sealed class Label : Widget
     /// </summary>
     public int? VisibleCharacters { get; set; }
 
+    /// <summary>
+    /// Reveals the label's text a character at a time (<see cref="TextReveal"/>): the label starts it whenever its
+    /// text changes (a new page, another language) and advances it at every update of its root, on the scene's clock,
+    /// so a dialogue sets the text and reads <see cref="TextReveal.Complete"/>. Characters are counted as a reader
+    /// counts them, so text in any script is never cut inside one. While it is set it decides what shows, and
+    /// <see cref="VisibleCharacters"/> is not read. It is part of the scene's state hash. Null (the default) reveals
+    /// nothing by itself.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var text = new Label { Width = 280, Wrap = true, Reveal = new TextReveal { CharactersPerSecond = 45 } };
+    /// text.Reveal.CharacterRevealed += _ =&gt; Audio.TryPlay("blip", 0.3f);
+    /// text.Text = "The gems only grow at night.";      // starts the reveal
+    /// // on confirm
+    /// if (!text.Reveal.Complete) text.Reveal.Finish(); else text.Text = NextPage();
+    /// </code>
+    /// </example>
+    public TextReveal? Reveal { get; set; }
+
     /// <summary>The lines the text is drawn in, after wrapping, as of the last layout.</summary>
     public IReadOnlyList<string> Lines => _lines;
 
-    /// <summary>The part of each of <see cref="Lines"/> that <see cref="VisibleCharacters"/> shows.</summary>
+    /// <summary>
+    /// The part of each of <see cref="Lines"/> that shows: all of it, or what <see cref="Reveal"/> or
+    /// <see cref="VisibleCharacters"/> lets through. While the label keeps its lines the list is the same one, brought
+    /// up to date in place: a line that shows whole is the line itself, a line not reached is empty, and the one line
+    /// being revealed is a new string each time another character of it shows. Nothing else is allocated, and nothing
+    /// at all while what shows does not change.
+    /// </summary>
     public IReadOnlyList<string> VisibleLines
     {
         get
         {
-            if (VisibleCharacters is not { } count) return _lines;
-            var visible = new string[_lines.Length];
+            if (ShownCharacters() is not { } count) return _lines;
+            bool sameLines = ReferenceEquals(_visibleOf, _lines) && _visible is not null;
+            if (sameLines && _visibleCount == count) return _visible!;
+            // The same list while the lines are the same: only the entries that changed are written.
+            var visible = sameLines ? _visible! : new string[_lines.Length];
             int at = 0;
             for (int i = 0; i < _lines.Length; i++)
             {
                 var line = _lines[i];
                 at = StartOf(line, at);
-                visible[i] = line[..Math.Clamp(count - at, 0, line.Length)];
+                int shown = Math.Clamp(count - at, 0, line.Length);
+                if (shown == line.Length) visible[i] = line;
+                else if (shown == 0) visible[i] = "";
+                else if (!sameLines || visible[i] is not { } was || was.Length != shown) visible[i] = line[..shown];
                 at += line.Length;
             }
+            (_visible, _visibleOf, _visibleCount) = (visible, _lines, count);
             return visible;
         }
+    }
+    private string[]? _visible, _visibleOf;
+    private int _visibleCount;
+
+    /// <summary>How many <c>char</c>s of the text show, or null for all: the reveal's, once it is revealing this text, else <see cref="VisibleCharacters"/>.</summary>
+    private int? ShownCharacters() =>
+        Reveal is { } reveal ? (reveal.Text == _text ? reveal.VisibleLength : 0) : VisibleCharacters;
+
+    /// <inheritdoc/>
+    protected internal override void Update(float dt)
+    {
+        if (Reveal is not { } reveal) return;
+        if (reveal.Text != _text) reveal.Start(_text);
+        reveal.Update(dt);
+    }
+
+    /// <inheritdoc/>
+    protected internal override void HashState(StateHasher hash)
+    {
+        if (Reveal is { } reveal) hash.Add(reveal);
     }
 
     /// <summary>Where <paramref name="line"/> starts in the text, from <paramref name="from"/>: past the spaces and line breaks a wrap took.</summary>
@@ -158,6 +211,21 @@ public sealed class Button : Widget
     public LocalizedText? Localized { get => _localized.Text; set => _localized.Text = value; }
     /// <summary>Raised when the button is clicked.</summary>
     public event Action? Clicked;
+
+    /// <summary>
+    /// Draws the button in the game's own look, from its state (the focus, the pointer, the press, the time it has had
+    /// the focus): a menu row that is a bar, an underline and a bobbing cursor, a tab, a card. Null (the default) is
+    /// the theme's (<see cref="UiTheme.ButtonSkin"/>), or the built-in box around the label. The button keeps its
+    /// behaviour and its size (<see cref="Padding"/>).
+    /// </summary>
+    public ControlSkin? Skin { get; set; }
+
+    /// <summary>
+    /// The room around the label in UI units, each side: X to its left and to its right, Y above and below. Null (the
+    /// default) is 6 and 4 layout units, the built-in box's. A skin without a box usually sets it: a row as tall as a
+    /// line of text is <c>new(5, 0)</c>.
+    /// </summary>
+    public Vector2? Padding { get; set; }
     /// <inheritdoc/>
     public override bool Focusable => true;
 
@@ -179,7 +247,8 @@ public sealed class Button : Widget
     protected override Vector2 MeasureContent(UiContext context)
     {
         _localized.Resolve(context, ref _text);
-        return new(context.Font.MeasureWidth(Text) + 12 * context.Unit, context.Font.LineHeight + 8 * context.Unit);
+        var padding = Padding ?? new Vector2(6 * context.Unit, 4 * context.Unit);
+        return new(context.Font.MeasureWidth(Text) + 2 * padding.X, context.Font.LineHeight + 2 * padding.Y);
     }
 
     /// <inheritdoc/>
@@ -188,6 +257,11 @@ public sealed class Button : Widget
         _localized.Resolve(context, ref _text);
         var theme = context.Theme;
         bool enabled = IsEnabledInTree;
+        if ((Skin ?? theme.ButtonSkin) is { } skin)
+        {
+            skin(renderer, context, new ControlState(Bounds, Text, enabled, IsFocused, IsHovered, IsPressed, FocusTime));
+            return;
+        }
         var style = theme.Panel;
         if (style.Image is not null)
         {
@@ -236,6 +310,13 @@ public sealed class Panel : Widget
     /// <summary>The box's colours; null (the default) is the theme's panel.</summary>
     public PanelStyle? Style { get; set; }
 
+    /// <summary>
+    /// Draws the box in the game's own look (a double border, a shadow of its own, a speech bubble's tail) instead of
+    /// <see cref="Style"/>; the content is drawn over it as always. Null (the default) is the theme's
+    /// (<see cref="UiTheme.PanelSkin"/>), or the panel style.
+    /// </summary>
+    public ControlSkin? Skin { get; set; }
+
     /// <inheritdoc/>
     public override IReadOnlyList<Widget> Children => _content is null ? [] : [_content];
 
@@ -255,7 +336,9 @@ public sealed class Panel : Widget
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
-        renderer.Panel(Bounds, Style is { } own ? context.Fade(own) : context.Theme.Panel);
+        if ((Skin ?? (Style is null ? context.Theme.PanelSkin : null)) is { } skin)
+            skin(renderer, context, new ControlState(Bounds, "", IsEnabledInTree, IsFocused, IsHovered, IsPressed, FocusTime));
+        else renderer.Panel(Bounds, Style is { } own ? context.Fade(own) : context.Theme.Panel);
         _content?.Draw(renderer, context);
     }
 }

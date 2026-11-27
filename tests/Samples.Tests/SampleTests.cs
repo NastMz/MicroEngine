@@ -255,14 +255,16 @@ public sealed class DialogueExampleTests
         var scene = (DialogueExample)game.Scenes.Current!;
         Assert.AreEqual("GARDENER", scene.Speaker.Text);
         SettingsExampleTests.Frame(game, platform);
-        Assert.IsTrue(scene.Text.VisibleCharacters is > 0 and < 10, $"the page reveals a little at a time ({scene.Text.VisibleCharacters})");
+        var reveal = scene.Text.Reveal!;
+        Assert.IsTrue(reveal.Revealed is > 0 and < 10, $"the page reveals a little at a time ({reveal.Revealed})");
         var size = scene.Dialogue.Bounds;
 
         var seen = new List<string>();
         for (int boxes = 0; scene.Dialogue.Visible && boxes < 10; boxes++)
         {
             SettingsExampleTests.Press(game, platform, "confirm");             // the rest of the box at once
-            Assert.AreEqual(scene.Text.Text.Length, scene.Text.VisibleCharacters);
+            Assert.IsTrue(reveal.Complete);
+            Assert.AreEqual(scene.Text.Text, string.Join('\n', scene.Text.VisibleLines), "the whole box shows");
             Assert.IsTrue(scene.Text.Lines.Count <= 3, "a box holds three lines at most");
             for (int i = 0; i < 20; i++) SettingsExampleTests.Frame(game, platform);   // the arrow blinks
             Assert.AreEqual(size, scene.Dialogue.Bounds, "and keeps its size");

@@ -67,6 +67,22 @@ public enum Anchor
     BottomRight,
 }
 
+/// <summary>The view a <see cref="UiRoot"/> lives in: where its widgets are laid out and drawn, and in which units.</summary>
+public enum UiSpace
+{
+    /// <summary>
+    /// The UI view (the default): UI units at the window's resolution, drawn by the engine over the world, so text and
+    /// shapes stay sharp whatever the canvas's size.
+    /// </summary>
+    UiView,
+    /// <summary>
+    /// The game's canvas: canvas pixels, on whole pixels, as part of the picture the scene draws. The interface of a
+    /// pixel-art game, whose menus and boxes have the canvas's pixel size. The scene draws the root from its own
+    /// <c>Draw</c> (<see cref="UiRoot.Draw"/>), where it belongs in its picture.
+    /// </summary>
+    Canvas,
+}
+
 /// <summary>What widgets measure and draw with: the root's font and theme, the layout unit and the root's clock.</summary>
 /// <param name="Font">The font of every widget's text.</param>
 /// <param name="Theme">The colours.</param>
@@ -82,6 +98,14 @@ public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, f
 
     /// <summary>Whether the language in use reads right to left: text then starts from the right edge of its widget.</summary>
     public bool RightToLeft => Localization?.RightToLeft ?? false;
+
+    /// <summary>
+    /// Whether widgets are placed on whole units (false by default): set by a root on the canvas
+    /// (<see cref="UiSpace.Canvas"/>), where a unit is a canvas pixel and a widget placed between two would blur or
+    /// shimmer. <see cref="Widget.Arrange"/> then rounds the edges of the bounds it is given, so positions and sizes
+    /// are whole whatever the spacing, the padding or the measured size.
+    /// </summary>
+    public bool PixelSnap { get; init; }
 
     /// <summary>The area drawing is restricted to (UI units), or null for none: set by containers that clip their children.</summary>
     public RectF? Clip { get; init; }
@@ -115,8 +139,11 @@ public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, f
         var p = t.Panel;
         return inner with
         {
-            Theme = new UiTheme(new PanelStyle(F(p.Fill, a), F(p.Border, a), F(p.Highlight, a), F(p.Shadow, a), F(p.InnerBorder, a)),
-                F(t.Text, a), F(t.TextShadow, a), F(t.Accent, a), F(t.Muted, a)),
+            Theme = t with
+            {
+                Panel = new PanelStyle(F(p.Fill, a), F(p.Border, a), F(p.Highlight, a), F(p.Shadow, a), F(p.InnerBorder, a)),
+                Text = F(t.Text, a), TextShadow = F(t.TextShadow, a), Accent = F(t.Accent, a), Muted = F(t.Muted, a),
+            },
         };
     }
 
@@ -199,6 +226,8 @@ public abstract class Widget
     public virtual bool ClipsChildren => false;
     /// <summary>Whether the widget has its root's focus.</summary>
     public bool IsFocused => Root is { } root && ReferenceEquals(root.Focused, this);
+    /// <summary>Seconds the widget has had its root's focus, on the root's clock (<see cref="UiRoot.FocusTime"/>); zero without it.</summary>
+    public float FocusTime => IsFocused ? Root!.FocusTime : 0;
     /// <summary>Whether the pointer is over the widget.</summary>
     public bool IsHovered => Root is { } root && ReferenceEquals(root.Hovered, this);
     /// <summary>Whether a pointer press that started on the widget is held.</summary>
@@ -243,6 +272,12 @@ public abstract class Widget
     public void Arrange(RectF bounds, UiContext context)
     {
         bounds = bounds.Offset(Offset);
+        if (context.PixelSnap)
+        {
+            // Both edges on whole units: the size is whole too, and two widgets that met still meet.
+            float x = MathF.Round(bounds.X), y = MathF.Round(bounds.Y);
+            bounds = new RectF(x, y, MathF.Max(0, MathF.Round(bounds.Right) - x), MathF.Max(0, MathF.Round(bounds.Bottom) - y));
+        }
         Bounds = bounds;
         ArrangeContent(bounds, context);
     }

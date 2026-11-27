@@ -39,6 +39,7 @@ public sealed class Label : Widget
 [Widget.Focusable](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Focusable), 
 [Widget.ClipsChildren](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_ClipsChildren), 
 [Widget.IsFocused](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsFocused), 
+[Widget.FocusTime](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_FocusTime), 
 [Widget.IsHovered](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsHovered), 
 [Widget.IsPressed](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsPressed), 
 [Widget.IsEnabledInTree](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsEnabledInTree), 
@@ -117,6 +118,33 @@ public LocalizedText? Localized { get; set; }
 
  [LocalizedText](MicroEngine.Localization.LocalizedText.md)?
 
+### <a id="MicroEngine_UI_Label_Reveal"></a> Reveal
+
+Reveals the label's text a character at a time ([TextReveal](MicroEngine.UI.TextReveal.md)): the label starts it whenever its
+text changes (a new page, another language) and advances it at every update of its root, on the scene's clock,
+so a dialogue sets the text and reads [Complete](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_Complete). Characters are counted as a reader
+counts them, so text in any script is never cut inside one. While it is set it decides what shows, and
+[VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) is not read. It is part of the scene's state hash. Null (the default) reveals
+nothing by itself.
+
+```csharp
+public TextReveal? Reveal { get; set; }
+```
+
+#### Property Value
+
+ [TextReveal](MicroEngine.UI.TextReveal.md)?
+
+#### Examples
+
+```csharp
+var text = new Label { Width = 280, Wrap = true, Reveal = new TextReveal { CharactersPerSecond = 45 } };
+text.Reveal.CharacterRevealed += _ => Audio.TryPlay("blip", 0.3f);
+text.Text = "The gems only grow at night.";      // starts the reveal
+// on confirm
+if (!text.Reveal.Complete) text.Reveal.Finish(); else text.Text = NextPage();
+```
+
 ### <a id="MicroEngine_UI_Label_Shadow"></a> Shadow
 
 Whether the text has the theme's shadow under it (true by default).
@@ -158,7 +186,11 @@ public int? VisibleCharacters { get; set; }
 
 ### <a id="MicroEngine_UI_Label_VisibleLines"></a> VisibleLines
 
-The part of each of [Lines](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Lines) that [VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) shows.
+The part of each of [Lines](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Lines) that shows: all of it, or what [Reveal](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Reveal) or
+[VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) lets through. While the label keeps its lines the list is the same one, brought
+up to date in place: a line that shows whole is the line itself, a line not reached is empty, and the one line
+being revealed is a new string each time another character of it shows. Nothing else is allocated, and nothing
+at all while what shows does not change.
 
 ```csharp
 public IReadOnlyList<string> VisibleLines { get; }
@@ -198,6 +230,18 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
+### <a id="MicroEngine_UI_Label_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the widget's state that decides what happens next (a text field's text) to the scene's state hash; nothing by default.
+
+```csharp
+protected override void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
+
 ### <a id="MicroEngine_UI_Label_LineStart_System_Int32_"></a> LineStart\(int\)
 
 Where line <code class="paramref">line</code> of [Lines](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Lines) starts horizontally, in UI units, as of the last
@@ -231,5 +275,17 @@ protected override Vector2 MeasureContent(UiContext context)
 #### Returns
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_Label_Update_System_Single_"></a> Update\(float\)
+
+Called once per update of the root, before actions are read.
+
+```csharp
+protected override void Update(float dt)
+```
+
+#### Parameters
+
+`dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 </div>

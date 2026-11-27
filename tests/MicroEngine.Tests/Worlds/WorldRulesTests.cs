@@ -486,6 +486,81 @@ public sealed class WorldRulesTests
     }
 
     [TestMethod]
+    public void Children_of_a_type_walks_the_attachments_of_the_live_children_in_parenting_order()
+    {
+        var world = new SceneWorld();
+        var room = world.Create();
+        var other = world.Create();
+        var a = world.Create(room);
+        var plain = world.Create(room);            // no Tag: skipped
+        var b = world.Create(room);
+        var gone = world.Create(room);
+        var elsewhere = world.Create(other);
+        var grandchild = world.Create(a);
+        world.Attach(b, new Tag("b"));             // attached before a: the walk follows the children, not the attach order
+        world.Attach(a, new Tag("a"));
+        world.Attach(gone, new Tag("gone"));
+        world.Attach(elsewhere, new Tag("elsewhere"));
+        world.Attach(grandchild, new Tag("grandchild"));
+        world.Attach(plain, new Derived());
+        world.Destroy(gone);
+
+        var names = new List<string>();
+        var ids = new List<EntityId>();
+        var walk = world.Children<Tag>(room).GetEnumerator();
+        while (walk.MoveNext())
+        {
+            names.Add(walk.Current.Name);
+            ids.Add(walk.Entity);
+        }
+        CollectionAssert.AreEqual(new[] { "a", "b" }, names, "Direct live children that have the attachment, in parenting order.");
+        CollectionAssert.AreEqual(new[] { a, b }, ids);
+        CollectionAssert.AreEqual(new[] { "grandchild" }, world.Children<Tag>(a).Select(t => t.Name).ToList());
+        Assert.AreEqual(0, world.Children<Base>(room).Count(), "Attachments are keyed by the type argument, as everywhere in the world.");
+        Assert.AreEqual(1, world.Children<Derived>(room).Count());
+        Assert.AreEqual(0, world.Children<Notified>(room).Count(), "A type nothing was ever attached under.");
+
+        world.Detach<Tag>(a);
+        CollectionAssert.AreEqual(new[] { "b" }, world.Children<Tag>(room).Select(t => t.Name).ToList());
+    }
+
+    [TestMethod]
+    public void Children_of_a_type_follows_the_rules_of_a_children_walk_and_allocates_nothing()
+    {
+        var world = new SceneWorld();
+        var room = world.Create();
+        var first = world.Create(room);
+        world.Attach(first, new Tag("first"));
+        var seen = new List<string>();
+        foreach (var tag in world.Children<Tag>(room))
+        {
+            seen.Add(tag.Name);
+            world.Attach(world.Create(room), new Tag("late"));
+        }
+        CollectionAssert.AreEqual(new[] { "first" }, seen, "A child created during the walk waits for the next one.");
+        CollectionAssert.AreEqual(new[] { "first", "late" }, world.Children<Tag>(room).Select(t => t.Name).ToList());
+        Assert.ThrowsExactly<InvalidOperationException>(() =>
+        {
+            foreach (var _ in world.Children<Tag>(room)) world.SetParent(first, EntityId.None);
+        });
+
+        for (int i = 0; i < 50; i++) world.Attach(world.Create(room), new Tag("t"));
+        int count = 0;
+        foreach (var _ in world.Children<Tag>(room)) count++;
+        Assert.AreEqual(51, count);
+        AllocationAssert.None(() =>
+        {
+            foreach (var _ in world.Children<Tag>(room)) count++;
+        }, calls: 20, because: "walking the children that have an attachment");
+
+        var stale = world.Create();
+        world.Destroy(stale);
+        world.BeginStep(1, Dt);
+        world.EndStep();
+        Assert.ThrowsExactly<InvalidOperationException>(() => world.Children<Tag>(stale));
+    }
+
+    [TestMethod]
     public void SetParent_refuses_a_cycle()
     {
         var world = new SceneWorld();

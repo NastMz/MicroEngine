@@ -9,14 +9,14 @@ namespace Examples;
 /// <summary>
 /// A title menu built on the widget tree: a column of items with a bobbing cursor beside the focused one, a blip when
 /// the cursor moves, an option that cannot be chosen yet, and the mouse moving the cursor as it passes over an item.
-/// The item is a small widget of the example's own; its look and its sound are the game's.
+/// The items are buttons drawn by a skin of the example's own; their look and their sound are the game's.
 /// </summary>
 public sealed class MenuExample : Scene
 {
     private Widget? _hovered;
 
     /// <summary>The items, top to bottom, for tests.</summary>
-    public MenuItem[] Items { get; private set; } = [];
+    public Button[] Items { get; private set; } = [];
     /// <summary>What the last chosen item said, for tests.</summary>
     public Label Result { get; private set; } = null!;
     /// <summary>How many times the cursor moved, for tests.</summary>
@@ -28,13 +28,18 @@ public sealed class MenuExample : Scene
         Result = new Label();
         Items =
         [
-            new MenuItem("NEW GAME", () => Result.Text = "A NEW ADVENTURE BEGINS"),
-            new MenuItem("CONTINUE", () => { }) { Enabled = false },          // no save yet: muted, and the cursor skips it
-            new MenuItem("OPTIONS", () => Result.Text = "OPTIONS WOULD OPEN HERE"),
-            new MenuItem("QUIT", () => Game.Scenes.Pop()),
+            new Button("NEW GAME", () => Result.Text = "A NEW ADVENTURE BEGINS"),
+            new Button("CONTINUE") { Enabled = false },                       // no save yet: muted, and the cursor skips it
+            new Button("OPTIONS", () => Result.Text = "OPTIONS WOULD OPEN HERE"),
+            new Button("QUIT", () => Game.Scenes.Pop()),
         ];
         var column = new Stack { Spacing = 3, Align = Align.Start };
-        foreach (var item in Items) column.Add(item);
+        foreach (var item in Items)
+        {
+            item.Skin = MenuLine;                                             // the game's look for a line of the menu
+            item.Padding = new Vector2(5, 0);                                 // as tall as its text, room for the cursor
+            column.Add(item);
+        }
         Widgets.Content = new Stack { Spacing = 12 }.Add(column).Add(Result);
         Widgets.FocusChanged += change =>
         {
@@ -55,38 +60,23 @@ public sealed class MenuExample : Scene
     #endregion
 
     public override void Draw(IRenderer r) => Heading.Draw(r, Font, "MENU");
-}
 
-#region item
-/// <summary>A menu line: its text, and a cursor that bobs beside it while it has the focus. Confirm or a click chooses it.</summary>
-public sealed class MenuItem(string text, Action chosen) : Widget
-{
-    public string Text { get; } = text;
-    public override bool Focusable => true;
-
-    protected override Vector2 MeasureContent(UiContext context) =>
-        new(context.Font.MeasureWidth(Text) + 10 * context.Unit, context.Font.LineHeight);
-
-    protected override bool OnAction(UiAction action)
-    {
-        if (action != UiAction.Confirm) return false;
-        chosen();
-        return true;
-    }
-
-    protected override void OnClick() => chosen();
-
-    protected override void DrawContent(IRenderer r, UiContext context)
+    #region item
+    /// <summary>
+    /// A line of the menu: its text, and a cursor that bobs beside it while it has the focus. A skin draws all of a
+    /// button from its state; the button keeps the focus, confirm and the click.
+    /// </summary>
+    private static void MenuLine(IRenderer r, in UiContext context, in ControlState state)
     {
         var theme = context.Theme;
         float u = context.Unit;
-        var color = !IsEnabledInTree ? theme.Muted : IsFocused ? theme.Accent : theme.Text;
-        if (IsFocused)
+        var color = !state.Enabled ? theme.Muted : state.Focused ? theme.Accent : theme.Text;
+        if (state.Focused)
         {
             float bob = MathF.Round(MathX.Wave(context.Time, 2f, 1f) * u);
-            context.Font.Draw(r, "▶", new Vector2(Bounds.X + bob, Bounds.Y), theme.Accent);
+            context.Font.Draw(r, "▶", new Vector2(state.Bounds.X + bob, state.Bounds.Y), theme.Accent);
         }
-        context.Font.DrawShadowed(r, Text, new Vector2(Bounds.X + 10 * u, Bounds.Y), color, theme.TextShadow, new Vector2(u));
+        context.Font.DrawShadowed(r, state.Text, new Vector2(state.Bounds.X + 10 * u, state.Bounds.Y), color, theme.TextShadow, new Vector2(u));
     }
+    #endregion
 }
-#endregion

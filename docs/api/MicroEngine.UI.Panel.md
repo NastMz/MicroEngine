@@ -37,6 +37,7 @@ public sealed class Panel : Widget
 [Widget.Focusable](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Focusable), 
 [Widget.ClipsChildren](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_ClipsChildren), 
 [Widget.IsFocused](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsFocused), 
+[Widget.FocusTime](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_FocusTime), 
 [Widget.IsHovered](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsHovered), 
 [Widget.IsPressed](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsPressed), 
 [Widget.IsEnabledInTree](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_IsEnabledInTree), 
@@ -99,6 +100,20 @@ public float? Padding { get; set; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+### <a id="MicroEngine_UI_Panel_Skin"></a> Skin
+
+Draws the box in the game's own look (a double border, a shadow of its own, a speech bubble's tail) instead of
+[Style](MicroEngine.UI.Panel.md#MicroEngine_UI_Panel_Style); the content is drawn over it as always. Null (the default) is the theme's
+([PanelSkin](MicroEngine.UI.UiTheme.md#MicroEngine_UI_UiTheme_PanelSkin)), or the panel style.
+
+```csharp
+public ControlSkin? Skin { get; set; }
+```
+
+#### Property Value
+
+ [ControlSkin](MicroEngine.UI.ControlSkin.md)?
 
 ### <a id="MicroEngine_UI_Panel_Style"></a> Style
 

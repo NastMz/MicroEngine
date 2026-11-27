@@ -81,6 +81,19 @@ public Color Accent { get; init; }
 
  [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_UI_UiTheme_ButtonSkin"></a> ButtonSkin
+
+Draws every [Button](MicroEngine.UI.Button.md) of a root with this theme that has no skin of its own ([Skin](MicroEngine.UI.Button.md#MicroEngine_UI_Button_Skin));
+null (the default) draws the built-in button: the theme's panel around the label.
+
+```csharp
+public ControlSkin? ButtonSkin { get; init; }
+```
+
+#### Property Value
+
+ [ControlSkin](MicroEngine.UI.ControlSkin.md)?
+
 ### <a id="MicroEngine_UI_UiTheme_Muted"></a> Muted
 
 Secondary or disabled text.
@@ -104,6 +117,19 @@ public PanelStyle Panel { get; init; }
 #### Property Value
 
  [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+
+### <a id="MicroEngine_UI_UiTheme_PanelSkin"></a> PanelSkin
+
+Draws the box of every [Panel](MicroEngine.UI.Panel.md) of a root with this theme that has neither a style nor a skin of its own
+([Style](MicroEngine.UI.Panel.md#MicroEngine_UI_Panel_Style), [Skin](MicroEngine.UI.Panel.md#MicroEngine_UI_Panel_Skin)); null (the default) draws [Panel](MicroEngine.UI.UiTheme.md#MicroEngine_UI_UiTheme_Panel), the panel style.
+
+```csharp
+public ControlSkin? PanelSkin { get; init; }
+```
+
+#### Property Value
+
+ [ControlSkin](MicroEngine.UI.ControlSkin.md)?
 
 ### <a id="MicroEngine_UI_UiTheme_Text"></a> Text
 

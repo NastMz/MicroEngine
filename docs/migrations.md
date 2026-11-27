@@ -6,6 +6,39 @@ it. Newest first.
 
 ## Next release
 
+### Tweens: the starting value is applied when the tween is added, and tweens run before coroutines
+
+`Tweens.Add` now calls `apply` with the starting value (`ease(0)`) before it returns (a delayed tween, on the update
+its delay ends). Before, the target kept whatever it held until the next update. A tween whose `apply` must not run
+at the moment it is added (it reads something set on the following line) needs that line moved before the call.
+
+A scene advances its tweens before its coroutines (it was the other way round), and a tween advances for the first
+time in the update after the one it was added in, wherever that was. A tween added from a coroutine therefore applies
+each of its values one update later than before; one added from `Update`, `Enter` or a timer keeps its updates.
+`done` callbacks run in the order the tweens were added (it was the reverse), each right after its tween's final
+value. `Tweener.Add` returns a `Tween` instead of `void`, and `Tweener.Count` no longer counts cancelled tweens.
+`Tweener.Clear()` marks the tweens it drops as finished, so a coroutine waiting for one goes on.
+
+### Timers: `TimerHandle` is in the namespace `MicroEngine`, and long timers are called on the regular update
+
+`TimerHandle` moved from `MicroEngine.Scenes` to `MicroEngine` with the new `Timers` class; a file that names it and
+imports only `MicroEngine.Scenes` adds `using MicroEngine;`. Timers now count in double precision: a delay that the
+old single-precision countdown reached one update late (4 s at 144 updates a second, 10 s at 120, 60 s at 60, and
+many delays over a minute) is now called on the update the rule gives. A repeating timer no longer drifts.
+An update of zero seconds calls no timer: `After(0, ...)` is called on the next update that has time. A repeating
+timer is called at most `Timers.MaxCallsPerUpdate` (1000) times in one update. `Tweens.Add` throws
+`ArgumentOutOfRangeException` for a negative length or delay (a negative length was taken as a very short one), and a
+tween of zero seconds ends on the next update instead of lasting a ten-thousandth of a second.
+
+### State machines: steps in the state hash, and a tolerance that grows with the time
+
+A machine adds the updates spent in each state to the state hash, so the hash of a scene with a machine changes; no
+behaviour does. `MachineSnapshot<TState>` has a third value, `Steps` (0 when a save written before does not have it).
+A way out by a time of several minutes that was taken one update late at some update rates (300 s at 50
+updates a second) is now taken on the regular update. A machine updated with a step of zero no longer takes a way
+out by time (`After(0, ...)` was taken on `Update(0)`); its conditions are still checked. The coroutine runner adds two values per coroutine to the state
+hash (updates left to wait, whether it waits for a tween).
+
 ### Saved bindings: later formats are refused, and a screen saves its own actions
 
 `InputBindingSet.FromJson` throws `FormatException` for a set whose `version` is above
