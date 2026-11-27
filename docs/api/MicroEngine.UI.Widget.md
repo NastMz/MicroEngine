@@ -103,6 +103,18 @@ public bool Enabled { get; set; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_Widget_FocusTime"></a> FocusTime
+
+Seconds the widget has had its root's focus, on the root's clock ([FocusTime](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_FocusTime)); zero without it.
+
+```csharp
+public float FocusTime { get; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_UI_Widget_Focusable"></a> Focusable
 
 Whether the widget can take the focus (false by default; buttons and text fields can).

@@ -126,6 +126,19 @@ public Widget? Content { get; set; }
 
 The widget already belongs to another widget or root.
 
+### <a id="MicroEngine_UI_UiRoot_FocusTime"></a> FocusTime
+
+Seconds the focused widget has had the focus, on this root's clock; zero while nothing has it. It starts again
+whenever the focus moves, so a cursor drawn from it always starts its motion at the same point.
+
+```csharp
+public float FocusTime { get; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_UI_UiRoot_Focused"></a> Focused
 
 The widget with the focus, or null.
@@ -226,6 +239,22 @@ public Vector2 Size { get; set; }
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
+### <a id="MicroEngine_UI_UiRoot_Space"></a> Space
+
+The view the widgets live in ([UiView](MicroEngine.UI.UiSpace.md) by default). With [Canvas](MicroEngine.UI.UiSpace.md) they
+are laid out in canvas pixels, on whole pixels, take the pointer in canvas pixels, and are part of the scene's
+picture: the engine does not draw them in the UI view, the scene draws them from its own <code>Draw</code>
+(<code>Widgets.Draw(renderer)</code>) where they belong, under or over what else it draws. Set it before the content,
+usually first thing in <code>Enter</code>.
+
+```csharp
+public UiSpace Space { get; set; }
+```
+
+#### Property Value
+
+ [UiSpace](MicroEngine.UI.UiSpace.md)
+
 ### <a id="MicroEngine_UI_UiRoot_TextInput"></a> TextInput
 
 The text channel text fields type through, or null.
@@ -290,7 +319,10 @@ public bool WrapFocus { get; set; }
 
 ### <a id="MicroEngine_UI_UiRoot_Contains_System_Numerics_Vector2_"></a> Contains\(Vector2\)
 
-Whether <code class="paramref">uiPoint</code> (UI units) lies on a widget of the content that takes the pointer ([BlocksPointer](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_BlocksPointer)): there the root takes presses and the wheel.
+Whether <code class="paramref">uiPoint</code>, a point of the UI view in UI units, lies on a widget of the content that takes
+the pointer ([BlocksPointer](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_BlocksPointer)): there the root takes presses and the wheel. A scene's root on
+the canvas ([Canvas](MicroEngine.UI.UiSpace.md)) maps the point into canvas pixels first; a root made by hand takes it
+in its own units. [WidgetAt](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_WidgetAt_System_Numerics_Vector2_) always takes the root's own units.
 
 ```csharp
 public bool Contains(Vector2 uiPoint)
@@ -306,7 +338,10 @@ public bool Contains(Vector2 uiPoint)
 
 ### <a id="MicroEngine_UI_UiRoot_Draw_MicroEngine_Graphics_IRenderer_"></a> Draw\(IRenderer\)
 
-Lays the content out for <code class="paramref">ui</code>'s size (UI units) and draws it there.
+Lays the content out for <code class="paramref">ui</code>'s size and draws it there. The engine calls it for a scene's
+widgets in the UI view. A scene whose widgets are on the canvas ([Canvas](MicroEngine.UI.UiSpace.md)) calls it from its
+own <code>Draw</code> with the canvas's renderer: the widgets are then drawn in canvas pixels, not moved by the scene's
+world camera, and the engine's own call in the UI view draws nothing.
 
 ```csharp
 public void Draw(IRenderer ui)

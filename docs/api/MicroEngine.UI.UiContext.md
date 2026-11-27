@@ -97,6 +97,20 @@ public float Opacity { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_UI_UiContext_PixelSnap"></a> PixelSnap
+
+Whether widgets are placed on whole units (false by default): set by a root on the canvas
+([Canvas](MicroEngine.UI.UiSpace.md)), where a unit is a canvas pixel and a widget placed between two would blur or
+shimmer. [Arrange](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Arrange_MicroEngine_RectF_MicroEngine_UI_UiContext_) then rounds the position it is given.
+
+```csharp
+public bool PixelSnap { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_UI_UiContext_RightToLeft"></a> RightToLeft
 
 Whether the language in use reads right to left: text then starts from the right edge of its widget.
