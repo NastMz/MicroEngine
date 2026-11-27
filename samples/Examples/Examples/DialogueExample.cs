@@ -9,7 +9,8 @@ namespace Examples;
 /// <summary>
 /// A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter with a blip and
 /// advanced with confirm, then a yes/no answer with two buttons. A page longer than the box continues on the next
-/// confirm, so no text is cut. Nothing here is a dialogue type of the engine: the look and the rules are the game's.
+/// confirm, so no text is cut. The label reveals its text with a <see cref="TextReveal"/>; the box, its look and its
+/// rules are the game's.
 /// </summary>
 public sealed class DialogueExample : Scene
 {
@@ -19,7 +20,6 @@ public sealed class DialogueExample : Scene
 
     private readonly Queue<(string Speaker, string Text)> _pages = new();
     private readonly Queue<string> _chunks = new();
-    private float _shown;
     private Label _more = null!;
 
     /// <summary>The dialogue: the name tag over the box, for tests.</summary>
@@ -39,7 +39,12 @@ public sealed class DialogueExample : Scene
         var theme = UiTheme.Default;
         Speaker = new Label { Color = theme.Panel.Fill, Shadow = false };
         // Three lines high whatever the box holds, so the box never jumps.
-        Text = new Label { Width = TextWidth, Height = LinesPerBox * Font.LineHeight + (LinesPerBox - 1) };
+        Text = new Label
+        {
+            Width = TextWidth, Height = LinesPerBox * Font.LineHeight + (LinesPerBox - 1),
+            Reveal = new TextReveal { CharactersPerSecond = LettersPerSecond },   // the label reveals whatever text it is given
+        };
+        Text.Reveal.CharacterRevealed += _ => Audio.TryPlay("select", 0.3f);       // a blip per letter, if the game has one
         _more = new Label("▼") { Color = theme.Accent, Shadow = false };
         Dialogue = new Stack { Spacing = 0, Align = Align.Start }
             .Add(new Panel(Speaker) { Padding = 3, Style = theme.Panel with { Fill = theme.Accent, Highlight = default } })
@@ -88,9 +93,7 @@ public sealed class DialogueExample : Scene
 
     private void NextBox()
     {
-        Text.Text = _chunks.Dequeue();
-        Text.VisibleCharacters = 0;
-        _shown = 0;
+        Text.Text = _chunks.Dequeue();                                // a new text starts its reveal
     }
     #endregion
 
@@ -99,18 +102,12 @@ public sealed class DialogueExample : Scene
     {
         if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
         if (!Dialogue.Visible) return;                                // the buttons take confirm themselves
-        int before = Text.VisibleCharacters ?? Text.Text.Length;
-        _shown = MathF.Min(Text.Text.Length, _shown + LettersPerSecond * dt);
-        Text.VisibleCharacters = (int)_shown;
-        for (int i = before; i < (int)_shown; i++)
-            if (!char.IsWhiteSpace(Text.Text[i])) Audio.TryPlay("select", 0.3f);   // a blip per letter, if the game has one
-        bool complete = (int)_shown >= Text.Text.Length;
-        _more.Opacity = complete && (int)(Age * 3) % 2 == 0 ? 1 : 0;    // a blinking arrow that keeps its room: confirm goes on
+        var reveal = Text.Reveal!;                                    // advanced by the label, on the scene's clock
+        _more.Opacity = reveal.Complete && (int)(Age * 3) % 2 == 0 ? 1 : 0;   // a blinking arrow that keeps its room: confirm goes on
         if (!Input.Pressed("confirm")) return;
-        if (!complete) _shown = Text.Text.Length;                     // the first confirm shows the rest
+        if (!reveal.Complete) reveal.Finish();                        // the first confirm shows the rest
         else if (_chunks.Count > 0) NextBox();                        // then the rest of a long page
         else NextPage();                                              // then the next page
-        Text.VisibleCharacters = (int)_shown;
     }
     #endregion
 

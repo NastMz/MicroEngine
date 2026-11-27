@@ -565,8 +565,8 @@ Guide: [Animation](../guide/animation.md).
 
 ## Dialogue
 
-A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter with a sound per
-letter, a long page continued in a second box, and a yes/no answer with two buttons. Source:
+A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter by the label's
+`TextReveal` with a sound per letter, a long page continued in a second box, and a yes/no answer with two buttons. Source:
 [`DialogueExample.cs`](../../samples/Examples/Examples/DialogueExample.cs).
 
 <!-- code: samples/Examples/Examples/DialogueExample.cs#build -->
@@ -576,7 +576,12 @@ public override void Enter()
     var theme = UiTheme.Default;
     Speaker = new Label { Color = theme.Panel.Fill, Shadow = false };
     // Three lines high whatever the box holds, so the box never jumps.
-    Text = new Label { Width = TextWidth, Height = LinesPerBox * Font.LineHeight + (LinesPerBox - 1) };
+    Text = new Label
+    {
+        Width = TextWidth, Height = LinesPerBox * Font.LineHeight + (LinesPerBox - 1),
+        Reveal = new TextReveal { CharactersPerSecond = LettersPerSecond },   // the label reveals whatever text it is given
+    };
+    Text.Reveal.CharacterRevealed += _ => Audio.TryPlay("select", 0.3f);       // a blip per letter, if the game has one
     _more = new Label("▼") { Color = theme.Accent, Shadow = false };
     Dialogue = new Stack { Spacing = 0, Align = Align.Start }
         .Add(new Panel(Speaker) { Padding = 3, Style = theme.Panel with { Fill = theme.Accent, Highlight = default } })
@@ -846,11 +851,73 @@ Manual: [Your own look](../manual/ui.md#your-own-look).
 
 ## Title menu
 
-A title menu on the widget tree: a cursor that bobs beside the focused item, a sound when it moves, an option that
-cannot be chosen yet, and the mouse moving the cursor. Source:
+A title menu on the widget tree: buttons drawn by a skin as a line of text with a cursor that bobs beside the focused
+one, a sound when it moves, an option that cannot be chosen yet, and the mouse moving the cursor. Source:
 [`MenuExample.cs`](../../samples/Examples/Examples/MenuExample.cs).
 
 Manual: [Menus](../manual/ui.md#menus).
+
+## Pixel menu and dialogue
+
+A menu and a dialogue box of widgets on the 320x180 canvas, so every pixel of them is a canvas pixel at any window
+size: rows drawn by a skin as a bar, an underline and a bobbing cursor, boxes with a double border, a text that
+reveals itself, and the keyboard, a gamepad, the mouse and touch through the same buttons. Source:
+[`PixelMenuExample.cs`](../../samples/Examples/Examples/PixelMenuExample.cs); `scripts/pixel-menu.script` plays it.
+
+<!-- code: samples/Examples/Examples/PixelMenuExample.cs#canvas -->
+```csharp
+public override void Enter()
+{
+    Widgets.Space = UiSpace.Canvas;                       // canvas pixels: the interface is part of the picture
+    Widgets.Theme = new UiTheme(new PanelStyle(Night, Cream, Night, Ink), Cream, Ink, Gold, Dusk)
+    {
+        ButtonSkin = Row,                                 // every button is a menu row
+        PanelSkin = Box,                                  // every panel is the game's box
+    };
+
+    Rows =
+    [
+        new Button("TALK", Talk),
+        new Button("TRADE") { Enabled = false },          // nothing to trade yet: muted, and the cursor skips it
+        new Button("LEAVE", () => Game.Scenes.Pop()),
+    ];
+    var rows = new Stack { Spacing = 2 };
+    foreach (var row in Rows)
+    {
+        row.Width = 96;
+        row.Padding = new Vector2(0, 2);                  // a row is a line of text and two pixels above and below
+        rows.Add(row);
+    }
+    Menu = new Panel(rows) { Padding = 6 };
+
+    Text = new Label
+    {
+        Width = 236, Height = 3 * Font.LineHeight + 2, Wrap = true,
+        Reveal = new TextReveal { CharactersPerSecond = 45 },
+    };
+    Text.Reveal.CharacterRevealed += _ =>
+    {
+        Blips++;
+        Audio.TryPlay("select", 0.3f);                    // a blip per letter, if the game has the sound
+    };
+    More = new Button("▼", Advance) { Padding = new Vector2(2, 0), Skin = Arrow };
+    Dialogue = new Stack { Spacing = 0, Align = Align.Start, Visible = false }
+        .Add(new Panel(new Label("GARDENER") { Color = Ink, Shadow = false }) { Padding = 3, Skin = Tag })
+        .Add(new Panel(new Stack { Spacing = 0, Align = Align.End }.Add(Text).Add(More)) { Padding = 6 });
+
+    Widgets.Content = new Layer()
+        .Add(Menu, Anchor.Center, new Vector2(0, -24))
+        .Add(Dialogue, Anchor.Bottom, new Vector2(0, -6));
+}
+
+public override void Draw(IRenderer r)
+{
+    Backdrop(r);
+    Heading.Draw(r, Font, "PIXEL MENU");
+}                                                         // the engine draws the widgets over this, in the canvas
+```
+
+Manual: [Widgets on the canvas](../manual/ui.md#widgets-on-the-canvas), [Skins](../manual/ui.md#skins).
 
 ## Achievements
 
