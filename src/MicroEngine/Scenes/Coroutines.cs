@@ -6,10 +6,22 @@ namespace MicroEngine.Scenes;
 /// <summary>Yield instructions understood by <see cref="CoroutineRunner"/>.</summary>
 public static class Wait
 {
-    /// <summary>Pauses the coroutine for <paramref name="seconds"/> of update time.</summary>
+    /// <summary>
+    /// Pauses the coroutine for <paramref name="seconds"/> of update time. The wait counts down in single precision, as
+    /// a loop written by hand does: at R updates a second it lasts <c>seconds x R</c> updates, or one more when the
+    /// steps add up to a hair under the time (0.5 seconds at 60 is 30 updates, 1 second is 61). For a wait of an exact
+    /// number of updates use <see cref="Steps"/>.
+    /// </summary>
     public static WaitSeconds Seconds(float seconds) => new(seconds);
     /// <summary>Pauses the coroutine until <paramref name="condition"/> returns true; checked once per update.</summary>
     public static WaitUntil Until(Func<bool> condition) => new(condition);
+    /// <summary>Pauses the coroutine for <paramref name="steps"/> updates: 1 is the next update, as yielding null; 0 does not pause.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is negative.</exception>
+    public static WaitSteps Steps(int steps)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(steps);
+        return new(steps);
+    }
 }
 
 /// <summary>Yield instruction that pauses a coroutine for a number of seconds; create it with <see cref="Wait.Seconds"/>.</summary>
@@ -18,10 +30,14 @@ public sealed record WaitSeconds(float Seconds);
 /// <summary>Yield instruction that pauses a coroutine until a condition holds; create it with <see cref="Wait.Until"/>.</summary>
 /// <param name="Condition">Checked once per update; the coroutine resumes in the update it first returns true.</param>
 public sealed record WaitUntil(Func<bool> Condition);
+/// <summary>Yield instruction that pauses a coroutine for a number of updates; create it with <see cref="Wait.Steps"/>.</summary>
+/// <param name="Steps">Updates to wait.</param>
+public sealed record WaitSteps(int Steps);
 
 /// <summary>
 /// Runs iterator-based sequences one step per update. A coroutine may yield null (next update),
-/// <see cref="Wait.Seconds"/>, <see cref="Wait.Until"/> or another IEnumerator (awaited as a sub-routine).
+/// <see cref="Wait.Seconds"/>, <see cref="Wait.Steps"/>, <see cref="Wait.Until"/>, a <see cref="Tween"/> (until it
+/// ends) or another IEnumerator (awaited as a sub-routine).
 /// Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 /// </summary>
 public sealed class CoroutineRunner : IStateHashed
@@ -30,7 +46,9 @@ public sealed class CoroutineRunner : IStateHashed
     {
         public readonly Stack<IEnumerator> Stack = new([root]);
         public float Wait;
+        public int Steps;
         public Func<bool>? Until;
+        public Tween? Tween;
         public bool Cancelled;
     }
 
@@ -62,7 +80,7 @@ public sealed class CoroutineRunner : IStateHashed
 
     /// <summary>Advances every coroutine by one step. A scene calls this for its own <see cref="Scene.Coroutines"/>; call it yourself only for a runner you created.</summary>
     /// <param name="dt">Elapsed time in seconds, consumed by <see cref="Wait.Seconds"/>.</param>
-    /// <exception cref="InvalidOperationException">A coroutine yielded a value other than null, a wait instruction or an <see cref="IEnumerator"/>.</exception>
+    /// <exception cref="InvalidOperationException">A coroutine yielded a value other than null, a wait instruction, a tween or an <see cref="IEnumerator"/>.</exception>
     public void Update(float dt)
     {
         _routines.AddRange(_added);
@@ -71,7 +89,9 @@ public sealed class CoroutineRunner : IStateHashed
         {
             if (r.Cancelled) continue;
             if (r.Wait > 0) { r.Wait -= dt; if (r.Wait > 0) continue; }
+            if (r.Steps > 0 && --r.Steps > 0) continue;
             if (r.Until is not null) { if (!r.Until()) continue; r.Until = null; }
+            if (r.Tween is not null) { if (!r.Tween.IsFinished) continue; r.Tween = null; }
             while (r.Stack.Count > 0 && !r.Cancelled)
             {
                 var top = r.Stack.Peek();
@@ -80,7 +100,9 @@ public sealed class CoroutineRunner : IStateHashed
                 {
                     case null: break;
                     case WaitSeconds w: r.Wait = w.Seconds; break;
+                    case WaitSteps s: if (s.Steps > 0) r.Steps = s.Steps; else continue; break;
                     case WaitUntil u: if (!u.Condition()) r.Until = u.Condition; else continue; break;
+                    case Tween tween: if (!tween.IsFinished) r.Tween = tween; else continue; break;
                     case IEnumerator nested: r.Stack.Push(nested); continue;
                     default: throw new InvalidOperationException($"Unsupported yield value {top.Current.GetType().Name}.");
                 }
@@ -92,8 +114,9 @@ public sealed class CoroutineRunner : IStateHashed
 
     /// <summary>
     /// Adds the runner's state to the per-step state hash: for each coroutine, running or waiting to start, its nesting
-    /// depth, the seconds left to wait and whether it waits for a condition. The iterators' own variables are not visible
-    /// to it; a scene adds the state its coroutines change from its own <see cref="Scene.HashState"/>.
+    /// depth, the seconds and the updates left to wait and whether it waits for a condition or a tween. The iterators'
+    /// own variables are not visible to it; a scene adds the state its coroutines change from its own
+    /// <see cref="Scene.HashState"/>.
     /// </summary>
     public void HashState(StateHasher hash)
     {
@@ -103,7 +126,9 @@ public sealed class CoroutineRunner : IStateHashed
             if (r.Cancelled) continue;
             hash.Add(r.Stack.Count);
             hash.Add(r.Wait);
+            hash.Add(r.Steps);
             hash.Add(r.Until is not null);
+            hash.Add(r.Tween is not null);
         }
         foreach (var r in _added) hash.Add(r.Stack.Count);
     }
@@ -118,60 +143,221 @@ public sealed class CoroutineHandle(Action cancel, Func<bool> finished)
     public void Cancel() => cancel();
 }
 
-/// <summary>Simple value tweens driven by update time.</summary>
-public sealed class Tweener : IStateHashed
+/// <summary>
+/// A tween added to a <see cref="Tweener"/>: what a coroutine yields to wait for it, and the way to end it early.
+/// </summary>
+/// <example>
+/// <code>
+/// IEnumerator Intro()
+/// {
+///     yield return Tweens.Add(0.9f, t => _curtain = 1 - t, Ease.OutCubic);   // goes on when the curtain is open
+///     var bob = Tweens.Add(0.3f, t => _hero.Offset = new Vector2(0, -6 * t));
+///     yield return Wait.Until(() => Input.Pressed("action") || bob.IsFinished);
+///     bob.Complete();                                                         // skipped: jump to the end
+/// }
+/// </code>
+/// </example>
+public sealed class Tween
 {
-    private sealed class Tween
+    internal float Duration;
+    internal Func<float, float> Ease = null!;
+    internal Action<float> Apply = null!;
+    internal Action? Done;
+    internal float Time;
+    internal float Delay;
+    internal bool InSteps;
+    internal bool Scaled;
+    internal bool Started;
+    internal bool Ended;
+    internal bool Removed;
+    internal IWorld? World;
+    internal EntityId Entity;
+
+    internal Tween() { }
+
+    /// <summary>Whether the tween reached its end, was completed or was cancelled. A coroutine waiting for it goes on.</summary>
+    public bool IsFinished => Ended;
+
+    /// <summary>How far along the tween is, from 0 to 1, before easing; 0 while it waits for its delay.</summary>
+    public float Progress => Time / Duration;
+
+    /// <summary>Stops the tween where it is: no further value is applied and <c>done</c> is not called. Safe to call more than once.</summary>
+    public void Cancel() => Ended = true;
+
+    /// <summary>
+    /// Ends the tween now: applies its final value and calls <c>done</c>, as reaching the end does (skipping a cutscene,
+    /// closing a menu mid-slide). Nothing happens when it already ended or was cancelled.
+    /// </summary>
+    public void Complete()
     {
-        public required float Duration;
-        public required Func<float, float> Ease;
-        public required Action<float> Apply;
-        public Action? Done;
-        public float Time;
-        public float Delay;
+        if (Ended) return;
+        if (LostEntity()) { Ended = true; return; }
+        Time = Duration;
+        Ended = true;
+        Apply(Ease(1f));
+        Done?.Invoke();
     }
 
+    /// <summary>
+    /// Ties the tween to an entity: once <paramref name="entity"/> is no longer alive in <paramref name="world"/> the
+    /// tween is cancelled instead of applying another value, so a tween that moves an object may outlive it.
+    /// </summary>
+    /// <returns>The tween, to chain or yield.</returns>
+    public Tween Bind(IWorld world, EntityId entity)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        World = world;
+        Entity = entity;
+        return this;
+    }
+
+    internal bool LostEntity() => World is not null && !World.IsAlive(Entity);
+}
+
+/// <summary>
+/// Value tweens driven by update time: each calls an action with an eased progress from 0 to 1 over a length in
+/// seconds or in updates. A scene has one (<see cref="Scene.Tweens"/>) and steps it; one you create is stepped with
+/// <see cref="Update(float)"/>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A tween applies its starting value (<c>ease(0)</c>) the moment it is added, so what it moves is in place before
+/// anything is drawn, and advances once per update from the next one. With a delay, it leaves its target alone until
+/// the update the delay ends on, which applies the starting value. Its last update applies <c>ease(1)</c> and then
+/// calls <c>done</c>.
+/// </para>
+/// <para>
+/// A tween in seconds adds each update's step to its time in single precision, exactly as the loop
+/// <c>for (t = 0; t &lt; seconds; t += step)</c> does, and applies <c>ease(t / seconds)</c>: it replaces such a loop value
+/// for value. At R updates a second it lasts <c>seconds x R</c> updates, or one more when the steps add up to a hair
+/// under the length (0.5 seconds at 60 is 30 updates; 0.9 is 55, the 54th value being a hair under 1). A tween in steps
+/// (<see cref="AddSteps"/>) lasts exactly its number of updates.
+/// </para>
+/// </remarks>
+public sealed class Tweener : IStateHashed
+{
     private readonly List<Tween> _tweens = [];
 
     /// <summary>Number of tweens playing or waiting for their delay.</summary>
-    public int Count => _tweens.Count;
+    public int Count
+    {
+        get
+        {
+            int count = 0;
+            foreach (var tween in _tweens) if (!tween.Ended) count++;
+            return count;
+        }
+    }
 
-    /// <summary>Calls <paramref name="apply"/> with eased progress 0..1 every update for <paramref name="duration"/> seconds.</summary>
-    public void Add(float duration, Action<float> apply, Func<float, float>? ease = null, Action? done = null, float delay = 0)
+    /// <summary>
+    /// Calls <paramref name="apply"/> with eased progress 0..1 every update for <paramref name="duration"/> seconds, then
+    /// <paramref name="done"/>. The starting value is applied at once (after <paramref name="delay"/>, when given).
+    /// </summary>
+    /// <param name="duration">The length in seconds.</param>
+    /// <param name="apply">Receives the eased progress: 0 at the start, 1 at the end.</param>
+    /// <param name="ease">The curve; <see cref="MicroEngine.Ease.OutQuad"/> when null.</param>
+    /// <param name="done">Called once, after the final value is applied; not when the tween is cancelled.</param>
+    /// <param name="delay">Seconds before the tween starts.</param>
+    /// <param name="scaled">
+    /// True to advance by the second clock of <see cref="Update(float, float)"/>: in a scene, the step of the world's
+    /// clock, so the tween slows down and freezes with the world (an object's squash during a hitstop). False (the
+    /// default) keeps the engine's time, which interface and cutscene tweens want.
+    /// </param>
+    /// <returns>The tween: yield it from a coroutine to wait for it, or keep it to cancel or complete it.</returns>
+    public Tween Add(float duration, Action<float> apply, Func<float, float>? ease = null, Action? done = null, float delay = 0, bool scaled = false)
     {
         ArgumentNullException.ThrowIfNull(apply);
-        _tweens.Add(new Tween { Duration = Math.Max(duration, 1e-4f), Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delay });
+        return Start(new Tween { Duration = Math.Max(duration, 1e-4f), Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delay, Scaled = scaled });
     }
 
-    /// <summary>Advances every tween by <paramref name="dt"/> seconds and calls the <c>done</c> callback of those that ended. A scene calls this for its own <see cref="Scene.Tweens"/>.</summary>
-    public void Update(float dt)
+    /// <summary>
+    /// A tween whose length is a number of updates: <paramref name="apply"/> receives the eased value of 1/steps, 2/steps...
+    /// on the updates after the one it is added on, and 1 on the last. It counts updates, not time: slow motion does not
+    /// stretch it, and an update of zero seconds (a frozen world, for a scaled tween) is not counted.
+    /// </summary>
+    /// <param name="steps">The length in updates, above zero.</param>
+    /// <param name="apply">Receives the eased progress.</param>
+    /// <param name="ease">The curve; <see cref="MicroEngine.Ease.OutQuad"/> when null.</param>
+    /// <param name="done">Called once, after the final value is applied.</param>
+    /// <param name="delaySteps">Updates before the tween starts.</param>
+    /// <param name="scaled">True to count the updates of the second clock of <see cref="Update(float, float)"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is not above zero, or <paramref name="delaySteps"/> is negative.</exception>
+    public Tween AddSteps(int steps, Action<float> apply, Func<float, float>? ease = null, Action? done = null, int delaySteps = 0, bool scaled = false)
     {
-        for (int i = 0; i < _tweens.Count; i++)
-        {
-            var t = _tweens[i];
-            if (t.Delay > 0) { t.Delay -= dt; continue; }
-            t.Time = MathF.Min(t.Time + dt, t.Duration);
-            t.Apply(t.Ease(t.Time / t.Duration));
-        }
-        for (int i = _tweens.Count - 1; i >= 0; i--)
-        {
-            var t = _tweens[i];
-            if (t.Delay <= 0 && t.Time >= t.Duration) { _tweens.RemoveAt(i); t.Done?.Invoke(); }
-        }
+        ArgumentNullException.ThrowIfNull(apply);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(steps);
+        ArgumentOutOfRangeException.ThrowIfNegative(delaySteps);
+        return Start(new Tween { Duration = steps, Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delaySteps, Scaled = scaled, InSteps = true });
     }
 
-    /// <summary>Removes every tween without applying its final value or calling its <c>done</c> callback.</summary>
-    public void Clear() => _tweens.Clear();
+    private Tween Start(Tween tween)
+    {
+        _tweens.Add(tween);
+        if (!(tween.Delay > 0))
+        {
+            tween.Started = true;
+            tween.Apply(tween.Ease(0f));
+        }
+        return tween;
+    }
 
-    /// <summary>Adds the tweens' state to the per-step state hash: for each tween, its duration, time played and delay left.</summary>
+    /// <summary>Advances every tween by <paramref name="dt"/> seconds and calls the <c>done</c> callback of those that ended, in the order they were added. A scene calls this for its own <see cref="Scene.Tweens"/>.</summary>
+    public void Update(float dt) => Update(dt, dt);
+
+    /// <summary>
+    /// Advances the tweens on two clocks: <paramref name="dt"/> for the ordinary ones and <paramref name="scaledDt"/> for
+    /// those added with <c>scaled: true</c>. A scene gives the engine's step and its world's.
+    /// </summary>
+    public void Update(float dt, float scaledDt)
+    {
+        // A tween added by a callback already holds its starting value: it advances from the next update.
+        int count = _tweens.Count;
+        for (int i = 0; i < count; i++)
+        {
+            var t = _tweens[i];
+            if (t.Ended) continue;
+            if (t.LostEntity()) { t.Ended = true; continue; }
+            float step = t.Scaled ? scaledDt : dt;
+            if (t.InSteps) step = step > 0 ? 1 : 0;
+            if (!t.Started)
+            {
+                t.Delay -= step;
+                if (t.Delay > 0) continue;
+                t.Started = true;
+                t.Apply(t.Ease(0f));
+                continue;
+            }
+            t.Time = MathF.Min(t.Time + step, t.Duration);
+            t.Apply(t.Ease(t.Time / t.Duration));
+            if (t.Time >= t.Duration && !t.Ended)
+            {
+                t.Ended = true;
+                t.Done?.Invoke();
+            }
+        }
+        _tweens.RemoveAll(static t => t.Ended);
+    }
+
+    /// <summary>Cancels every tween: no final value is applied and no <c>done</c> callback is called.</summary>
+    public void Clear()
+    {
+        foreach (var tween in _tweens) tween.Ended = true;
+        _tweens.Clear();
+    }
+
+    /// <summary>Adds the tweens' state to the per-step state hash: for each tween, its length, time played, delay left, and how it counts.</summary>
     public void HashState(StateHasher hash)
     {
-        hash.Add(_tweens.Count);
+        hash.Add(Count);
         foreach (var t in _tweens)
         {
+            if (t.Ended) continue;
             hash.Add(t.Duration);
             hash.Add(t.Time);
             hash.Add(t.Delay);
+            hash.Add(t.Started);
+            hash.Add(t.InSteps);
+            hash.Add(t.Scaled);
         }
     }
 }

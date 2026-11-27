@@ -926,6 +926,94 @@ public override void Update(float dt)
 
 Manual: [Scene systems](../manual/scenes.md#scene-systems).
 
+## A cutscene
+
+A curtain opens, three dancers hop one after another, sparks fall on the beat, the troupe bows and the curtain closes.
+The cutscene is one coroutine that waits for each tween; the show's rules are a plain class with its own timers and
+state machine, which a test steps with no scene; the dancers are the children of one entity. Source:
+[`CutsceneExample.cs`](../../samples/Examples/Examples/CutsceneExample.cs).
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#cutscene -->
+```csharp
+private IEnumerator Play()
+{
+    // A tween is something a coroutine waits for: the next line runs in the update the curtain is fully open.
+    yield return Tweens.Add(0.5f, t => Curtain = 1 - t, Ease.OutCubic);
+    _show.Begin();
+    foreach (var dancer in Dancers)                                         // one after another
+        yield return Tweens.Add(0.25f, t => dancer.Hop = 4 * t * (1 - t), Ease.Linear);
+    yield return Wait.Until(() => _show.Current == Show.Act.Over);
+    yield return Wait.Steps(10);                                            // ten updates, whatever the rate
+    yield return Tweens.Add(0.5f, t => Curtain = t, Ease.InQuad);
+    Finished = true;
+}
+```
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#rules -->
+```csharp
+/// <summary>
+/// The rules of the show as a plain class: it owns its timers and its machine, and whatever steps it calls Update (the
+/// scene below, or a test with no scene and no game).
+/// </summary>
+public sealed class Show : IStateHashed
+{
+    public enum Act { Waiting, Dance, Bow, Over }
+
+    private readonly Timers _timers = new();
+    private readonly StateMachine<Act> _act = new(Act.Waiting);
+
+    public Show()
+    {
+        _act.State(Act.Dance)
+            .OnEnter(() => _timers.EverySteps(20, () => Sparks++, times: 3))   // on the beat: every 20 updates
+            .After(1.5f, Act.Bow);                                             // 90 updates at 60 a second, exactly
+        _act.State(Act.Bow)
+            .AfterSteps(45, Act.Over);                                         // a length in updates
+    }
+
+    public Act Current => _act.Current;
+    public int Sparks { get; private set; }
+
+    public void Begin() => _act.Go(Act.Dance);
+
+    public void Update(float dt)
+    {
+        _timers.Update(dt);
+        _act.Update(dt);
+    }
+
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_timers);
+        hash.Add(_act);
+        hash.Add(Sparks);
+    }
+}
+```
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#group -->
+```csharp
+public override void Enter()
+{
+    // A group is an entity with children: destroying the troupe destroys its dancers.
+    _troupe = Objects.Create();
+    string[] colors = ["ef7d57", "ffcd75", "73eff7"];
+    for (int i = 0; i < colors.Length; i++)
+    {
+        var dancer = Objects.Create(_troupe);
+        Objects.Local(dancer).Position2D = new Vector2(110 + i * 50, 130);
+        Objects.Attach(dancer, new Dancer(Color.Hex(colors[i])));
+    }
+    Coroutines.Start(Play());
+}
+
+/// <summary>The dancers of the troupe, in the order they joined it; walking them allocates nothing.</summary>
+public ChildAttachments<Dancer> Dancers => Objects.Children<Dancer>(_troupe);
+```
+
+Manual: [Tweens](../manual/scenes.md#tweens), [Timers](../manual/scenes.md#timers),
+[The scene world](../manual/scenes.md#the-scene-world). Guide: [State machines](../guide/state-machines.md).
+
 ## A state machine
 
 A guard that patrols, chases what comes near, winds up, strikes, and is stunned by a stomp whatever it was doing.

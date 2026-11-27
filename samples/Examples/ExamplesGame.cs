@@ -65,6 +65,7 @@ public sealed class ExamplesGame : Game
         ("Small pictures (mip levels)", g => new MipLevelsExample()),
         ("Music time (intro, loop, position)", g => new MusicTimeExample()),
         ("Sounds with a place (listener, emitters)", g => new SpatialSoundExample()),
+        ("A cutscene (waiting for tweens)", g => new CutsceneExample()),
 
 
     ];

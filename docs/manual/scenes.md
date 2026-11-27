@@ -150,10 +150,18 @@ Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Sce
 | --- | --- |
 | `null` | Continue next update |
 | `Wait.Seconds(s)` | Pause for simulated seconds |
+| `Wait.Steps(n)` | Pause for `n` updates (`1` is the next update) |
 | `Wait.Until(() => condition)` | Pause until the condition is true (checked every update) |
+| a `Tween` (what `Tweens.Add` returns) | Pause until the tween ends, and go on in that same update |
 | another `IEnumerator` | Run it as a sub-routine and continue when it finishes |
 
 Any other value throws `InvalidOperationException`. When the scene is popped, its coroutines are stopped.
+
+`Wait.Seconds` counts down in single precision, as a loop written by hand does: at R updates a second it lasts
+`seconds x R` updates, or one more when the steps add up to a hair under the time (at 60 updates a second 0.5 s is 30
+updates and 1 s is 61). A wait that must last an exact number of updates is `Wait.Steps`; a call that must happen on an
+exact update of a time in seconds is a timer ([When a timer is called](#when-a-timer-is-called)).
+
 Courtyard Key's item-get sequence shows a typical cutscene:
 
 ```csharp
@@ -178,8 +186,8 @@ Source: [`games/CourtyardKey/Scenes/PlayScene.Events.cs`](../../games/CourtyardK
 ## Tweens
 
 `Tweens.Add(duration, apply, ease?, done?, delay?)` calls `apply` with eased progress 0..1 every update for
-`duration` seconds, then calls `done`. The default easing is `Ease.OutQuad`; other curves live in the `Ease`
-class ([`src/MicroEngine.Kernel/Math/MathX.cs`](../../src/MicroEngine.Kernel/Math/MathX.cs)).
+`duration` seconds, then calls `done`, and returns the `Tween`. The default easing is `Ease.OutQuad`; other curves
+live in the `Ease` class ([`src/MicroEngine.Kernel/Math/MathX.cs`](../../src/MicroEngine.Kernel/Math/MathX.cs)).
 
 ```csharp
 Tweens.Add(1.2f, t => _revealed = t, Ease.Linear, () =>
@@ -192,9 +200,75 @@ Tweens.Add(1.2f, t => _revealed = t, Ease.Linear, () =>
 
 Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapScene.cs)
 
-Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene clears them as well. A value that
-goes through more than two keys, several values moving together, or named moments along the way are a `Track<T>` and
-a `Timeline`: [Animation](../guide/animation.md).
+### Waiting for a tween
+
+A coroutine yields a tween to wait for it, so a cutscene is a list of lines, each one a movement that ends before the
+next begins:
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#cutscene -->
+```csharp
+private IEnumerator Play()
+{
+    // A tween is something a coroutine waits for: the next line runs in the update the curtain is fully open.
+    yield return Tweens.Add(0.5f, t => Curtain = 1 - t, Ease.OutCubic);
+    _show.Begin();
+    foreach (var dancer in Dancers)                                         // one after another
+        yield return Tweens.Add(0.25f, t => dancer.Hop = 4 * t * (1 - t), Ease.Linear);
+    yield return Wait.Until(() => _show.Current == Show.Act.Over);
+    yield return Wait.Steps(10);                                            // ten updates, whatever the rate
+    yield return Tweens.Add(0.5f, t => Curtain = t, Ease.InQuad);
+    Finished = true;
+}
+```
+
+The `Tween` is also the way to end one early: `Cancel()` stops it where it is (no further value, `done` is not
+called), `Complete()` jumps to its final value and calls `done` (skipping a cutscene, closing a menu in the middle of
+its slide), `IsFinished` says whether it is over either way and `Progress` how far along it is. A coroutine that waits
+for a tween goes on when the tween is cancelled or completed too. `Tweens.Clear()` cancels all of them, and popping
+the scene does as well.
+
+### When a tween applies its values
+
+- **At once.** `Tweens.Add` applies the starting value (`ease(0)`) before it returns, so what the tween moves is in
+  place in the frame it is added: something that slides in from outside the screen or fades in from nothing is never
+  drawn for one frame where it was. With a `delay`, the tween leaves its target alone until the update the delay ends
+  on, which applies the starting value.
+- **Then once per update, first of all.** In each update the scene advances its tweens, then its coroutines, then its
+  systems (timers, machines) and its `Update`. A tween added anywhere in an update (by a coroutine, a timer or
+  `Update`) advances for the first time in the next one, so its values do not depend on where it was added, and the
+  coroutine that waits for it goes on in the very update the final value is applied.
+- **Like the loop it replaces.** A tween adds each update's step to its time in single precision and applies
+  `ease(time / duration)`, exactly as this loop does, value for value on every update:
+
+  ```csharp
+  for (float t = 0; t < seconds; t += EngineStep) { apply(ease(t / seconds)); yield return null; }
+  apply(1);
+  ```
+
+  so `yield return Tweens.Add(seconds, apply, ease)` replaces it without moving anything. At R updates a second a
+  tween lasts `seconds x R` updates, or one more when the steps add up to a hair under the length (at 60 updates a
+  second 0.5 s is 30 updates; 0.9 s is 55, the value on the 54th being a hair under 1).
+- **In updates, when it must be exact.** `Tweens.AddSteps(steps, apply, ease?, done?, delaySteps?)` lasts exactly
+  `steps` updates and applies `ease(1 / steps)`, `ease(2 / steps)`... It counts updates, not time: its length in
+  seconds changes with the update rate.
+
+### Which clock
+
+Tweens keep the engine's time: a menu that slides or a cutscene that fades goes on while the world is slowed or
+frozen by a hitstop. Pass `scaled: true` for a tween that belongs to the world (a squash on the object that was hit,
+a door that opens): it advances by the step of the world's clock, so it slows down and stops with everything else.
+
+### A tween on an object
+
+A tween that writes to an entity outlives it unless it is told: `Tweens.Add(...).Bind(Objects, entity)` cancels the
+tween once the entity is no longer alive, instead of applying another value through a dead id.
+
+```csharp
+Tweens.Add(0.3f, t => Objects.Local(coin).Scale2D = new Vector2(1 + t), scaled: true).Bind(Objects, coin);
+```
+
+A value that goes through more than two keys, several values moving together, or named moments along the way are a
+`Track<T>` and a `Timeline`: [Animation](../guide/animation.md).
 
 ## Timers
 
@@ -359,10 +433,10 @@ programs against `IWorld`. The rules a game can rely on:
 - **State hash**: the world adds its ids, hierarchy, transforms, which attachments each entity has, the state of
   attachments that implement `IStateHashed`, and its clock; drawing never changes it.
 
-The engine steps a scene's world with the scene. While the scene is updated, each step starts before its coroutines,
-tweens and `Update`, and ends after them (releasing what was destroyed); `Update` then receives the step on the
+The engine steps a scene's world with the scene. While the scene is updated, each step starts before its tweens,
+coroutines and `Update`, and ends after them (releasing what was destroyed); `Update` then receives the step on the
 world's clock: the same `dt` at scale 1, scaled in slow motion, 0 during a freeze. The scene's `Age`, coroutines and
-tweens keep the engine's time, and `EngineStep` is the engine's step before the clock scales or freezes it (the same
+tweens keep the engine's time (a tween added with `scaled: true` follows the world's), and `EngineStep` is the engine's step before the clock scales or freezes it (the same
 value every update, `1 / UpdateRate`; it is what `Update` receives when the scene has no world). Advance what keeps
 moving through a hitstop or slow motion, such as play time, camera shake or particles, by `EngineStep`:
 

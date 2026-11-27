@@ -226,7 +226,50 @@ flow.State(Phase.Playing).When(() => _player.Dead, Phase.GameOver);
 ```
 
 A machine that belongs to an object is better stepped by that object, as in the example: its place among the object's
-other rules stays explicit.
+other rules stays explicit. The same goes for rules kept outside any scene, here with timers of their own
+([Timers outside a scene](../manual/scenes.md#timers-outside-a-scene)):
+
+<!-- code: samples/Examples/Examples/CutsceneExample.cs#rules -->
+```csharp
+/// <summary>
+/// The rules of the show as a plain class: it owns its timers and its machine, and whatever steps it calls Update (the
+/// scene below, or a test with no scene and no game).
+/// </summary>
+public sealed class Show : IStateHashed
+{
+    public enum Act { Waiting, Dance, Bow, Over }
+
+    private readonly Timers _timers = new();
+    private readonly StateMachine<Act> _act = new(Act.Waiting);
+
+    public Show()
+    {
+        _act.State(Act.Dance)
+            .OnEnter(() => _timers.EverySteps(20, () => Sparks++, times: 3))   // on the beat: every 20 updates
+            .After(1.5f, Act.Bow);                                             // 90 updates at 60 a second, exactly
+        _act.State(Act.Bow)
+            .AfterSteps(45, Act.Over);                                         // a length in updates
+    }
+
+    public Act Current => _act.Current;
+    public int Sparks { get; private set; }
+
+    public void Begin() => _act.Go(Act.Dance);
+
+    public void Update(float dt)
+    {
+        _timers.Update(dt);
+        _act.Update(dt);
+    }
+
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_timers);
+        hash.Add(_act);
+        hash.Add(Sparks);
+    }
+}
+```
 
 ## Determinism and saves
 
