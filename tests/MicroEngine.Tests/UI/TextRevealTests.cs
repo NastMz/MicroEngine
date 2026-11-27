@@ -301,6 +301,38 @@ public sealed class TextRevealTests
     }
 
     [TestMethod]
+    public void A_label_reveals_the_text_of_the_language_in_use_and_a_right_to_left_line_grows_from_its_right_edge()
+    {
+        var (game, platform, scene) = Start();
+        var texts = new MicroEngine.Localization.Localizer();
+        // Arabic with vowel marks: three letters, each with a mark, are three characters and six chars.
+        texts.Add("ar", new Dictionary<string, string> { ["greeting"] = "بَتَثَ" });
+        texts.Add("en", new Dictionary<string, string> { ["greeting"] = "HELLO" });
+        texts.Language = "en";
+        var root = game.Scenes.Current!.Widgets;
+        root.Localization = texts;
+        root.Content = null;
+        root.Content = new Stack { Width = 200, Align = Align.Stretch }.Add(scene.Text);
+        scene.Text.Localized = new MicroEngine.Localization.LocalizedText("greeting");
+        Frame(game, platform);
+        Frame(game, platform);
+        Assert.AreEqual("HE", scene.Text.VisibleLines[0], "the key's text in English, two updates on");
+        Assert.AreEqual(scene.Text.Bounds.X, scene.Text.LineStart(0));
+
+        texts.Language = "ar";                                      // the text changes: the reveal starts again
+        Frame(game, platform);
+        Assert.AreEqual("بَ", scene.Text.VisibleLines[0], "one character: the letter with its mark, never the letter alone");
+        float one = scene.Text.LineStart(0);
+        Assert.AreEqual(scene.Text.Bounds.Right - game.Font.MeasureWidth(scene.Text.VisibleLines[0]), one, 0.01f, "it ends at the right edge");
+        Frame(game, platform);
+        Assert.AreEqual("بَتَ", scene.Text.VisibleLines[0]);
+        Assert.IsTrue(scene.Text.LineStart(0) < one, "the line grows leftwards");
+        Frame(game, platform);
+        Assert.IsTrue(scene.Text.Reveal!.Complete);
+        Assert.AreEqual(3, scene.Text.Reveal.Count);
+    }
+
+    [TestMethod]
     public void A_revealing_label_is_part_of_the_scenes_state()
     {
         var (game, platform, scene) = Start();
