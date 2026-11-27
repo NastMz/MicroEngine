@@ -70,14 +70,22 @@ The declaration of one state (or of `Any`); every call returns it, to chain them
 
 A state machine for gameplay: a character's moves, an enemy's behaviour, a boss's phases, the flow of a level. Each
 state has what runs when it is entered, every step while it lasts and when it is left, and the ways out of it: a
-condition checked every step (<code>When</code>), a time in the state (<code>After</code>) or an event the game fires
-(<code>On</code>). The machine keeps the seconds spent in the current state, runs on whatever step it is given (so it
-follows a scene's clock through slow motion and a hitstop), takes part in the state hash and can be saved and
-restored. Stepping and firing allocate nothing.
+condition checked every step (<code>When</code>), a time in the state in seconds (<code>After</code>) or in updates
+(<code>AfterSteps</code>) or an event the game fires (<code>On</code>). The machine keeps the seconds and the updates spent in
+the current state, runs on whatever step it is given (so it follows a scene's clock through slow motion and a
+hitstop), needs no scene (the owner of a rule object calls `Update`), takes part in the state hash and
+can be saved and restored. Stepping and firing allocate nothing.
 
  [StateMachine<TState\>](MicroEngine.StateMachine\-1.md)
 
 A state machine without events: its states change by conditions, by time and by <code>Go</code>.
+
+ [Timers](MicroEngine.Timers.md)
+
+Calls actions after a time or at intervals, counted in seconds or in updates. Whatever owns it calls
+[Update](MicroEngine.Timers.md#MicroEngine_Timers_Update_System_Single_) once per step: a scene has one of its own (<code>Scene.Timers</code>), and the rules of a game
+kept in a plain class (a stage, a board, a match that tests step without a scene) create theirs. Its state takes
+part in the state hash.
 
  [Track<T\>](MicroEngine.Track\-1.md)
 
@@ -107,11 +115,15 @@ One key of a `Track`1`: the value the track has at a time.
 
  [MachineSnapshot<TState\>](MicroEngine.MachineSnapshot\-1.md)
 
-A machine's state and the seconds it has been in it, to save and restore (`Restore`).
+A machine's state and how long it has been in it, to save and restore (`Restore`).
 
  [RectF](MicroEngine.RectF.md)
 
 Axis-aligned rectangle in world or screen units (Y grows downward).
+
+ [TimerHandle](MicroEngine.TimerHandle.md)
+
+A timer of a [Timers](MicroEngine.Timers.md); [None](MicroEngine.TimerHandle.md#MicroEngine_TimerHandle_None) names no timer.
 
 ### Interfaces
 

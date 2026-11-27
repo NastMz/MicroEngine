@@ -22,8 +22,10 @@ public sealed class StateMachine<TState, TEvent>.StateConfig
 ### <a id="MicroEngine_StateMachine_2_StateConfig_After_System_Single__0_System_Func_System_Boolean__"></a> After\(float, TState, Func<bool\>?\)
 
 A way out by time: once the state lasted <code class="paramref">seconds</code> (and <code class="paramref">condition</code> is true,
-when given) the machine changes to <code class="paramref">target</code>. Declared on a parent, the time is the parent's;
-declared on `Any`, the current state's.
+when given) the machine changes to <code class="paramref">target</code>, on the update on which the time reaches them.
+At a fixed rate of R updates a second that is after exactly <code class="paramref">seconds</code> x R updates when the
+product is a whole number (1.9 seconds at 60: 114) and after the next whole number otherwise. Declared on a
+parent, the time is the parent's; declared on `Any`, the current state's.
 
 ```csharp
 public StateMachine<TState, TEvent>.StateConfig After(float seconds, TState target, Func<bool>? condition = null)
@@ -46,6 +48,37 @@ public StateMachine<TState, TEvent>.StateConfig After(float seconds, TState targ
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 <code class="paramref">seconds</code> is negative or not a number.
+
+### <a id="MicroEngine_StateMachine_2_StateConfig_AfterSteps_System_Int32__0_System_Func_System_Boolean__"></a> AfterSteps\(int, TState, Func<bool\>?\)
+
+A way out by updates: once the state lasted <code class="paramref">steps</code> updates (and <code class="paramref">condition</code>
+is true, when given) the machine changes to <code class="paramref">target</code>, on that update. It counts updates,
+not time: the length in seconds follows the update rate, slow motion does not stretch it, and an update of
+zero seconds (a frozen world) is not counted. For a game that thinks in frames, and for a hand-kept timer
+moved onto a machine without changing the update it ends on. Declared on a parent, the steps are the
+parent's; declared on `Any`, the current state's.
+
+```csharp
+public StateMachine<TState, TEvent>.StateConfig AfterSteps(int steps, TState target, Func<bool>? condition = null)
+```
+
+#### Parameters
+
+`steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`target` TState
+
+`condition` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[bool](https://learn.microsoft.com/dotnet/api/system.boolean)\>?
+
+#### Returns
+
+ [StateMachine](MicroEngine.StateMachine\-2.md)<TState, TEvent\>.[StateConfig](MicroEngine.StateMachine\-2.StateConfig.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">steps</code> is negative.
 
 ### <a id="MicroEngine_StateMachine_2_StateConfig_Do__1_System_Action_System_Func_System_Boolean__"></a> Do\(TEvent, Action, Func<bool\>?\)
 
