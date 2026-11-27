@@ -68,3 +68,15 @@ Routes are inline: one writer, one area.
   `TextReveal.VisibleLines` make one string per newly revealed character because fonts draw `string`; with span
   entry points on `IFont` the label can draw `line.AsSpan(0, shown)` and a box drawn by hand `reveal.Visible`, and
   that last allocation goes. `ControlState.Text` and `Button` measure with `string` and need no change.
+- L8 (2026-11-27) Correction batch after an independent verification, which confirmed the canvas mapping, the skins,
+  the reveal against the compiled `Typewriter.cs` and the cursor against `OptionList.cs`, and found six defects. All
+  fixed, each with a test seen failing first (`tests/MicroEngine.Tests/UI/InterfaceCorrectionTests.cs`, 10 of 12 red
+  before the code). D1: a canvas root the scene did not draw was invisible and took input; the scene manager now
+  draws it after the scene's `Draw` (two lines in `SceneManager.Draw`, which supersedes L3's follow-up), and a scene
+  that draws it itself is left alone. D2: a rate or a step that is not a finite number above zero is ignored by
+  `TextReveal`, and `Revealed` stays in 0..`Count`. D3: `Label.VisibleLines` reuses its list; what remains is one
+  string per newly revealed character (the line in progress), because fonts draw `string` (L7). D4:
+  `MenuCursor.Top` leaves no blank rows after the list shrinks. D5: `PixelSnap` rounds both edges, so sizes are
+  whole. D6: `FocusTime` starts again when the content is shown again. The manual now states the cursor's and the
+  focus's rules for opposite directions, disabled rows and key repeat (none: no demo repeats and the map has no
+  repeat to read).

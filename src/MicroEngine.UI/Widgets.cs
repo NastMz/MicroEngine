@@ -79,22 +79,29 @@ public sealed class Label : Widget
 
     /// <summary>
     /// The part of each of <see cref="Lines"/> that shows: all of it, or what <see cref="Reveal"/> or
-    /// <see cref="VisibleCharacters"/> lets through. The list is made again only when what shows changes.
+    /// <see cref="VisibleCharacters"/> lets through. While the label keeps its lines the list is the same one, brought
+    /// up to date in place: a line that shows whole is the line itself, a line not reached is empty, and the one line
+    /// being revealed is a new string each time another character of it shows. Nothing else is allocated, and nothing
+    /// at all while what shows does not change.
     /// </summary>
     public IReadOnlyList<string> VisibleLines
     {
         get
         {
             if (ShownCharacters() is not { } count) return _lines;
-            if (ReferenceEquals(_visibleOf, _lines) && _visibleCount == count && _visible is not null) return _visible;
-            var visible = new string[_lines.Length];
+            bool sameLines = ReferenceEquals(_visibleOf, _lines) && _visible is not null;
+            if (sameLines && _visibleCount == count) return _visible!;
+            // The same list while the lines are the same: only the entries that changed are written.
+            var visible = sameLines ? _visible! : new string[_lines.Length];
             int at = 0;
             for (int i = 0; i < _lines.Length; i++)
             {
                 var line = _lines[i];
                 at = StartOf(line, at);
                 int shown = Math.Clamp(count - at, 0, line.Length);
-                visible[i] = shown == line.Length ? line : shown == 0 ? "" : line[..shown];
+                if (shown == line.Length) visible[i] = line;
+                else if (shown == 0) visible[i] = "";
+                else if (!sameLines || visible[i] is not { } was || was.Length != shown) visible[i] = line[..shown];
                 at += line.Length;
             }
             (_visible, _visibleOf, _visibleCount) = (visible, _lines, count);

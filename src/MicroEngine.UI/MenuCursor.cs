@@ -135,7 +135,8 @@ public sealed class MenuCursor : IStateHashed
 
     /// <summary>
     /// Moves the cursor by the direction actions pressed in this update: left and right first (in a grid), else up and
-    /// down; opposite directions pressed together cancel out. Actions left null in <paramref name="actions"/> (or all
+    /// down; opposite directions pressed together cancel out. It reads presses, so a held direction moves once: there
+    /// is no repeat. Actions left null in <paramref name="actions"/> (or all
     /// of them, by default) are the input map's own names. Returns whether it moved.
     /// </summary>
     public bool Move(InputMap input, UiActions? actions = null)
@@ -170,12 +171,15 @@ public sealed class MenuCursor : IStateHashed
 
     /// <summary>
     /// The first row to draw of a list that shows <paramref name="visible"/> rows at a time: it moves just enough to
-    /// keep the cursor's row in the window, as a scrolling list does. Call it with the same count every frame.
+    /// keep the cursor's row in the window, as a scrolling list does, and never leaves blank rows under the last one
+    /// when the list has enough rows to fill the window (also after it shrinks). Call it with the same count every frame.
     /// </summary>
     public int Top(int visible)
     {
-        int row = _index / _columns;
-        _top = Math.Clamp(_top, Math.Max(0, row - Math.Max(1, visible) + 1), row);
+        visible = Math.Max(1, visible);
+        int row = _index / _columns, rows = (_count + _columns - 1) / _columns;
+        _top = Math.Clamp(_top, Math.Max(0, row - visible + 1), row);
+        _top = Math.Min(_top, Math.Max(0, rows - visible));
         return _top;
     }
 

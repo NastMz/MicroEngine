@@ -87,9 +87,8 @@ public sealed class PixelMenuExample : Scene
     public override void Draw(IRenderer r)
     {
         Backdrop(r);
-        Widgets.Draw(r);                                      // on the canvas the scene says where its widgets go
         Heading.Draw(r, Font, "PIXEL MENU");
-    }
+    }                                                         // the engine draws the widgets over this, in the canvas
     #endregion
 
     #region skins

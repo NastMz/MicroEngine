@@ -187,7 +187,10 @@ public int? VisibleCharacters { get; set; }
 ### <a id="MicroEngine_UI_Label_VisibleLines"></a> VisibleLines
 
 The part of each of [Lines](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Lines) that shows: all of it, or what [Reveal](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Reveal) or
-[VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) lets through. The list is made again only when what shows changes.
+[VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) lets through. While the label keeps its lines the list is the same one, brought
+up to date in place: a line that shows whole is the line itself, a line not reached is empty, and the one line
+being revealed is a new string each time another character of it shows. Nothing else is allocated, and nothing
+at all while what shows does not change.
 
 ```csharp
 public IReadOnlyList<string> VisibleLines { get; }

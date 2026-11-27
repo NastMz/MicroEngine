@@ -81,9 +81,9 @@ cursor) that were removed together with their looks.
 ## F. Integration
 
 - **Scenes.** `Scene.Widgets` is the root in either space; the engine still updates it before `Scene.Update`, routes
-  input to it and hashes it. On the canvas the scene draws it from `Draw`: the scene's files are another writer's in
-  this round, and drawing from `Draw` also lets the scene place the interface in its picture. An automatic draw after
-  `Scene.Draw` is a three-line change in `SceneManager.Draw`, reported, not made.
+  input to it and hashes it. On the canvas the scene manager draws it after the scene's `Draw`, inside
+  the scene's post-processing; a scene that calls `Widgets.Draw` from its `Draw` places it itself and it is not drawn
+  again.
 - **Input.** The pointer arrives in canvas pixels; a root on the canvas takes it as it is. `GameViews.PointerOnUi`
   is true over canvas widgets (`UiRoot.Contains` maps the UI point). Actions are read under the map's names.
 - **State hash and determinism.** A label's reveal and a `MenuCursor` are `IStateHashed`; skins and `FocusTime` only
@@ -97,7 +97,8 @@ cursor) that were removed together with their looks.
 
 - Two ways to make a menu (widgets, `MenuCursor`). They are two kinds of screen: one laid out by the engine with the
   pointer built in, one drawn by hand around an index. The manual says when to pick each.
-- The scene draws canvas widgets explicitly; a scene that forgets the call shows nothing.
+- Canvas widgets are drawn after the scene's `Draw` unless the scene drew them itself: two paths, so that a root
+  that takes input is never invisible.
 - `UiRoot.Contains` takes a point of the UI view; `WidgetAt` takes the root's units. They only differ on the canvas.
 - A skin is a delegate, not a type: it cannot change a control's size. `Button.Padding` covers the size.
 

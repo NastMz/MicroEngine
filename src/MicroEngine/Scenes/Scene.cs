@@ -514,8 +514,10 @@ public sealed class SceneManager
             var post = scene.PostProcessOrNull;
             bool processed = post is not null && post.Begin(renderer, _game.Graphics);
             if (scene.WorldCamera is { } camera) renderer.PushCamera(camera);
+            scene.UiOrNull?.BeginScenePass();
             scene.Draw(renderer);
             if (scene.WorldCamera is not null) renderer.PopCamera();
+            scene.UiOrNull?.EndScenePass(renderer);   // widgets on the canvas the scene did not draw itself
             if (processed) post!.End(renderer);
         }
         _transition?.DrawAt(renderer, _game.FrameBlend);

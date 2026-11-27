@@ -54,7 +54,9 @@ public TextReveal()
 
 ### <a id="MicroEngine_UI_TextReveal_CharactersPerSecond"></a> CharactersPerSecond
 
-How many characters show per second (45 by default).
+How many characters show per second (45 by default). A value that is not a finite number above zero (zero,
+negative, NaN, infinite) is ignored while it lasts: the reveal stays where it is, and nothing is owed when a
+valid rate returns.
 
 ```csharp
 public float CharactersPerSecond { get; set; }
@@ -216,7 +218,9 @@ public void Start(string text, int revealed = 0)
 
 ### <a id="MicroEngine_UI_TextReveal_Update_System_Single_"></a> Update\(float\)
 
-Shows more of the text for <code class="paramref">dt</code> seconds, raising [CharacterRevealed](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_CharacterRevealed) for each new character.
+Shows more of the text for <code class="paramref">dt</code> seconds, raising [CharacterRevealed](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_CharacterRevealed) for each new
+character. A step that is not a finite number above zero is ignored, like such a rate
+([CharactersPerSecond](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_CharactersPerSecond)): [Revealed](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_Revealed) is always between zero and [Count](MicroEngine.UI.TextReveal.md#MicroEngine_UI_TextReveal_Count).
 
 ```csharp
 public void Update(float dt)

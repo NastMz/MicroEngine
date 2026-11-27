@@ -102,7 +102,8 @@ public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, f
     /// <summary>
     /// Whether widgets are placed on whole units (false by default): set by a root on the canvas
     /// (<see cref="UiSpace.Canvas"/>), where a unit is a canvas pixel and a widget placed between two would blur or
-    /// shimmer. <see cref="Widget.Arrange"/> then rounds the position it is given.
+    /// shimmer. <see cref="Widget.Arrange"/> then rounds the edges of the bounds it is given, so positions and sizes
+    /// are whole whatever the spacing, the padding or the measured size.
     /// </summary>
     public bool PixelSnap { get; init; }
 
@@ -271,7 +272,12 @@ public abstract class Widget
     public void Arrange(RectF bounds, UiContext context)
     {
         bounds = bounds.Offset(Offset);
-        if (context.PixelSnap) bounds = new RectF(MathF.Round(bounds.X), MathF.Round(bounds.Y), bounds.Width, bounds.Height);
+        if (context.PixelSnap)
+        {
+            // Both edges on whole units: the size is whole too, and two widgets that met still meet.
+            float x = MathF.Round(bounds.X), y = MathF.Round(bounds.Y);
+            bounds = new RectF(x, y, MathF.Max(0, MathF.Round(bounds.Right) - x), MathF.Max(0, MathF.Round(bounds.Bottom) - y));
+        }
         Bounds = bounds;
         ArrangeContent(bounds, context);
     }

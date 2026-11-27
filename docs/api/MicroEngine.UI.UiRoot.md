@@ -129,7 +129,9 @@ The widget already belongs to another widget or root.
 ### <a id="MicroEngine_UI_UiRoot_FocusTime"></a> FocusTime
 
 Seconds the focused widget has had the focus, on this root's clock; zero while nothing has it. It starts again
-whenever the focus moves, so a cursor drawn from it always starts its motion at the same point.
+whenever the focus moves, and when the content is shown again after being hidden ([Visible](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Visible)),
+so a cursor drawn from it always starts its motion at the same point. A focused widget hidden on its own hands
+the focus on, which starts the time as any move does.
 
 ```csharp
 public float FocusTime { get; }
@@ -243,9 +245,10 @@ public Vector2 Size { get; set; }
 
 The view the widgets live in ([UiView](MicroEngine.UI.UiSpace.md) by default). With [Canvas](MicroEngine.UI.UiSpace.md) they
 are laid out in canvas pixels, on whole pixels, take the pointer in canvas pixels, and are part of the scene's
-picture: the engine does not draw them in the UI view, the scene draws them from its own <code>Draw</code>
-(<code>Widgets.Draw(renderer)</code>) where they belong, under or over what else it draws. Set it before the content,
-usually first thing in <code>Enter</code>.
+picture: the engine draws them in the canvas right after the scene's <code>Draw</code>, over what it drew, inside the
+scene's post-processing. A scene that wants them elsewhere in its picture (under an effect of its own) calls
+<code>Widgets.Draw(renderer)</code> from its <code>Draw</code> at that point, and the engine then does not draw them again
+in that frame. Set it before the content, usually first thing in <code>Enter</code>.
 
 ```csharp
 public UiSpace Space { get; set; }
@@ -339,9 +342,11 @@ public bool Contains(Vector2 uiPoint)
 ### <a id="MicroEngine_UI_UiRoot_Draw_MicroEngine_Graphics_IRenderer_"></a> Draw\(IRenderer\)
 
 Lays the content out for <code class="paramref">ui</code>'s size and draws it there. The engine calls it for a scene's
-widgets in the UI view. A scene whose widgets are on the canvas ([Canvas](MicroEngine.UI.UiSpace.md)) calls it from its
-own <code>Draw</code> with the canvas's renderer: the widgets are then drawn in canvas pixels, not moved by the scene's
-world camera, and the engine's own call in the UI view draws nothing.
+widgets: in the UI view, or, for widgets on the canvas ([Canvas](MicroEngine.UI.UiSpace.md)), in the canvas after the
+scene's <code>Draw</code>. A scene may call it itself from its <code>Draw</code> with the canvas's renderer to place canvas
+widgets earlier in its picture; the engine then leaves them as drawn. Canvas widgets are drawn in canvas
+pixels, not moved by the scene's world camera, and a call during the pass over the UI view (from
+<code>DrawUi</code>) draws nothing.
 
 ```csharp
 public void Draw(IRenderer ui)

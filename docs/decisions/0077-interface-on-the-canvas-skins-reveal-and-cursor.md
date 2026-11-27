@@ -21,9 +21,11 @@ mixed a behaviour with a look; the looks were the reason to remove them.
 
 - **A root lives in a space.** `UiRoot.Space` is `UiSpace.UiView` (the default) or `UiSpace.Canvas`. On the canvas a
   scene's widgets are laid out in canvas pixels in the canvas's size, placed on whole pixels
-  (`UiContext.PixelSnap`), given the pointer in canvas pixels, counted by `GameViews.PointerOnUi`, and drawn by the
-  scene from its own `Draw` (`Widgets.Draw(renderer)`), under a camera of their own. The engine's pass over the UI
-  view draws nothing for them. Update, input routing and the state hash are the same in both spaces.
+  (`UiContext.PixelSnap`), given the pointer in canvas pixels, counted by `GameViews.PointerOnUi`, and drawn in the
+  canvas under a camera of their own: by the engine right after the scene's `Draw`, inside the scene's
+  post-processing, unless the scene drew them itself in that frame (`Widgets.Draw(renderer)` from `Draw`, to put
+  them under something). What takes input is therefore always visible. The engine's pass over the UI view draws
+  nothing for them. Update, input routing and the state hash are the same in both spaces.
 - **A control's look is a function.** `ControlSkin(renderer, in context, in state)` draws a button or a panel from a
   `ControlState` (bounds, text, enabled, focused, hovered, pressed, the time with the focus). It is set on a control
   (`Button.Skin`, `Panel.Skin`) or on a theme (`UiTheme.ButtonSkin`, `UiTheme.PanelSkin`). `Button.Padding` sets the
@@ -42,9 +44,9 @@ mixed a behaviour with a look; the looks were the reason to remove them.
 
 ## Alternatives considered
 
-- **The engine draws canvas widgets after `Scene.Draw`.** It needs the scene manager to call the root between a
-  scene's draw and the next scene's. Left as a follow-up: the explicit call also lets a scene put its interface
-  under an effect of its own.
+- **Only the scene draws canvas widgets.** The first version: a scene that forgot the call had widgets that took
+  input and showed nothing. Rejected after verification; the scene manager now calls the root after each scene's
+  draw, and the explicit call remains for placing the interface under an effect.
 - **A second root per scene, one per space.** More to route and to hash, for a case (a canvas menu and a sharp
   overlay together) that `DrawUi` or a pushed scene covers.
 - **Skins as theme parts only, or as nine-slices only.** A nine-slice cannot draw an underline or a cursor that
@@ -62,5 +64,4 @@ mixed a behaviour with a look; the looks were the reason to remove them.
   `TextReveal` with the same values on every update, and move menus to skinned widgets where it wants the pointer.
 - The public API grows by five types and about a dozen members. `UiRoot.Contains` now takes a point of the UI view
   for a root the engine made on the canvas; `UiRoot.WidgetAt` keeps the root's units.
-- A scene on the canvas must draw its widgets; one that forgets shows none.
 - A scene's state hash includes a revealing label's reveal.

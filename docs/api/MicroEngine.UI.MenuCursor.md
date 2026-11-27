@@ -180,7 +180,8 @@ public bool Move(UiAction direction)
 ### <a id="MicroEngine_UI_MenuCursor_Move_MicroEngine_Input_InputMap_MicroEngine_UI_UiActions_"></a> Move\(InputMap, UiActions?\)
 
 Moves the cursor by the direction actions pressed in this update: left and right first (in a grid), else up and
-down; opposite directions pressed together cancel out. Actions left null in <code class="paramref">actions</code> (or all
+down; opposite directions pressed together cancel out. It reads presses, so a held direction moves once: there
+is no repeat. Actions left null in <code class="paramref">actions</code> (or all
 of them, by default) are the input map's own names. Returns whether it moved.
 
 ```csharp
@@ -232,7 +233,8 @@ public void SetEnabled(int index, bool enabled)
 ### <a id="MicroEngine_UI_MenuCursor_Top_System_Int32_"></a> Top\(int\)
 
 The first row to draw of a list that shows <code class="paramref">visible</code> rows at a time: it moves just enough to
-keep the cursor's row in the window, as a scrolling list does. Call it with the same count every frame.
+keep the cursor's row in the window, as a scrolling list does, and never leaves blank rows under the last one
+when the list has enough rows to fill the window (also after it shrinks). Call it with the same count every frame.
 
 ```csharp
 public int Top(int visible)

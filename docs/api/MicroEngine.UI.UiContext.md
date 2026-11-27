@@ -101,7 +101,8 @@ public float Opacity { get; init; }
 
 Whether widgets are placed on whole units (false by default): set by a root on the canvas
 ([Canvas](MicroEngine.UI.UiSpace.md)), where a unit is a canvas pixel and a widget placed between two would blur or
-shimmer. [Arrange](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Arrange_MicroEngine_RectF_MicroEngine_UI_UiContext_) then rounds the position it is given.
+shimmer. [Arrange](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Arrange_MicroEngine_RectF_MicroEngine_UI_UiContext_) then rounds the edges of the bounds it is given, so positions and sizes
+are whole whatever the spacing, the padding or the measured size.
 
 ```csharp
 public bool PixelSnap { get; init; }

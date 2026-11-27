@@ -115,9 +115,10 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     /// <summary>
     /// The view the widgets live in (<see cref="UiSpace.UiView"/> by default). With <see cref="UiSpace.Canvas"/> they
     /// are laid out in canvas pixels, on whole pixels, take the pointer in canvas pixels, and are part of the scene's
-    /// picture: the engine does not draw them in the UI view, the scene draws them from its own <c>Draw</c>
-    /// (<c>Widgets.Draw(renderer)</c>) where they belong, under or over what else it draws. Set it before the content,
-    /// usually first thing in <c>Enter</c>.
+    /// picture: the engine draws them in the canvas right after the scene's <c>Draw</c>, over what it drew, inside the
+    /// scene's post-processing. A scene that wants them elsewhere in its picture (under an effect of its own) calls
+    /// <c>Widgets.Draw(renderer)</c> from its <c>Draw</c> at that point, and the engine then does not draw them again
+    /// in that frame. Set it before the content, usually first thing in <c>Enter</c>.
     /// </summary>
     public UiSpace Space { get; set; }
 
@@ -165,10 +166,13 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     public Widget? Focused { get; private set; }
     /// <summary>
     /// Seconds the focused widget has had the focus, on this root's clock; zero while nothing has it. It starts again
-    /// whenever the focus moves, so a cursor drawn from it always starts its motion at the same point.
+    /// whenever the focus moves, and when the content is shown again after being hidden (<see cref="Widget.Visible"/>),
+    /// so a cursor drawn from it always starts its motion at the same point. A focused widget hidden on its own hands
+    /// the focus on, which starts the time as any move does.
     /// </summary>
     public float FocusTime => Focused is null ? 0 : Time - _focusedAt;
     private float _focusedAt;
+    private bool _hidden;
     /// <summary>The widget under the pointer, or null.</summary>
     public Widget? Hovered { get; private set; }
     /// <summary>The widget a held pointer press started on, or null.</summary>
@@ -350,7 +354,14 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         {
             _events.Clear();
             _keyModifiers.Clear();
+            _hidden = true;
             return;
+        }
+        if (_hidden)
+        {
+            // Shown again: the focus is where it was, and its time starts over.
+            _hidden = false;
+            _focusedAt = Time;
         }
         if (Font is not null) Layout();
         Collect();
@@ -461,9 +472,11 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
     /// <summary>
     /// Lays the content out for <paramref name="ui"/>'s size and draws it there. The engine calls it for a scene's
-    /// widgets in the UI view. A scene whose widgets are on the canvas (<see cref="UiSpace.Canvas"/>) calls it from its
-    /// own <c>Draw</c> with the canvas's renderer: the widgets are then drawn in canvas pixels, not moved by the scene's
-    /// world camera, and the engine's own call in the UI view draws nothing.
+    /// widgets: in the UI view, or, for widgets on the canvas (<see cref="UiSpace.Canvas"/>), in the canvas after the
+    /// scene's <c>Draw</c>. A scene may call it itself from its <c>Draw</c> with the canvas's renderer to place canvas
+    /// widgets earlier in its picture; the engine then leaves them as drawn. Canvas widgets are drawn in canvas
+    /// pixels, not moved by the scene's world camera, and a call during the pass over the UI view (from
+    /// <c>DrawUi</c>) draws nothing.
     /// </summary>
     /// <exception cref="InvalidOperationException"><see cref="Font"/> is not set.</exception>
     public void Draw(IRenderer ui)
@@ -486,9 +499,20 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         ui.PushCamera(_canvasCamera);
         try { _content.Draw(ui, Context); }
         finally { ui.PopCamera(); }
+        _drawnInScenePass = true;
     }
 
     private Camera2D? _canvasCamera;
+    private bool _drawnInScenePass;
+
+    /// <summary>The engine is about to call the scene's <c>Draw</c>: nothing of this root is drawn yet in this frame.</summary>
+    internal void BeginScenePass() => _drawnInScenePass = false;
+
+    /// <summary>The scene's <c>Draw</c> returned: a root on the canvas the scene did not draw is drawn now, over its picture.</summary>
+    internal void EndScenePass(IRenderer canvas)
+    {
+        if (Space == UiSpace.Canvas && !_drawnInScenePass) Draw(canvas);
+    }
 
     /// <summary>
     /// Takes an event as the UI's input layer (see <see cref="IInputLayer"/>): a pointer press on the content, everything

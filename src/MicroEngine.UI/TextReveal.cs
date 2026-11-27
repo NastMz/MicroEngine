@@ -38,7 +38,11 @@ public sealed class TextReveal : IStateHashed
     /// <summary>The whole text being revealed.</summary>
     public string Text { get; private set; } = "";
 
-    /// <summary>How many characters show per second (45 by default).</summary>
+    /// <summary>
+    /// How many characters show per second (45 by default). A value that is not a finite number above zero (zero,
+    /// negative, NaN, infinite) is ignored while it lasts: the reveal stays where it is, and nothing is owed when a
+    /// valid rate returns.
+    /// </summary>
     public float CharactersPerSecond { get; set; } = 45f;
 
     /// <summary>
@@ -52,7 +56,7 @@ public sealed class TextReveal : IStateHashed
     public int Count => _ends.Count;
 
     /// <summary>How many of them show.</summary>
-    public int Revealed => Math.Min(_ends.Count, (int)_shown);
+    public int Revealed => Math.Clamp((int)_shown, 0, _ends.Count);
 
     /// <summary>
     /// The length of the part of <see cref="Text"/> that shows, in <c>char</c>s: always at the end of a whole
@@ -130,9 +134,14 @@ public sealed class TextReveal : IStateHashed
         _visibleFor = -1;
     }
 
-    /// <summary>Shows more of the text for <paramref name="dt"/> seconds, raising <see cref="CharacterRevealed"/> for each new character.</summary>
+    /// <summary>
+    /// Shows more of the text for <paramref name="dt"/> seconds, raising <see cref="CharacterRevealed"/> for each new
+    /// character. A step that is not a finite number above zero is ignored, like such a rate
+    /// (<see cref="CharactersPerSecond"/>): <see cref="Revealed"/> is always between zero and <see cref="Count"/>.
+    /// </summary>
     public void Update(float dt)
     {
+        if (!(dt > 0) || !float.IsFinite(dt)) return;
         if (_pause > 0)
         {
             float waited = MathF.Min(_pause, dt);
@@ -142,7 +151,9 @@ public sealed class TextReveal : IStateHashed
         }
         int before = Revealed, count = _ends.Count;
         if (before >= count) return;
-        _shown = MathF.Min(count, _shown + CharactersPerSecond * dt);
+        float rate = CharactersPerSecond;
+        if (!(rate > 0) || !float.IsFinite(rate)) return;
+        _shown = MathF.Min(count, _shown + rate * dt);
         int after = Revealed;
         for (int i = before; i < after; i++)
         {

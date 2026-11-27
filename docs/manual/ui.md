@@ -228,18 +228,20 @@ public override void Draw(IRenderer r)
 | `Count`, `Columns` | How many options, and how many in a row (1: a vertical list). In a grid, left and right move within the row and up and down between rows; a cell missing from a shorter last row is never reached. Both can change while the list is shown |
 | `Index` | The highlighted option; setting it is silent |
 | `Wrap` | Whether moving past an end goes on from the other end (true by default) |
-| `Update(input, actions)` | Moves by the direction actions pressed in this update, then returns the highlighted option when confirm is pressed on it. The press that chooses is consumed |
+| `Update(input, actions)` | Moves by the direction actions pressed in this update, then returns the highlighted option when confirm is pressed on it. The press that chooses is consumed. Opposite directions pressed in the same update cancel out, and a held direction moves once: there is no repeat |
 | `Move(input, actions)`, `Move(direction)` | The moves alone, from the actions or from code |
 | `SetEnabled(index, enabled)` | An option that cannot be chosen. The cursor still rests on it; a confirm there returns nothing and is not consumed, so the scene can answer with a sound |
 | `MoveTo(index)` | The cursor put on a row by the player's pointer: raises `Moved` when it changes |
 | `Moved` | Raised when a direction or `MoveTo` changes the option, for the cursor's sound |
-| `Top(visible)` | The first row to draw of a list that shows `visible` rows: it moves just enough to keep the cursor in the window |
+| `Top(visible)` | The first row to draw of a list that shows `visible` rows: it moves just enough to keep the cursor in the window, and leaves no blank row under the last one, also after the list shrinks |
 
 The actions are read under the input map's names, or the ones given in a `UiActions`, like the widgets'. A cursor is
 part of the scene's state when the scene adds it to its state hash (`hash.Add(_menu)`).
 
-Choose between the two by what the screen is. Widgets lay themselves out, take the mouse and touch, skip what is
-disabled and scroll; a `MenuCursor` is a number the scene draws around, for screens whose rows are drawn by hand.
+Choose between the two by what the screen is. Widgets lay themselves out, take the mouse and touch and scroll; a
+`MenuCursor` is a number the scene draws around, for screens whose rows are drawn by hand. They differ in two rules.
+The focus of the widgets skips a disabled row, where a cursor rests on it. And with up and down pressed in the same
+update the focus moves up and then down, two moves that end where they started, where a cursor does not move.
 
 ### Text that wraps and reveals
 
@@ -279,8 +281,9 @@ public override void Update(float dt)
 
 A box the game draws itself uses the same `TextReveal` without a label: `Start(text)`, `Update(dt)` every update,
 then `Visible` (the part that shows, without a copy) or `VisibleLines` (what shows of each line of the text) to
-draw. Revealing allocates nothing: a line that shows whole is the line itself, and only the line being revealed is a
-new string, when another character of it shows. `VisibleCharacters` on a label sets the count by hand instead, in
+draw. `Update` and `Visible` allocate nothing. `VisibleLines`, of a reveal or of a label, is one list kept up to
+date in place: a line that shows whole is the line itself, and the line being revealed is a new string each time
+another character of it shows, the one allocation of a reveal (fonts draw strings). `VisibleCharacters` on a label sets the count by hand instead, in
 `char`s of the text as written (`TextReveal.VisibleLength` is that count); a label with a `Reveal` does not read it.
 
 A page that does not fit the box is split into boxes of three lines with the font's own `Wrap`, the same wrapping a
@@ -365,14 +368,16 @@ press or a click.
 A pixel-art game's interface is part of its picture: a menu on a 320x180 canvas has pixels the size of the game's.
 Set `Widgets.Space = UiSpace.Canvas` first thing in `Enter`, and the scene's widgets live on the canvas:
 
-- They are laid out in canvas pixels, in the canvas's size, on whole pixels: a centred menu or a fractional offset
-  never lands between two.
+- They are laid out in canvas pixels, in the canvas's size, on whole pixels: a centred menu, a fractional offset,
+  spacing or size never puts an edge between two.
 - The pointer reaches them in canvas pixels, mouse and touch alike, and a pointer over them is on the UI
   (`Game.Views.PointerOnUi`) as in the UI view. The keyboard and the gamepad work the same in both.
-- The scene draws them: call `Widgets.Draw(renderer)` from the scene's `Draw`, at the point of its picture where the
-  interface belongs (over the world, under a flash). They are drawn in canvas pixels whatever camera the scene's
-  world uses, they go through the scene's post-processing with the rest of the picture, and a capture of the canvas
-  shows them. The engine does not draw them in the UI view.
+- The engine draws them in the canvas right after the scene's `Draw`, over what it drew. They are drawn in canvas
+  pixels whatever camera the scene's world uses, they go through the scene's post-processing and the canvas's with
+  the rest of the picture, and a capture of the canvas shows them. Nothing of them is drawn in the UI view.
+- A scene that wants them somewhere else in its picture (under a flash or a fade of its own) calls
+  `Widgets.Draw(renderer)` from its `Draw` at that point; the engine then does not draw them again in that frame. A
+  call from `DrawUi` draws nothing.
 
 The same widgets, focus, skins and text reveal work in both spaces. This menu and dialogue box are buttons, panels
 and a label on the canvas; `ButtonSkin` and `PanelSkin` give every one of them the game's look ([Skins](#skins)):
@@ -426,9 +431,8 @@ public override void Enter()
 public override void Draw(IRenderer r)
 {
     Backdrop(r);
-    Widgets.Draw(r);                                      // on the canvas the scene says where its widgets go
     Heading.Draw(r, Font, "PIXEL MENU");
-}
+}                                                         // the engine draws the widgets over this, in the canvas
 ```
 
 The dialogue is a few lines over the label's reveal. The arrow under the text is a button that has the focus while
@@ -692,7 +696,7 @@ state it is given:
 | `Bounds` | Where the control is, in the root's units |
 | `Text` | A button's label in the language in use; empty for a panel |
 | `Enabled`, `Focused`, `Hovered`, `Pressed` | The control's state: disabled, under the cursor of the menu, under the pointer, held |
-| `FocusTime` | Seconds the control has had the focus, zero without it: a cursor that starts its motion when it lands |
+| `FocusTime` | Seconds the control has had the focus, zero without it: a cursor that starts its motion when it lands. It starts again when the focus moves and when the root's content is shown again after being hidden |
 
 `context` carries the font, the theme, the layout unit and the root's clock (`Time`, which never starts again). Its
 theme is already faded by the opacity around the control; a colour of the skin's own goes through `context.Fade`.
@@ -858,12 +862,11 @@ private static Widget Row(string text, Widget control)
 
 - Text uses the root's font in one colour per label: there is no rich text. A text field edits one line, and its
   caret moves by characters, never by words.
-- A scene has one widget root, in one space: the UI view or the canvas. Widgets on the canvas are drawn by the
-  scene's own `Draw`, not by the engine.
+- A scene has one widget root, in one space: the UI view or the canvas.
 - A text reveal shows whole characters at one rate, with optional pauses; it has no effect per character (a wave, a
   colour), and letters of a script that joins them (Arabic) take their joined shape as their neighbours appear.
-- A `MenuCursor` reads presses, not held keys: a held direction moves once. It does not read the pointer by itself;
-  the scene maps its rows through `MoveTo`.
+- A `MenuCursor` and the widgets' focus read presses, not held keys: a held direction moves once, and there is no
+  key repeat. A cursor does not read the pointer by itself; the scene maps its rows through `MoveTo`.
 - Skins draw buttons and panels. A text field, a scroll bar and a label keep the theme's colours.
 - Sliders, toggles and value selectors are widgets of your own
   ([Controls of your own](#controls-of-your-own)).
