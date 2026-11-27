@@ -147,3 +147,141 @@ Most important first. Each is what a developer making a classic platform game ha
   and the same differential now compares the controller with one motion against `Player.Step` in position,
   velocity, ground, jump state, timers and events: 0 of 94,285 steps apart (about 6,500 different situations) and 62
   of 62 rules identical, with the game unchanged. Pip still moves with his own mover; moving him is a later pass.
+
+## Second pass (2026-11-27, after DEMO-GAPS-1 #218)
+
+Branch `feat/demo2-meadow`, base `debaa4a7`. Every row of the table above decided again with the engine as it is.
+
+### Decisions, row by row
+
+| Row | New decision |
+| --- | --- |
+| Saves | Unchanged (replaced in the first pass). A save of the previous release loads with the same result: below |
+| Animations by time (17 sites) | Unchanged (replaced) |
+| Frame expressions with a start frame per instance, question blocks, lava, Pip's run on the map | **Replaced**: `FrameAt(time, frameOffset)` for the fire bars' links, the torches and the title's coins; `AddFrames` with a rate for every strip that plays whole at one rate; the question block is a clip with a duration per frame; lava and the map's run are clips. **Kept**: Pip's run in a level (it follows distance) and the Mole King's poses (one index for two strips, chosen by his mode) |
+| Pip's mover | **Kept: the controller is not identical under random input.** Measured below; gaps 1 to 3 |
+| Enemy and item movement over `TileMotion.Move` | Kept, same reason as before |
+| Platforms as `IRideable` | Kept with the mover. With the controller it is `StandOn` after the step, identical in every compared step |
+| Stage phases, the Mole King's modes | **Kept**, gap 4: counting in updates would now be exact (`AfterSteps` 115, 121, 145, 253), but the rules change the phase in the middle of an update and read it back at once, and `Go` from a handler waits |
+| Hand-kept timers of the simulation | **Kept**: the drawing reads them as amounts (a bump's elapsed time, the throw pose, a spring's compression), and the mover's own timers stay with the mover. `Timers` calls an action later; none of these is one |
+| Menus | **Replaced** the cursor with `MenuCursor`; the drawing stays the game's (`Ui.Menu`, 16 lines: a bar, a bobbing cursor, three colours). `DemoKit.OptionList` is no longer used |
+| Drawing bands, `LaunchOptions`, strings in code | Kept, same reasons |
+| `NumberLabel`, the map's text caches | **Replaced** with interpolated text (`Ui.Text(r, font, $"×{lives:00}", ...)`) and `Prompts.Cached` |
+| `DrawTime.Of(scene)` | Kept: still three lines, still gap 12 of the first pass |
+
+`games/Shared` after this pass: the game uses `AchievementBanners` (the unlock banner) and `AchievementList` (the
+achievements screen); the SDK has no banner or list for achievements. `OptionList` and `Typewriter` are not used.
+
+### Lines of game code
+
+| Area | `main` | Now |
+| --- | --- | --- |
+| `games/MeadowRun/**/*.cs` | 7026 | 6985 |
+| `Scenes/Ui.cs` (labels gone, three text helpers added) | 95 | 78 |
+| `Scenes/MapScene.cs` (text caches gone) | 207 | 186 |
+| `Art/Assets.cs` (the clip table: 12 rows and a second table, now 5 rows) | 166 | 156 |
+| `Gameplay/Stage.cs` (a hook for the differential) | 432 | 441 |
+| `tests/MeadowRun.Tests` | 2227 | 2430 |
+| of which the differential | 577 | 798 |
+
+Deleted: `NumberLabel`, `HudLabels`, `Ui.N`, `HudTextTests`, the map's five cache fields, the clip and Pip-clip tables'
+whole-strip rows, three sprite-name tables of `StageView`, four hand-written frame expressions.
+
+### Can Pip move with `CharacterController2D`? On the autopilot and the scripts yes; under random input no
+
+The differential runs from a hook the stage calls before each step of Pip's mover (`Stage.PipSteppingForTesting`),
+so it also covers the walk off the goal and the victory pose, and every stage a play scene creates in a scripted run
+of the game (`MeadowGame.StageCreatedForTesting`). Compared exactly after every step: position, velocity, ground, the
+platform ridden, the jump that can be cut, the coyote, buffer and drop timers, the skid, the events and the block
+bumped. What the stage does to Pip between steps is written as the game would write it (`Position =` and `Launch`
+for a bounce, `Position =` and `Velocity =` at the goal pole). A controller that leaves Pip is left on its own for up
+to 240 steps to see whether it becomes him again.
+
+| Driver | Steps | Different situations | Diverged |
+| --- | --- | --- | --- |
+| Autopilot, five levels (16 attempts) | 94,860 | 6,861 | 0 |
+| The game's nine scripts, as the game runs them (10 stages) | 3,891 | 2,402 | 0 |
+| 62 rules, open loop | | | 0 |
+| Seeded random input, every level, every checkpoint, three forms, alone and mixed with the autopilot (162 attempts) | 137,327 | 87,442 | 6 |
+| The same with 40 seeds (`MEADOW_DIFFERENTIAL_SEEDS=40`, 1,080 attempts) | 841,346 | 485,924 | 27 |
+
+Kinds of step in the 40-seed run: 11,681 jumps, 12,401 landings, 258 landings on a platform, 2,161 steps riding one,
+217 jumps off one, 1,021 head bumps, 15 hidden blocks, 10 corner nudges, 11 drops through a plank, 44 coyote jumps,
+5,480 skids, 10,061 steps rising after a launch (491 launches: stomps, springs, spikes), 263,530 steps of the boss
+fight, 20,815 of the walk off the goal and 1,518 of the victory pose.
+
+Every one of the 27 divergences comes from two constants of the tile physics world, where `TileMotion` (the game's
+mover) stops a box exactly at a surface it would cross and reports nothing else:
+
+| What differs | Count (40 seeds) | Numbers |
+| --- | --- | --- |
+| A wall within `ContactDistance` (0.01 px) that did not stop the move: the controller zeroes the sideways speed, the game keeps it until a move is cut | 21 | Speed lost one step early (7 to 152 px/s); position equal in that step; the same again after 1 step in 19, after 182 steps in 1 (0.0005 px apart), after 176 steps in 1 (2.5 px apart: Pip clears a ledge with his speed, the controller without) |
+| A ceiling within 0.01 px over a head that did not reach it: the controller bounces off it one step early | 2 | Vertical speed +20 against -137 and -167 px/s; 3.8 and 4.5 px apart for 16 and 20 steps; the block is bumped one update early |
+| A move that ends less than `TileSweep.Tolerance` (0.001 px) inside a surface is not stopped | 2 | 0.000019 px into a ceiling for 35 steps; and 0.000015 px into a ceiling beside a wall, which then also takes the sideways speed (152 px/s): 124 px apart, still apart after 240 steps |
+| The last 0.01 px of a landing within reach is never closed | 2 | 0.0063 px above the floor for 92 steps; 0.0042 px for more than 240 |
+
+An earlier run with other seeds also had a floor held by 0.001 px of Pip's width (the game lands, the controller
+falls: 4.6 px apart, still apart after 240 steps). The default run of the test (6 seeds) has 4 of the first kind, 1
+of the second and 1 of the third.
+
+One step in 31,000 (random input) differs, about one every nine minutes of play at 60 updates a second; 4 of the 27
+change where Pip is by more than a pixel, 1 of them for good. No script
+of the game shows it, so its captures and traces would be identical; a player's run would not be, and neither would
+the feel at a wall's edge. By the rule of this pass (delete the mover only at zero apart) Pip keeps his mover.
+
+Two more differences appeared and are the game's to write, not gaps; the shadow writes them and is then identical:
+
+- **The hidden block.** As a shape with the controller's `Solid` rule, 10 of 15 bumps diverged by up to 106 px:
+  the corner correction tries the rise from 1 to 4 px to each side, `Solid` (which asks for Pip's column) answers
+  "not solid" there, and Pip is moved past the block instead of finding it. And `Solid` is asked with the position
+  before the step's sideways move, where the game decides the column after it (1 step in 128,500, 2 px). Written as
+  a rule after the step (the head crossed the underside of a hidden block in its column: `Position =`, then
+  `Launch` with no vertical speed), 15 of 15 are identical.
+- **Air time.** The controller's `AirTime` counts the step of a landing made with `StandOn` (a platform), the game's
+  does not: the landing impact computed from it differs in 132 of 12,659 landings (the land sound's pitch and
+  volume). The game would keep its own count.
+
+### Engine gaps that remain
+
+1. **The tile world is not exact where `TileMotion` is.** A developer moving a classic platformer's character onto
+   `CharacterController2D` cannot keep its feel bit for bit, because `TilePhysicsWorld2D.ContactDistance` (0.01) makes
+   a surface that is near but not reached count as hit: the controller zeroes the speed into a wall and rebounds off
+   a ceiling one step early (`if (Dot(normal, right) * run < 0) run = 0` for any contact, `result.HitCeiling` for any
+   contact above). Missing: the controller acting only on contacts with `Stopped` (the move was cut), or a contact
+   distance of 0 for a world that wants `TileMotion`'s rule.
+2. **A sweep lets a box 0.001 px into a surface** (`TileSweep.Tolerance` with `compatible: false`), and a character
+   within 0.01 px of the floor is "at rest" and never reaches it. Positions differ by less than a hundredth of a
+   pixel for seconds: invisible, but a state trace differs, and a ledge held by a thousandth of a pixel is no ledge.
+3. **Corner correction and `Solid` do not know each other.** A shape that is solid by a rule of position is skirted
+   by the correction's sideways tries. Missing: `Solid` asked once per step for the whole step, or a flag on the
+   predicate's shapes that corner correction does not apply to them; and the predicate told the move it is asked for.
+4. **`StateMachine.Go` from a handler waits.** A simulation whose rules end a phase in the middle of an update and
+   read the phase back at once (`Die()` then `if (Phase != Playing) return` in the same update, five such guards in
+   `Stage`) has to keep its own phase field beside the machine. Missing: a change that applies at once from the
+   state's own update, or `Current` reporting the state a pending `Go` leads to.
+5. **No achievements interface.** The unlock banner and the achievements list are `games/Shared` code in all four
+   demos (197 lines); the SDK has the tracker and no widget.
+6. **`AirTime` after `StandOn`** counts one step more than a landing made by a step (see above).
+7. From the first pass, still open: the time a frame is drawn at (`DrawTime`, gap 12).
+
+### Evidence
+
+- Baseline from a build of `origin/main` (`debaa4a7`), recorded twice: 44 captures, 9 state traces and 9
+  `--audio-capture` WAVs, 62 of 62 identical between the two runs. After each of the four commits: 62 of 62
+  identical to the baseline (captures, traces and audio byte for byte).
+- Saves: the progress file of the previous release (`SaveFormatTests`) given with `--saves` to the build of `main`
+  and to this one, `menus.script`: 4 captures and the trace identical, the trace differs from the run without a
+  save (it was read), the file identical after both runs.
+- The clips: a scratch test compared each new clip with the expression it replaces at ten million draw times (two
+  million accumulated steps, five blends): no difference.
+- Not in a capture, so not looked at: the tally's numbers, the game over score, the level card's lives after a
+  death beyond what `tour.script` shows, the pause menu's second and third rows selected.
+
+### Log
+
+- L7: the first run of the random driver found 6 divergences in 128,500 steps where the autopilot had 0 in 94,285.
+  The autopilot runs along floors and jumps at walls from a distance; random input stops against walls, jumps
+  beside them and turns under blocks, which is where a hundredth of a pixel matters.
+- L8: `HashCode.Combine` seeds differ per process; the random driver's seeds are arithmetic so a run repeats.
+- L9: the question block's clip (durations 0.1, 0.1, 0.1, 0.1, 1.0) and `time % 1.4f` agree because the clip's
+  running total of the durations is exactly `1.4f`.
