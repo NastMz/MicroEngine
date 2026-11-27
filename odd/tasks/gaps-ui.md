@@ -2,7 +2,7 @@
 
 Objective: a developer outside the repository builds a pixel-art menu and a dialogue box from the SDK, with their own
 look, without the 335 lines the demos keep in `games/Shared`. Group D of issue NastMz/MicroEngine#218. Branch
-`feat/gaps-ui`. Delivery: one pull request (about 2,300 authored lines; `ask-on-risk`, the owner decides the slices).
+`feat/gaps-ui`. Delivery: one pull request (about 2,900 authored lines without the generated API pages; `ask-on-risk`, the owner decides the slices).
 Test runner: `dotnet test tests/MicroEngine.Tests -c Release --filter FullyQualifiedName~Interface`,
 `dotnet test tests/Samples.Tests -c Release`. Evaluation: [`docs/evaluations/gaps-ui.md`](../../docs/evaluations/gaps-ui.md).
 Decision: [ADR 0077](../../docs/decisions/0077-interface-on-the-canvas-skins-reveal-and-cursor.md).
@@ -33,10 +33,10 @@ Decision: [ADR 0077](../../docs/decisions/0077-interface-on-the-canvas-skins-rev
 | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
 | T1 Widgets on the canvas (`UiSpace`, `UiRoot.Space`, whole pixels, pointer, `PointerOnUi`) and control skins (`ControlSkin`, `ControlState`, `Button.Skin`, `Button.Padding`, `Panel.Skin`, theme skins, `FocusTime`) | S2 S3 | inline | done | `eb4cd6ef`; RED 6 of 9 and 7 of 7, then GREEN 68/68 UI tests |
-| T2 `TextReveal` and `Label.Reveal`; a label's visible lines cached | S1 S4 S5 | inline | done | `feat(ui): text revealed a character at a time` and the test commit after it; RED 13 of 13, GREEN 82/82 |
-| T3 `MenuCursor` | S1 S5 | inline | done | `feat(ui): a cursor for lists a scene draws itself`; RED 8 of 8, GREEN 90/90 |
-| T4 `PixelMenuExample`, its script and test; the dialogue example on `Label.Reveal`; the title menu's lines as skinned buttons | S5 | inline | done | `feat(examples): a pixel menu and a dialogue box on the canvas`; `Samples.Tests` 119 passed, 5 skipped |
-| T5 Manual, release notes, limits, API pages, evaluation, ADR 0077, this record | S1 S6 | inline | done | the two `docs` commits |
+| T2 `TextReveal` and `Label.Reveal`; a label's visible lines cached | S1 S4 S5 | inline | done | `bc53c60d`, `2e916e63`; RED 13 of 13, GREEN 82/82 |
+| T3 `MenuCursor` | S1 S5 | inline | done | `0ef88cb5`; RED 8 of 8, GREEN 90/90 |
+| T4 `PixelMenuExample`, its script and test; the dialogue example on `Label.Reveal`; the title menu's lines as skinned buttons | S5 | inline | done | `e2fe7d03`; `Samples.Tests` 119 passed, 5 skipped |
+| T5 Manual, release notes, limits, API pages, evaluation, ADR 0077, this record | S1 S6 | inline | done | `7d3583c9`, `7f45c7ba` |
 
 Routes are inline: one writer, one area.
 
