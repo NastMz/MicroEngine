@@ -66,6 +66,7 @@ public sealed class ExamplesGame : Game
         ("Music time (intro, loop, position)", g => new MusicTimeExample()),
         ("Sounds with a place (listener, emitters)", g => new SpatialSoundExample()),
         ("Pixel menu and dialogue (widgets on the canvas)", g => new PixelMenuExample()),
+        ("A cutscene (waiting for tweens)", g => new CutsceneExample()),
 
 
     ];

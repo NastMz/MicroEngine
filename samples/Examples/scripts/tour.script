@@ -255,6 +255,10 @@
 5200 press confirm
 5260 capture 43-pixel-menu.png
 5266 press pause
-5280 quit
+5280 press down
+5290 press confirm
+5360 capture 44-cutscene.png
+5366 press pause
+5380 quit
 
 

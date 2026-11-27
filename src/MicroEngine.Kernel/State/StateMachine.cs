@@ -12,10 +12,11 @@ public interface IStateMachine : IStateHashed
     void Update(float dt);
 }
 
-/// <summary>A machine's state and the seconds it has been in it, to save and restore (<see cref="StateMachine{TState, TEvent}.Restore"/>).</summary>
+/// <summary>A machine's state and how long it has been in it, to save and restore (<see cref="StateMachine{TState, TEvent}.Restore"/>).</summary>
 /// <param name="State">The state.</param>
 /// <param name="Time">Seconds in that state.</param>
-public readonly record struct MachineSnapshot<TState>(TState State, float Time);
+/// <param name="Steps">Updates in that state (<see cref="StateMachine{TState, TEvent}.Steps"/>).</param>
+public readonly record struct MachineSnapshot<TState>(TState State, float Time, int Steps = 0);
 
 /// <summary>A state machine without events: its states change by conditions, by time and by <c>Go</c>.</summary>
 /// <typeparam name="TState">The states, usually an enum.</typeparam>
@@ -28,10 +29,11 @@ public sealed class StateMachine<TState> : StateMachine<TState, NoEvent> where T
 /// <summary>
 /// A state machine for gameplay: a character's moves, an enemy's behaviour, a boss's phases, the flow of a level. Each
 /// state has what runs when it is entered, every step while it lasts and when it is left, and the ways out of it: a
-/// condition checked every step (<c>When</c>), a time in the state (<c>After</c>) or an event the game fires
-/// (<c>On</c>). The machine keeps the seconds spent in the current state, runs on whatever step it is given (so it
-/// follows a scene's clock through slow motion and a hitstop), takes part in the state hash and can be saved and
-/// restored. Stepping and firing allocate nothing.
+/// condition checked every step (<c>When</c>), a time in the state in seconds (<c>After</c>) or in updates
+/// (<c>AfterSteps</c>) or an event the game fires (<c>On</c>). The machine keeps the seconds and the updates spent in
+/// the current state, runs on whatever step it is given (so it follows a scene's clock through slow motion and a
+/// hitstop), needs no scene (the owner of a rule object calls <see cref="Update"/>), takes part in the state hash and
+/// can be saved and restored. Stepping and firing allocate nothing.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -72,7 +74,6 @@ public class StateMachine<TState, TEvent> : IStateMachine
     where TState : notnull
     where TEvent : notnull
 {
-    private const float Epsilon = 1e-5f;
 
     internal sealed class Node(TState? id, int index)
     {
@@ -83,10 +84,13 @@ public class StateMachine<TState, TEvent> : IStateMachine
         public Action<float>? Update;
         public readonly List<Rule> Rules = [];
         public readonly List<EventRule> Events = [];
-        public double EnteredAt;
+        public double EnteredAt;      // on the clock the ways out by time are measured on
+        public double EnteredSum;     // on the plain sum of the steps, which Time reports
+        public long EnteredStep;
+        public bool Restored;         // EnteredAt came from a snapshot's float and waits for the first step
     }
 
-    internal readonly record struct Rule(Func<bool>? When, float After, Node Target);
+    internal readonly record struct Rule(Func<bool>? When, double After, int Steps, Node Target);
     internal readonly record struct EventRule(TEvent Event, Node? Target, Func<bool>? Guard, Action? Action);
     private readonly record struct Request(bool IsEvent, TEvent? Event, Node? Target);
 
@@ -97,7 +101,11 @@ public class StateMachine<TState, TEvent> : IStateMachine
     private readonly EqualityComparer<TEvent> _events = EqualityComparer<TEvent>.Default;
     private Node _current;
     private TState _previous;
-    private double _clock;
+    private StepClock _time;
+    private bool _timed;      // whether the update in progress has time: ways out by time are taken only then
+    private double _clock => _time.Now;
+    private double _sum;      // the steps as given, added up: what Time has always reported
+    private long _steps => _time.Updates;
     private bool _started;
     private bool _busy;
     private int _changes;
@@ -115,8 +123,14 @@ public class StateMachine<TState, TEvent> : IStateMachine
     public TState Current => _current.Id!;
     /// <summary>The state before the latest change; the initial state until the first one.</summary>
     public TState Previous => _previous;
-    /// <summary>Seconds spent in the current state: 0 when it is entered, then the sum of the steps since.</summary>
-    public float Time => (float)(_clock - _current.EnteredAt);
+    /// <summary>
+    /// Seconds spent in the current state: 0 when it is entered, then the sum of the steps since, as they were given. It
+    /// is a number to read, draw and save; leave a state after a time with <c>After</c>, which counts exactly, and not
+    /// by comparing this sum with the time.
+    /// </summary>
+    public float Time => (float)(_sum - _current.EnteredSum);
+    /// <summary>Updates spent in the current state: 0 when it is entered, then one more for every update of more than zero seconds.</summary>
+    public int Steps => (int)(_steps - _current.EnteredStep);
     /// <summary>How many changes of state the machine made.</summary>
     public int Changes => _changes;
     /// <summary>Whether the initial state was entered.</summary>
@@ -147,8 +161,42 @@ public class StateMachine<TState, TEvent> : IStateMachine
     public float TimeIn(TState state)
     {
         for (var node = _current; node is not null; node = node.Parent)
-            if (EqualityComparer<TState>.Default.Equals(node.Id, state)) return (float)(_clock - node.EnteredAt);
+            if (EqualityComparer<TState>.Default.Equals(node.Id, state)) return (float)(_sum - node.EnteredSum);
         return 0;
+    }
+
+    /// <summary>Updates since <paramref name="state"/> was entered while the machine is in it or in one of its parts; 0 otherwise.</summary>
+    public int StepsIn(TState state)
+    {
+        for (var node = _current; node is not null; node = node.Parent)
+            if (EqualityComparer<TState>.Default.Equals(node.Id, state)) return (int)(_steps - node.EnteredStep);
+        return 0;
+    }
+
+    /// <summary>
+    /// Sets the seconds spent in the current state, as if it had been entered that long ago: a head start
+    /// (<c>Go</c> then <c>SetTime</c>), a state held at a moment while something else finishes, a countdown put back.
+    /// Its ways out by time count from the new value; nothing runs. The parents of the state keep their own time, and
+    /// <see cref="Steps"/> does not change.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="seconds"/> is negative or not a number.</exception>
+    public void SetTime(float seconds)
+    {
+        if (!(seconds >= 0) || float.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "A time is zero or more seconds.");
+        _current.EnteredAt = _clock - StepClock.Meant(seconds);
+        _current.EnteredSum = _sum - seconds;
+        _current.Restored = false;
+    }
+
+    /// <summary>
+    /// Sets the updates spent in the current state (<see cref="Steps"/>), as <see cref="SetTime"/> sets its seconds.
+    /// Its ways out by steps count from the new value. The parents of the state keep their own.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is negative.</exception>
+    public void SetSteps(int steps)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(steps);
+        _current.EnteredStep = _steps - steps;
     }
 
     /// <summary>Enters the initial state now (its parents' entries first). Does nothing once started.</summary>
@@ -160,13 +208,20 @@ public class StateMachine<TState, TEvent> : IStateMachine
     }
 
     /// <summary>Advances the machine by one step: see the remarks of <see cref="StateMachine{TState, TEvent}"/>.</summary>
-    /// <param name="dt">The step in seconds; 0 runs the updates and the conditions without moving the time.</param>
+    /// <param name="dt">
+    /// The step in seconds. Zero runs the updates and the conditions without moving the time or the steps, and takes no
+    /// way out by time or by steps; a negative, infinite or not-a-number step is taken as zero.
+    /// </param>
     /// <exception cref="InvalidOperationException">Called from one of the machine's own handlers.</exception>
     public void Update(float dt)
     {
         if (_busy) throw new InvalidOperationException("A state machine cannot be updated from one of its own handlers.");
         Start();
-        _clock += dt;
+        // A step that is no time (zero, negative, infinite, not a number) moves no clock and takes no way out by time.
+        if (StepClock.IsTime(dt)) SettleRestored(dt);
+        _timed = _time.Advance(dt);
+        if (_timed) _sum += dt;
+        else dt = 0;
         int before = _changes;
         _busy = true;
         try { UpdatePath(_current, dt); }
@@ -175,6 +230,22 @@ public class StateMachine<TState, TEvent> : IStateMachine
         // A handler that changed the state already took this step's way out.
         if (_changes != before) return;
         if (FindRule() is { } target) Change(target);
+    }
+
+    /// <summary>
+    /// A snapshot holds the time in a state as a float. When that time is the saved number of updates of the step the
+    /// machine now runs on, to the precision a float has, the state is taken as entered exactly that many updates ago,
+    /// so a restored machine leaves on the update the saved one would have.
+    /// </summary>
+    private void SettleRestored(float dt)
+    {
+        for (var node = _current; node is not null; node = node.Parent)
+        {
+            if (!node.Restored) continue;
+            node.Restored = false;
+            double saved = _clock - node.EnteredAt, counted = (_steps - node.EnteredStep) * StepClock.Counted(dt);
+            if (Math.Abs(counted - saved) <= 1e-6 * Math.Max(1, saved)) node.EnteredAt = _clock - counted;
+        }
     }
 
     private void UpdatePath(Node node, float dt)
@@ -194,7 +265,8 @@ public class StateMachine<TState, TEvent> : IStateMachine
     {
         foreach (var rule in owner.Rules)
         {
-            if (rule.After >= 0 && _clock - timed.EnteredAt < rule.After - Epsilon) continue;
+            if (rule.After >= 0 && (!_timed || _clock - timed.EnteredAt < rule.After - _time.Reach(rule.After))) continue;
+            if (rule.Steps >= 0 && (!_timed || _steps - timed.EnteredStep < rule.Steps)) continue;
             if (rule.When is { } when && !when()) continue;
             return rule.Target;
         }
@@ -254,12 +326,13 @@ public class StateMachine<TState, TEvent> : IStateMachine
         Change(target);
     }
 
-    /// <summary>The current state and its time, to write into a save.</summary>
-    public MachineSnapshot<TState> Snapshot() => new(Current, Time);
+    /// <summary>The current state, its time and its steps, to write into a save.</summary>
+    public MachineSnapshot<TState> Snapshot() => new(Current, Time, Steps);
 
     /// <summary>
-    /// Puts the machine in the state of <paramref name="snapshot"/> with its time, without running any exit or entry: what
-    /// loading a save does. The parents of the state take the same time. The machine counts as started.
+    /// Puts the machine in the state of <paramref name="snapshot"/> with its time and steps, without running any exit or
+    /// entry: what loading a save does. The parents of the state take the same time and steps. The machine counts as
+    /// started, and its ways out by time and by steps are taken on the update the saved machine would have taken them.
     /// </summary>
     /// <exception cref="InvalidOperationException">Called from one of the machine's own handlers.</exception>
     public void Restore(MachineSnapshot<TState> snapshot)
@@ -269,10 +342,16 @@ public class StateMachine<TState, TEvent> : IStateMachine
         _previous = snapshot.State;
         _started = true;
         _waiting.Clear();
-        for (var node = _current; node is not null; node = node.Parent) node.EnteredAt = _clock - snapshot.Time;
+        for (var node = _current; node is not null; node = node.Parent)
+        {
+            node.EnteredAt = _clock - snapshot.Time;
+            node.EnteredSum = _sum - snapshot.Time;
+            node.EnteredStep = _steps - snapshot.Steps;
+            node.Restored = true;
+        }
     }
 
-    /// <summary>Adds the current state (by the order the states were first named) and the time in it and in each of its parents.</summary>
+    /// <summary>Adds the current state (by the order the states were first named) and the time and the steps in it and in each of its parents.</summary>
     public void HashState(StateHasher hash)
     {
         ArgumentNullException.ThrowIfNull(hash);
@@ -280,7 +359,8 @@ public class StateMachine<TState, TEvent> : IStateMachine
         for (var node = _current; node is not null; node = node.Parent)
         {
             hash.Add(node.Index);
-            hash.Add((float)(_clock - node.EnteredAt));
+            hash.Add((float)(_sum - node.EnteredSum));
+            hash.Add(_steps - node.EnteredStep);
         }
     }
 
@@ -322,6 +402,9 @@ public class StateMachine<TState, TEvent> : IStateMachine
         for (int i = _path.Count - 1; i >= start; i--)
         {
             _path[i].EnteredAt = _clock;
+            _path[i].EnteredSum = _sum;
+            _path[i].Restored = false;
+            _path[i].EnteredStep = _steps;
             _path[i].Enter?.Invoke();
         }
         _path.RemoveRange(start, _path.Count - start);
@@ -414,20 +497,39 @@ public class StateMachine<TState, TEvent> : IStateMachine
         public StateConfig When(Func<bool> condition, TState target)
         {
             ArgumentNullException.ThrowIfNull(condition);
-            _node.Rules.Add(new Rule(condition, -1, _machine.NodeOf(target)));
+            _node.Rules.Add(new Rule(condition, -1, -1, _machine.NodeOf(target)));
             return this;
         }
 
         /// <summary>
         /// A way out by time: once the state lasted <paramref name="seconds"/> (and <paramref name="condition"/> is true,
-        /// when given) the machine changes to <paramref name="target"/>. Declared on a parent, the time is the parent's;
-        /// declared on <see cref="Any"/>, the current state's.
+        /// when given) the machine changes to <paramref name="target"/>, on the update on which the time reaches them.
+        /// At a fixed rate of R updates a second that is after exactly <paramref name="seconds"/> x R updates when the
+        /// product is a whole number (1.9 seconds at 60: 114) and after the next whole number otherwise; zero seconds is
+        /// the first update in the state that has time. Declared on a parent, the time is the parent's; declared on
+        /// <see cref="Any"/>, the current state's.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="seconds"/> is negative or not a number.</exception>
         public StateConfig After(float seconds, TState target, Func<bool>? condition = null)
         {
             if (!(seconds >= 0) || float.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds), seconds, "A time is zero or more seconds.");
-            _node.Rules.Add(new Rule(condition, seconds, _machine.NodeOf(target)));
+            _node.Rules.Add(new Rule(condition, StepClock.Meant(seconds), -1, _machine.NodeOf(target)));
+            return this;
+        }
+
+        /// <summary>
+        /// A way out by updates: once the state lasted <paramref name="steps"/> updates (and <paramref name="condition"/>
+        /// is true, when given) the machine changes to <paramref name="target"/>, on that update. It counts updates,
+        /// not time: the length in seconds follows the update rate, slow motion does not stretch it, and an update of
+        /// zero seconds (a frozen world) is not counted. For a game that thinks in frames, and for a hand-kept timer
+        /// moved onto a machine without changing the update it ends on. Declared on a parent, the steps are the
+        /// parent's; declared on <see cref="Any"/>, the current state's.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="steps"/> is negative.</exception>
+        public StateConfig AfterSteps(int steps, TState target, Func<bool>? condition = null)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(steps);
+            _node.Rules.Add(new Rule(condition, -1, steps, _machine.NodeOf(target)));
             return this;
         }
 

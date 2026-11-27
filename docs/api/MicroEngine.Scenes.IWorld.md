@@ -135,6 +135,35 @@ EntityChildren Children(EntityId parent)
 
  [EntityChildren](MicroEngine.Scenes.EntityChildren.md)
 
+### <a id="MicroEngine_Scenes_IWorld_Children__1_MicroEngine_Scenes_EntityId_"></a> Children<T\>\(EntityId\)
+
+The attachments of type <code class="typeparamref">T</code> of the live direct children of <code class="paramref">parent</code>, in the
+order the children were given that parent: the objects of one group (the actors of a room, the pieces of a
+board, the items of a chest). A child without that attachment is skipped. The walk follows the rules of
+[Children](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Children_MicroEngine_Scenes_EntityId_), its enumerator also gives the child's id, and <code>foreach</code> allocates nothing.
+
+```csharp
+ChildAttachments<T> Children<T>(EntityId parent) where T : class
+```
+
+#### Parameters
+
+`parent` [EntityId](MicroEngine.Scenes.EntityId.md)
+
+#### Returns
+
+ [ChildAttachments](MicroEngine.Scenes.ChildAttachments\-1.md)<T\>
+
+#### Type Parameters
+
+`T` 
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+<code class="paramref">parent</code> is stale.
+
 ### <a id="MicroEngine_Scenes_IWorld_Create_MicroEngine_Scenes_EntityId_"></a> Create\(EntityId\)
 
 Creates an entity at [Identity](MicroEngine.Scenes.Transform.md#MicroEngine_Scenes_Transform_Identity), under <code class="paramref">parent</code> when given.

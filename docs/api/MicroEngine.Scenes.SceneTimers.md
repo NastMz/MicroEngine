@@ -6,10 +6,12 @@ Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
 
-Calls actions after a time or at intervals, on the scene's time ([Timers](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Timers)). Timers advance before
-the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) by the step it receives, so they slow down and freeze with the world's clock;
-an unscaled timer advances by [EngineStep](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_EngineStep) instead. They stop with the scene, and their state is
-part of its state hash. For a sequence of steps over time use a coroutine ([Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines)).
+Calls actions after a time or at intervals, on the scene's time ([Timers](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Timers)): the scene's own
+[Timers](MicroEngine.Timers.md), stepped for it. Timers advance before the scene's [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) by the step it
+receives, so they slow down and freeze with the world's clock; an unscaled timer advances by
+[EngineStep](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_EngineStep) instead. They stop with the scene, and their state is part of its state hash. For a
+sequence of steps over time use a coroutine ([Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines)); for the rules of a game kept outside
+a scene, create a [Timers](MicroEngine.Timers.md) and step it yourself.
 
 ```csharp
 public sealed class SceneTimers : SceneSystem, IStateHashed
@@ -74,7 +76,7 @@ public int Count { get; }
 
 ### <a id="MicroEngine_Scenes_SceneTimers_After_System_Single_System_Action_System_Boolean_"></a> After\(float, Action, bool\)
 
-Calls <code class="paramref">action</code> once, <code class="paramref">seconds</code> from now.
+Calls <code class="paramref">action</code> once, <code class="paramref">seconds</code> from now, on the update on which the time reaches them ([Timers](MicroEngine.Timers.md) gives the rule).
 
 ```csharp
 public TimerHandle After(float seconds, Action action, bool unscaled = false)
@@ -96,7 +98,7 @@ True to count the engine's step, so the timer runs through slow motion and a fro
 
 #### Returns
 
- [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
+ [TimerHandle](MicroEngine.TimerHandle.md)
 
 #### Exceptions
 
@@ -104,7 +106,39 @@ True to count the engine's step, so the timer runs through slow motion and a fro
 
 <code class="paramref">seconds</code> is negative or not a number.
 
-### <a id="MicroEngine_Scenes_SceneTimers_Cancel_MicroEngine_Scenes_TimerHandle_"></a> Cancel\(TimerHandle\)
+### <a id="MicroEngine_Scenes_SceneTimers_AfterSteps_System_Int32_System_Action_System_Boolean_"></a> AfterSteps\(int, Action, bool\)
+
+Calls <code class="paramref">action</code> once, on the <code class="paramref">steps</code>-th step of the scene from now; a step of zero seconds (the world frozen) is not counted.
+
+```csharp
+public TimerHandle AfterSteps(int steps, Action action, bool unscaled = false)
+```
+
+#### Parameters
+
+`steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+The delay in steps; 0 and 1 both call it in the scene's next step.
+
+`action` [Action](https://learn.microsoft.com/dotnet/api/system.action)
+
+What to call.
+
+`unscaled` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+True to count every step of the engine, so the timer runs through a frozen world.
+
+#### Returns
+
+ [TimerHandle](MicroEngine.TimerHandle.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">steps</code> is negative.
+
+### <a id="MicroEngine_Scenes_SceneTimers_Cancel_MicroEngine_TimerHandle_"></a> Cancel\(TimerHandle\)
 
 Cancels a timer; false when it already ended or was cancelled. A timer may cancel itself from its action.
 
@@ -114,7 +148,7 @@ public bool Cancel(TimerHandle handle)
 
 #### Parameters
 
-`handle` [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
+`handle` [TimerHandle](MicroEngine.TimerHandle.md)
 
 #### Returns
 
@@ -156,13 +190,49 @@ True to count the engine's step, so the timer runs through slow motion and a fro
 
 #### Returns
 
- [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
+ [TimerHandle](MicroEngine.TimerHandle.md)
 
 #### Exceptions
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
 <code class="paramref">seconds</code> is not above zero, or <code class="paramref">times</code> is negative.
+
+### <a id="MicroEngine_Scenes_SceneTimers_EverySteps_System_Int32_System_Action_System_Int32_System_Boolean_"></a> EverySteps\(int, Action, int, bool\)
+
+Calls <code class="paramref">action</code> every <code class="paramref">steps</code> steps of the scene, the first time that many steps from now.
+
+```csharp
+public TimerHandle EverySteps(int steps, Action action, int times = 0, bool unscaled = false)
+```
+
+#### Parameters
+
+`steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+The interval in steps, above zero.
+
+`action` [Action](https://learn.microsoft.com/dotnet/api/system.action)
+
+What to call.
+
+`times` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+How many calls before the timer ends; 0 (the default) repeats until it is cancelled.
+
+`unscaled` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+True to count every step of the engine, so the timer runs through a frozen world.
+
+#### Returns
+
+ [TimerHandle](MicroEngine.TimerHandle.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">steps</code> is not above zero, or <code class="paramref">times</code> is negative.
 
 ### <a id="MicroEngine_Scenes_SceneTimers_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
@@ -178,7 +248,7 @@ public override void HashState(StateHasher hash)
 
 `hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
-### <a id="MicroEngine_Scenes_SceneTimers_IsActive_MicroEngine_Scenes_TimerHandle_"></a> IsActive\(TimerHandle\)
+### <a id="MicroEngine_Scenes_SceneTimers_IsActive_MicroEngine_TimerHandle_"></a> IsActive\(TimerHandle\)
 
 Whether <code class="paramref">handle</code> names a timer that is still waiting.
 
@@ -188,11 +258,27 @@ public bool IsActive(TimerHandle handle)
 
 #### Parameters
 
-`handle` [TimerHandle](MicroEngine.Scenes.TimerHandle.md)
+`handle` [TimerHandle](MicroEngine.TimerHandle.md)
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Scenes_SceneTimers_Remaining_MicroEngine_TimerHandle_"></a> Remaining\(TimerHandle\)
+
+What is left before the next call of a timer, in seconds or in steps as it was added; 0 when it ended or was cancelled.
+
+```csharp
+public float Remaining(TimerHandle handle)
+```
+
+#### Parameters
+
+`handle` [TimerHandle](MicroEngine.TimerHandle.md)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Scenes_SceneTimers_Stop"></a> Stop\(\)
 

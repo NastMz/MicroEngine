@@ -223,3 +223,60 @@ public readonly struct EntityChildren : IEnumerable<EntityId>
         public readonly void Dispose() { }
     }
 }
+
+/// <summary>
+/// The attachments of type <typeparamref name="T"/> of an entity's live direct children, in parenting order
+/// (<see cref="IWorld.Children{T}"/>).
+/// </summary>
+public readonly struct ChildAttachments<T> : IEnumerable<T> where T : class
+{
+    private readonly SceneWorld _world;
+    private readonly int _parent;
+    private readonly AttachmentStore<T>? _store;
+
+    internal ChildAttachments(SceneWorld world, int parent, AttachmentStore<T>? store) => (_world, _parent, _store) = (world, parent, store);
+
+    /// <summary>Starts a walk over the children the entity has now.</summary>
+    public Enumerator GetEnumerator() => new(_world, _parent, _store);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>Walks the attachments; allocates nothing.</summary>
+    public struct Enumerator : IEnumerator<T>
+    {
+        private readonly AttachmentStore<T>? _store;
+        private EntityChildren.Enumerator _children;
+
+        internal Enumerator(SceneWorld world, int parent, AttachmentStore<T>? store)
+        {
+            _store = store;
+            _children = new EntityChildren.Enumerator(world, parent);
+            Current = null!;
+        }
+
+        /// <summary>The current attachment.</summary>
+        public T Current { get; private set; }
+        /// <summary>The child <see cref="Current"/> is attached to.</summary>
+        public readonly EntityId Entity => _children.Current;
+        readonly object IEnumerator.Current => Current;
+
+        /// <summary>Moves to the next live child that has the attachment.</summary>
+        /// <exception cref="InvalidOperationException">An entity changed parent since the walk started.</exception>
+        public bool MoveNext()
+        {
+            // The hierarchy is checked even when no entity has the attachment, so a mistake shows in every case.
+            while (_children.MoveNext())
+            {
+                if (_store is null || !_store.TryGet((int)_children.Current.Index, out var found)) continue;
+                Current = found;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Starts over.</summary>
+        public void Reset() => _children.Reset();
+        /// <summary>Nothing to release.</summary>
+        public readonly void Dispose() { }
+    }
+}

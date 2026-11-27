@@ -64,6 +64,14 @@ public interface IWorld
     /// allocates nothing. A child created during the walk is visited by the next one; re-parenting during it throws.
     /// </summary>
     EntityChildren Children(EntityId parent);
+    /// <summary>
+    /// The attachments of type <typeparamref name="T"/> of the live direct children of <paramref name="parent"/>, in the
+    /// order the children were given that parent: the objects of one group (the actors of a room, the pieces of a
+    /// board, the items of a chest). A child without that attachment is skipped. The walk follows the rules of
+    /// <see cref="Children(EntityId)"/>, its enumerator also gives the child's id, and <c>foreach</c> allocates nothing.
+    /// </summary>
+    /// <exception cref="InvalidOperationException"><paramref name="parent"/> is stale.</exception>
+    ChildAttachments<T> Children<T>(EntityId parent) where T : class;
 
     /// <summary>The transform relative to the parent, by reference (write through it).</summary>
     ref Transform Local(EntityId entity);

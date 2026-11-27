@@ -8,10 +8,11 @@ Guide: [Graphics](../manual/rendering.md)
 
 A state machine for gameplay: a character's moves, an enemy's behaviour, a boss's phases, the flow of a level. Each
 state has what runs when it is entered, every step while it lasts and when it is left, and the ways out of it: a
-condition checked every step (<code>When</code>), a time in the state (<code>After</code>) or an event the game fires
-(<code>On</code>). The machine keeps the seconds spent in the current state, runs on whatever step it is given (so it
-follows a scene's clock through slow motion and a hitstop), takes part in the state hash and can be saved and
-restored. Stepping and firing allocate nothing.
+condition checked every step (<code>When</code>), a time in the state in seconds (<code>After</code>) or in updates
+(<code>AfterSteps</code>) or an event the game fires (<code>On</code>). The machine keeps the seconds and the updates spent in
+the current state, runs on whatever step it is given (so it follows a scene's clock through slow motion and a
+hitstop), needs no scene (the owner of a rule object calls `Update`), takes part in the state hash and
+can be saved and restored. Stepping and firing allocate nothing.
 
 ```csharp
 public class StateMachine<TState, TEvent> : IStateMachine, IStateHashed where TState : notnull where TEvent : notnull
@@ -148,6 +149,18 @@ public TState Previous { get; }
 
  TState
 
+### <a id="MicroEngine_StateMachine_2_Steps"></a> Steps
+
+Updates spent in the current state: 0 when it is entered, then one more for every update of more than zero seconds.
+
+```csharp
+public int Steps { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_StateMachine_2_ThrowOnUnhandled"></a> ThrowOnUnhandled
 
 When true, an event nothing takes throws `InvalidOperationException` instead of being ignored. False by default.
@@ -162,7 +175,9 @@ public bool ThrowOnUnhandled { get; set; }
 
 ### <a id="MicroEngine_StateMachine_2_Time"></a> Time
 
-Seconds spent in the current state: 0 when it is entered, then the sum of the steps since.
+Seconds spent in the current state: 0 when it is entered, then the sum of the steps since, as they were given. It
+is a number to read, draw and save; leave a state after a time with <code>After</code>, which counts exactly, and not
+by comparing this sum with the time.
 
 ```csharp
 public float Time { get; }
@@ -216,7 +231,7 @@ public void Go(TState state)
 
 ### <a id="MicroEngine_StateMachine_2_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
-Adds the current state (by the order the states were first named) and the time in it and in each of its parents.
+Adds the current state (by the order the states were first named) and the time and the steps in it and in each of its parents.
 
 ```csharp
 public void HashState(StateHasher hash)
@@ -244,8 +259,9 @@ public bool IsIn(TState state)
 
 ### <a id="MicroEngine_StateMachine_2_Restore_MicroEngine_MachineSnapshot__0__"></a> Restore\(MachineSnapshot<TState\>\)
 
-Puts the machine in the state of <code class="paramref">snapshot</code> with its time, without running any exit or entry: what
-loading a save does. The parents of the state take the same time. The machine counts as started.
+Puts the machine in the state of <code class="paramref">snapshot</code> with its time and steps, without running any exit or
+entry: what loading a save does. The parents of the state take the same time and steps. The machine counts as
+started, and its ways out by time and by steps are taken on the update the saved machine would have taken them.
 
 ```csharp
 public void Restore(MachineSnapshot<TState> snapshot)
@@ -261,9 +277,49 @@ public void Restore(MachineSnapshot<TState> snapshot)
 
 Called from one of the machine's own handlers.
 
+### <a id="MicroEngine_StateMachine_2_SetSteps_System_Int32_"></a> SetSteps\(int\)
+
+Sets the updates spent in the current state (`Steps`), as `SetTime` sets its seconds.
+Its ways out by steps count from the new value. The parents of the state keep their own.
+
+```csharp
+public void SetSteps(int steps)
+```
+
+#### Parameters
+
+`steps` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">steps</code> is negative.
+
+### <a id="MicroEngine_StateMachine_2_SetTime_System_Single_"></a> SetTime\(float\)
+
+Sets the seconds spent in the current state, as if it had been entered that long ago: a head start
+(<code>Go</code> then <code>SetTime</code>), a state held at a moment while something else finishes, a countdown put back.
+Its ways out by time count from the new value; nothing runs. The parents of the state keep their own time, and
+`Steps` does not change.
+
+```csharp
+public void SetTime(float seconds)
+```
+
+#### Parameters
+
+`seconds` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">seconds</code> is negative or not a number.
+
 ### <a id="MicroEngine_StateMachine_2_Snapshot"></a> Snapshot\(\)
 
-The current state and its time, to write into a save.
+The current state, its time and its steps, to write into a save.
 
 ```csharp
 public MachineSnapshot<TState> Snapshot()
@@ -297,6 +353,22 @@ public StateMachine<TState, TEvent>.StateConfig State(TState state)
 
  [StateMachine](MicroEngine.StateMachine\-2.md)<TState, TEvent\>.[StateConfig](MicroEngine.StateMachine\-2.StateConfig.md)
 
+### <a id="MicroEngine_StateMachine_2_StepsIn__0_"></a> StepsIn\(TState\)
+
+Updates since <code class="paramref">state</code> was entered while the machine is in it or in one of its parts; 0 otherwise.
+
+```csharp
+public int StepsIn(TState state)
+```
+
+#### Parameters
+
+`state` TState
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_StateMachine_2_TimeIn__0_"></a> TimeIn\(TState\)
 
 Seconds since <code class="paramref">state</code> was entered while the machine is in it or in one of its parts; 0 otherwise.
@@ -325,7 +397,8 @@ public void Update(float dt)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-The step in seconds; 0 runs the updates and the conditions without moving the time.
+The step in seconds. Zero runs the updates and the conditions without moving the time or the steps, and takes no
+way out by time or by steps; a negative, infinite or not-a-number step is taken as zero.
 
 #### Exceptions
 

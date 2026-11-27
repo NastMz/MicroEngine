@@ -6,6 +6,33 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## Next release
 
+### Time: tweens a cutscene waits for, timers and machines outside a scene, exact and countable times
+
+- **A coroutine waits for a tween.** `Tweens.Add` returns the `Tween`; `yield return Tweens.Add(0.9f, apply, ease)`
+  goes on in the update the tween applies its final value. The tween has `IsFinished`, `Progress`, `Cancel()` (stop
+  where it is), `Complete()` (jump to the end and call `done`) and `Bind(Objects, entity)` (cancel when the entity is
+  destroyed) ([Tweens](../manual/scenes.md#tweens)).
+- **A tween holds its starting value from the moment it is added**, so what it moves is never drawn for a frame where
+  it was, and it advances from the next update wherever it was added. A scene advances its tweens before its
+  coroutines. A tween replaces the loop `for (t = 0; t < seconds; t += step)` value for value on every update.
+- **`scaled: true`** makes a tween follow the world's clock (slow motion, hitstop); the default keeps the engine's.
+- **Lengths in updates**: `Tweens.AddSteps`, `Wait.Steps`, `Timers.AfterSteps`, `Timers.EverySteps`,
+  `StateMachine.AfterSteps`, with `Steps`, `StepsIn` and `SetSteps` on a machine, for a game that thinks in frames and
+  for moving hand-kept timers onto the engine without changing the update anything happens on.
+- **`Timers`** is a class a plain object owns and steps (`new Timers()`, `Update(dt)`, `hash.Add(timers)`), for rules
+  kept outside a scene; `Scene.Timers` is the same thing stepped by the scene
+  ([Timers outside a scene](../manual/scenes.md#timers-outside-a-scene)). `Remaining(handle)` says what is left.
+- **Times in seconds follow a rule that can be worked out**, on timers and on machines: `seconds` at R updates a
+  second is `seconds x R` updates when that is a whole number, the next whole number otherwise, at any rate up to 1000
+  updates a second, for times of a day and wherever in a run they start. A timer every second is called on every R-th
+  update for a day. An update of zero seconds makes nothing happen by time, and a step that is not a time is taken as
+  zero ([When a timer is called](../manual/scenes.md#when-a-timer-is-called),
+  [Time in a state](state-machines.md#time-in-a-state)).
+- **`StateMachine.SetTime(seconds)`** sets the time already spent in the current state: a head start, or a state held
+  while something else finishes. `MachineSnapshot` carries the steps too.
+- **`Objects.Children<T>(parent)`** walks the attachments of a type among an entity's children, without allocating:
+  the actors of a room, the pieces of a board ([The scene world](../manual/scenes.md#the-scene-world)).
+- Example: "A cutscene" in the examples ([focused examples](../examples/focused.md#a-cutscene)).
 ### Interface: widgets on the canvas, skins, text that reveals itself and a list cursor
 
 - **Widgets on the game's canvas.** `Widgets.Space = UiSpace.Canvas` puts a scene's widgets on the canvas: laid out

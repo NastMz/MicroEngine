@@ -7,7 +7,8 @@ Assembly: MicroEngine.dll
 Guide: [Scenes](../manual/scenes.md)  
 
 Runs iterator-based sequences one step per update. A coroutine may yield null (next update),
-[Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_), [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__) or another IEnumerator (awaited as a sub-routine).
+[Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_), [Steps](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Steps_System_Int32_), [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__), a [Tween](MicroEngine.Scenes.Tween.md) (until it
+ends) or another IEnumerator (awaited as a sub-routine).
 Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 
 ```csharp
@@ -50,8 +51,9 @@ public int Count { get; }
 ### <a id="MicroEngine_Scenes_CoroutineRunner_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
 Adds the runner's state to the per-step state hash: for each coroutine, running or waiting to start, its nesting
-depth, the seconds left to wait and whether it waits for a condition. The iterators' own variables are not visible
-to it; a scene adds the state its coroutines change from its own [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_).
+depth, the seconds and the updates left to wait and whether it waits for a condition or a tween. The iterators'
+own variables are not visible to it; a scene adds the state its coroutines change from its own
+[HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_).
 
 ```csharp
 public void HashState(StateHasher hash)
@@ -113,6 +115,6 @@ Elapsed time in seconds, consumed by [Seconds](MicroEngine.Scenes.Wait.md#MicroE
 
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
-A coroutine yielded a value other than null, a wait instruction or an `IEnumerator`.
+A coroutine yielded a value other than null, a wait instruction, a tween or an `IEnumerator`.
 
 </div>
