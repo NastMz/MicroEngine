@@ -36,6 +36,8 @@ TexturePacker, Free Texture Packer and Aseprite (hash or array of frames; Asepri
 Starling/Sparrow XML of TexturePacker, ShoeBox and Kenney's packs. Trimmed frames keep their place in the untrimmed
 frame; frames the JSON says are rotated are marked ([Rotated](MicroEngine.Graphics.AtlasRegion.md#MicroEngine_Graphics_AtlasRegion_Rotated)) and turned upright when the
 atlas is loaded with its image; rotated frames of the XML format are refused (turn rotation off in the tool).
+Aseprite's slices (<code>meta.slices</code>) become data of the frames: each slice a box of its name on the frames it
+covers, and its pivot a point of the same name.
 
  [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)
 
@@ -147,7 +149,8 @@ gets one from its assets (<code>Assets.Material("shaders/water.frag.shader")</co
 
 Sprites packed into one picture by [Pack](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Pack_System_Boolean_System_Boolean_), without a graphics device: the picture,
 where each sprite lies in it, and the clips. [ToJson](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_ToJson_System_String_) writes the description packing tools write, so the
-pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>.
+pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>. The frames' points and boxes are written
+with each frame and read back.
 
  [ParallaxLayer](MicroEngine.Graphics.ParallaxLayer.md)
 
@@ -283,6 +286,13 @@ exposes them by name. Keeps draw calls batched and art code independent of layou
 Named sprites packed into one texture, built by [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__). The atlas owns the texture:
 dispose the atlas (usually in <code>Game.Unload</code>) when its sprites are no longer drawn.
 
+ [SpriteEffects](MicroEngine.Graphics.SpriteEffects.md)
+
+One-shot sprite animations: "play this clip once here, after a delay, mirrored, tinted, then go away". Impacts,
+puffs of smoke, sparkles and explosions are each one call, with no object to keep and nothing to remove. A scene
+has one in <code>Scene.Effects</code>, stepped and cleared with the scene; a game whose rules live outside a scene makes
+its own and calls [Update](MicroEngine.Graphics.SpriteEffects.md#MicroEngine_Graphics_SpriteEffects_Update_System_Single_).
+
  [SpriteSheet](MicroEngine.Graphics.SpriteSheet.md)
 
 Frames and clips read from a description of sprite sheets, as pixels: what an artist's tool or a <code>.sheet</code> file
@@ -321,6 +331,13 @@ What trimming cut from a sprite: where the kept pixels lay in the whole image, a
 
 The settings of one batch, from [Begin](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Begin_MicroEngine_Graphics_BatchSettings__) to [End](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_End).
 
+ [CachedText<TKey\>](MicroEngine.Graphics.CachedText\-1.md)
+
+A text built from a value and built again only when the value changes: for text that cannot be written as an
+interpolated string where it is drawn (a localized message with a number in it, a wrapped paragraph, a text a
+widget keeps). While the value stays the same, [Get](MicroEngine.Graphics.md) returns the same string and allocates nothing; a
+change costs one call of the format.
+
  [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
 
 Per-draw sprite options. Origin is in source pixels and is also the rotation pivot.
@@ -330,6 +347,12 @@ Per-draw sprite options. Origin is in source pixels and is also the rotation piv
 What a renderer draws with between [PushState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushState_MicroEngine_Graphics_DrawState__) and [PopState](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopState): a blend
 state, a sampler and a material. A part left null keeps what the renderer was drawing with, so a state names only
 what it changes.
+
+ [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+Text built from an interpolated string without making a string: where a font, a sprite atlas or another engine call
+takes an [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md), <code>$"{hp}/{max}"</code> is written into a buffer the engine reuses, drawn or
+looked up, and the buffer goes back, so a number shown every frame makes no garbage.
 
  [MaterialFallback](MicroEngine.Graphics.MaterialFallback.md)
 
@@ -361,6 +384,20 @@ Deterministic counts of the last batch ([Statistics](MicroEngine.Graphics.IRende
  [ShapedGlyph](MicroEngine.Graphics.ShapedGlyph.md)
 
 One glyph of a shaped line.
+
+ [SpriteBox](MicroEngine.Graphics.SpriteBox.md)
+
+A named rectangle of a frame: a hit box, a hurt box, the part that is solid. Written in a <code>.sheet</code> file
+(<code>"boxes": { "hit": [10, 2, 6, 4] }</code>) or drawn in Aseprite as a slice.
+
+ [SpriteEffect](MicroEngine.Graphics.SpriteEffect.md)
+
+An effect played by [Play](MicroEngine.Graphics.SpriteEffects.md#MicroEngine_Graphics_SpriteEffects_Play_MicroEngine_Graphics_AnimationClip_System_Numerics_Vector2_System_Single_System_Boolean_System_Nullable_MicroEngine_Color__System_Nullable_System_Single__System_Int32_System_Single_): asks whether it still plays, moves it or stops it. The default value is no effect.
+
+ [SpritePoint](MicroEngine.Graphics.SpritePoint.md)
+
+A named point of a frame: a shoulder, a gun tip, where a hat sits. Written in a <code>.sheet</code> file
+(<code>"points": { "muzzle": [14, 3] }</code>) or drawn in Aseprite as the pivot of a slice.
 
 ### Interfaces
 

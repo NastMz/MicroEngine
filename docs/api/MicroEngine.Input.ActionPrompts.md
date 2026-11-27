@@ -179,6 +179,31 @@ public static string ButtonName(PadButton button, GamepadStyle style = GamepadSt
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Input_ActionPrompts_Cached_System_String_"></a> Cached\(string\)
+
+The text [Format](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Format_System_String_System_Func_MicroEngine_Input_ActionPrompt_System_String__) gives for <code class="paramref">template</code>, built once and kept until
+[Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) moves (another device, another pad family, a label, [Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate)): a hint drawn
+every frame costs a lookup and makes no garbage. <code>Cached("{jump}")</code> is the kept form of
+[Text](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Text_System_String_System_Nullable_MicroEngine_Input_InputDevice__).
+
+```csharp
+public string Cached(string template)
+```
+
+#### Parameters
+
+`template` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Remarks
+
+Code that changes what an action is bound to while the game runs (a rebinding screen) calls
+[Invalidate](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Invalidate) afterwards, as for any text laid out once. At most 256 templates are kept; a game that
+builds templates as it goes gets the oldest ones built again.
+
 ### <a id="MicroEngine_Input_ActionPrompts_Directions_System_String_System_String_System_String_System_String_System_Nullable_MicroEngine_Input_InputDevice__System_String_"></a> Directions\(string?, string?, string?, string?, InputDevice?, string?\)
 
 How to show a group of directions together ("move"): on a keyboard the first key of each ("←→↑↓", "WASD"), on a

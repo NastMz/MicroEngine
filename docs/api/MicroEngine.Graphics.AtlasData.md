@@ -11,6 +11,8 @@ TexturePacker, Free Texture Packer and Aseprite (hash or array of frames; Asepri
 Starling/Sparrow XML of TexturePacker, ShoeBox and Kenney's packs. Trimmed frames keep their place in the untrimmed
 frame; frames the JSON says are rotated are marked ([Rotated](MicroEngine.Graphics.AtlasRegion.md#MicroEngine_Graphics_AtlasRegion_Rotated)) and turned upright when the
 atlas is loaded with its image; rotated frames of the XML format are refused (turn rotation off in the tool).
+Aseprite's slices (<code>meta.slices</code>) become data of the frames: each slice a box of its name on the frames it
+covers, and its pivot a point of the same name.
 
 ```csharp
 public sealed class AtlasData

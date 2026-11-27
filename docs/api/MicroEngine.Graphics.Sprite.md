@@ -55,6 +55,18 @@ Sprites usually come from a [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md), 
 
 ## Properties
 
+### <a id="MicroEngine_Graphics_Sprite_Boxes"></a> Boxes
+
+The named boxes of the frame, in its own pixels from its top-left corner; empty when its sheet gives none.
+
+```csharp
+public IReadOnlyList<SpriteBox> Boxes { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpriteBox](MicroEngine.Graphics.SpriteBox.md)\>
+
 ### <a id="MicroEngine_Graphics_Sprite_Height"></a> Height
 
 Height of the sprite in pixels.
@@ -78,6 +90,18 @@ public Vector2 Origin { get; init; }
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_Sprite_Points"></a> Points
+
+The named points of the frame, in its own pixels from its top-left corner; empty when its sheet gives none.
+
+```csharp
+public IReadOnlyList<SpritePoint> Points { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpritePoint](MicroEngine.Graphics.SpritePoint.md)\>
 
 ### <a id="MicroEngine_Graphics_Sprite_Source"></a> Source
 
@@ -126,6 +150,35 @@ public Sprite <Clone>$()
 #### Returns
 
  [Sprite](MicroEngine.Graphics.Sprite.md)
+
+### <a id="MicroEngine_Graphics_Sprite_Box_System_String_System_Boolean_"></a> Box\(string, bool\)
+
+The box named <code class="paramref">name</code>, measured from the sprite's anchor: moved by the position the sprite is
+drawn at, it is the rectangle of the picture the sheet marked (a hit box, a hurt box).
+
+```csharp
+public RectF Box(string name, bool flipX = false)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The box's name in the sheet.
+
+`flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the sprite is drawn mirrored: the box changes side around the anchor with it.
+
+#### Returns
+
+ [RectF](MicroEngine.RectF.md)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The frame has no such box; ask with [TryBox](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_TryBox_System_String_MicroEngine_RectF__System_Boolean_).
 
 ### <a id="MicroEngine_Graphics_Sprite_Deconstruct_MicroEngine_Graphics_Texture__MicroEngine_RectF__System_Numerics_Vector2__"></a> Deconstruct\(out Texture, out RectF, out Vector2\)
 
@@ -179,6 +232,35 @@ public override int GetHashCode()
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Graphics_Sprite_Point_System_String_System_Boolean_"></a> Point\(string, bool\)
+
+The point named <code class="paramref">name</code>, measured from the sprite's anchor: add it to the position the sprite is
+drawn at and it is where that point of the picture appears (a muzzle, a hand, a shoulder).
+
+```csharp
+public Vector2 Point(string name, bool flipX = false)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+The point's name in the sheet.
+
+`flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the sprite is drawn mirrored: the point is mirrored around the anchor with it.
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Exceptions
+
+ [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
+
+The frame has no such point; ask with [TryPoint](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_TryPoint_System_String_System_Numerics_Vector2__System_Boolean_).
+
 ### <a id="MicroEngine_Graphics_Sprite_ToString"></a> ToString\(\)
 
 ```csharp
@@ -188,6 +270,46 @@ public override string ToString()
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Graphics_Sprite_TryBox_System_String_MicroEngine_RectF__System_Boolean_"></a> TryBox\(string, out RectF, bool\)
+
+The box named <code class="paramref">name</code> as [Box](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_Box_System_String_System_Boolean_) gives it, or false when the frame has none.
+
+```csharp
+public bool TryBox(string name, out RectF box, bool flipX = false)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`box` [RectF](MicroEngine.RectF.md)
+
+`flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Graphics_Sprite_TryPoint_System_String_System_Numerics_Vector2__System_Boolean_"></a> TryPoint\(string, out Vector2, bool\)
+
+The point named <code class="paramref">name</code> as [Point](MicroEngine.Graphics.Sprite.md#MicroEngine_Graphics_Sprite_Point_System_String_System_Boolean_) gives it, or false when the frame has none.
+
+```csharp
+public bool TryPoint(string name, out Vector2 point, bool flipX = false)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ## Operators
 

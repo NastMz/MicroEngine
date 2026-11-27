@@ -112,6 +112,21 @@ public CoroutineRunner Coroutines { get; }
 
  [CoroutineRunner](MicroEngine.Scenes.CoroutineRunner.md)
 
+### <a id="MicroEngine_Scenes_Scene_Effects"></a> Effects
+
+The scene's one-shot sprite effects ([SpriteEffects](MicroEngine.Graphics.SpriteEffects.md)), a system added the first time it is
+read: <code>Effects.Play(clip, at)</code> plays a clip once there and removes it, the scene steps it before
+[Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) and drops it when the scene leaves; draw them with <code>Effects.Draw(renderer)</code>. Read it
+first outside drawing.
+
+```csharp
+public SpriteEffects Effects { get; }
+```
+
+#### Property Value
+
+ [SpriteEffects](MicroEngine.Graphics.SpriteEffects.md)
+
 ### <a id="MicroEngine_Scenes_Scene_EngineStep"></a> EngineStep
 
 The engine's step in seconds (<code>1 / UpdateRate</code>): the step of the current update before the world's clock

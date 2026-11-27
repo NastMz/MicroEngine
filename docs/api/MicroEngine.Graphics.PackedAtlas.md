@@ -8,7 +8,8 @@ Guide: [Graphics](../manual/rendering.md)
 
 Sprites packed into one picture by [Pack](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Pack_System_Boolean_System_Boolean_), without a graphics device: the picture,
 where each sprite lies in it, and the clips. [ToJson](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_ToJson_System_String_) writes the description packing tools write, so the
-pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>.
+pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>. The frames' points and boxes are written
+with each frame and read back.
 
 ```csharp
 public sealed record PackedAtlas : IEquatable<PackedAtlas>
@@ -29,7 +30,8 @@ public sealed record PackedAtlas : IEquatable<PackedAtlas>
 
 Sprites packed into one picture by [Pack](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Pack_System_Boolean_System_Boolean_), without a graphics device: the picture,
 where each sprite lies in it, and the clips. [ToJson](MicroEngine.Graphics.PackedAtlas.md#MicroEngine_Graphics_PackedAtlas_ToJson_System_String_) writes the description packing tools write, so the
-pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>.
+pair (a PNG and a JSON file) is an ordinary atlas for <code>Assets.Atlas</code>. The frames' points and boxes are written
+with each frame and read back.
 
 ```csharp
 public PackedAtlas(PixelImage Image, IReadOnlyList<AtlasRegion> Regions, IReadOnlyList<SheetClip> Clips)

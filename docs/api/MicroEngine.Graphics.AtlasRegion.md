@@ -53,6 +53,18 @@ turned rectangle as it lies in the image, and <code class="paramref">Origin</cod
 
 ## Properties
 
+### <a id="MicroEngine_Graphics_AtlasRegion_Boxes"></a> Boxes
+
+The frame's named boxes, in the rectangle's pixels (of the upright frame); null when the file gives none.
+
+```csharp
+public IReadOnlyList<SpriteBox>? Boxes { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpriteBox](MicroEngine.Graphics.SpriteBox.md)\>?
+
 ### <a id="MicroEngine_Graphics_AtlasRegion_Duration"></a> Duration
 
 How long the frame shows in an animation, in seconds, when the tool wrote it (Aseprite).
@@ -89,6 +101,18 @@ public Vector2 Origin { get; init; }
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_AtlasRegion_Points"></a> Points
+
+The frame's named points, in the rectangle's pixels (of the upright frame); null when the file gives none.
+
+```csharp
+public IReadOnlyList<SpritePoint>? Points { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[SpritePoint](MicroEngine.Graphics.SpritePoint.md)\>?
 
 ### <a id="MicroEngine_Graphics_AtlasRegion_Rotated"></a> Rotated
 

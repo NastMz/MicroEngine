@@ -73,6 +73,25 @@ public float Size { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Graphics_ShapedFontSize_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_InterpolatedText_System_Numerics_Vector2_MicroEngine_Color_"></a> Draw\(IRenderer, InterpolatedText, Vector2, Color\)
+
+Draws an interpolated string (<code>$"{hp}/{max}"</code>), which is written into a reused buffer instead of a string:
+a number drawn every frame makes no garbage.
+
+```csharp
+public void Draw(IRenderer renderer, InterpolatedText text, Vector2 position, Color color)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Graphics_ShapedFontSize_Draw_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_"></a> Draw\(IRenderer, string, Vector2, Color\)
 
 Draws <code class="paramref">text</code> with its top-left at <code class="paramref">position</code>, in <code class="paramref">color</code>.
@@ -86,6 +105,26 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color)
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`color` [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Graphics_ShapedFontSize_Draw_MicroEngine_Graphics_IRenderer_System_ReadOnlySpan_System_Char__System_Numerics_Vector2_MicroEngine_Color_"></a> Draw\(IRenderer, ReadOnlySpan<char\>, Vector2, Color\)
+
+Draws <code class="paramref">text</code>, as [Draw](MicroEngine.Graphics.IFont.md#MicroEngine_Graphics_IFont_Draw_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_), for text that is not a
+string. The engine's fonts draw it without allocating; a font of another kind that does not write this member
+draws a copy of the text as a string.
+
+```csharp
+public void Draw(IRenderer renderer, ReadOnlySpan<char> text, Vector2 position, Color color)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -119,6 +158,40 @@ public Vector2 Measure(string text)
 #### Parameters
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_ShapedFontSize_Measure_System_ReadOnlySpan_System_Char__"></a> Measure\(ReadOnlySpan<char\>\)
+
+Size of <code class="paramref">text</code>, as [Measure](MicroEngine.Graphics.IFont.md#MicroEngine_Graphics_IFont_Measure_System_String_), for text that is not a string (a buffer a
+number was written into). The engine's fonts measure it without allocating; a font of another kind that does not
+write this member measures a copy of the text as a string.
+
+```csharp
+public Vector2 Measure(ReadOnlySpan<char> text)
+```
+
+#### Parameters
+
+`text` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>
+
+#### Returns
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_ShapedFontSize_Measure_MicroEngine_Graphics_InterpolatedText_"></a> Measure\(InterpolatedText\)
+
+Size of an interpolated string (<code>$"{score}"</code>), which is written into a reused buffer instead of a string.
+
+```csharp
+public Vector2 Measure(InterpolatedText text)
+```
+
+#### Parameters
+
+`text` [InterpolatedText](MicroEngine.Graphics.InterpolatedText.md)
 
 #### Returns
 
