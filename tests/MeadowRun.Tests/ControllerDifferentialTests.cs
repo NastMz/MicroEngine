@@ -6,10 +6,10 @@ using MeadowRun.Gameplay;
 namespace MeadowRun.Tests;
 
 /// <summary>
-/// Measures how far the engine's character controller is from Pip's own mover: both are driven with the same input over
-/// the game's levels and over one small stage per movement rule, and every step is compared exactly. The measurement is
-/// the evidence for keeping the game's mover (odd/tasks/demo-modern-1/meadow-run.md); the tests fail only if the
-/// measurement itself stops working. Set MEADOW_DIFFERENTIAL_REPORT to a file path to get the full report.
+/// Proves that the engine's character controller moves Pip as his own mover does: both are driven with the same input
+/// over the game's levels and over one small stage per movement rule, and every step is compared exactly (position,
+/// velocity, ground). The tests fail on the first step that differs. Set MEADOW_DIFFERENTIAL_REPORT to a file path to
+/// get the full report.
 /// </summary>
 [TestClass]
 public sealed class ControllerDifferentialTests
@@ -30,11 +30,8 @@ public sealed class ControllerDifferentialTests
     /// and the controller shadows it step by step; whenever it leaves Pip it is put back on him.
     /// </summary>
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public void TheControllerShadowsPipOverEveryLevel(bool perState)
+    public void TheControllerShadowsPipOverEveryLevel()
     {
-        var mapping = perState ? ControllerShadow.Mapping.PerState : ControllerShadow.Mapping.TwoRecords;
         var text = new StringBuilder();
         int steps = 0, diverged = 0, pristine = 0, attempts = 0, apart = 0;
         // Level 1 under the full rules, then every level with enemy contact ignored, which lets the autopilot cross it.
@@ -45,7 +42,7 @@ public sealed class ControllerDifferentialTests
             for (int attempt = 0; attempt < Session.StartingLives; attempt++)
             {
                 var stage = StageHarness.New(new Level(Levels.All[index]), session, checkpoint);
-                var shadow = new ControllerShadow(stage, mapping, closedLoop: true);
+                var shadow = new ControllerShadow(stage, closedLoop: true);
                 var bot = new Autopilot(attempt);
                 for (int f = 0; f < 60 * 200 && stage.Phase != StagePhase.Done; f++)
                 {
@@ -75,8 +72,9 @@ public sealed class ControllerDifferentialTests
             }
         }
         text.AppendLine(CultureInfo.InvariantCulture, $"total: {steps} steps compared in {attempts} attempts, {diverged} steps diverged ({pristine} with the controller on its own for the half second before), {apart} attempts with a divergence");
-        Report($"Levels, closed loop, {mapping}", text);
-        Assert.IsTrue(steps > 5000, $"only {steps} steps were compared");
+        Report("Levels, closed loop", text);
+        Assert.IsTrue(steps > 90000, $"only {steps} steps were compared");
+        Assert.AreEqual(0, diverged, $"steps in which the controller left Pip:{Environment.NewLine}{text}");
     }
 
     /// <summary>A small stage and an input for each step, given the step's number and the stage as Pip's mover left it.</summary>
@@ -195,18 +193,15 @@ public sealed class ControllerDifferentialTests
     /// Pip and how far it gets from him.
     /// </summary>
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public void TheControllerFollowsEachRuleOfPipsMovement(bool perState)
+    public void TheControllerFollowsEachRuleOfPipsMovement()
     {
-        var mapping = perState ? ControllerShadow.Mapping.PerState : ControllerShadow.Mapping.TwoRecords;
         var text = new StringBuilder();
         int rules = 0, identical = 0, cornerRuns = 0, cornerSame = 0;
         (int Game, int Controller) corners = default;
         foreach (var rule in Rules())
         {
             var stage = StageHarness.Stage(rule.Rows);
-            var shadow = new ControllerShadow(stage, mapping, closedLoop: false);
+            var shadow = new ControllerShadow(stage, closedLoop: false);
             for (int i = 0; i < rule.Steps && stage.Phase == StagePhase.Playing; i++) shadow.Step(rule.Input(i, stage));
             rules++;
             corners = (corners.Game + shadow.Corners.Game, corners.Controller + shadow.Corners.Controller);
@@ -228,7 +223,8 @@ public sealed class ControllerDifferentialTests
         }
         text.AppendLine(CultureInfo.InvariantCulture, $"corner approaches: {cornerSame} of {cornerRuns} identical; the game nudged Pip in {corners.Game} steps, the controller in {corners.Controller}");
         text.AppendLine(CultureInfo.InvariantCulture, $"{identical} of {rules} identical");
-        Report($"Rules, open loop, {mapping}", text);
-        Assert.IsTrue(rules > 20);
+        Report("Rules, open loop", text);
+        Assert.IsTrue(rules > 60, $"only {rules} rules were run");
+        Assert.AreEqual(rules, identical, $"rules in which the controller left Pip:{Environment.NewLine}{text}");
     }
 }

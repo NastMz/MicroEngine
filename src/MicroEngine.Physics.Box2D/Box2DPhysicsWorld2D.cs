@@ -1077,15 +1077,21 @@ public sealed unsafe class Box2DPhysicsWorld2D : IPhysicsWorld2D, IStateHashed, 
         Restore(left);
         int kept = Math.Min(count, MaxMoveContacts);
         Span<MoveContact> contacts = stackalloc MoveContact[kept];
+        var position = FromMeters(xy[0], xy[1]);
+        var moved = position - start;
+        // A surface stopped the move when the body was going into it and went less far than asked, by more than the
+        // rounding of a position of this size.
+        float noise = 1e-5f * (1 + MathF.Max(MathF.Max(MathF.Abs(position.X), MathF.Abs(position.Y)), MathF.Max(MathF.Abs(start.X), MathF.Abs(start.Y))));
         int n = 0;
         for (int i = 0; i < kept; i++)
         {
             int slot = SlotOf(shapes[i]);
             if (slot < 0) continue;
-            contacts[n++] = new MoveContact(IdOf(slot), OwnerOfShape(slot), Direction(normals[2 * i], normals[2 * i + 1]));
+            var normal = Direction(normals[2 * i], normals[2 * i + 1]);
+            float into = -Vector2.Dot(delta, normal);
+            contacts[n++] = new MoveContact(IdOf(slot), OwnerOfShape(slot), normal) { Stopped = into > noise && into + Vector2.Dot(moved, normal) > noise };
         }
-        var position = FromMeters(xy[0], xy[1]);
-        return new MoveResult(position, position - start, Up, contacts[..n]);
+        return new MoveResult(position, moved, Up, contacts[..n]);
     }
 
     // ------------------------------------------------------------------ queries

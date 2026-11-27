@@ -9,7 +9,16 @@ namespace MicroEngine.Physics;
 /// <param name="Shape">The shape touched.</param>
 /// <param name="Owner">The entity owning that shape's body.</param>
 /// <param name="Normal">The surface normal, unit length, pointing from the surface towards the moving body.</param>
-public readonly record struct MoveContact(ShapeId Shape, EntityId Owner, Vector2 Normal);
+public readonly record struct MoveContact(ShapeId Shape, EntityId Owner, Vector2 Normal)
+{
+    /// <summary>
+    /// Whether the surface stopped the movement in this move: the body was moving into it and went less far than it
+    /// was asked to. False for a surface the body only touches where the move ended (a wall it slides along, the
+    /// floor under a body that moved sideways and not down). A push rule reads it: "my move to the right was stopped
+    /// by this shape in this step".
+    /// </summary>
+    public bool Stopped { get; init; }
+}
 
 /// <summary>The contacts of one <see cref="MoveResult"/>, stored inline (no allocation).</summary>
 [InlineArray(MoveResult.MaxContacts)]
@@ -77,6 +86,21 @@ public readonly struct MoveResult
     public bool HitCeiling { get; }
     /// <summary>Whether a contact is a wall (neither ground nor ceiling).</summary>
     public bool HitWall { get; }
+    /// <summary>
+    /// Whether a surface whose normal faces against <paramref name="direction"/> stopped the move
+    /// (<see cref="MoveContact.Stopped"/>): <c>StoppedGoing(new Vector2(1, 0))</c> is "movement to the right was
+    /// stopped in this move". A surface counts when its normal is within about 45 degrees of the opposite of
+    /// <paramref name="direction"/>; only the contacts kept in <see cref="Contacts"/> are looked at.
+    /// </summary>
+    public bool StoppedGoing(Vector2 direction)
+    {
+        float length = direction.Length();
+        if (!(length > 0)) return false;
+        foreach (ref readonly var c in Contacts)
+            if (c.Stopped && Vector2.Dot(c.Normal, direction) <= -GroundThreshold * length) return true;
+        return false;
+    }
+
     /// <summary>How many contacts the backend found; <see cref="Contacts"/> holds at most <see cref="MaxContacts"/> of them.</summary>
     public int TotalContacts { get; }
 

@@ -433,7 +433,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         if (blockedX)
         {
             position.X = box.X - description.Offset.X + description.Size.X / 2;
-            AddContact(hitX, new Vector2(-MathF.Sign(delta.X), 0));
+            AddContact(hitX, new Vector2(-MathF.Sign(delta.X), 0), stopped: true);
         }
         else position.X += delta.X;
 
@@ -441,7 +441,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         if (blockedY)
         {
             position.Y = box.Y - description.Offset.Y + description.Size.Y / 2;
-            AddContact(hitY, new Vector2(0, -MathF.Sign(delta.Y)));
+            AddContact(hitY, new Vector2(0, -MathF.Sign(delta.Y)), stopped: true);
         }
         else position.Y += delta.Y;
 
@@ -464,12 +464,12 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         foreach (int source in _touching) AddContact(source, normal);
     }
 
-    private void AddContact(int shapeSlot, Vector2 normal)
+    private void AddContact(int shapeSlot, Vector2 normal, bool stopped = false)
     {
         var id = IdOf(shapeSlot);
         foreach (var c in _contacts)
             if (c.Shape == id && c.Normal == normal) return;
-        _contacts.Add(new MoveContact(id, _bodySlots[_shapeSlots[shapeSlot].Body].Owner, normal));
+        _contacts.Add(new MoveContact(id, _bodySlots[_shapeSlots[shapeSlot].Body].Owner, normal) { Stopped = stopped });
     }
 
     /// <summary>The non-sensor shapes of other bodies <paramref name="filter"/> accepts that may reach <paramref name="area"/>, as obstacles.</summary>

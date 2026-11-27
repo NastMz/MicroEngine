@@ -14,61 +14,58 @@ namespace MeadowRun.Tests;
 /// same input over the same level, to measure where the two differ (see <see cref="ControllerDifferentialTests"/>).
 /// </summary>
 /// <remarks>
-/// <para>The shadow lives in a tile physics world of its own: the level's grid as tile geometry, a one-way box for
-/// each moving platform (moved to where the stage left it), a box for each hidden block with the controller's
-/// <see cref="CharacterController2D.Solid"/> rule, and one kinematic body whose origin is Pip's top-left corner, so
-/// positions compare without a conversion.</para>
+/// <para>The shadow lives in a tile physics world of its own: the level's grid as tile geometry, a body for each
+/// moving platform (moved to where the stage left it; Pip does not collide with it, the game's own rule decides when
+/// he stands on it), a box for each hidden block with the controller's <see cref="CharacterController2D.Solid"/> rule,
+/// and one kinematic body whose origin is Pip's top-left corner, so positions compare without a conversion.</para>
+/// <para>The mapping is what a developer making this game on the controller would write: one
+/// <see cref="CharacterMotion"/> with the numbers of <see cref="Tuning"/>, the input passed as it is, and the two rules
+/// that are the game's own written after the step (a hidden block stops the head, a platform catches Pip a little
+/// before and after he touches it).</para>
 /// <para>Each step the game's mover is also run on a copy of Pip from the state before the step (the "expected"
 /// result), which separates what the mover did from what the stage did afterwards (a stomp's bounce, a spring, a
-/// hit). In the closed loop the shadow is put back on Pip whenever it leaves him, so every divergence is found; in the
-/// open loop it is left alone, so a divergence shows how far it carries.</para>
+/// hit). In the closed loop the shadow is given Pip's state whenever it leaves him, so every divergence is found; in
+/// the open loop it is left alone, so a divergence shows how far it carries.</para>
 /// </remarks>
 internal sealed class ControllerShadow
 {
-    /// <summary>How the game maps its feel onto <see cref="CharacterMotion"/>.</summary>
-    public enum Mapping
-    {
-        /// <summary>Two records, walking and running, as the engine's classic sample does it.</summary>
-        TwoRecords,
-        /// <summary>
-        /// A record chosen each step from the character's state (ground, braking above the cap, air, air momentum), and
-        /// the vertical speed set by the game after a hidden block is hit: everything the public API lets a game do.
-        /// </summary>
-        PerState,
-    }
-
     private const float Dt = StageHarness.Dt;
-    /// <summary>Steps after the shadow was put back on Pip in which a divergence may come from that (the controller's timers and ground cannot be set).</summary>
+    /// <summary>Steps after the shadow was given Pip's state in which a divergence is told apart in the report.</summary>
     private const int Settle = 30;
+    /// <summary>The layer of the platforms: Pip's body does not collide with it.</summary>
+    private const ulong Platforms = 1UL << 8;
 
-    // The sample's numbers (samples/PhysicsPlayground/ClassicScene.cs) with the game's drop time.
-    private static readonly CharacterMotion Walk = new()
+    /// <summary>Pip's feel, from the game's numbers.</summary>
+    public static readonly CharacterMotion Pip = new()
     {
-        MoveSpeed = Tuning.WalkSpeed, Acceleration = Tuning.GroundAccel, Deceleration = Tuning.GroundFriction, AirControl = 0.8f,
+        // On the ground: two speeds, friction, a skid when turning at speed.
+        MoveSpeed = Tuning.WalkSpeed, Acceleration = Tuning.GroundAccel,
+        RunSpeed = Tuning.RunSpeed, RunAcceleration = Tuning.RunAccel,
+        Deceleration = Tuning.GroundFriction, OverspeedDeceleration = Tuning.GroundFriction,
         SkidDeceleration = Tuning.SkidDecel, SkidSpeed = 30,
+        // In the air: less steering, little drag, and a run's momentum is kept.
+        AirAcceleration = Tuning.AirAccel, AirDeceleration = Tuning.AirDrag, AirOverspeedDeceleration = 0,
+        // The jump: higher with a run-up, four gravities, a fall clamp.
         JumpSpeed = Tuning.JumpSpeed, RunJumpBonus = Tuning.RunJumpBonus,
         Gravity = Tuning.RiseGravity,
         JumpReleaseGravityScale = Tuning.ReleaseGravity / Tuning.RiseGravity,
         ApexGravityScale = Tuning.ApexGravity / Tuning.RiseGravity, ApexSpeed = Tuning.ApexThreshold,
         FallGravityScale = Tuning.FallGravity / Tuning.RiseGravity, MaxFallSpeed = Tuning.TerminalVelocity,
-        CoyoteTime = Tuning.CoyoteTime, JumpBuffer = Tuning.JumpBuffer, DropThroughTime = Tuning.DropThroughTime,
+        // Forgiveness: coyote time, a buffered jump, a landing a pixel early, corners.
+        CoyoteTime = Tuning.CoyoteTime, JumpBuffer = Tuning.JumpBuffer, LandingReach = 1,
         CornerCorrection = Tuning.CornerCorrection, CeilingReboundSpeed = 20,
+        // Down and jump drops through a plank; a jump leaves a platform before the platform moves Pip.
+        DropThroughTime = Tuning.DropThroughTime, DropWithJump = true,
+        Order = CharacterStepOrder.ActThenCarry,
     };
-    private static readonly CharacterMotion Run = Walk with { MoveSpeed = Tuning.RunSpeed, Acceleration = Tuning.RunAccel };
-    // The per-state records: full control in the air, with the air's own numbers.
-    private static readonly CharacterMotion GroundWalk = Walk with { AirControl = 1 };
-    private static readonly CharacterMotion GroundRun = Run with { AirControl = 1 };
-    private static readonly CharacterMotion WalkBraking = GroundWalk with { Acceleration = Tuning.GroundFriction };
-    private static readonly CharacterMotion RunBraking = GroundRun with { Acceleration = Tuning.GroundFriction };
-    private static readonly CharacterMotion AirWalk = GroundWalk with { Acceleration = Tuning.AirAccel, Deceleration = Tuning.AirDrag };
-    private static readonly CharacterMotion AirRun = GroundRun with { Acceleration = Tuning.AirAccel, Deceleration = Tuning.AirDrag };
 
     private readonly Stage _stage;
     private readonly Level _mirror;
     private readonly TilePhysicsWorld2D _world = new();
     private readonly List<BodyId> _platforms = [];
+    private readonly List<ShapeId> _platformShapes = [];
+    private readonly List<Vector2> _platformWas = [];
     private readonly Dictionary<ShapeId, (int X, int Y)> _hidden = [];
-    private readonly Mapping _mapping;
     private readonly bool _closedLoop;
     private bool _inSync = true;
     private int _resyncedAt = -Settle;
@@ -100,10 +97,9 @@ internal sealed class ControllerShadow
     /// </summary>
     public sealed record Divergence(int Step, string Situation, string Differs, Vector2 Position, Vector2 Velocity, bool Pristine, string Detail);
 
-    public ControllerShadow(Stage stage, Mapping mapping, bool closedLoop)
+    public ControllerShadow(Stage stage, bool closedLoop)
     {
         _stage = stage;
-        _mapping = mapping;
         _closedLoop = closedLoop;
         _mirror = new Level(stage.Level.Def);
         var level = _world.CreateBody(default, BodyDescription.Static());
@@ -117,13 +113,12 @@ internal sealed class ControllerShadow
         {
             var bounds = platform.Bounds;
             var body = _world.CreateBody(default, BodyDescription.Kinematic(bounds.Position));
-            _world.AddShape(body, ShapeDescription.Box(bounds.Size, bounds.Size / 2) with { OneWay = true });
+            _platformShapes.Add(_world.AddShape(body, ShapeDescription.Box(bounds.Size, bounds.Size / 2).InLayers(Platforms, CollisionLayers.All)));
             _platforms.Add(body);
+            _platformWas.Add(bounds.Position);
         }
-        var shape = ShapeDescription.Box(new Vector2(Player.Width, Player.Height), new Vector2(Player.Width / 2f, Player.Height / 2f));
-        var pip = _world.CreateBody(default, BodyDescription.Kinematic(stage.Player.Position));
-        _world.AddShape(pip, shape);
-        Hero = new CharacterController2D(_world, pip, GroundWalk) { Filter = QueryFilter.For(shape) };
+        var size = new Vector2(Player.Width, Player.Height);
+        Hero = CharacterController2D.Create(_world, default, stage.Player.Position, size, Pip, mask: CollisionLayers.All & ~Platforms, offset: size / 2);
         // A hidden block is solid only for a head that comes up from below it, in its column, until it is found
         // (the stage then makes the tile a used block, which the grid holds).
         Hero.Solid = (hero, id) =>
@@ -159,12 +154,15 @@ internal sealed class ControllerShadow
             if (phase != StagePhase.Playing) _inSync = false;
             return;
         }
+        // The open loop compares Pip as the stage leaves him: a step in which the stage ended the play is the stage's.
+        if (!_closedLoop && _stage.Phase != StagePhase.Playing) return;
 
         var rides = new List<IRideable>();
         for (int i = 0; i < _stage.Platforms.Count; i++)
         {
             var platform = _stage.Platforms[i];
             rides.Add(new Ride(platform.Bounds, platform.Delta));
+            _platformWas[i] = _world.PositionOf(_platforms[i]);
             _world.SetPosition(_platforms[i], platform.Bounds.Position);
         }
         expected.Step(step, input, _mirror, rides);
@@ -172,13 +170,7 @@ internal sealed class ControllerShadow
         if (intervened) Interventions++;
 
         if (_closedLoop && !_inSync) Resync(before);
-        Hero.Motion = MotionFor(input);
-        // The game drops through a platform with down and jump together; the controller with its drop intent.
-        Hero.Step(step, new CharacterInput(input.Axis, input.JumpPressed, input.JumpHeld, Drop: input.Down && input.JumpPressed));
-        // The game's reaction to what the step touched: a hidden block stops the head where other ceilings send it down.
-        if (_mapping == Mapping.PerState && (Hero.Events & CharacterEvents.HitCeiling) != 0)
-            foreach (var contact in Hero.LastMove.Contacts)
-                if (_hidden.ContainsKey(contact.Shape)) Hero.Velocity = Hero.Velocity with { Y = 0 };
+        StepHero(step, input);
         Steps++;
         bool nudged = before.Velocity.X == 0 && input.Axis == 0 && before.Riding is null && expected.Position.X != before.Position.X;
         Corners = (Corners.Game + (nudged ? 1 : 0), Corners.Controller + ((Hero.Events & CharacterEvents.CornerCorrected) != 0 ? 1 : 0));
@@ -205,28 +197,57 @@ internal sealed class ControllerShadow
         if (distance > Farthest.Pixels) Farthest = (distance, Steps);
     }
 
-    /// <summary>
-    /// Puts the shadow where Pip is, with his velocity. The controller's ground and jump state and its timers cannot be
-    /// set: a divergence found soon afterwards may come from them, which <see cref="Divergence.Pristine"/> tells.
-    /// </summary>
+    /// <summary>The game's step on the controller: what a developer would write in the game.</summary>
+    private void StepHero(float dt, PlayerInput input)
+    {
+        float bottomBefore = Hero.Position.Y + Player.Height;
+        // Down and jump drops through a plank, not through a platform Pip rides.
+        bool riding = _platformShapes.Contains(Hero.Ground);
+        Hero.Step(dt, new CharacterInput(input.Axis, input.JumpPressed, input.JumpHeld, Drop: input.Down && !riding, Run: input.RunHeld));
+
+        // A hidden block stops the head where other ceilings send it down.
+        if ((Hero.Events & CharacterEvents.HitCeiling) != 0)
+            foreach (var contact in Hero.LastMove.Contacts)
+                if (_hidden.ContainsKey(contact.Shape)) Hero.Velocity = Hero.Velocity with { Y = 0 };
+
+        // A platform catches Pip when his feet were above it (or up to 2.5 px inside it) and are now within half a
+        // pixel over its top or below it, a pixel in from its ends.
+        if (Hero.Velocity.Y < 0) return;
+        for (int i = 0; i < _platforms.Count; i++)
+        {
+            var at = Hero.Position;
+            var top = _world.PositionOf(_platforms[i]);
+            float width = _stage.Platforms[i].Bounds.Width, moved = top.Y - _platformWas[i].Y;
+            if (at.X + Player.Width <= top.X + 1 || at.X >= top.X + width - 1) continue;
+            if (bottomBefore <= top.Y - Math.Min(0, moved) + 2.5f && at.Y + Player.Height >= top.Y - 0.5f)
+            {
+                Hero.StandOn(_platformShapes[i], new Vector2(at.X, top.Y - Player.Height));
+                break;
+            }
+        }
+    }
+
+    /// <summary>Gives the shadow Pip's state: his position, velocity, ground, jump and timers.</summary>
     private void Resync(Player pip)
     {
         _resyncedAt = Steps;
-        _world.SetPosition(Hero.Body, pip.Position);
-        Hero.Velocity = pip.Velocity;
-        _inSync = Hero.IsGrounded == pip.Grounded && Hero.IsJumping == pip.Jumping;
+        int ride = pip.Riding is null ? -1 : IndexOfRide(pip.Riding);
+        Hero.Restore(Hero.Snapshot() with
+        {
+            Position = pip.Position, Velocity = pip.Velocity,
+            IsGrounded = pip.Grounded, IsJumping = pip.Jumping,
+            Ground = ride < 0 ? ShapeId.None : _platformShapes[ride],
+            GroundPosition = ride < 0 ? default : _platformWas[ride],
+            CoyoteTime = pip.CoyoteTimer, JumpBuffer = pip.BufferTimer, DropThroughTime = pip.DropTimer,
+        });
+        _inSync = true;
     }
 
-    private CharacterMotion MotionFor(PlayerInput input)
+    private int IndexOfRide(IRideable ride)
     {
-        if (_mapping == Mapping.TwoRecords) return input.RunHeld ? Run : Walk;
-        float cap = input.RunHeld ? Tuning.RunSpeed : Tuning.WalkSpeed, run = Hero.Velocity.X;
-        if (Hero.IsGrounded)
-            return MathF.Abs(run) > cap && input.Axis != 0 ? (input.RunHeld ? RunBraking : WalkBraking) : (input.RunHeld ? GroundRun : GroundWalk);
-        // Air momentum: pushing the way it moves never slows it toward a lower cap, so the cap follows the speed.
-        var air = input.RunHeld ? AirRun : AirWalk;
-        float momentum = input.Axis != 0 && MathF.Sign(run) == input.Axis ? MathF.Abs(run) : 0;
-        return momentum > cap ? air with { MoveSpeed = momentum } : air;
+        for (int i = 0; i < _stage.Platforms.Count; i++)
+            if (ReferenceEquals(_stage.Platforms[i], ride)) return i;
+        return -1;
     }
 
     private static bool Same(Vector2 position, Vector2 velocity, bool grounded, Player pip) =>
