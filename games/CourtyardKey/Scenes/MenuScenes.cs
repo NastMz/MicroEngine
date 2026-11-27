@@ -22,14 +22,7 @@ public sealed class PauseScene : Scene
         ("key_boss", "Warden's Key"),
         ("courtyard_key", "Courtyard Key"),
     ];
-    // Texts are rebuilt only when what they show changes, not every frame.
-    private readonly NumberText _gems = new(n => $"{n} gems");
-    private readonly NumberText _keys = new(n => $"×{n}");
-    private string? _status, _areaTitle;
-    private double _statusSeconds;
-    private int _statusDeaths;
-    private string? _areaName;
-    private CachedPrompt? _back;
+    private string? _areaTitle, _areaName;
 
     public PauseScene(PlayScene play)
     {
@@ -39,7 +32,7 @@ public sealed class PauseScene : Scene
 
     public override bool IsOverlay => true;
 
-    /// <summary>State hash: the menu cursor. The status and area texts are built while drawing and stay out.</summary>
+    /// <summary>State hash: the menu cursor. The area's title is built while drawing and stays out.</summary>
     public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Update(float dt)
@@ -87,16 +80,11 @@ public sealed class PauseScene : Scene
         }
         float y = inv.Y + 108;
         r.DrawPivoted(art["gem_green"], new Vector2(inv.X + 16, y + 4));
-        Font.DrawShadowed(r, _gems.For(p.Gems), new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
+        Font.DrawShadowed(r, $"{p.Gems} gems", new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
         r.DrawPivoted(art["key_small"], new Vector2(inv.X + 84, y + 4));
-        Font.DrawShadowed(r, _keys.For(p.SmallKeys), new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
-        if (_status is null || _statusSeconds != p.PlaySeconds || _statusDeaths != p.Deaths)
-        {
-            var time = TimeSpan.FromSeconds(p.PlaySeconds);
-            _status = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}";
-            (_statusSeconds, _statusDeaths) = (p.PlaySeconds, p.Deaths);
-        }
-        Font.Draw(r, _status, new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
+        Font.DrawShadowed(r, $"×{p.SmallKeys}", new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
+        var time = TimeSpan.FromSeconds(p.PlaySeconds);
+        Font.Draw(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}", new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
 
         // Map panel
         var map = new RectF(154, 26, 156, 104);
@@ -110,9 +98,7 @@ public sealed class PauseScene : Scene
         var menu = new RectF(154, 136, 156, 36);
         UiStyle.Frame(r, menu);
         _menu.Draw(r, Font, new Vector2(menu.X + 8, menu.Y + 7), UiStyle.Theme, Age, 12);
-        _back ??= new CachedPrompt(Game.Prompts, "{cancel}: back");
-        string back = _back.Text;
-        Font.Draw(r, back, new Vector2(menu.Right - 6 - Font.MeasureWidth(back), menu.Y + 7), Pal.Stone[3]);
+        Font.DrawRight(r, Game.Prompts.Cached("{cancel}: back"), new Vector2(menu.Right - 6, menu.Y + 7), Pal.Stone[3]);
     }
 }
 
@@ -157,7 +143,6 @@ public sealed class ShopScene : Scene
     private static readonly string[] Icons = ["tonic", "pie", ""];
     private static readonly string[] Notes = ["Full heal", "+1 max heart", ""];
     private static readonly string TonicPriceText = $"{TonicPrice}", PiePriceText = $"{PiePrice}";
-    private readonly NumberText _gems = new(n => $"{n}");
 
     public ShopScene(PlayScene play)
     {
@@ -239,7 +224,7 @@ public sealed class ShopScene : Scene
         r.FillRect(new RectF(panel.X + 8, panel.Bottom - 22, panel.Width - 16, 1), Pal.Gold[0]);
         Font.DrawShadowed(r, _message, new Vector2(panel.X + 10, panel.Bottom - 16), Pal.Cream, Pal.Ink);
         r.DrawPivoted(art["gem_green"], new Vector2(panel.Right - 40, panel.Y + 12));
-        Font.DrawShadowed(r, _gems.For(_play.Progress.Gems), new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
+        Font.DrawShadowed(r, $"{_play.Progress.Gems}", new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
     }
 }
 

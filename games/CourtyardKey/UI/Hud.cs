@@ -23,9 +23,6 @@ public sealed class Hud(PlayScene world)
     private int _shownGems;
     private float _gemTick;
     private static readonly Color BarTop = Color.Hex("2a2244"), SlotHighlight = Color.Hex("3a3058");
-    private readonly NumberText _gemsText = new(n => $"{n:000}");
-    private readonly NumberText _keysText = new(n => $"×{n}");
-    private CachedPrompt? _confirmKey, _actionKey;
 
     public string? LastRoomName { get; private set; }
 
@@ -73,11 +70,11 @@ public sealed class Hud(PlayScene world)
 
         float x = 112;
         r.DrawPivoted(art["gem_green"], new Vector2(x, 9));
-        font.DrawShadowed(r, _gemsText.For(_shownGems), new Vector2(x + 6, 5), Pal.White, Pal.Ink);
+        font.DrawShadowed(r, $"{_shownGems:000}", new Vector2(x + 6, 5), Pal.White, Pal.Ink);
         if (world.Area.Def.IsDungeon)
         {
             r.DrawPivoted(art["key_small"], new Vector2(x + 34, 9));
-            font.DrawShadowed(r, _keysText.For(p.SmallKeys), new Vector2(x + 40, 5), Pal.White, Pal.Ink);
+            font.DrawShadowed(r, $"×{p.SmallKeys}", new Vector2(x + 40, 5), Pal.White, Pal.Ink);
             if (p.HasBossKey) r.DrawPivoted(art["key_boss"], new Vector2(x + 64, 9));
         }
         // The room name waits while an achievement banner covers its place.
@@ -92,10 +89,9 @@ public sealed class Hud(PlayScene world)
         }
 
         // Each slot names the control that uses it on the device being played.
-        _confirmKey ??= CachedPrompt.ForAction(world.G.Prompts, "confirm");
-        _actionKey ??= CachedPrompt.ForAction(world.G.Prompts, "action");
-        ItemBox(r, font, art, new Vector2(258, 2), _confirmKey.Text, p.HasSword ? art["sword"] : null);
-        ItemBox(r, font, art, new Vector2(286, 2), _actionKey.Text, p.HasBoomerang ? art["boomerang"] : null);
+        var prompts = world.G.Prompts;
+        ItemBox(r, font, art, new Vector2(258, 2), prompts.Cached("{confirm}"), p.HasSword ? art["sword"] : null);
+        ItemBox(r, font, art, new Vector2(286, 2), prompts.Cached("{action}"), p.HasBoomerang ? art["boomerang"] : null);
 
         if (world.Boss is { Alive: true } boss && boss.State != Entities.WardenState.Intro)
         {

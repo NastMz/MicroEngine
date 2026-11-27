@@ -207,10 +207,6 @@ public sealed class EndingScene : Scene
         "Thank you for playing!",
     ];
 
-    private string? _stats;
-    private (double, int, int) _statsOf;
-    private CachedPrompt? _theEnd;
-
     public EndingScene(CourtyardKeyGame game, Progress progress)
     {
         _game = game;
@@ -259,16 +255,9 @@ public sealed class EndingScene : Scene
         if (t > 9)
         {
             float a = MathF.Min(1, (t - 9) / 1.5f);
-            var shown = (_progress.PlaySeconds, _progress.Gems, _progress.Deaths);
-            if (_stats is null || shown != _statsOf)
-            {
-                var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
-                _stats = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}";
-                _statsOf = shown;
-            }
-            Font.DrawCentered(r, _stats, new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
-            _theEnd ??= new CachedPrompt(Game.Prompts, "THE END  ·  press {confirm}");
-            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, _theEnd.Text, new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+            var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
+            Font.DrawCentered(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}", new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
+            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, Game.Prompts.Cached("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
         }
     }
 }
