@@ -13,7 +13,7 @@ namespace TrailDuel.Scenes;
 /// <summary>Title screen: a sunny hilltop with the three starters, the logo, and Continue / New Game.</summary>
 internal sealed class TitleScene(TrailDuelGame game) : Scene
 {
-    private CachedText _pressText;
+    private CachedText<int> _pressText;
     /// <summary>The title menu, built on entering (Continue only with a save).</summary>
     private DemoKit.OptionList _list = null!;
     private bool _menu;
@@ -104,7 +104,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
             // The middle starter stands closer to the viewer so the menu never hides it.
             float x = 100 + i * 60, ground = i == 1 ? 168 : 152, hop = MathF.Max(0, MathF.Sin(Age * 2.4f + i * 2.1f)) * 5;
             r.FillEllipse(new Vector2(x, ground - 1), 11, 2.5f, Pal.Ink.WithAlpha(0.2f));
-            r.Draw(game.Sprite(SpriteKeys.Front[starters[i]]), new Vector2(x, MathF.Round(ground - hop)));
+            r.Draw(game.Atlas[$"front:{starters[i]}"], new Vector2(x, MathF.Round(ground - hop)));
         }
 
         // Logo
@@ -116,7 +116,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
 
         if (!_menu)
         {
-            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, _pressText.Get(Game.Prompts.Version, Game.Prompts, static p => p.Format("PRESS {confirm} TO START").ToUpperInvariant()), new Vector2(160, 98));
+            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, _pressText.Get(Game.Prompts.Version, Game.Prompts, static (p, _) => p.Format("PRESS {confirm} TO START").ToUpperInvariant()), new Vector2(160, 98));
         }
         else
         {

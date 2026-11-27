@@ -101,7 +101,7 @@ public sealed class DefeatRecoveryTests
         // Rendered: the player's sprite is drawn and no fade is left over the room.
         var r = new RecordingRenderer();
         world.Draw(r);
-        var sprite = h.Game.Atlas[world.Player.SpriteKey(world.Player.Frame)].Source;
+        var sprite = TrailDuel.Visuals.CharacterArt.Sprite(h.Game.Atlas, world.Player.Look.Key, world.Player.Facing, world.Player.Frame).Source;
         Assert.IsTrue(r.Ops.Any(o => o.Source == sprite), "The player sprite should be drawn after respawn.");
         Assert.AreEqual(-1, r.LastFullScreenFill(Pal.Ink), "The screen should be fully faded in.");
 

@@ -14,7 +14,6 @@ namespace TrailDuel.Scenes;
 /// <summary>The pause menu over the overworld: party, bag, trail log, save, controls.</summary>
 internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 {
-    private CachedText _timeText;
     private static readonly string[] Options = ["CREATURES", "BAG", "TRAIL LOG", "SAVE", "CONTROLS", "CLOSE"];
     private DemoKit.OptionList _list = null!;
     private string? _message;
@@ -79,10 +78,10 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
         UiKit.Text(r, Font, GameState.PlayerName, info.X + 8, info.Y + 6, Pal.Coral);
         if (s.Has("master")) UiKit.TextRight(r, Font, "★ Champion", info.Right - 8, info.Y + 6, Pal.GoldDark);
         UiKit.Text(r, Font, "Money", info.X + 8, info.Y + 18, UiKit.Muted);
-        UiKit.TextRight(r, Font, NumberTexts.Money(s.Money), info.Right - 8, info.Y + 18);
+        UiKit.TextRight(r, Font, $"${s.Money}", info.Right - 8, info.Y + 18);
         var t = TimeSpan.FromSeconds(s.PlaySeconds);
         UiKit.Text(r, Font, "Time", info.X + 8, info.Y + 30, UiKit.Muted);
-        UiKit.TextRight(r, Font, _timeText.Get((int)t.TotalHours, t.Minutes, static (h, m) => $"{h}:{m:00}"), info.Right - 8, info.Y + 30);
+        UiKit.TextRight(r, Font, $"{(int)t.TotalHours}:{t.Minutes:00}", info.Right - 8, info.Y + 30);
         if (_messageTime > 0 && _message is not null)
         {
             var m = new RectF(4, 150, 312, 26);
@@ -160,7 +159,6 @@ internal sealed class ControlsScene : Scene
 internal sealed class TrailLogScene(TrailDuelGame game) : Scene
 {
     private static readonly string?[] DexNumbers = new string?[1000];
-    private CachedText _seenText;
 
     /// <summary>The dex number as three digits, built once per number.</summary>
     private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
@@ -200,10 +198,10 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
         UiKit.Box(r, card);
         bool known = s.Seen.Contains(sel.Id);
         r.Draw(game.Sprite("platform:enemy"), new Vector2(card.Center.X, card.Y + 84));
-        r.Draw(game.Sprite(SpriteKeys.Front[sel.Id]), new Vector2(card.Center.X, card.Y + 84), known ? Color.White : Pal.Ink.WithAlpha(0.85f));
+        r.Draw(game.Atlas[$"front:{sel.Id}"], new Vector2(card.Center.X, card.Y + 84), known ? Color.White : Pal.Ink.WithAlpha(0.85f));
         UiKit.Text(r, Font, known ? sel.Name : "???", card.X + 8, card.Y + 96);
         if (known) UiKit.TypeBadge(r, Font, sel.Type, card.Right - 8 - UiKit.TypeBadgeWidth(Font, sel.Type), card.Y + 95);
-        UiKit.Text(r, Font, _seenText.Get(s.Seen.Count, s.Caught.Count, static (seen, caught) => $"Seen {seen}  Caught {caught}"), card.X + 8, card.Y + 108, UiKit.Muted);
+        UiKit.Text(r, Font, $"Seen {s.Seen.Count}  Caught {s.Caught.Count}", card.X + 8, card.Y + 108, UiKit.Muted);
         var desc = new RectF(6, 130, 166, 44);
         UiKit.Box(r, desc);
         var lines = Font.Wrap(known ? sel.Description : "Not yet seen on the trail.", 150);

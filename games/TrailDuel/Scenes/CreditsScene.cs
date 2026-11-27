@@ -34,7 +34,6 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     /// <summary>The ending's parts: the champion card, the rolling credits, and leaving for the title.</summary>
     private enum Part { Card, Roll, Leaving }
 
-    private CachedText _timeText;
     private float _scroll;
     /// <summary>The scroll in the scene's objects, so the world draws the rolling credits between steps.</summary>
     private EntityId _scrollEntity;
@@ -81,17 +80,15 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         {
             float x = OnChampionCard ? 160 + (i - (party.Count - 1) / 2f) * MathF.Min(60, 280f / Math.Max(1, party.Count)) : (i * 60 + Age * 22) % 400 - 40;
             float hop = MathF.Abs(MathF.Sin(Age * 3 + i)) * (OnChampionCard ? 6 : 3);
-            r.Draw(game.Sprite(SpriteKeys.Shadow[party[i].SpeciesId]), new Vector2(MathF.Round(x), 149), Color.White.WithAlpha(1 - hop / 12f));
-            r.Draw(game.Sprite(SpriteKeys.Front[party[i].SpeciesId]), new Vector2(MathF.Round(x), MathF.Round(150 - hop)));
+            r.Draw(game.Atlas[$"cshadow:{party[i].SpeciesId}"], new Vector2(MathF.Round(x), 149), Color.White.WithAlpha(1 - hop / 12f));
+            r.Draw(game.Atlas[$"front:{party[i].SpeciesId}"], new Vector2(MathF.Round(x), MathF.Round(150 - hop)));
         }
         if (OnChampionCard)
         {
             UiKit.Title(r, Font, "TRAIL CHAMPION", new Vector2(160, 40), 2, Pal.Gold);
             UiKit.Title(r, Font, $"Congratulations, {GameState.PlayerName}!", new Vector2(160, 66));
             var t = TimeSpan.FromSeconds(game.State.PlaySeconds);
-            string time = _timeText.Get((int)t.TotalHours * 60 + t.Minutes, game.State.Caught.Count,
-                static (minutes, caught) => $"Time {minutes / 60}:{minutes % 60:00}   Caught {caught}/{SpeciesDex.All.Count}");
-            UiKit.Title(r, Font, time, new Vector2(160, 80), 1, Pal.Cream);
+            UiKit.Title(r, Font, $"Time {(int)t.TotalHours}:{t.Minutes:00}   Caught {game.State.Caught.Count}/{SpeciesDex.All.Count}", new Vector2(160, 80), 1, Pal.Cream);
             for (int i = 0; i < 8; i++)
             {
                 float a = Age * 2 + i * MathF.Tau / 8;
