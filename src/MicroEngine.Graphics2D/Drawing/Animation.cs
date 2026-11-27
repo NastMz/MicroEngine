@@ -61,6 +61,17 @@ public sealed class AnimationClip
     /// <summary>Length of one pass through the frames, in seconds.</summary>
     public float Duration => _ends is { } ends ? ends[^1] : Frames.Count / FramesPerSecond;
 
+    /// <summary>Whether each frame has a duration of its own (otherwise the clip plays at one rate).</summary>
+    internal bool HasFrameDurations => _ends is not null;
+
+    /// <summary>The frame at <paramref name="time"/> of a single pass, whether or not the clip loops (a one-shot effect).</summary>
+    internal int FrameIndexOnce(float time)
+    {
+        if (_ends is not { } ends) return Math.Clamp((int)(time * FramesPerSecond), 0, Frames.Count - 1);
+        int found = Array.BinarySearch(ends, MathF.Max(time, 0));
+        return Math.Min(found >= 0 ? found + 1 : ~found, Frames.Count - 1);
+    }
+
     /// <summary>The frame shown <paramref name="time"/> seconds after the clip started (0 or more).</summary>
     public Sprite FrameAt(float time) => Frames[FrameIndexAt(time)];
 
