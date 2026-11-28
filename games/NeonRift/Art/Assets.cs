@@ -8,8 +8,8 @@ using Files = NeonRift.Art.GameContent.Stages;
 
 namespace NeonRift.Art;
 
-/// <summary>A pose split into a body without the gun arm and the arm itself, so the arm can rotate to any aim.</summary>
-internal sealed record ArmRig(Sprite Body, Sprite Arm, Vector2 Shoulder, float Length);
+/// <summary>A pose split into a body without the gun arm (it keeps the pose's points) and the arm itself, so the arm can rotate to any aim.</summary>
+internal sealed record ArmRig(Sprite Body, Sprite Arm);
 
 /// <summary>A parallax background built from one image of the stage's pack.</summary>
 internal sealed record BackdropLayer(Texture Texture, float Factor, float Y, Color Fill, bool Foreground = false);
@@ -34,13 +34,11 @@ internal sealed class Assets : IDisposable
         // Content/sprites.sheet says how every image is cut: cell sizes, anchors, tile rectangles and the rates strips play at.
         var sheet = content.Sheet(Names.Path);
         var b = new SpriteAtlasBuilder().AddSheet(sheet);
-        // The aiming poses are derived from authored frames: the standing shot and every frame of the run, as the sheet cuts them.
-        const string run = Names.Strips.HeroRunShoot;
-        AddRig(b, "shoot0", sheet.Frames.First(static f => f.Name == Names.SpriteNames.HeroShoot0));
-        foreach (var frame in sheet.Frames)
-            if (frame.Name.StartsWith(run, StringComparison.Ordinal)) AddRig(b, "run-shoot" + frame.Name[run.Length..], frame);
+        // The aiming poses are derived from the frames the sheet marks a shoulder on: the standing shot and every frame of the run.
+        var poses = sheet.Frames.Where(static f => f.Points.Any(static p => p.Name == "shoulder")).ToList();
+        foreach (var pose in poses) AddRig(b, pose);
         _atlas = b.Build(device);
-        ResolveRigs();
+        foreach (var pose in poses) _rigs[pose.Name] = new ArmRig(_atlas["rigbody_" + pose.Name], _atlas["rigarm_" + pose.Name]);
 
         _backdrops["city"] =
         [
@@ -71,18 +69,15 @@ internal sealed class Assets : IDisposable
 
     /// <summary>The packed sprite sheet (exposed so tests can guard its size).</summary>
     public Texture AtlasTexture => _atlas.Texture;
+    /// <summary>The sprites and clips of <c>Content/sprites.sheet</c>, which play reads boxes, points and clip lengths from.</summary>
+    public SpriteAtlas Atlas => _atlas;
     public Sprite this[string name] => _atlas[name];
     /// <summary>The frames <paramref name="name"/>0, 1, 2... (the atlas collects each once).</summary>
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
     /// <summary>The strip <paramref name="name"/> playing at the rate <c>Content/sprites.sheet</c> gives it.</summary>
     public AnimationClip Clip(string name) => _atlas.Clip(name);
-    /// <summary>What play reads of the clip <paramref name="name"/>: its length in frames and its rate.</summary>
-    public Strip Strip(string name)
-    {
-        var clip = _atlas.Clip(name);
-        return new Strip(clip.Frames.Count, clip.FramesPerSecond);
-    }
     public bool Contains(string name) => _atlas.Contains(name);
+    /// <summary>The body and arm of the gun pose drawn in the frame <paramref name="pose"/> of the sheet.</summary>
     public ArmRig Rig(string pose) => _rigs[pose];
     public IReadOnlyList<BackdropLayer> Backdrop(string theme) => _backdrops[theme];
 
@@ -102,41 +97,16 @@ internal sealed class Assets : IDisposable
     }
 
     /// <summary>
-    /// Splits a gun pose into body and arm. The gun tip is the right-most opaque pixel in the upper
-    /// body; walking left along its row, the shoulder is where the silhouette becomes tall (the torso).
+    /// Splits a gun pose into body and arm: the arm is the nine rows around the gun's row, from the shoulder to the gun
+    /// tip the sheet marks, and it turns around the shoulder.
     /// </summary>
-    private void AddRig(SpriteAtlasBuilder b, string pose, SheetFrame authored)
+    private static void AddRig(SpriteAtlasBuilder b, SheetFrame pose)
     {
-        var frame = authored.Image;
-        int tipX = -1, tipY = 0;
-        for (int y = 18; y < 40; y++)
-        for (int x = frame.Width - 1; x > tipX; x--)
-            if (frame[x, y].A > 0) { tipX = x; tipY = y; break; }
-        int shoulder = tipX;
-        for (int x = tipX; x > 20; x--)
-        {
-            int run = 0;
-            for (int y = tipY - 10; y <= tipY + 10; y++) if (frame[x, y].A > 0) run++;
-            if (run > 9) { shoulder = x + 1; break; }
-        }
-        int top = tipY - 4, height = 9;
-        var arm = frame.Crop(shoulder, top, tipX - shoulder + 1, height);
-        var body = frame.Clone().ClearRect(shoulder, top, tipX - shoulder + 1, height);
-        // The gun row sits one pixel below the arm's top edge in these frames; pivot on the arm's middle.
-        var pivot = new Vector2(0, 4);
-        b.Add("rigbody_" + pose, body, authored.Origin);
-        b.Add("rigarm_" + pose, arm, pivot);
-        _pendingRigs.Add((pose, new Vector2(shoulder, top + 4) - authored.Origin, tipX - shoulder));
-    }
-
-    private readonly List<(string Pose, Vector2 Shoulder, float Length)> _pendingRigs = [];
-
-    /// <summary>Resolves rig sprites once the atlas exists.</summary>
-    private void ResolveRigs()
-    {
-        foreach (var (pose, shoulder, length) in _pendingRigs)
-            _rigs[pose] = new ArmRig(_atlas["rigbody_" + pose], _atlas["rigarm_" + pose], shoulder, length);
-        _pendingRigs.Clear();
+        var shoulder = pose.Points.First(static p => p.Name == "shoulder").Position;
+        var tip = pose.Points.First(static p => p.Name == "tip").Position;
+        int left = (int)shoulder.X, top = (int)shoulder.Y - 4, width = (int)tip.X - left + 1, height = 9;
+        b.Add(pose with { Name = "rigbody_" + pose.Name, Image = pose.Image.Clone().ClearRect(left, top, width, height) });
+        b.Add("rigarm_" + pose.Name, pose.Image.Crop(left, top, width, height), new Vector2(0, 4));
     }
 
     public void Dispose()

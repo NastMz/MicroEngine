@@ -41,13 +41,12 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     public override void Enter()
     {
         var def = Stages.All[stageIndex];
-        _stage = new Stage(def, game.Session, Objects, checkpoint, seed: 11 + stageIndex)
+        _stage = new Stage(def, game.Session, Objects, game.Art.Atlas, checkpoint, seed: 11 + stageIndex)
         {
             Final = stageIndex == Stages.Count - 1,
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
-            Rigs = name => game.Art.Rig(name),
-            Strips = name => game.Art.Strip(name),
+
             DefeatSink = _ =>
             {
                 game.Achievements.Unlock(RiftAchievements.FirstScrap);
@@ -114,7 +113,8 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
 /// <summary>Pause overlay: resume or abandon the run.</summary>
 internal sealed class PauseScene(RiftGame game) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("RESUME", "QUIT TO TITLE");
+    private static readonly string[] Options = ["RESUME", "QUIT TO TITLE"];
+    private readonly MenuCursor _menu = new(Options.Length);
     public override bool IsOverlay => true;
 
     /// <summary>Adds the menu cursor.</summary>
@@ -143,6 +143,6 @@ internal sealed class PauseScene(RiftGame game) : Scene
     {
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink.WithAlpha(0.6f));
         Ui.Neon(r, Font, "PAUSED", r.Width / 2f, 90, 3, Ui.Magenta, Age);
-        Ui.Menu(r, Font, _menu, r.Width / 2f, 140, Age);
+        Ui.Menu(r, Font, Options, _menu, r.Width / 2f, 140, Age);
     }
 }

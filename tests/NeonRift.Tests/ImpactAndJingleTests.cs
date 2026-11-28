@@ -45,7 +45,7 @@ public sealed class ImpactAndJingleTests
     public void The_boss_of_the_last_stage_falls_to_the_victory_jingle(bool final, string jingle)
     {
         var sounds = new List<string>();
-        var stage = new Gameplay.Stage(Flat(60), new Session(), new SceneWorld()) { Final = final, SoundSink = (name, _, _, _) => sounds.Add(name) };
+        var stage = new Gameplay.Stage(Flat(60), new Session(), new SceneWorld(), Sprites) { Final = final, SoundSink = (name, _, _, _) => sounds.Add(name) };
         stage.Player.God = true;
         Run(stage, 60 * 12, In(right: true));
         Assert.IsNotNull(stage.Boss, $"Phase {stage.Phase}");

@@ -1,4 +1,6 @@
 using System.Numerics;
+using MicroEngine.Core;
+using MicroEngine.Graphics;
 using MicroEngine.Scenes;
 using NeonRift.Content;
 using NeonRift.Gameplay;
@@ -13,6 +15,14 @@ internal static class Harness
 {
     public const float Dt = 1f / 60f;
 
+    /// <summary>
+    /// The sprites of the game's <c>Content/sprites.sheet</c>, read once without a window: the rules read hit boxes, the
+    /// gun poses' points and the clips' lengths from them, as they do in the game.
+    /// </summary>
+    public static SpriteAtlas Sprites { get; } = new SpriteAtlasBuilder()
+        .AddSheet(SpriteSheet.Load(Path.Combine(AppContext.BaseDirectory, "Content", "sprites.sheet")))
+        .Build(new HeadlessGraphicsDevice());
+
     /// <summary>A flat stage of ground three tiles thick, long enough to scroll, with an arena at the end.</summary>
     public static StageDef Flat(int columns = 120, Action<StageBuilder>? extra = null)
     {
@@ -22,7 +32,7 @@ internal static class Harness
         return b.Build("TEST", "", "city", "city", BossKind.Gunship);
     }
 
-    public static Stage Stage(StageDef? def = null, Session? session = null) => new(def ?? Flat(), session ?? new Session(), new SceneWorld());
+    public static Stage Stage(StageDef? def = null, Session? session = null) => new(def ?? Flat(), session ?? new Session(), new SceneWorld(), Sprites);
 
     /// <summary>The stage's world, as the engine drives it.</summary>
     public static SceneWorld World(Stage stage) => (SceneWorld)stage.World;

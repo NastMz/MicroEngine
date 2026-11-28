@@ -45,9 +45,10 @@ internal static class Ui
         font.Draw(r, text, at, Color.Lerp(Text, glow, 0.3f), scale);
     }
 
-    public static void Menu(IRenderer r, BitmapFont font, DemoKit.OptionList list, float cx, float y, float time, int lineHeight = 16, int width = 140)
+    /// <summary>A menu's rows, the highlighted one on a magenta bar with a bobbing cursor; the cursor moves and chooses (<see cref="MenuCursor"/>).</summary>
+    public static void Menu(IRenderer r, BitmapFont font, string[] options, MenuCursor list, float cx, float y, float time, int lineHeight = 16, int width = 140)
     {
-        for (int i = 0; i < list.Options.Count; i++)
+        for (int i = 0; i < options.Length; i++)
         {
             bool selected = i == list.Index;
             float ly = y + i * lineHeight;
@@ -58,7 +59,7 @@ internal static class Ui
                 float bob = MathF.Round(MathX.Wave(time, 2f, 1.5f));
                 Label(r, font, ">", new Vector2(cx - width / 2f + 6 + bob, ly), Cyan);
             }
-            Centered(r, font, list.Options[i], cx, ly, !list.IsEnabled(i) ? Muted : selected ? Gold : Text);
+            Centered(r, font, options[i], cx, ly, !list.IsEnabled(i) ? Muted : selected ? Gold : Text);
         }
     }
 

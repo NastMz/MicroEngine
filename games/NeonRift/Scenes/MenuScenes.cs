@@ -13,7 +13,8 @@ namespace NeonRift.Scenes;
 /// <summary>Title: drifting skyline, neon logo, start/controls/quit.</summary>
 internal sealed class TitleScene(RiftGame game) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
+    private static readonly string[] Options = ["START", "CONTROLS", "ACHIEVEMENTS", "QUIT"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private bool _controls, _leaving;
     private EntityId _skyline;
     private StageView? _view;
@@ -92,7 +93,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
         }
         else
         {
-            Ui.Menu(r, Font, _menu, r.Width / 2f, 150, Age);
+            Ui.Menu(r, Font, Options, _menu, r.Width / 2f, 150, Age);
             Ui.Centered(r, Font, _high.Get(game.Session.HighScore), r.Width / 2f, 220, Ui.Muted);
         }
         Ui.Centered(r, Font, "ART & AUDIO: ANSIMUZ, JUHANI JUNKALA (CC0)  -  ENGINE: MICROENGINE", r.Width / 2f, 256, Ui.Muted);
@@ -181,7 +182,8 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
 internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoint = 0) : Scene
 {
     private static readonly Color Red = Color.Hex("ff3050");
-    private readonly DemoKit.OptionList _menu = new("CONTINUE", "QUIT");
+    private static readonly string[] Options = ["CONTINUE", "QUIT"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private readonly NumberText _score = new(static (score, _) => $"SCORE {Ui.N(score, 7)}");
     private readonly NumberText _continues = new(static (left, _) => $"CONTINUES LEFT {left}");
     private bool _leaving;
@@ -222,7 +224,7 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
         Ui.Neon(r, Font, "GAME OVER", r.Width / 2f, 80, 4, Red, Age);
         Ui.Centered(r, Font, _score.Get(game.Session.Score), r.Width / 2f, 130, Ui.Text);
         Ui.Centered(r, Font, _continues.Get(game.Session.Continues), r.Width / 2f, 146, Ui.Muted);
-        Ui.Menu(r, Font, _menu, r.Width / 2f, 180, Age);
+        Ui.Menu(r, Font, Options, _menu, r.Width / 2f, 180, Age);
         Ui.Scanlines(r);
     }
 }

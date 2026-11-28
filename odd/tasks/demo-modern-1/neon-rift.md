@@ -91,3 +91,133 @@ removed code (machines, timers, the character controller) fails the identity con
   the surface).
 - L4 A stage without art (tests only) plays an effect as one frame at 16 a second; before, at the rate its caller
   passed. Two tests of `DrawBlendTests` changed with it.
+
+## Second pass (2026-11-27, after DEMO-GAPS-1 #218)
+
+Branch `feat/demo2-neon`, based on `debaa4a7`. Every row above that was kept or reported as a gap was decided again
+with the engine as it is now. Constraint: captures byte-identical to `main`; a trace may change only with proof that
+the game does the same things on the same updates.
+
+### Decisions
+
+| Row | Decision now | Evidence |
+| --- | --- | --- |
+| Shoulder and gun-tip pixel scan; hit boxes in code | **Replaced.** `Content/sprites.sheet` holds the points `shoulder` and `tip` of the nine gun poses and the boxes `hit` (seven enemy sheets, three bosses; `hit_carrier` on the skiff) and `hurt` (three hero poses). `Assets.AddRig` cuts the arm from the points; actors read `Sprite.Box` when they join. The stage takes the sheet's `SpriteAtlas`, so the optional `Rigs` and `Strips` lookups, the `Strip` record and their no-art fallbacks are gone. Still in code: shots, capsule, the hull turret (not frames of the sheet) and the movers' collision boxes | 339 of 339 files identical, traces included; `content check`: 85 files, 0 errors, 0 warnings; `content names --check`: up to date |
+| `DemoKit.OptionList` | **Replaced** with `MenuCursor` in the three menus (same wrap, same `Moved`, confirm consumed). The row (bar, underline, bobbing cursor) stays `Ui.Menu`, 14 lines: a `ControlSkin` on a canvas widget would hold the same lines, and its bob would follow the focus time, not the scene's age the row bobs on today. Not attempted | 339 of 339 identical, traces included |
+| `Stage.Schedule` | **Kept.** Two things stop `Timers`, measured below | pinned runs and audio captures differ |
+| Stage phase, player state, boss patterns, egg cycle | **Kept.** The exits are countable now (`AfterSteps` 157, 79, 36...), but the time in the state is also read as a number, and that number is the float sum | table below |
+| `Body` and Vela's movement | **Kept.** The differential is 113 of 25,849 steps apart, not zero | `ControllerDifferentialTests` |
+| Explosions, sparks, muzzle flashes | **Kept, gap.** `SpriteEffects` can be owned and stepped by the stage (a plain class, `Update(dt)`, `Draw`), and it counts a frame as `(int)(time * rate)` on a float sum as `Effect` does. It has no scale: four of the seven effect kinds are drawn at 0.5 or 0.75 (`hit1`, `hit2`, `hit3`, `hit4`). Splitting the effects in two lists would change their draw order | read of `SpriteEffects.Play` and `Draw` |
+| `Ui.Scanlines` | **Kept, gap.** `Scanlines { Strength = 0.07, Phase = 0.5 }` on `Scene.PostProcess` is pixel-identical on `sdl` and `raylib` once the scene paints its own background (a scene's chain does not darken the canvas colour showing through: 324 to 2,466 pixels 1 or 2 of 255 apart before that). On `sdl-software` the play scene then differs: 2,268 pixels of `s1-run.png` up to 21 of 255, all in the additive glow circles of the capsules; 25 of 40 captures of that platform | `kept/scanlines` in the scratch folder |
+
+### Why `Timers` cannot take the schedule
+
+1. **The update depends on the stage clock.** The game compares `_time + delay` with a float sum of steps. For the 14
+   delays whose product with 60 is not whole, the count is constant and equals the engine's rule. For the 7 that are
+   whole (0.9, 1.8, 2.6, 3.4, 0.2, 5 × 0.12, 5 × 0.09) it is N or N + 1 depending on when it is scheduled: over the
+   first 30 minutes of a stage, 0.9 s is 54 updates from 50,724 starting updates and 55 from 57,276. A fixed
+   `AfterSteps` cannot be right; counting the updates on the game's clock before adding the timer (six lines) is.
+2. **Order within one update.** With that count, every action fires on its update, but `Timers` calls the due ones in
+   the order added and the game's loop calls the last added first. In the Leviathan fight a hull turret's second shot
+   and a shot of the sweeping cannon fall on one update (pinned runs: update 2428 of `mortal3`; 2106, 3755 and 5791 of
+   `auto3`): the two enemy shots are spawned in the other order and the two `enemy-shot` sounds swap their pitch
+   jitter. 59 of 3,074 and 248 of 10,181 lines of the pinned runs change, and the audio captures of `auto3` and
+   `mortal3` differ. `Timers` has no setting for the order.
+
+### Why machines cannot take the timed states
+
+Float sum of 1/60 against what a machine gives (`calc2.cs` in the scratch folder):
+
+- `StateMachine.Time` is the rounded product, the game's timers are sums: they differ on 64 of the first 79 updates
+  (Vela's death spin is drawn as `_stateTime * -9`) and on 225 of the first 240 (the Hauler's strafe is
+  `sin(_strafe / 4 * π) * 250`, the Raptor's dash `InOutQuad(_dash / 1.3)`); positions are hashed and shots leave from them.
+- The warning band blinks on `(int)(t * 4) % 2`: on the float sum it toggles on updates 15, 30, 46, 61, 76, 91, 106,
+  121, 136, 151, not every 15.
+- The clear sequence explodes when `(int)(t * 10)` changes: updates 6, 12 ... 42, then 49, 55 ... 139.
+- The egg pod's cycle keeps the remainder of `% 4.2f`: its first cycle is 253 updates (open at 133, fire at 169), the
+  later ones 252 (132, 168).
+
+A machine with `AfterSteps` would hold the exits and the game would still keep the float for the rest.
+
+### Vela and `CharacterController2D`
+
+`tests/NeonRift.Tests/ControllerDifferentialTests.cs` drives a controller on a `TilePhysicsWorld2D` beside
+`Player.Step` with one motion (`MoveSpeed 118`, `Gravity 1000`, `MaxFallSpeed 430`, `JumpSpeed 400`,
+`JumpReleaseSpeedScale 0.45`, `JumpReleaseGravityScale 1`, no coyote or buffer, `LandingReach 1`,
+`DropThroughTime 0.25`), the body's origin at the box's top-left corner, and the game's rules around the step: the
+box placed from the feet every step, the drop decided by the game and started two pixels down, the camera clamp and a
+respawn as `Position =`, a hit and a death as `Velocity =` (the grounded flag stays as it was, as in the game), a
+death's fall as a second motion. Compared exactly: position, velocity, ground.
+
+- Ten small stages, one per rule (run, full jump, hop, tap, ceiling, wall, ledge, platform and drop, kneel and plant,
+  pit): 0 apart.
+- The three stages with the autopilot, mortal and not, and the scripts `stage1`, `poses`, `tour`: 25,849 steps, 113
+  apart, all in height only and by under 0.0001 px. First: stage 1, step 1509: Vela at y = 224, the controller at
+  223.99991.
+- Cause: Vela is grounded when ground is within a pixel under her feet and keeps her falling speed until the floor
+  stops her on the next step, which puts her on it exactly. The game writes that on the controller as one line (a
+  landing that nothing stopped gets `LandingSpeed` back). When such a landing ends within the tile world's contact
+  distance of the floor and she is not running, the controller takes her as at rest and never makes that move.
+- Three things found on the way that the mapping needs: `Kill` during a jump must not be cut by a released jump
+  (the death motion sets `JumpReleaseSpeedScale = 1`); the ground must not stop a death's slide before it moves
+  (`Deceleration = 0`); the feet-to-box conversion every step is part of the game's arithmetic.
+
+### Engine gaps that remain
+
+1. A game whose character lands on ground a pixel under its feet and falls the rest on the next step is 0.00009 px
+   off on the controller: the tile world's `Move` by zero reports ground within its contact distance, where
+   `TileMotion` needs the floor to stop the move.
+2. A game whose scheduler calls the last added of two actions due on one update first cannot move to `Timers`
+   without swapping them; there is no order setting.
+3. A game with a hand-kept float clock gets N or N + 1 updates for a delay whose product with the rate is whole; it
+   has to count the updates on its own clock before `AfterSteps`. Neither `Timers` nor a machine can be told "this
+   clock is a float sum".
+4. `StateMachine.Time` cannot be the sum a hand-kept timer has, so a game that draws or moves with the time in a
+   state keeps its float beside the machine.
+5. `SpriteEffects.Play` has no scale (nor rotation or blend): a game with scaled impact sparks keeps its own effects.
+6. `Scene.PostProcess` on `sdl-software` changes the additive shapes a scene draws; and a scene's chain leaves the
+   canvas colour behind an unpainted pixel untouched, so the scene must paint its background.
+7. `microengine content names` writes no constants for the names of points and boxes: `"hit"`, `"hurt"`,
+   `"shoulder"` and `"tip"` are strings in the game.
+
+### `games/Shared` still used
+
+`DemoKit.AchievementBanners` (`RiftGame`) and `DemoKit.AchievementList` (the title's achievements screen): not looked
+at in this pass. `OptionList` is no longer referenced by the game's own code; `AchievementList` may use it inside
+the kit.
+
+### Lines of game code (C#, generated file left out)
+
+| Area | Before | After |
+| --- | --- | --- |
+| `Program.cs`, `RiftGame.cs` | 203 | 203 |
+| `Art/` | 258 | 228 |
+| `Gameplay/` | 2221 | 2233 |
+| `Levels/` | 238 | 238 |
+| `Scenes/` | 720 | 723 |
+| `tests/NeonRift.Tests` | 1223 | 1680 |
+| `Content/sprites.sheet` | 82 | 91 |
+
+Deleted: the pixel scan and the pending-rig list (`Assets`, 30 lines), eleven typed hit boxes, the `Strip` record and
+the two optional lookups with their fallbacks. Added: one `Joined` line per kind that reads its box. The game is 5
+lines shorter; what would have shortened it more fails the identity constraint for the reasons above.
+
+### Verification
+
+- Baseline from a build of `origin/main` (`debaa4a7`) in a scratch copy: 19 scenarios (the seven scripts with their
+  environments, the three other weapons, stages 1 and 3 on the autopilot, three mortal runs, a mortal tour, the card
+  and game over starts, a checkpoint start): 339 files (captures, traces with sections, audio captures). Two
+  recordings identical. The other desktop platforms (`raylib`, `sdl`, `sdl-software`): six scenarios each, 120 captures.
+- After each commit: 339 of 339 identical; at the end 120 of 120 on the other platforms.
+- `PinnedBehaviourTests`: 14 runs of the real game, one line per update (actors, pose, sounds, effect frames), digests
+  recorded before any change; unchanged by every commit.
+- A save written by `main` (`--saves`, high score 3750) gives the same title capture in both builds.
+- `dotnet test tests/NeonRift.Tests -c Release`: 88 passed, 0 failed. `dotnet build MicroEngine.slnx -c Release`: 0 warnings.
+
+### Log
+
+- L5 An audio capture of a muted run is silence: `--mute --audio-capture` writes zeros. The first pass's seven WAV
+  files, recorded that way, compared nothing. This pass records audio in a second run without `--mute`.
+- L6 `sdl-software` is not a CI reference but a platform players fall back to; the scanlines attempt passed on the
+  default platform and failed there.
+- L7 The test of an effect on a stage without art (L4) went with that case: a stage always has the sheet now.

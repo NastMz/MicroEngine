@@ -12,8 +12,6 @@ namespace NeonRift.Gameplay;
 
 public enum StagePhase { Playing, Warning, Boss, Cleared, GameOver }
 
-/// <summary>What play needs to know of a clip of the art: how many frames it has and the rate it plays at.</summary>
-public readonly record struct Strip(int Frames, float Fps);
 
 /// <summary>
 /// One stage in play: forward-only scrolling camera, spawn triggers, collisions between the player,
@@ -37,12 +35,14 @@ public sealed class Stage : IStateHashed
     /// <param name="def">The stage to play.</param>
     /// <param name="session">The run's lives, score and weapon.</param>
     /// <param name="world">Where the stage's actors live: the play scene's <c>Objects</c>, stepped with the scene.</param>
+    /// <param name="art">The sprites of <c>Content/sprites.sheet</c>: play reads their hit boxes, the gun poses' points and the clips' lengths.</param>
     /// <param name="checkpoint">The checkpoint to start from (0: the start).</param>
     /// <param name="seed">The seed of the stage's generator.</param>
-    public Stage(StageDef def, Session session, IWorld world, int checkpoint = 0, int seed = 7)
+    public Stage(StageDef def, Session session, IWorld world, SpriteAtlas art, int checkpoint = 0, int seed = 7)
     {
         Def = def;
         World = world;
+        Art = art;
         _session = session;
         // Simulation draws from it (the rapid gun's jitter, trooper timing, boss explosions): a SeededRandom draws the
         // same sequence as new Random(seed) and takes part in the state hash.
@@ -78,6 +78,8 @@ public sealed class Stage : IStateHashed
     public Player Player { get; }
     /// <summary>The world the stage's actors and camera live in.</summary>
     public IWorld World { get; }
+    /// <summary>The sprites of the sheet, for what the rules read of them: boxes, points and how long a clip plays.</summary>
+    public SpriteAtlas Art { get; }
     /// <summary>The camera's entity: its transform follows <see cref="Camera"/> after every update, so the scroll is drawn between updates.</summary>
     public EntityId CameraEntity { get; }
     /// <summary>Living enemies (bosses and their turrets included), in spawn order.</summary>
@@ -108,12 +110,7 @@ public sealed class Stage : IStateHashed
     public Action<string>? MusicSink { get; set; }
     /// <summary>Called when the player destroys an enemy (achievement progress).</summary>
     public Action<Enemy>? DefeatSink { get; set; }
-    /// <summary>Optional lookup of the hero's arm rigs so bullets leave the drawn gun; tests can leave it null.</summary>
-    internal Func<string, ArmRig?>? Rigs { get; set; }
-    /// <summary>Optional lookup of a clip's length and rate (an effect plays its clip once, the run cycle places the muzzle); null in tests that need neither.</summary>
-    public Func<string, Strip>? Strips { get; set; }
-    /// <summary>The length and rate of the clip <paramref name="clip"/>, from <see cref="Strips"/>; one frame at 16 a second without it.</summary>
-    public Strip Strip(string clip) => Strips?.Invoke(clip) ?? new Strip(1, 16);
+
     /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
     internal List<Enemy> HitBuffer { get; } = [];
 

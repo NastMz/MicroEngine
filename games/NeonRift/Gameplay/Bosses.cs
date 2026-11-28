@@ -60,8 +60,9 @@ public sealed class Gunship : Boss
     public Gunship(Vector2 home) : base(home, 55)
     {
         Position = home + new Vector2(300, -40);
-        Hitbox = new RectF(-70, -30, 140, 60);
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Gunship0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the attack timer, the next pattern and the strafe run's time.</summary>
     public override void HashState(StateHasher hash)
@@ -144,8 +145,9 @@ public sealed class Interceptor : Boss
     public Interceptor(Vector2 home) : base(home, 85)
     {
         Position = home + new Vector2(320, -80);
-        Hitbox = new RectF(-60, -40, 120, 75);
     }
+
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Interceptor0].Box("hit");
 
     /// <summary>Adds the enemy's state, then the attack timer, the next pattern, the dash (time and ends) and the facing.</summary>
     public override void HashState(StateHasher hash)
@@ -232,9 +234,11 @@ public sealed class Dreadnought : Boss
     public Dreadnought(Vector2 home) : base(home, 120)
     {
         Position = home + new Vector2(360, -30);
-        Hitbox = new RectF(-110, -40, 170, 100);
         EntryTime = 3.2f;
     }
+
+    // The ship is drawn mirrored (its file faces the other way), and so is its box.
+    protected override void Joined() => Hitbox = Stage.Art[Names.SpriteNames.Dreadnought0].Box("hit", flipX: true);
 
     /// <summary>Adds the enemy's state, then the attack timer, the next pattern and how many turrets were mounted (the turrets are hashed with the stage's enemies).</summary>
     public override void HashState(StateHasher hash)
