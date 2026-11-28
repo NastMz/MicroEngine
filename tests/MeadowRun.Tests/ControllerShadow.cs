@@ -16,8 +16,7 @@ namespace MeadowRun.Tests;
 /// <remarks>
 /// <para>The shadow lives in a tile physics world of its own: the level's grid as tile geometry, a body for each
 /// moving platform (moved to where the stage left it; Pip does not collide with it, the game's own rule decides when
-/// he stands on it), a box for each hidden block with the controller's <see cref="CharacterController2D.Solid"/> rule,
-/// and one kinematic body whose origin is Pip's top-left corner, so positions compare without a conversion.</para>
+/// he stands on it) and one kinematic body whose origin is Pip's top-left corner, so positions compare without a conversion.</para>
 /// <para>The mapping is what a developer making this game on the controller would write: one
 /// <see cref="CharacterMotion"/> with the numbers of <see cref="Tuning"/>, the input passed as it is, and the two rules
 /// that are the game's own written after the step (a hidden block stops the head, a platform catches Pip a little
@@ -64,28 +63,35 @@ internal sealed class ControllerShadow
     };
 
     private readonly Stage _stage;
-    private readonly Level _mirror;
     private readonly TilePhysicsWorld2D _world = new();
     private readonly List<BodyId> _platforms = [];
     private readonly List<ShapeId> _platformShapes = [];
     private readonly List<Vector2> _platformWas = [];
-    private readonly Dictionary<ShapeId, (int X, int Y)> _hidden = [];
     private readonly bool _closedLoop;
-    private bool _inSync = true;
+    private Player? _last;
+    private (int X, int Y)? _bumped;
     private int _resyncedAt = -Settle;
+    private Divergence? _apart;
+    private int _apartSince;
 
     public CharacterController2D Hero { get; }
     /// <summary>Steps in which both movers ran.</summary>
     public int Steps { get; private set; }
-    /// <summary>Steps in which the stage changed Pip after his mover ran (a stomp, a spring, a hit, the goal).</summary>
+    /// <summary>Steps before which the stage had changed Pip since his mover last ran (a stomp, a spring, a hit, the goal).</summary>
     public int Interventions { get; private set; }
-    /// <summary>Steps in which the stage threw Pip (a stomp, a spring, spikes) and the shadow did the same with a placement and a launch.</summary>
+    /// <summary>Times the stage threw Pip (a stomp, a spring, spikes) and the shadow did the same with a placement and a launch.</summary>
     public int Launches { get; private set; }
+    /// <summary>Times the stage placed or stopped Pip (the goal pole) and the shadow did the same by setting its position and velocity.</summary>
+    public int Placements { get; private set; }
     /// <summary>Times the controller's state was copied from Pip because the two were apart: none in a run the controller follows.</summary>
     public int Restores { get; private set; }
+    /// <summary>Steps after which the controller's air time (0 on the ground) was not Pip's, and landings whose impact computed from it was not Pip's.</summary>
+    public (int AirTime, int LandImpact) AirApart { get; private set; }
     /// <summary>For each step compared, Pip before it and the input: his position, velocity, ground and jump state.</summary>
     public List<(Vector2 Position, Vector2 Velocity, bool Grounded, bool Jumping, PlayerInput Input)> Situations { get; } = [];
-    /// <summary>Closed loop: steps that started with the two together and ended with them apart.</summary>
+    /// <summary>Kinds of step compared: a name (landing, jump, drop, platform, head bump...) and how many.</summary>
+    public Dictionary<string, int> Kinds { get; } = [];
+    /// <summary>Closed loop: steps that started with the two movers in the same state and ended with them apart.</summary>
     public List<Divergence> Divergences { get; } = [];
     /// <summary>Open loop: the first step at which the shadow was not where Pip was; -1 when it never left him.</summary>
     public int FirstApart { get; private set; } = -1;
@@ -105,20 +111,24 @@ internal sealed class ControllerShadow
     /// the shadow had followed Pip by itself for the last <see cref="Settle"/> steps, so the step shows a rule and not
     /// what putting the shadow back left behind.
     /// </summary>
-    public sealed record Divergence(int Step, string Situation, string Differs, Vector2 Position, Vector2 Velocity, bool Pristine, string Detail);
+    public sealed record Divergence(int Step, string Situation, string Differs, Vector2 Position, Vector2 Velocity, bool Pristine, string Detail)
+    {
+        /// <summary>Steps the controller went on by itself until it was again what Pip was; -1 when it was not within <see cref="HealLimit"/> steps.</summary>
+        public int Healed { get; set; } = -1;
+        /// <summary>The farthest the controller got from Pip while they were apart, in pixels.</summary>
+        public float Farthest { get; set; }
+    }
 
+    /// <summary>Steps a controller that left Pip is left on its own before it is given his state.</summary>
+    public const int HealLimit = 240;
+
+    /// <summary>Shadows <paramref name="stage"/>'s Pip from now on: the stage calls the shadow before each step of his mover.</summary>
     public ControllerShadow(Stage stage, bool closedLoop)
     {
         _stage = stage;
         _closedLoop = closedLoop;
-        _mirror = new Level(stage.Level.Def);
         var level = _world.CreateBody(default, BodyDescription.Static());
-        _world.AddTiles(level, _mirror.Grid);
-        var tiles = stage.Level.Tiles;
-        for (int y = 0; y < tiles.Height; y++)
-        for (int x = 0; x < tiles.Width; x++)
-            if (tiles[x, y] == Tile.HiddenLife)
-                _hidden[_world.AddShape(level, ShapeDescription.Box(new Vector2(16, 16), new Vector2(x * 16 + 8, y * 16 + 8)))] = (x, y);
+        _world.AddTiles(level, stage.Level.Grid);
         foreach (var platform in stage.Platforms)
         {
             var bounds = platform.Bounds;
@@ -129,43 +139,51 @@ internal sealed class ControllerShadow
         }
         var size = new Vector2(Player.Width, Player.Height);
         Hero = CharacterController2D.Create(_world, default, stage.Player.Position, size, Pip, mask: CollisionLayers.All & ~Platforms, offset: size / 2);
-        // A hidden block is solid only for a head that comes up from below it, in its column, until it is found
-        // (the stage then makes the tile a used block, which the grid holds).
-        Hero.Solid = (hero, id) =>
-        {
-            if (!_hidden.TryGetValue(id, out var cell)) return true;
-            if (_mirror.Tiles[cell.X, cell.Y] != Tile.HiddenLife) return false;
-            float head = hero.Position.Y, under = (cell.Y + 1) * Level.TileSize;
-            int column = (int)MathF.Floor((hero.Position.X + Player.Width / 2f) / Level.TileSize);
-            return hero.Velocity.Y < 0 && head >= under - 0.01f && column == cell.X;
-        };
+        stage.PipSteppingForTesting = OnPipStep;
     }
 
-    /// <summary>One update of the stage inside one step of its world, then the same step for the shadow.</summary>
-    public void Step(PlayerInput input)
+    /// <summary>
+    /// Called by the stage just before Pip's mover runs (while playing, on the walk off the goal, in the victory
+    /// pose): the platforms have moved, the tiles are what the mover will see. Runs the mover on a copy of Pip and
+    /// the controller, and compares them.
+    /// </summary>
+    private void OnPipStep(float dt, PlayerInput raw)
     {
         var player = _stage.Player;
-        var before = player.Clone();
-        var expected = player.Clone();
-        var phase = _stage.Phase;
-        var tiles = _stage.Level.Tiles;
-        for (int y = 0; y < tiles.Height; y++)
-        for (int x = 0; x < tiles.Width; x++)
-            if (_mirror.Tiles[x, y] != tiles[x, y]) _mirror.SetTile(x, y, tiles[x, y]);
+        // Input is ignored while Pip is not controllable (the goal, the victory); the game passes none.
+        var input = player.Controllable ? raw : default;
 
-        var world = (SceneWorld)_stage.Objects;
-        world.BeginStep(world.SteppedAt + 1, Dt);
-        float step = world.Clock.Delta;
-        _stage.Update(Dt, input);
-        world.EndStep();
-        if (phase != StagePhase.Playing || step == 0)
+        // What the stage did to Pip since his mover last ran, written as the game writes it.
+        if (_last is { } last && !(last.Position == player.Position && last.Velocity == player.Velocity && last.Grounded == player.Grounded && last.Jumping == player.Jumping))
         {
-            // Pip's mover did not run (a hit-stop, the goal, a death): nothing to compare.
-            if (phase != StagePhase.Playing) _inSync = false;
-            return;
+            Interventions++;
+            if (_closedLoop)
+            {
+                Hero.Position = player.Position;
+                if (player.Velocity != last.Velocity && player.Velocity.Y < 0)
+                {
+                    // A stomp's bounce, a spring, spikes.
+                    Hero.Launch(player.Velocity, cuttable: player.Jumping);
+                    Launches++;
+                }
+                else
+                {
+                    // The goal pole: Pip is put on it and stopped.
+                    Hero.Velocity = player.Velocity;
+                    Placements++;
+                }
+            }
         }
-        // The open loop compares Pip as the stage leaves him: a step in which the stage ended the play is the stage's.
-        if (!_closedLoop && _stage.Phase != StagePhase.Playing) return;
+        if (_closedLoop && !SameAs(player, events: false))
+        {
+            // A controller that left Pip goes on by itself for a while, to see whether and when it is him again.
+            if (_apart is not null && Steps - _apartSince < HealLimit) _apart.Farthest = MathF.Max(_apart.Farthest, Vector2.Distance(Hero.Position, player.Position));
+            else
+            {
+                Resync(player);
+                _apart = null;
+            }
+        }
 
         var rides = new List<IRideable>();
         for (int i = 0; i < _stage.Platforms.Count; i++)
@@ -175,58 +193,101 @@ internal sealed class ControllerShadow
             _platformWas[i] = _world.PositionOf(_platforms[i]);
             _world.SetPosition(_platforms[i], platform.Bounds.Position);
         }
-        expected.Step(step, input, _mirror, rides);
-        bool intervened = !Same(expected.Position, expected.Velocity, expected.Grounded, player);
-        if (intervened) Interventions++;
-        Situations.Add((before.Position, before.Velocity, before.Grounded, before.Jumping, input));
+        var expected = player.Clone();
+        expected.Step(dt, input, _stage.Level, rides);
+        Situations.Add((player.Position, player.Velocity, player.Grounded, player.Jumping, input));
 
-        if (_closedLoop && !_inSync) Resync(before);
-        StepHero(step, input);
+        StepHero(dt, input);
         Steps++;
-        bool nudged = before.Velocity.X == 0 && input.Axis == 0 && before.Riding is null && expected.Position.X != before.Position.X;
+        bool nudged = player.Velocity.X == 0 && input.Axis == 0 && player.Riding is null && expected.Position.X != player.Position.X;
         Corners = (Corners.Game + (nudged ? 1 : 0), Corners.Controller + ((Hero.Events & CharacterEvents.CornerCorrected) != 0 ? 1 : 0));
+        Count(player, expected, input, nudged);
+        float air = Hero.IsGrounded ? 0 : Hero.AirTime;
+        bool landed = (expected.Events & PlayerEvents.Landed) != 0;
+        AirApart = (AirApart.AirTime + (air != expected.AirTime ? 1 : 0), AirApart.LandImpact + (landed && MathF.Min(1, Hero.AirTime / 0.6f) != expected.LandImpact ? 1 : 0));
 
+        bool followed = SameAs(expected, events: true);
         if (_closedLoop)
         {
-            bool followed = SameAs(expected);
-            if (_inSync && !followed) Divergences.Add(Describe(before, expected, input));
-            // The stage threw Pip after his mover ran (a stomp's bounce, a spring, spikes): the game's code for it.
-            if (followed && intervened && _stage.Phase == StagePhase.Playing && !player.Grounded)
+            if (followed && _apart is not null)
             {
-                Hero.Position = player.Position;
-                Hero.Launch(player.Velocity, cuttable: player.Jumping);
-                Launches++;
+                _apart.Healed = Steps - _apartSince;
+                _apart = null;
             }
-            _inSync = Same(Hero.Position, Hero.Velocity, Hero.IsGrounded, player) && Hero.IsJumping == player.Jumping;
-            return;
+            else if (!followed && _apart is null)
+            {
+                _apart = Describe(player, expected, input);
+                _apartSince = Steps;
+                Divergences.Add(_apart);
+            }
+            if (_apart is not null) _apart.Farthest = MathF.Max(_apart.Farthest, Vector2.Distance(Hero.Position, expected.Position));
         }
-        Apart = Hero.Position - player.Position;
-        float distance = Apart.Length();
-        if (!SameAs(player))
+        else
         {
-            StepsApart++;
-            if (FirstApart < 0)
+            Apart = Hero.Position - expected.Position;
+            float distance = Apart.Length();
+            if (!followed)
             {
-                FirstApart = Steps;
-                FirstApartDetail = string.Create(CultureInfo.InvariantCulture,
-                    $"game pos=({player.Position.X:R}, {player.Position.Y:R}) vel=({player.Velocity.X:R}, {player.Velocity.Y:R}) grounded={player.Grounded} events={player.Events}; controller pos=({Hero.Position.X:R}, {Hero.Position.Y:R}) vel=({Hero.Velocity.X:R}, {Hero.Velocity.Y:R}) grounded={Hero.IsGrounded} events={Hero.Events}");
+                StepsApart++;
+                if (FirstApart < 0)
+                {
+                    FirstApart = Steps;
+                    FirstApartDetail = string.Create(CultureInfo.InvariantCulture,
+                        $"game pos=({expected.Position.X:R}, {expected.Position.Y:R}) vel=({expected.Velocity.X:R}, {expected.Velocity.Y:R}) grounded={expected.Grounded} events={expected.Events}; controller pos=({Hero.Position.X:R}, {Hero.Position.Y:R}) vel=({Hero.Velocity.X:R}, {Hero.Velocity.Y:R}) grounded={Hero.IsGrounded} events={Hero.Events}");
+                }
             }
+            if (distance > Farthest.Pixels) Farthest = (distance, Steps);
         }
-        if (distance > Farthest.Pixels) Farthest = (distance, Steps);
+        _last = expected;
+    }
+
+    private void Count(Player before, Player expected, PlayerInput input, bool nudged)
+    {
+        void Add(string kind) => Kinds[kind] = Kinds.GetValueOrDefault(kind) + 1;
+        var e = expected.Events;
+        if ((e & PlayerEvents.Jumped) != 0) Add(before.Grounded ? "jump" : "coyote jump");
+        if ((e & PlayerEvents.Landed) != 0) Add(expected.Riding is not null ? "landing on a platform" : "landing");
+        if ((e & PlayerEvents.Skid) != 0) Add("skid");
+        if ((e & PlayerEvents.DroppedThrough) != 0) Add("drop through a plank");
+        if ((e & PlayerEvents.HeadBump) != 0) Add(_stage.Level.Tiles[expected.BumpedTile.X, expected.BumpedTile.Y] == Tile.HiddenLife ? "hidden block" : "head bump");
+        if (nudged) Add("corner nudge");
+        if (before.Riding is not null && expected.Riding is not null) Add("riding a platform");
+        if (before.Riding is not null && (e & PlayerEvents.Jumped) != 0) Add("jump off a platform");
+        if (before.Velocity.X != 0 && expected.Velocity.X == 0 && input.Axis != 0) Add("wall stop");
+        if (before.Grounded && !expected.Grounded && e == PlayerEvents.None) Add("ledge");
+        if (before.Jumping && !input.JumpHeld && before.Velocity.Y < 0) Add("jump cut");
+        if (!before.Jumping && before.Velocity.Y < 0 && !before.Grounded) Add("rising after a launch");
+        if (before.DropTimer > 0) Add("inside the drop window");
+        if (_stage.Phase != StagePhase.Playing) Add(_stage.Phase == StagePhase.WalkOff ? "walk off the goal" : "victory pose");
+        if (_stage.Boss is { Active: true }) Add("boss fight");
     }
 
     /// <summary>The game's step on the controller: what a developer would write in the game.</summary>
     private void StepHero(float dt, PlayerInput input)
     {
-        float bottomBefore = Hero.Position.Y + Player.Height;
+        float topBefore = Hero.Position.Y, bottomBefore = topBefore + Player.Height;
         // Down and jump drops through a plank, not through a platform Pip rides.
         bool riding = _platformShapes.Contains(Hero.Ground);
         Hero.Step(dt, new CharacterInput(input.Axis, input.JumpPressed, input.JumpHeld, Drop: input.Down && !riding, Run: input.RunHeld));
 
-        // A hidden block stops the head where other ceilings send it down.
-        if ((Hero.Events & CharacterEvents.HitCeiling) != 0)
-            foreach (var contact in Hero.LastMove.Contacts)
-                if (_hidden.ContainsKey(contact.Shape)) Hero.Velocity = Hero.Velocity with { Y = 0 };
+        // The block bumped is the one over the middle of Pip's head, else the one over a corner of it.
+        bool ceiling = (Hero.Events & CharacterEvents.HitCeiling) != 0;
+        _bumped = ceiling ? BumpedTile(Hero.Position) : null;
+
+        // A hidden block is no shape of the world: a head that comes up from under it, in its column, finds it. Pip
+        // stops under it where other ceilings send him down.
+        var now = Hero.Position;
+        if (ceiling || now.Y < topBefore)
+        {
+            int row = (int)MathF.Floor((ceiling ? now.Y - 0.5f : now.Y) / Level.TileSize), column = (int)MathF.Floor((now.X + Player.Width / 2f) / Level.TileSize);
+            float under = (row + 1) * Level.TileSize;
+            if (row >= 0 && topBefore >= under - 0.01f && _stage.Level.Tiles[column, row] == Tile.HiddenLife)
+            {
+                Hero.Position = new Vector2(now.X, under);
+                Hero.Launch(Hero.Velocity with { Y = 0 });
+                _bumped = (column, row);
+            }
+        }
 
         // A platform catches Pip when his feet were above it (or up to 2.5 px inside it) and are now within half a
         // pixel over its top or below it, a pixel in from its ends.
@@ -245,6 +306,16 @@ internal sealed class ControllerShadow
         }
     }
 
+    private (int X, int Y) BumpedTile(Vector2 at)
+    {
+        var level = _stage.Level;
+        int row = (int)MathF.Floor((at.Y - 1) / Level.TileSize);
+        int center = (int)MathF.Floor((at.X + Player.Width / 2f) / Level.TileSize);
+        if (level.IsSolid(center, row)) return (center, row);
+        int left = (int)MathF.Floor(at.X / Level.TileSize), right = (int)MathF.Floor((at.X + Player.Width - 0.01f) / Level.TileSize);
+        return level.IsSolid(left, row) ? (left, row) : (right, row);
+    }
+
     /// <summary>Gives the shadow Pip's state: his position, velocity, ground, jump and timers.</summary>
     private void Resync(Player pip)
     {
@@ -259,31 +330,38 @@ internal sealed class ControllerShadow
             GroundPosition = ride < 0 ? default : _platformWas[ride],
             CoyoteTime = pip.CoyoteTimer, JumpBuffer = pip.BufferTimer, DropThroughTime = pip.DropTimer,
         });
-        _inSync = true;
     }
 
+    /// <summary>The index of the platform <paramref name="ride"/> is: the stage's own, or the copy made of it for a step.</summary>
     private int IndexOfRide(IRideable ride)
     {
         for (int i = 0; i < _stage.Platforms.Count; i++)
-            if (ReferenceEquals(_stage.Platforms[i], ride)) return i;
+            if (ReferenceEquals(_stage.Platforms[i], ride) || _stage.Platforms[i].Bounds == ride.Bounds) return i;
         return -1;
     }
 
-    /// <summary>Whether the controller is, after its step, what <paramref name="pip"/> is after his: everything the next step depends on, and the step's events.</summary>
-    private bool SameAs(Player pip)
+    /// <summary>
+    /// Whether the controller is what <paramref name="pip"/> is: everything the next step depends on (position,
+    /// velocity, ground, the platform ridden, the jump that can be cut, the timers) and, with <paramref name="events"/>,
+    /// what the step reported (jumped, landed, dropped, skidded, the block bumped).
+    /// </summary>
+    private bool SameAs(Player pip, bool events)
     {
         var state = Hero.Snapshot();
-        return Same(state.Position, state.Velocity, state.IsGrounded, pip)
+        int ride = _platformShapes.IndexOf(state.Ground);
+        if (!(state.Position == pip.Position && state.Velocity == pip.Velocity && state.IsGrounded == pip.Grounded
+            && ride == (pip.Riding is null ? -1 : IndexOfRide(pip.Riding))
             && state.IsJumping == pip.Jumping
-            && state.CoyoteTime == pip.CoyoteTimer && state.JumpBuffer == pip.BufferTimer && state.DropThroughTime == pip.DropTimer
+            && state.CoyoteTime == pip.CoyoteTimer && state.JumpBuffer == pip.BufferTimer && state.DropThroughTime == pip.DropTimer)) return false;
+        if (!events) return true;
+        bool bump = (pip.Events & PlayerEvents.HeadBump) != 0;
+        return state.IsSkidding == pip.Skidding
             && ((state.Events & CharacterEvents.Jumped) != 0) == ((pip.Events & PlayerEvents.Jumped) != 0)
             && ((state.Events & CharacterEvents.Landed) != 0) == ((pip.Events & PlayerEvents.Landed) != 0)
             && ((state.Events & CharacterEvents.DroppedThrough) != 0) == ((pip.Events & PlayerEvents.DroppedThrough) != 0)
-            && ((state.Events & CharacterEvents.Skidded) != 0) == ((pip.Events & PlayerEvents.Skid) != 0);
+            && ((state.Events & CharacterEvents.Skidded) != 0) == ((pip.Events & PlayerEvents.Skid) != 0)
+            && bump == _bumped.HasValue && (!bump || _bumped == pip.BumpedTile);
     }
-
-    private static bool Same(Vector2 position, Vector2 velocity, bool grounded, Player pip) =>
-        position == pip.Position && velocity == pip.Velocity && grounded == pip.Grounded;
 
     private Divergence Describe(Player before, Player expected, PlayerInput input)
     {
@@ -299,7 +377,7 @@ internal sealed class ControllerShadow
         if ((expected.Events & PlayerEvents.Skid) != 0) parts.Add("skid");
         if ((expected.Events & PlayerEvents.DroppedThrough) != 0) parts.Add("drop");
         if ((expected.Events & PlayerEvents.HeadBump) != 0)
-            parts.Add(_mirror.Tiles[expected.BumpedTile.X, expected.BumpedTile.Y] == Tile.HiddenLife ? "hidden block" : "head bump");
+            parts.Add(_stage.Level.Tiles[expected.BumpedTile.X, expected.BumpedTile.Y] == Tile.HiddenLife ? "hidden block" : "head bump");
         if ((Hero.Events & CharacterEvents.CornerCorrected) != 0) parts.Add("corner (controller)");
         if ((Hero.Events & CharacterEvents.HitCeiling) != 0 && (expected.Events & PlayerEvents.HeadBump) == 0) parts.Add("ceiling (controller only)");
         if ((Hero.Events & CharacterEvents.Landed) != 0 && (expected.Events & PlayerEvents.Landed) == 0) parts.Add("landing (controller only)");
@@ -319,9 +397,14 @@ internal sealed class ControllerShadow
         if (state.CoyoteTime != expected.CoyoteTimer) differs.Add("coyote");
         if (state.JumpBuffer != expected.BufferTimer) differs.Add("buffer");
         if (state.DropThroughTime != expected.DropTimer) differs.Add("drop timer");
-        if (differs.Count == 0) differs.Add($"events (game {expected.Events}, controller {Hero.Events})");
+        if (_platformShapes.Contains(state.Ground) != (expected.Riding is not null)) differs.Add("riding");
+        if (differs.Count == 0) differs.Add($"events (game {expected.Events} bumped {expected.BumpedTile}, controller {Hero.Events} bumped {_bumped})");
         string detail = string.Create(CultureInfo.InvariantCulture,
             $"before pos=({before.Position.X:R}, {before.Position.Y:R}) vel=({before.Velocity.X:R}, {before.Velocity.Y:R}); game pos=({expected.Position.X:R}, {expected.Position.Y:R}) vel=({expected.Velocity.X:R}, {expected.Velocity.Y:R}); controller pos=({Hero.Position.X:R}, {Hero.Position.Y:R}) vel=({Hero.Velocity.X:R}, {Hero.Velocity.Y:R})");
+        var contacts = new List<string>();
+        foreach (var contact in Hero.LastMove.Contacts)
+            contacts.Add(string.Create(CultureInfo.InvariantCulture, $"tiles normal ({contact.Normal.X}, {contact.Normal.Y}){(contact.Stopped ? " stopped" : "")}"));
+        detail += string.Create(CultureInfo.InvariantCulture, $"; controller events {Hero.Events}, moved by ({Hero.LastMove.Delta.X:R}, {Hero.LastMove.Delta.Y:R}), touches [{string.Join("; ", contacts)}]; input {input}");
         return new Divergence(Steps, string.Join(", ", parts), string.Join(" ", differs), position, velocity, Steps - _resyncedAt > Settle, detail);
     }
 

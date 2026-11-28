@@ -16,8 +16,6 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private Stage _stage = null!;
     private StageView _view = null!;
     private bool _leaving;
-    private readonly HudLabels _hud = new();
-    private readonly NumberLabel _flag = new(), _bonus = new(), _total = new();
     private int _scoreAtStart;
 
     public Stage Stage => _stage;
@@ -48,6 +46,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             MusicSink = game.Music,
             StompSink = () => game.Achievements.AddProgress(MeadowAchievements.Stomper),
         };
+        game.StageCreatedForTesting?.Invoke(_stage);
         _view = new StageView(game.Art, Font, game.Lights);
         _view.Bind(_stage);
         _scoreAtStart = game.Session.Score;
@@ -125,7 +124,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     public override void Draw(IRenderer r)
     {
         _view.Draw(r, _stage, DrawTime.Of(this), Objects.Blend);
-        Ui.Hud(r, Font, game.Art, game.Session, _stage, Age, _hud);
+        Ui.Hud(r, Font, game.Art, game.Session, _stage, Age);
         if (_stage.Phase == StagePhase.Tally) DrawTally(r);
         if (_stage.Phase == StagePhase.Victory)
             Ui.Centered(r, Font, "THE SUNSTONE IS HOME!", 160, 60, Pal.Butter, 2);
@@ -137,14 +136,12 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "COURSE CLEAR!", 160, 54, Pal.Butter);
         Ui.Text(r, Font, "Flag", new Vector2(104, 70), Pal.Haze);
-        string flag = _flag.For(_stage.FlagScore), bonus = _bonus.For(_stage.TimeBonus);
-        Ui.Text(r, Font, flag, new Vector2(214 - Font.MeasureWidth(flag), 70));
+        Ui.Right(r, Font, _stage.FlagScore, 214, 70);
         Ui.Text(r, Font, "Time", new Vector2(104, 82), Pal.Haze);
-        Ui.Text(r, Font, bonus, new Vector2(214 - Font.MeasureWidth(bonus), 82));
+        Ui.Right(r, Font, _stage.TimeBonus, 214, 82);
         r.FillRect(new RectF(104, 94, 112, 1), Pal.Gold.WithAlpha(0.6f));
-        string total = _total.For(game.Session.Score);
         Ui.Text(r, Font, "Score", new Vector2(104, 98), Pal.Gold);
-        Ui.Text(r, Font, total, new Vector2(214 - Font.MeasureWidth(total), 98), Pal.Butter);
+        Ui.Right(r, Font, game.Session.Score, 214, 98, Pal.Butter);
     }
 }
 
@@ -153,7 +150,7 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
 {
     private const float Duration = 2.0f;
     private bool _started;
-    private string _world = "", _name = "", _lives = "";
+    private string _world = "", _name = "";
 
     /// <summary>Hashes the level, the checkpoint and whether the level has started; the card's texts are presentation.</summary>
     public override void HashState(StateHasher hash)
@@ -168,7 +165,6 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
         var def = Levels.All[levelIndex];
         _world = $"WORLD {def.Number}";
         _name = def.Name.ToUpperInvariant();
-        _lives = "×" + Ui.N(game.Session.Lives, 2);   // as the HUD writes it
         game.Music("");
     }
 
@@ -197,7 +193,7 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
         Ui.Centered(r, Font, def.Subtitle, 160, 86, Pal.Cream);
         var pip = game.Art.PipClip(game.Session.Form, "idle").FrameAt(Age);
         r.Draw(pip, new Vector2(142, 136));
-        Ui.Text(r, Font, _lives, new Vector2(156, 124));
+        Ui.Text(r, Font, $"×{game.Session.Lives:00}", new Vector2(156, 124));
         if (checkpoint > 0) Ui.Centered(r, Font, "from the checkpoint", 160, 146, Pal.Dusk);
     }
 }
@@ -205,7 +201,8 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
 /// <summary>Pause overlay: resume, restart the level or quit to the map.</summary>
 internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("Resume", "Restart level", "Quit to map");
+    private static readonly string[] Options = ["Resume", "Restart level", "Quit to map"];
+    private readonly MenuCursor _menu = new(Options.Length);
     public override bool IsOverlay => true;
 
     /// <summary>Hashes the menu cursor.</summary>
@@ -241,6 +238,6 @@ internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
         var box = new RectF(100, 56, 120, 72);
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "PAUSED", 160, 63, Pal.Butter);
-        Ui.Menu(r, Font, _menu, 160, 82, Age, 13, 104);
+        Ui.Menu(r, Font, _menu, Options, 160, 82, Age, 13, 104);
     }
 }

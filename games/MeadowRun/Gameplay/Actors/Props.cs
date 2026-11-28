@@ -224,7 +224,7 @@ internal sealed class FireBar : Actor
         r.SetBlendMode(BlendMode.Additive);
         for (int i = 1; i <= Links; i++) r.Draw(a["glow_small"], Snap(Link(i)), Pal.Flame.WithAlpha(0.35f));
         r.SetBlendMode(BlendMode.Alpha);
-        for (int i = 1; i <= Links; i++) r.Draw(a.Frames("fireball")[(int)(time * 12 + i) % 2], Snap(Link(i)));
+        for (int i = 1; i <= Links; i++) r.Draw(a.Clip("fireball").FrameAt(time, i), Snap(Link(i)));
     }
 }
 
@@ -244,6 +244,6 @@ internal sealed class LightProp : Actor
         r.Draw(a["glow"], foot + new Vector2(0, caves ? -6 : -14), glowColor.WithAlpha(0.5f + MathX.Wave(time + Position.X * 0.01f, 1.3f, 0.12f)));
         r.SetBlendMode(BlendMode.Alpha);
         if (caves) r.Draw(a["deco_crystal"], foot);
-        else r.Draw(a.Frames("torch")[(int)(time * 9 + Position.X) % 3], foot);
+        else r.Draw(a.Clip("torch").FrameAt(time, Position.X), foot);
     }
 }

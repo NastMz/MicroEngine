@@ -12,7 +12,8 @@ namespace MeadowRun.Scenes;
 /// <summary>Game over: offers a continue (lives refill, score resets, unlocks kept) or the title.</summary>
 internal sealed class GameOverScene(MeadowGame game) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("Continue", "Title screen");
+    private static readonly string[] Options = ["Continue", "Title screen"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private bool _leaving;
 
     /// <summary>Hashes the menu cursor and whether the scene is leaving.</summary>
@@ -46,7 +47,7 @@ internal sealed class GameOverScene(MeadowGame game) : Scene
         var pip = game.Art.Pip(PipForm.Sprout, "hurt")[0];
         r.Draw(pip, new Vector2(160, 112));
         Ui.Centered(r, Font, "The meadow still waits for you.", 160, 118, Pal.Haze);
-        if (Age > 1.2f) Ui.Menu(r, Font, _menu, 160, 136, Age, 13, 104);
+        if (Age > 1.2f) Ui.Menu(r, Font, _menu, Options, 160, 136, Age, 13, 104);
     }
 }
 
@@ -130,7 +131,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
         if (scoreY < 190)
         {
             Ui.Centered(r, Font, "FINAL SCORE", 160, scoreY, Pal.Haze);
-            Ui.Centered(r, Font, Ui.N(game.Session.Score, 7), 160, scoreY + 12, Pal.Butter, 2);
+            Ui.Score(r, Font, game.Session.Score, 160, scoreY + 12, Pal.Butter, 2);
         }
     }
 }

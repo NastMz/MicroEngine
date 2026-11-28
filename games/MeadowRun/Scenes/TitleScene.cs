@@ -44,7 +44,8 @@ internal static class Diorama
 /// <summary>Title screen: animated logo, living diorama and the main menu.</summary>
 internal sealed class TitleScene(MeadowGame game) : Scene
 {
-    private readonly DemoKit.OptionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
+    private static readonly string[] Options = ["Start", "Continue", "Controls", "Achievements", "Quit"];
+    private readonly MenuCursor _menu = new(Options.Length);
     private bool _controls, _leaving;
     private float _logoDrop;
     private readonly List<(string Key, string What)> _controlRows = [];
@@ -131,16 +132,16 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         // Pip trots along the meadow while the world scrolls.
         var run = game.Art.Pip(PipForm.Sprout, "run");
         r.Draw(run[(int)(t * 11) % run.Count], new Vector2(64, 164 + MathF.Round(MathF.Abs(MathX.Wave(t, 2.75f, 1.2f)) * -1)));
-        var coin = game.Art.Frames("coin");
+        var coin = game.Art.Clip("coin");
         for (int i = 0; i < 4; i++)
         {
             float cx = 330 - ((t * 30 + i * 90) % 380);
-            r.Draw(coin[(int)(t * 8 + i) % coin.Count], new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(t + i, 1, 3))));
+            r.Draw(coin.FrameAt(t, i), new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(t + i, 1, 3))));
         }
 
         if (_controls) { DrawControls(r); return; }
         r.Panel(new RectF(112, 92, 96, 70), Ui.Card);
-        Ui.Menu(r, Font, _menu, 160, 98, Age, 12, 88);
+        Ui.Menu(r, Font, _menu, Options, 160, 98, Age, 12, 88);
         Ui.Centered(r, Font, "(c) 2026 · an original game built on MicroEngine", 160, 171, Pal.Cream.WithAlpha(0.8f));
     }
 

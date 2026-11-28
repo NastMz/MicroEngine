@@ -26,7 +26,6 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private Biome _biome;
     private readonly List<Actor> _actors = [];
     // Sprite names looked up per tile every frame, built once instead of concatenated each time.
-    private static readonly string[] QuestionNames = Names("question", 5), LavaTopNames = Names("lava_top", 4), LavaBodyNames = Names("lava_body", 2);
     private static readonly string[] BackWallNames = Names("backwall", Assets.BackWallVariants);
     private static readonly (string Name, int Dx, int Dy)[] WallFrames = [("wallframe1", 0, -1), ("wallframe2", 1, 0), ("wallframe4", 0, 1), ("wallframe8", -1, 0)];
 
@@ -118,9 +117,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         int x0 = Math.Max(0, (int)(view.X / 16) - 1), x1 = Math.Min(level.Width - 1, (int)(view.Right / 16) + 1);
         int y0 = Math.Max(0, (int)(view.Y / 16) - 1), y1 = Math.Min(level.Height - 1, (int)(view.Bottom / 16) + 1);
         var tiles = level.Tiles;
-        float qt = time % 1.4f;
-        int questionFrame = qt < 0.4f ? (int)(qt / 0.1f) : 0;
-        int lavaFrame = (int)(time * 5) % 4;
+        Sprite question = art.Clip("question").FrameAt(time), lavaTop = art.Clip("lava_top").FrameAt(time), lavaBody = art.Clip("lava_body").FrameAt(time);
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
         {
@@ -132,8 +129,8 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
             Sprite? sprite = id switch
             {
                 Tile.Ground => art.Ground(_biome, Autotile.Mask4(tiles, x, y, t => t == Tile.Ground), (int)(MicroEngine.Graphics.Art.Hash(x, y, 5) * Assets.GroundVariants)),
-                Tile.CoinBlock or Tile.PowerBlock or Tile.LifeBlock => art[QuestionNames[questionFrame]],
-                Tile.Lava => art[tiles[x, y - 1] == Tile.Lava ? LavaBodyNames[lavaFrame % 2] : LavaTopNames[lavaFrame]],
+                Tile.CoinBlock or Tile.PowerBlock or Tile.LifeBlock => question,
+                Tile.Lava => tiles[x, y - 1] == Tile.Lava ? lavaBody : lavaTop,
                 _ => art.TileSprite(_biome, id),
             };
             if (sprite is null) continue;

@@ -65,6 +65,8 @@ public sealed class MeadowGame(LaunchOptions? launch = null) : Game
     private readonly LaunchOptions _launch = launch ?? new LaunchOptions();
 
     public override GameSettings Settings { get; } = new("Meadow Run") { Background = Pal.Ink };
+    /// <summary>Test hook: called with each stage a play scene creates.</summary>
+    internal Action<Gameplay.Stage>? StageCreatedForTesting { get; set; }
     internal Assets Art { get; private set; } = null!;
     internal MicroEngine.Graphics.LightMap Lights { get; private set; } = null!;
     /// <summary>The save id every release has used: it names the save folder, so it never changes.</summary>
